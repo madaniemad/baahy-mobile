@@ -1,0 +1,43 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+
+# Android
+android/local.properties
+android/.gradle/
+android/key.properties
+android/app/google-services.json
+
+# iOS
+ios/Flutter/.last_build_id
+ios/Pods/
+ios/Runner/GoogleService-Info.plist
+*.mode1v3
+*.mode2v3
+*.moved-aside
+*.pbxuser
+*.perspectivev3
+xcuserdata
+
+# Generated
+lib/core/api/*.g.dart
+lib/**/*.g.dart
+lib/**/*.freezed.dart
+
+# Secrets
+.env
+google-services.json
+GoogleService-Info.plist
+firebase-credentials.json
+
+# IDEs
+.idea/
+*.ipr
+*.iws
+.vscode/
