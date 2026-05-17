@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 // ── Baahy design tokens (from claude.ai/design handoff) ──────────────────────
 class AppColors {
   // Brand
+  static const primary     = Color(0xFF4CD5DA); // alias used throughout app
   static const teal        = Color(0xFF4CD5DA);
   static const teal600     = Color(0xFF2DBAC0);
   static const teal700     = Color(0xFF1F9AA0);
@@ -38,6 +39,9 @@ class AppRadius {
   static const xl  = Radius.circular(26);
   static const pill= Radius.circular(9999);
 
+  static const double card = 14; // used as double in ClipRRect
+  static const cardRadius  = BorderRadius.all(Radius.circular(card));
+
   static const smBorder  = BorderRadius.all(sm);
   static const mdBorder  = BorderRadius.all(md);
   static const lgBorder  = BorderRadius.all(lg);
@@ -46,10 +50,11 @@ class AppRadius {
 }
 
 class AppShadows {
-  static const shadow1 = [
+  static const shadowCard = [ // alias for product/content cards
     BoxShadow(color: Color(0x0A0F1E1E), blurRadius: 8, offset: Offset(0, 1)),
     BoxShadow(color: Color(0x070F1E1E), blurRadius: 2, offset: Offset(0, 1)),
   ];
+  static const shadow1 = shadowCard;
   static const shadow2 = [
     BoxShadow(color: Color(0x140F1E1E), blurRadius: 12, offset: Offset(0, 4)),
     BoxShadow(color: Color(0x0A0F1E1E), blurRadius: 3, offset: Offset(0, 1)),
