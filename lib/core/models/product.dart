@@ -17,6 +17,8 @@ class Product {
   final List<ProductVariation> variations;
   final double? averageRating;
   final int? reviewsCount;
+  final String? description;
+  final String? descriptionAr;
 
   const Product({
     required this.id,
@@ -37,6 +39,8 @@ class Product {
     this.variations = const [],
     this.averageRating,
     this.reviewsCount,
+    this.description,
+    this.descriptionAr,
   });
 
   double get displayPrice => currentPrice ?? salePrice ?? price;
@@ -65,6 +69,8 @@ class Product {
     'variations': variations.map((v) => v.toJson()).toList(),
     'average_rating': averageRating,
     'reviews_count': reviewsCount,
+    'description': description,
+    'description_ar': descriptionAr,
   };
 
   factory Product.fromJson(Map<String, dynamic> j) => Product(
@@ -87,6 +93,8 @@ class Product {
         ?.map((v) => ProductVariation.fromJson(v)).toList() ?? [],
     averageRating: j['average_rating'] != null ? (j['average_rating'] as num).toDouble() : null,
     reviewsCount: j['reviews_count'],
+    description: j['description'],
+    descriptionAr: j['description_ar'],
   );
 
   static List<String> _parseImages(dynamic raw) {

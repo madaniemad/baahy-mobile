@@ -20,6 +20,7 @@ import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/address/screens/addresses_screen.dart';
 import '../../features/address/screens/edit_address_screen.dart';
 import '../../features/wallet/screens/wallet_screen.dart';
+import '../../features/product/screens/reviews_screen.dart';
 import '../shell/main_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -54,6 +55,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           )),
       GoRoute(path: '/product/:id', builder: (_, state) =>
           ProductDetailScreen(id: int.parse(state.pathParameters['id']!))),
+      GoRoute(path: '/product/:id/reviews', builder: (_, state) =>
+          ReviewsScreen(productId: int.parse(state.pathParameters['id']!))),
       GoRoute(path: '/checkout',   builder: (_, __) => const CheckoutScreen()),
       GoRoute(path: '/order-confirmed', builder: (_, state) =>
           OrderConfirmedScreen(data: state.extra as Map<String, dynamic>)),
