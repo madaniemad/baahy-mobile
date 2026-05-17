@@ -143,7 +143,7 @@ class _CartItemCard extends ConsumerWidget {
                   children: [
                     _QtyBtn(
                       icon: Icons.remove,
-                      onTap: () => ref.read(cartProvider.notifier).updateQty(item.id, item.quantity - 1),
+                      onTap: () => ref.read(cartProvider.notifier).updateQty(item.key, item.quantity - 1),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -153,11 +153,11 @@ class _CartItemCard extends ConsumerWidget {
                     ),
                     _QtyBtn(
                       icon: Icons.add,
-                      onTap: () => ref.read(cartProvider.notifier).updateQty(item.id, item.quantity + 1),
+                      onTap: () => ref.read(cartProvider.notifier).updateQty(item.key, item.quantity + 1),
                     ),
                     const Spacer(),
                     GestureDetector(
-                      onTap: () => ref.read(cartProvider.notifier).remove(item.id),
+                      onTap: () => ref.read(cartProvider.notifier).remove(item.key),
                       child: const Icon(Icons.delete_outline, color: AppColors.danger, size: 20),
                     ),
                   ],
@@ -206,11 +206,6 @@ class _CartSummary extends ConsumerWidget {
       child: Column(
         children: [
           _Row('المجموع الفرعي', '${cart.subtotal.toStringAsFixed(0)} د.ل'),
-          if ((cart.shippingCost ?? 0) > 0)
-            _Row('الشحن', '${cart.shippingCost!.toStringAsFixed(0)} د.ل'),
-          if ((cart.discount ?? 0) > 0)
-            _Row('الخصم', '-${cart.discount!.toStringAsFixed(0)} د.ل',
-              color: AppColors.success),
           const Divider(height: 20, color: AppColors.border),
           _Row('الإجمالي', '${cart.total.toStringAsFixed(0)} د.ل',
             bold: true, fontSize: 17),

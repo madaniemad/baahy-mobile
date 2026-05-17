@@ -13,20 +13,15 @@ class WishlistNotifier extends StateNotifier<Set<int>> {
     try {
       final res = await _api.dio.get('/wishlist');
       final ids = (res.data['data'] as List?)
-          ?.map((p) => p['id'] as int).toSet() ?? {};
+          ?.map((item) => item['product']['id'] as int).toSet() ?? {};
       state = ids;
     } catch (_) {}
   }
 
   Future<void> toggle(int productId) async {
-    final wasIn = state.contains(productId);
     state = Set.from(state)..toggle(productId);
     try {
-      if (wasIn) {
-        await _api.dio.delete('/wishlist/$productId');
-      } else {
-        await _api.dio.post('/wishlist', data: {'product_id': productId});
-      }
+      await _api.dio.post('/wishlist/toggle', data: {'product_id': productId});
     } catch (_) {
       state = Set.from(state)..toggle(productId);
     }
@@ -52,9 +47,9 @@ class WishlistProductsNotifier extends StateNotifier<List<Product>> {
   Future<void> fetch() async {
     if (!await _api.isLoggedIn) return;
     try {
-      final res = await _api.dio.get('/wishlist?include=products');
+      final res = await _api.dio.get('/wishlist');
       state = (res.data['data'] as List?)
-          ?.map((p) => Product.fromJson(p)).toList() ?? [];
+          ?.map((item) => Product.fromJson(item['product'])).toList() ?? [];
     } catch (_) {}
   }
 }

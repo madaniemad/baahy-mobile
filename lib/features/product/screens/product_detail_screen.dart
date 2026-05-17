@@ -29,17 +29,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   ProductVariation? _selectedVariation;
   int _qty = 1;
 
-  // Selections: attribute type name → value id
-  final Map<String, int> _selections = {};
+  // Selections: attribute type name → selected value string
+  final Map<String, String> _selections = {};
 
   void _trySelectVariation(Product product) {
-    if (_selections.length != product.variations.first.attributes.length) return;
+    if (product.variations.isEmpty) return;
+    final attrCount = product.variations.first.attributes.length;
+    if (_selections.length < attrCount) return;
 
     _selectedVariation = product.variations.firstWhere(
-      (v) => v.attributes.every((a) {
-        // match all selected attribute values
-        return true; // simplified — full impl would match attribute value ids
-      }),
+      (v) => v.attributes.every((a) => _selections[a.typeName] == a.value),
       orElse: () => product.variations.first,
     );
     setState(() {});
@@ -52,8 +51,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       return;
     }
     await ref.read(cartProvider.notifier).add(
-      product.id,
-      variationId: _selectedVariation?.id,
+      product,
+      variation: _selectedVariation,
       qty: _qty,
     );
     if (mounted) {
@@ -262,8 +261,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             _VariationPicker(
                               product: product,
                               selections: _selections,
-                              onChanged: (attrType, valueId) {
-                                setState(() => _selections[attrType] = valueId);
+                              onChanged: (attrType, value) {
+                                setState(() => _selections[attrType] = value);
                                 _trySelectVariation(product);
                               },
                             ),
@@ -367,8 +366,8 @@ class _VendorCard extends StatelessWidget {
 
 class _VariationPicker extends StatelessWidget {
   final Product product;
-  final Map<String, int> selections;
-  final void Function(String attrType, int valueId) onChanged;
+  final Map<String, String> selections;
+  final void Function(String attrType, String value) onChanged;
 
   const _VariationPicker({
     required this.product,
@@ -409,12 +408,12 @@ class _VariationPicker extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: values.map((v) {
-                final isSelected = false; // simplified
+                final isSelected = selections[typeName] == v.value;
                 if (isColor && v.colorHex != null) {
                   final hex = v.colorHex!.replaceAll('#', '');
-                  final color = Color(int.parse('FF$hex', radix: 16));
+                  final color = Color(int.parse('FF${hex.padLeft(6, '0')}', radix: 16));
                   return GestureDetector(
-                    onTap: () => onChanged(typeName, 0),
+                    onTap: () => onChanged(typeName, v.value),
                     child: Container(
                       width: 32, height: 32,
                       decoration: BoxDecoration(
@@ -430,7 +429,7 @@ class _VariationPicker extends StatelessWidget {
                   );
                 }
                 return GestureDetector(
-                  onTap: () => onChanged(typeName, 0),
+                  onTap: () => onChanged(typeName, v.value),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(

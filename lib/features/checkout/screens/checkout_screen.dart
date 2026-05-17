@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/cart_provider.dart';
-import '../../../core/providers/auth_provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 
@@ -16,7 +15,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _notesCtrl = TextEditingController();
-  String _paymentMethod = 'cash';
+  String _paymentMethod = 'cash_on_delivery';
   Map<String, dynamic>? _selectedAddress;
   bool _loading = false;
   List<Map<String, dynamic>> _addresses = [];
@@ -43,16 +42,38 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Future<void> _placeOrder() async {
     if (_selectedAddress == null || _selectedAddress!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى اختيار عنوان التوصيل')));
+          const SnackBar(content: Text('يرجى اختيار عنوان التوصيل')));
       return;
     }
     setState(() => _loading = true);
+
+    // Validate cart stock before placing order
+    final validationError = await ref.read(cartProvider.notifier).validate();
+    if (validationError != null) {
+      setState(() => _loading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(validationError), backgroundColor: AppColors.danger));
+      }
+      return;
+    }
+
     try {
       final cart = ref.read(cartProvider);
+      final addr = _selectedAddress!;
       final res = await ApiClient.instance.dio.post('/orders', data: {
-        'address_id': _selectedAddress!['id'],
+        'items': cart.items.map((i) => {
+          'product_id': i.productId,
+          if (i.variationId != null) 'variation_id': i.variationId,
+          'quantity': i.quantity,
+        }).toList(),
         'payment_method': _paymentMethod,
-        'notes': _notesCtrl.text.trim().isNotEmpty ? _notesCtrl.text.trim() : null,
+        'shipping_name': addr['label'] ?? addr['name'] ?? '',
+        'shipping_phone': addr['phone'] ?? '',
+        'shipping_city': addr['city'] ?? '',
+        'shipping_address':
+            [addr['district'], addr['street']].where((v) => v != null && v.toString().isNotEmpty).join('، '),
+        if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
       });
       await ref.read(cartProvider.notifier).clear();
       if (mounted) {
@@ -61,8 +82,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('حدث خطأ، حاول مجدداً'), backgroundColor: AppColors.danger));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('حدث خطأ، حاول مجدداً'),
+            backgroundColor: AppColors.danger));
       }
     }
   }
@@ -138,7 +160,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   // Payment method
                   _SectionTitle('طريقة الدفع'),
                   const SizedBox(height: 8),
-                  _PaymentOption('cash', 'الدفع عند الاستلام', Icons.payments_outlined,
+                  _PaymentOption('cash_on_delivery', 'الدفع عند الاستلام', Icons.payments_outlined,
                     _paymentMethod, (v) => setState(() => _paymentMethod = v)),
                   const SizedBox(height: 8),
                   _PaymentOption('wallet', 'المحفظة', Icons.account_balance_wallet_outlined,
@@ -182,11 +204,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: Column(
                       children: [
                         _SummaryRow('المجموع الفرعي', '${cart.subtotal.toStringAsFixed(0)} د.ل'),
-                        if ((cart.shippingCost ?? 0) > 0)
-                          _SummaryRow('الشحن', '${cart.shippingCost!.toStringAsFixed(0)} د.ل'),
-                        if ((cart.discount ?? 0) > 0)
-                          _SummaryRow('الخصم', '-${cart.discount!.toStringAsFixed(0)} د.ل',
-                            color: AppColors.success),
                         const Divider(height: 20, color: AppColors.border),
                         _SummaryRow('الإجمالي', '${cart.total.toStringAsFixed(0)} د.ل', bold: true),
                       ],

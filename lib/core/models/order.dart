@@ -123,16 +123,32 @@ class OrderItem {
     required this.total,
   });
 
-  factory OrderItem.fromJson(Map<String, dynamic> j) => OrderItem(
-    id: j['id'],
-    productId: j['product_id'],
-    productName: j['product_name'] ?? '',
-    productNameAr: j['product_name_ar'] ?? j['product_name'] ?? '',
-    productImage: j['product_image'],
-    variationId: j['variation_id'],
-    variationLabel: j['variation_label'],
-    quantity: j['quantity'] ?? 1,
-    price: (j['price'] as num).toDouble(),
-    total: (j['total'] as num? ?? (j['price'] as num) * (j['quantity'] as num? ?? 1)).toDouble(),
-  );
+  factory OrderItem.fromJson(Map<String, dynamic> j) {
+    final product = j['product'] as Map<String, dynamic>?;
+    String? productImage = j['product_image'];
+    if (productImage == null && product != null) {
+      final raw = product['images'];
+      if (raw is List && raw.isNotEmpty) {
+        productImage = raw.first.toString();
+      } else if (raw is String && raw.length > 2) {
+        try {
+          final stripped = raw.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '').split(',');
+          if (stripped.isNotEmpty) productImage = stripped.first.trim();
+        } catch (_) {}
+      }
+    }
+    return OrderItem(
+      id: j['id'],
+      productId: j['product_id'],
+      productName: j['product_name'] ?? product?['name'] ?? '',
+      productNameAr: j['product_name_ar'] ?? product?['name_ar'] ?? j['product_name'] ?? '',
+      productImage: productImage,
+      variationId: j['variation_id'],
+      variationLabel: j['variation_label'],
+      quantity: j['quantity'] ?? 1,
+      price: (j['price'] as num).toDouble(),
+      total: (j['total'] as num? ?? j['subtotal'] as num?
+          ?? (j['price'] as num) * (j['quantity'] as num? ?? 1)).toDouble(),
+    );
+  }
 }

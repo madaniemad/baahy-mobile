@@ -85,7 +85,7 @@ class ProductCard extends ConsumerWidget {
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
                       child: Container(
-                        color: Colors.black.withOpacity(0.35),
+                        color: Colors.black.withValues(alpha: 0.35),
                         alignment: Alignment.center,
                         child: Text(
                           context.tr('نفذت الكمية', 'Out of Stock'),
@@ -129,7 +129,7 @@ class ProductCard extends ConsumerWidget {
                       if (product.hasDiscount) ...[
                         const SizedBox(width: 4),
                         Text(
-                          '${product.price.toStringAsFixed(0)}',
+                          product.price.toStringAsFixed(0),
                           style: const TextStyle(
                             fontFamily: 'PlusJakartaSans',
                             fontSize: 11,
@@ -200,7 +200,7 @@ class _AddToCartButton extends ConsumerWidget {
       );
     }
     return GestureDetector(
-      onTap: () => ref.read(cartProvider.notifier).add(product.id),
+      onTap: () => ref.read(cartProvider.notifier).add(product),
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(

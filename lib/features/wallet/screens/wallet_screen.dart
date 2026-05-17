@@ -122,7 +122,7 @@ class _TransactionRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (isCredit ? AppColors.success : AppColors.danger).withOpacity(0.1),
+              color: (isCredit ? AppColors.success : AppColors.danger).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(

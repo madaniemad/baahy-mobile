@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/screens/splash_screen.dart';
@@ -47,7 +46,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Stack screens (no tab bar)
       GoRoute(path: '/search',     builder: (_, __) => const SearchScreen()),
       GoRoute(path: '/search/results', builder: (_, state) =>
-          SearchResultsScreen(query: state.uri.queryParameters['q'] ?? '')),
+          SearchResultsScreen(
+            query: state.uri.queryParameters['q'] ?? '',
+            categoryId: state.uri.queryParameters['category'] != null
+                ? int.tryParse(state.uri.queryParameters['category']!)
+                : null,
+          )),
       GoRoute(path: '/product/:id', builder: (_, state) =>
           ProductDetailScreen(id: int.parse(state.pathParameters['id']!))),
       GoRoute(path: '/checkout',   builder: (_, __) => const CheckoutScreen()),

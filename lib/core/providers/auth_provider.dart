@@ -23,8 +23,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (!await _api.isLoggedIn) return;
     state = state.copyWith(loading: true);
     try {
-      final res = await _api.dio.get('/profile');
-      state = AuthState(user: User.fromJson(res.data['data']));
+      final res = await _api.dio.get('/auth/me');
+      state = AuthState(user: User.fromJson(res.data['user']));
     } catch (_) {
       await _api.clearToken();
       state = const AuthState();
@@ -32,14 +32,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> requestOtp(String phone) async {
-    await _api.dio.post('/auth/send-otp', data: {'phone': phone});
+    await _api.dio.post('/auth/otp/send', data: {'phone': phone});
   }
 
-  Future<void> verifyOtp(String phone, String otp) async {
-    final res = await _api.dio.post('/auth/verify-otp', data: {'phone': phone, 'otp': otp});
-    final data = res.data['data'];
-    await _api.setToken(data['token']);
-    state = AuthState(user: User.fromJson(data['user']));
+  Future<void> verifyOtp(String phone, String code) async {
+    final res = await _api.dio.post('/auth/otp/verify', data: {'phone': phone, 'code': code});
+    await _api.setToken(res.data['token']);
+    state = AuthState(user: User.fromJson(res.data['user']));
   }
 
   Future<void> logout() async {
@@ -50,8 +49,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> refreshProfile() async {
     try {
-      final res = await _api.dio.get('/profile');
-      state = AuthState(user: User.fromJson(res.data['data']));
+      final res = await _api.dio.get('/auth/me');
+      state = AuthState(user: User.fromJson(res.data['user']));
     } catch (_) {}
   }
 }

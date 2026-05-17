@@ -46,6 +46,27 @@ class Product {
       : 0;
   String? get firstImage => images.isNotEmpty ? images.first : null;
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'name_ar': nameAr,
+    'sku': sku,
+    'price': price,
+    'sale_price': salePrice,
+    'current_price': currentPrice,
+    'in_stock': inStock,
+    'stock_quantity': stockQuantity,
+    'status': status,
+    'featured': featured,
+    'product_type': productType,
+    'images': images,
+    'vendor': vendor?.toJson(),
+    'category': category?.toJson(),
+    'variations': variations.map((v) => v.toJson()).toList(),
+    'average_rating': averageRating,
+    'reviews_count': reviewsCount,
+  };
+
   factory Product.fromJson(Map<String, dynamic> j) => Product(
     id: j['id'],
     name: j['name'] ?? '',
@@ -102,6 +123,16 @@ class ProductVariation {
     this.attributes = const [],
   });
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'sku': sku,
+    'price': price,
+    'sale_price': salePrice,
+    'stock_quantity': stockQuantity,
+    'is_active': isActive,
+    'variation_attributes': attributes.map((a) => a.toJson()).toList(),
+  };
+
   factory ProductVariation.fromJson(Map<String, dynamic> j) => ProductVariation(
     id: j['id'],
     sku: j['sku'],
@@ -129,6 +160,11 @@ class VariationAttribute {
     this.colorHex,
   });
 
+  Map<String, dynamic> toJson() => {
+    'attribute_type': {'name': typeName, 'name_ar': typeNameAr},
+    'attribute_value': {'value': value, 'value_ar': valueAr, 'color_hex': colorHex},
+  };
+
   factory VariationAttribute.fromJson(Map<String, dynamic> j) => VariationAttribute(
     typeName: j['attribute_type']?['name'] ?? '',
     typeNameAr: j['attribute_type']?['name_ar'] ?? '',
@@ -154,6 +190,15 @@ class Vendor {
     this.city,
     this.averageRating,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'store_name': storeName,
+    'store_name_ar': storeNameAr,
+    'logo': logo,
+    'city': city,
+    'average_rating': averageRating,
+  };
 
   factory Vendor.fromJson(Map<String, dynamic> j) => Vendor(
     id: j['id'],
@@ -183,6 +228,16 @@ class Category {
     this.children = const [],
     this.sortOrder,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'name_ar': nameAr,
+    'image': image,
+    'parent_id': parentId,
+    'children': children.map((c) => c.toJson()).toList(),
+    'sort_order': sortOrder,
+  };
 
   factory Category.fromJson(Map<String, dynamic> j) => Category(
     id: j['id'],

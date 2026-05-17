@@ -75,6 +75,7 @@ ThemeData buildAppTheme() {
       surface: AppColors.surface,
       onSurface: AppColors.ink0,
       error: AppColors.danger,
+      // ignore: deprecated_member_use
       background: AppColors.bg,
     ),
     scaffoldBackgroundColor: AppColors.bg,

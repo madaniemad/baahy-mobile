@@ -1,97 +1,121 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
 import '../models/cart.dart';
+import '../models/product.dart';
+
+const _kCartKey = 'baahy_cart';
 
 class CartState {
   final List<CartItem> items;
-  final bool loading;
-  final double? shippingCost;
-  final double? discount;
-  const CartState({
-    this.items = const [],
-    this.loading = false,
-    this.shippingCost,
-    this.discount,
-  });
+  const CartState({this.items = const []});
 
   double get subtotal => items.fold(0, (s, i) => s + i.total);
-  double get total => subtotal + (shippingCost ?? 0) - (discount ?? 0);
+  double get total => subtotal;
   int get count => items.fold(0, (s, i) => s + i.quantity);
 
-  CartState copyWith({List<CartItem>? items, bool? loading, double? shippingCost, double? discount}) =>
-      CartState(
-        items: items ?? this.items,
-        loading: loading ?? this.loading,
-        shippingCost: shippingCost ?? this.shippingCost,
-        discount: discount ?? this.discount,
-      );
+  CartState copyWith({List<CartItem>? items}) =>
+      CartState(items: items ?? this.items);
 }
 
 class CartNotifier extends StateNotifier<CartState> {
-  final ApiClient _api;
-  CartNotifier(this._api) : super(const CartState()) {
-    fetch();
+  CartNotifier() : super(const CartState()) {
+    _load();
   }
 
-  Future<void> fetch() async {
-    if (!await _api.isLoggedIn) return;
-    state = state.copyWith(loading: true);
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kCartKey);
+    if (raw == null) return;
     try {
-      final res = await _api.dio.get('/cart');
-      final data = res.data['data'];
-      final items = (data['items'] as List?)
-          ?.map((i) => CartItem.fromJson(i)).toList() ?? [];
-      state = CartState(
-        items: items,
-        shippingCost: (data['shipping_cost'] as num?)?.toDouble(),
-        discount: (data['discount'] as num?)?.toDouble(),
-      );
-    } catch (_) {
-      state = state.copyWith(loading: false);
+      final list = (jsonDecode(raw) as List)
+          .map((j) => CartItem.fromJson(j as Map<String, dynamic>))
+          .toList();
+      state = CartState(items: list);
+    } catch (_) {}
+  }
+
+  Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        _kCartKey, jsonEncode(state.items.map((i) => i.toJson()).toList()));
+  }
+
+  Future<void> add(Product product,
+      {ProductVariation? variation, int qty = 1}) async {
+    final key =
+        variation != null ? '${product.id}_${variation.id}' : '${product.id}';
+    final items = List<CartItem>.from(state.items);
+    final idx = items.indexWhere((i) => i.key == key);
+    if (idx >= 0) {
+      items[idx] = items[idx].copyWith(quantity: items[idx].quantity + qty);
+    } else {
+      items.add(CartItem(
+        productId: product.id,
+        variationId: variation?.id,
+        product: product,
+        variation: variation,
+        quantity: qty,
+      ));
     }
+    state = CartState(items: items);
+    await _save();
   }
 
-  Future<void> add(int productId, {int? variationId, int qty = 1}) async {
-    await _api.dio.post('/cart', data: {
-      'product_id': productId,
-      if (variationId != null) 'variation_id': variationId,
-      'quantity': qty,
-    });
-    await fetch();
-  }
-
-  Future<void> updateQty(int itemId, int qty) async {
+  Future<void> updateQty(String key, int qty) async {
     if (qty < 1) {
-      await remove(itemId);
+      await remove(key);
       return;
     }
-    await _api.dio.put('/cart/$itemId', data: {'quantity': qty});
-    await fetch();
+    final items = state.items
+        .map((i) => i.key == key ? i.copyWith(quantity: qty) : i)
+        .toList();
+    state = CartState(items: items);
+    await _save();
   }
 
-  Future<void> remove(int itemId) async {
-    await _api.dio.delete('/cart/$itemId');
-    await fetch();
+  Future<void> remove(String key) async {
+    final items = state.items.where((i) => i.key != key).toList();
+    state = CartState(items: items);
+    await _save();
   }
 
   Future<void> clear() async {
-    await _api.dio.delete('/cart');
     state = const CartState();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kCartKey);
   }
 
-  Future<Map<String, dynamic>?> applyCoupon(String code) async {
+  /// Validates cart with the server. Returns null if all items are valid,
+  /// or an Arabic error message if something is wrong.
+  Future<String?> validate() async {
+    if (state.items.isEmpty) return 'السلة فارغة';
     try {
-      final res = await _api.dio.post('/cart/coupon', data: {'code': code});
-      state = state.copyWith(discount: (res.data['data']['discount'] as num?)?.toDouble());
-      return res.data['data'];
-    } catch (e) {
-      return null;
+      final res = await ApiClient.instance.dio.post('/cart/validate', data: {
+        'items': state.items
+            .map((i) => {
+                  'product_id': i.productId,
+                  if (i.variationId != null) 'variation_id': i.variationId,
+                  'quantity': i.quantity,
+                })
+            .toList(),
+      });
+      if (res.data['valid'] == true) return null;
+      for (final item in (res.data['items'] as List? ?? [])) {
+        if (item['ok'] == false) {
+          return item['message'] as String? ?? 'بعض المنتجات غير متاحة';
+        }
+      }
+      return 'بعض المنتجات غير متاحة';
+    } catch (_) {
+      return 'تعذر التحقق من السلة';
     }
   }
 }
 
-final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) {
-  return CartNotifier(ApiClient.instance);
-});
+final cartProvider =
+    StateNotifierProvider<CartNotifier, CartState>((ref) => CartNotifier());
 
-final cartCountProvider = Provider<int>((ref) => ref.watch(cartProvider).count);
+final cartCountProvider =
+    Provider<int>((ref) => ref.watch(cartProvider).count);

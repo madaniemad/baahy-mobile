@@ -1,15 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import '../../../core/providers/home_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/notifications_provider.dart';
 import '../../../core/models/product.dart';
-import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
-import '../../../shared/widgets/section_header.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -18,7 +17,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final home = ref.watch(homeProvider);
     final user = ref.watch(currentUserProvider);
-    final isAr = context.isAr;
+    final unread = ref.watch(unreadNotificationCountProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -29,72 +28,162 @@ class HomeScreen extends ConsumerWidget {
           slivers: [
             SliverPersistentHeader(
               pinned: true,
-              delegate: _HomeAppBar(user: user, isAr: isAr),
+              delegate: _HomeAppBar(
+                city: user?.city ?? 'ليبيا',
+                unreadCount: unread,
+              ),
             ),
             if (home.loading && home.featured.isEmpty)
               const SliverFillRemaining(child: _HomeSkeleton())
             else ...[
-              // Featured banner carousel
-              if (home.featured.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: _FeaturedCarousel(products: home.featured),
-                  ),
-                ),
+              // Active order strip
+              const SliverToBoxAdapter(child: _ActiveOrderStrip()),
 
-              // Categories
-              if (home.categories.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 20),
-                    child: _CategoriesRow(categories: home.categories),
-                  ),
+              // Hero banner with countdown
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: _HeroBanner(onTap: () =>
+                    context.push('/search/results?q=')),
                 ),
+              ),
 
               // Promise strip
               const SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.only(top: 20, left: 16, right: 16),
+                  padding: EdgeInsets.fromLTRB(16, 14, 16, 0),
                   child: _PromiseStrip(),
                 ),
               ),
 
-              // New Arrivals
-              if (home.newArrivals.isNotEmpty) ...[
+              // Deals of the day
+              if (home.deals.isNotEmpty) ...[
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 24, bottom: 12),
-                    child: SectionHeader(
-                      titleAr: 'وصل حديثاً',
-                      titleEn: 'New Arrivals',
-                      onSeeAll: () => context.push('/search/results?q=&sort=latest'),
-                    ),
+                  child: _SectionHead(
+                    ar: 'عروض اليوم',
+                    en: 'Deals of the day',
+                    onAll: () => context.push('/search/results?q='),
                   ),
                 ),
                 SliverToBoxAdapter(
-                  child: _HorizontalProductList(products: home.newArrivals),
+                  child: _HorizontalProductList(products: home.deals),
                 ),
               ],
 
-              // Popular
+              // Categories 4-col grid
+              if (home.categories.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: _SectionHead(
+                    ar: 'تسوّق حسب القسم',
+                    en: 'Categories',
+                    onAll: () => context.go('/browse'),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: _CategoriesGrid(categories: home.categories),
+                ),
+              ],
+
+              // Split promo banners
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: _SplitPromoBanners(),
+                ),
+              ),
+
+              // Picked for you (featured 2-col grid)
+              if (home.featured.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: _SectionHead(ar: 'مختار لك', en: 'Picked for you'),
+                ),
+                SliverToBoxAdapter(
+                  child: _TwoColGrid(products: home.featured.take(6).toList()),
+                ),
+              ],
+
+              // Category carousels interleaved with popular/bestsellers
+              if (home.categorySections.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: _CategoryCarouselSection(section: home.categorySections[0]),
+                ),
+
+              // Bestsellers 2x2 ranked
               if (home.popular.isNotEmpty) ...[
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 24, bottom: 12),
-                    child: SectionHeader(
-                      titleAr: 'الأكثر مبيعاً',
-                      titleEn: 'Best Sellers',
-                      onSeeAll: () => context.push('/search/results?q=&sort=popular'),
-                    ),
+                  child: _SectionHead(
+                    ar: 'الأكثر مبيعاً',
+                    en: 'Bestsellers',
+                    onAll: () => context.push('/search/results?q=&sort=popular'),
                   ),
                 ),
                 SliverToBoxAdapter(
-                  child: _HorizontalProductList(products: home.popular),
+                  child: _BestsellerGrid(products: home.popular.take(4).toList()),
                 ),
               ],
 
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              if (home.categorySections.length > 1)
+                SliverToBoxAdapter(
+                  child: _CategoryCarouselSection(section: home.categorySections[1]),
+                ),
+
+              // New arrivals with NEW badge
+              if (home.newArrivals.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: _SectionHead(
+                    ar: 'وصل حديثاً',
+                    en: 'New arrivals',
+                    onAll: () => context.push('/search/results?q=&sort=latest'),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: _NewArrivalsRow(products: home.newArrivals),
+                ),
+              ],
+
+              // Under 50 LYD
+              if (home.budget.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: _SectionHead(ar: 'أقل من 50 د.ل', en: 'Under 50 LYD',
+                    onAll: () => context.push('/search/results?q=&max_price=50')),
+                ),
+                SliverToBoxAdapter(
+                  child: _BudgetGrid(products: home.budget),
+                ),
+              ],
+
+              if (home.categorySections.length > 2)
+                SliverToBoxAdapter(
+                  child: _CategoryCarouselSection(section: home.categorySections[2]),
+                ),
+
+              // Editor's pick magazine card
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 20, 16, 0),
+                  child: _EditorPickCard(),
+                ),
+              ),
+
+              if (home.categorySections.length > 3)
+                SliverToBoxAdapter(
+                  child: _CategoryCarouselSection(section: home.categorySections[3]),
+                ),
+
+              if (home.categorySections.length > 4)
+                SliverToBoxAdapter(
+                  child: _CategoryCarouselSection(section: home.categorySections[4]),
+                ),
+
+              // baahy promise closing block
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 20, 16, 24),
+                  child: _BaahyPromiseCard(),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 8)),
             ],
           ],
         ),
@@ -103,13 +192,15 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _HomeAppBar extends SliverPersistentHeaderDelegate {
-  final dynamic user;
-  final bool isAr;
-  const _HomeAppBar({this.user, required this.isAr});
+// ── App Bar ──────────────────────────────────────────────────────────────────
 
-  @override double get minExtent => 60;
-  @override double get maxExtent => 60;
+class _HomeAppBar extends SliverPersistentHeaderDelegate {
+  final String city;
+  final int unreadCount;
+  const _HomeAppBar({required this.city, required this.unreadCount});
+
+  @override double get minExtent => 100;
+  @override double get maxExtent => 100;
   @override bool shouldRebuild(_) => true;
 
   @override
@@ -118,235 +209,71 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
       color: Colors.white,
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top,
-        left: 16, right: 16,
+        left: 16, right: 16, bottom: 10,
       ),
-      child: Row(
+      child: Column(
         children: [
-          Image.asset('assets/images/logo.png', height: 32,
-            errorBuilder: (_, __, ___) => const Text('baahy',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 22, fontWeight: FontWeight.w800,
-                color: AppColors.primary)),
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: () => context.push('/search'),
-            child: Container(
-              width: 180,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 10),
-                  const Icon(Icons.search, size: 18, color: AppColors.ink3),
-                  const SizedBox(width: 6),
-                  Text(
-                    isAr ? 'ابحث عن منتج...' : 'Search products...',
-                    style: const TextStyle(color: AppColors.ink3, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-class _FeaturedCarousel extends StatefulWidget {
-  final List<Product> products;
-  const _FeaturedCarousel({required this.products});
-
-  @override
-  State<_FeaturedCarousel> createState() => _FeaturedCarouselState();
-}
-
-class _FeaturedCarouselState extends State<_FeaturedCarousel> {
-  int _current = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        CarouselSlider.builder(
-          itemCount: widget.products.length.clamp(0, 5),
-          itemBuilder: (context, i, _) {
-            final p = widget.products[i];
-            return GestureDetector(
-              onTap: () => context.push('/product/${p.id}'),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
+          Row(
+            children: [
+              const Text('baahy',
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 22,
+                  fontWeight: FontWeight.w800, color: AppColors.primary)),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Colors.white,
+                  color: AppColors.surfaceSoft,
+                  borderRadius: BorderRadius.circular(99),
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (p.firstImage != null)
-                      CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover)
-                    else
-                      Container(color: AppColors.bg),
+                child: Row(children: [
+                  const Icon(Icons.location_on_rounded, size: 12, color: AppColors.teal600),
+                  const SizedBox(width: 4),
+                  Text(city, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                ]),
+              ),
+              const Spacer(),
+              Stack(
+                children: [
+                  IconButton(
+                    onPressed: () => context.push('/notifications'),
+                    icon: const Icon(Icons.notifications_none_rounded, color: AppColors.ink0),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  if (unreadCount > 0)
                     Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
+                      top: 0, right: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        width: 8, height: 8,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [Colors.black.withOpacity(0.6), Colors.transparent],
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              Localizations.localeOf(context).languageCode == 'ar'
-                                  ? p.nameAr : p.name,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Text(
-                              '${p.displayPrice.toStringAsFixed(0)} د.ل',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'PlusJakartaSans',
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+                          color: AppColors.danger,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            );
-          },
-          options: CarouselOptions(
-            height: 200,
-            viewportFraction: 0.88,
-            enableInfiniteScroll: true,
-            autoPlay: true,
-            autoPlayInterval: const Duration(seconds: 4),
-            onPageChanged: (i, _) => setState(() => _current = i),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(widget.products.length.clamp(0, 5), (i) => AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: i == _current ? 20 : 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: i == _current ? AppColors.primary : AppColors.border,
-              borderRadius: BorderRadius.circular(3),
-            ),
-          )),
-        ),
-      ],
-    );
-  }
-}
-
-class _CategoriesRow extends StatelessWidget {
-  final List<Category> categories;
-  const _CategoriesRow({required this.categories});
-
-  @override
-  Widget build(BuildContext context) {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    final display = categories.take(8).toList();
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-          child: Row(
-            children: [
-              Text(
-                isAr ? 'الأقسام' : 'Categories',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => context.go('/browse'),
-                child: const Text('عرض الكل',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                ],
               ),
             ],
           ),
-        ),
-        SizedBox(
-          height: 88,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: display.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) => _CategoryChip(category: display[i]),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  final Category category;
-  const _CategoryChip({required this.category});
-
-  @override
-  Widget build(BuildContext context) {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    return GestureDetector(
-      onTap: () => context.push('/search/results?q=&category=${category.id}'),
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: AppShadows.shadowCard,
-            ),
-            child: category.image != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: CachedNetworkImage(
-                      imageUrl: category.image!,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => const Icon(Icons.grid_view_rounded,
-                          color: AppColors.primary, size: 24),
-                    ),
-                  )
-                : const Icon(Icons.grid_view_rounded, color: AppColors.primary, size: 24),
-          ),
-          const SizedBox(height: 6),
-          SizedBox(
-            width: 64,
-            child: Text(
-              isAr ? category.nameAr : category.name,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => context.push('/search'),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceSoft,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: const Row(children: [
+                Icon(Icons.search, size: 18, color: AppColors.ink3),
+                SizedBox(width: 8),
+                Expanded(child: Text('ابحث في باهي',
+                  style: TextStyle(color: AppColors.ink3, fontSize: 14))),
+                Icon(Icons.mic_none_rounded, size: 18, color: AppColors.ink3),
+              ]),
             ),
           ),
         ],
@@ -355,43 +282,200 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-class _PromiseStrip extends StatelessWidget {
-  const _PromiseStrip();
+// ── Active order strip ────────────────────────────────────────────────────────
+
+class _ActiveOrderStrip extends ConsumerWidget {
+  const _ActiveOrderStrip();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Show only if user has an active order — fetch from orders provider
+    return const SizedBox.shrink();
+  }
+}
+
+// ── Hero banner ───────────────────────────────────────────────────────────────
+
+class _HeroBanner extends StatefulWidget {
+  final VoidCallback onTap;
+  const _HeroBanner({required this.onTap});
+  @override
+  State<_HeroBanner> createState() => _HeroBannerState();
+}
+
+class _HeroBannerState extends State<_HeroBanner> {
+  late Timer _timer;
+  int _h = 11, _m = 42, _s = 8;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {
+        _s--;
+        if (_s < 0) { _s = 59; _m--; }
+        if (_m < 0) { _m = 59; _h--; }
+        if (_h < 0) { _h = 23; }
+      });
+    });
+  }
+
+  @override
+  void dispose() { _timer.cancel(); super.dispose(); }
+
+  String _pad(int n) => n.toString().padLeft(2, '0');
 
   @override
   Widget build(BuildContext context) {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    final items = [
-      (Icons.local_shipping_outlined, isAr ? 'توصيل سريع' : 'Fast Delivery'),
-      (Icons.verified_outlined, isAr ? 'منتجات أصلية' : 'Authentic'),
-      (Icons.support_agent_outlined, isAr ? 'دعم ٢٤/٧' : '24/7 Support'),
-    ];
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: items.map((item) => Column(
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1F2E2E), Color(0xFF0A1A1A)],
+          ),
+        ),
+        child: Stack(
           children: [
-            Icon(item.$1, color: AppColors.primary, size: 22),
-            const SizedBox(height: 4),
-            Text(item.$2,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.ink1)),
+            Positioned(
+              right: -30, top: -30,
+              child: Container(
+                width: 180, height: 180,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withValues(alpha: 0.18),
+                ),
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  const Icon(Icons.local_fire_department_rounded,
+                    size: 16, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  const Text('FLASH DEALS',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                      letterSpacing: 1, color: AppColors.primary)),
+                ]),
+                const SizedBox(height: 6),
+                const Text('خصم حتى 50%',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
+                    color: Colors.white, height: 1.15)),
+                const Text('ينتهي منتصف الليل',
+                  style: TextStyle(fontSize: 12.5, color: Colors.white54)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [_pad(_h), _pad(_m), _pad(_s)].asMap().entries.map((e) {
+                    return Row(children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white12,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(e.value,
+                          style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                            fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                      ),
+                      if (e.key < 2)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(':', style: TextStyle(color: Colors.white54))),
+                    ]);
+                  }).toList(),
+                ),
+              ],
+            ),
           ],
-        )).toList(),
+        ),
       ),
     );
   }
 }
+
+// ── Promise strip ─────────────────────────────────────────────────────────────
+
+class _PromiseStrip extends StatelessWidget {
+  const _PromiseStrip();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.shadowCard,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _PromiseChip(icon: Icons.local_shipping_outlined, ar: 'مجاني فوق 150', en: 'Free over 150'),
+          Container(width: 1, height: 28, color: AppColors.border),
+          _PromiseChip(icon: Icons.refresh_rounded, ar: 'إرجاع 7 أيام', en: '7-day returns'),
+          Container(width: 1, height: 28, color: AppColors.border),
+          _PromiseChip(icon: Icons.payments_outlined, ar: 'دفع عند الاستلام', en: 'COD available'),
+        ],
+      ),
+    );
+  }
+}
+
+class _PromiseChip extends StatelessWidget {
+  final IconData icon;
+  final String ar;
+  final String en;
+  const _PromiseChip({required this.icon, required this.ar, required this.en});
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    return Column(children: [
+      Icon(icon, size: 18, color: AppColors.primary),
+      const SizedBox(height: 4),
+      Text(isAr ? ar : en,
+        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.ink1),
+        textAlign: TextAlign.center),
+    ]);
+  }
+}
+
+// ── Section head ──────────────────────────────────────────────────────────────
+
+class _SectionHead extends StatelessWidget {
+  final String ar;
+  final String en;
+  final VoidCallback? onAll;
+  const _SectionHead({required this.ar, required this.en, this.onAll});
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+      child: Row(children: [
+        Text(isAr ? ar : en,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        const Spacer(),
+        if (onAll != null)
+          GestureDetector(
+            onTap: onAll,
+            child: Text(isAr ? '← الكل' : 'See all →',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                color: AppColors.primary)),
+          ),
+      ]),
+    );
+  }
+}
+
+// ── Horizontal product list ───────────────────────────────────────────────────
 
 class _HorizontalProductList extends StatelessWidget {
   final List<Product> products;
   const _HorizontalProductList({required this.products});
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -407,54 +491,442 @@ class _HorizontalProductList extends StatelessWidget {
   }
 }
 
+// ── Categories 4-col grid ────────────────────────────────────────────────────
+
+class _CategoriesGrid extends StatelessWidget {
+  final List<Category> categories;
+  const _CategoriesGrid({required this.categories});
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final display = categories.take(8).toList();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4, mainAxisSpacing: 10, crossAxisSpacing: 10,
+          childAspectRatio: 0.85,
+        ),
+        itemCount: display.length,
+        itemBuilder: (_, i) {
+          final cat = display[i];
+          return GestureDetector(
+            onTap: () => context.push('/search/results?q=&category=${cat.id}'),
+            child: Column(children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: AppShadows.shadowCard,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: cat.image != null
+                      ? CachedNetworkImage(imageUrl: cat.image!, fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorWidget: (_, __, ___) => const Icon(Icons.grid_view_rounded,
+                            color: AppColors.primary, size: 28))
+                      : const Icon(Icons.grid_view_rounded, color: AppColors.primary, size: 28),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(isAr ? cat.nameAr : cat.name,
+                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center, maxLines: 2,
+                overflow: TextOverflow.ellipsis),
+            ]),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Split promo banners ───────────────────────────────────────────────────────
+
+class _SplitPromoBanners extends StatelessWidget {
+  const _SplitPromoBanners();
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      Expanded(child: _PromoTile(
+        titleAr: 'موسم جديد',
+        subtitleAr: 'إصدارات الموضة',
+        color: const Color(0xFFD97757),
+        icon: Icons.checkroom_rounded,
+        onTap: () => context.push('/browse'),
+      )),
+      const SizedBox(width: 10),
+      Expanded(child: _PromoTile(
+        titleAr: 'خصم 30%',
+        subtitleAr: 'أساسيات المنزل',
+        color: AppColors.teal600,
+        icon: Icons.home_rounded,
+        onTap: () => context.push('/browse'),
+      )),
+    ]);
+  }
+}
+
+class _PromoTile extends StatelessWidget {
+  final String titleAr;
+  final String subtitleAr;
+  final Color color;
+  final IconData icon;
+  final VoidCallback onTap;
+  const _PromoTile({required this.titleAr, required this.subtitleAr,
+    required this.color, required this.icon, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 100,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: Colors.white70, size: 22),
+            const Spacer(),
+            Text(titleAr, style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+            Text(subtitleAr, style: const TextStyle(
+              color: Colors.white70, fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 2-col product grid ────────────────────────────────────────────────────────
+
+class _TwoColGrid extends StatelessWidget {
+  final List<Product> products;
+  const _TwoColGrid({required this.products});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
+          childAspectRatio: 0.72,
+        ),
+        itemCount: products.length,
+        itemBuilder: (_, i) => ProductCard(product: products[i]),
+      ),
+    );
+  }
+}
+
+// ── Category carousel section ─────────────────────────────────────────────────
+
+class _CategoryCarouselSection extends StatelessWidget {
+  final CategorySection section;
+  const _CategoryCarouselSection({required this.section});
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final catName = isAr ? section.category.nameAr : section.category.name;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHead(
+          ar: 'في $catName',
+          en: 'In $catName',
+          onAll: () => context.push('/search/results?q=&category=${section.category.id}'),
+        ),
+        SizedBox(
+          height: 240,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: section.products.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) => ProductCard(product: section.products[i], width: 155),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Bestsellers 2×2 with rank badges ─────────────────────────────────────────
+
+class _BestsellerGrid extends StatelessWidget {
+  final List<Product> products;
+  const _BestsellerGrid({required this.products});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
+          childAspectRatio: 0.72,
+        ),
+        itemCount: products.length,
+        itemBuilder: (_, i) => Stack(
+          children: [
+            ProductCard(product: products[i]),
+            Positioned(
+              top: 12, left: 12,
+              child: Container(
+                width: 26, height: 26,
+                decoration: const BoxDecoration(
+                  color: AppColors.ink0, shape: BoxShape.circle),
+                child: Center(
+                  child: Text('#${i + 1}',
+                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── New arrivals row with NEW badge ───────────────────────────────────────────
+
+class _NewArrivalsRow extends StatelessWidget {
+  final List<Product> products;
+  const _NewArrivalsRow({required this.products});
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 240,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: products.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) => Stack(
+          children: [
+            ProductCard(product: products[i], width: 155),
+            Positioned(
+              top: 12, left: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.ink0,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: const Text('NEW',
+                  style: TextStyle(color: Colors.white, fontSize: 9,
+                    fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Under 50 LYD 3-col mini grid ─────────────────────────────────────────────
+
+class _BudgetGrid extends StatelessWidget {
+  final List<Product> products;
+  const _BudgetGrid({required this.products});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3, mainAxisSpacing: 8, crossAxisSpacing: 8,
+          childAspectRatio: 1,
+        ),
+        itemCount: products.length.clamp(0, 6),
+        itemBuilder: (_, i) {
+          final p = products[i];
+          return GestureDetector(
+            onTap: () => context.push('/product/${p.id}'),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(fit: StackFit.expand, children: [
+                p.firstImage != null
+                    ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover)
+                    : Container(color: AppColors.surfaceSoft),
+                Positioned(
+                  left: 6, bottom: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text('${p.displayPrice.toStringAsFixed(0)} د.ل',
+                      style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                        fontSize: 10, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ]),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Editor's pick magazine card ───────────────────────────────────────────────
+
+class _EditorPickCard extends StatelessWidget {
+  const _EditorPickCard();
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/browse'),
+      child: Container(
+        height: 200,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF2D4A4A), Color(0xFF0A1A1A)],
+          ),
+          boxShadow: AppShadows.shadow2,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(fit: StackFit.expand, children: [
+          Positioned(
+            right: -20, top: -20,
+            child: Container(
+              width: 160, height: 160,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.15),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: const Text('صُنع في ليبيا',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                      letterSpacing: 1, color: AppColors.primary)),
+                ),
+                const Spacer(),
+                const Text('حرف محلية، توصيل باهي.',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
+                    color: Colors.white, height: 1.15)),
+                const SizedBox(height: 6),
+                const Text('قطع مختارة من حرفيين في أنحاء البلاد.',
+                  style: TextStyle(fontSize: 12.5, color: Colors.white60)),
+              ],
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── baahy promise block ───────────────────────────────────────────────────────
+
+class _BaahyPromiseCard extends StatelessWidget {
+  const _BaahyPromiseCard();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [AppColors.ink0, Color(0xFF1A3838)],
+        ),
+      ),
+      child: Stack(children: [
+        Positioned(
+          right: -20, top: -20,
+          child: Container(
+            width: 140, height: 140,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withValues(alpha: 0.2),
+            ),
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('وعد باهي',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                letterSpacing: 1, color: AppColors.primary)),
+            const SizedBox(height: 6),
+            const Text('نختار ونخزّن ونوصّل كل طلب بأنفسنا.',
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800,
+                color: Colors.white, height: 1.25)),
+            const SizedBox(height: 8),
+            const Text(
+              'منتجات مفحوصة. مستودعات حقيقية. سائقو باهي في 12 مدينة. إذا حدث خطأ، نحن من يحلّه.',
+              style: TextStyle(fontSize: 12.5, color: Colors.white60, height: 1.5)),
+          ],
+        ),
+      ]),
+    );
+  }
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+
 class _HomeSkeleton extends StatelessWidget {
   const _HomeSkeleton();
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            height: 200,
-            decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(16)),
+      padding: const EdgeInsets.all(16),
+      child: Column(children: [
+        Container(height: 130, decoration: BoxDecoration(
+          color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(18))),
+        const SizedBox(height: 14),
+        Container(height: 54, decoration: BoxDecoration(
+          color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(14))),
+        const SizedBox(height: 24),
+        Wrap(spacing: 10, runSpacing: 10,
+          children: List.generate(8, (_) => Container(
+            width: (MediaQuery.of(context).size.width - 82) / 4,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(14))))),
+        const SizedBox(height: 24),
+        SizedBox(
+          height: 240,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: 4,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, __) => ProductCardSkeleton(width: 155),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 88,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: 6,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (_, __) => Column(children: [
-                Container(width: 56, height: 56,
-                  decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(16))),
-                const SizedBox(height: 6),
-                Container(width: 48, height: 10, color: AppColors.bg),
-              ]),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(height: 16, width: 120, color: AppColors.bg),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 240,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: 4,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (_, __) => ProductCardSkeleton(width: 155),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ]),
     );
   }
 }

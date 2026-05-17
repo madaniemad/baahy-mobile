@@ -78,7 +78,7 @@ class _CategoryCard extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
-                    colors: [Colors.black.withOpacity(0.55), Colors.transparent],
+                    colors: [Colors.black.withValues(alpha: 0.55), Colors.transparent],
                   ),
                 ),
                 child: Text(

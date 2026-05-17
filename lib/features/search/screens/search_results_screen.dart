@@ -14,7 +14,8 @@ final _sortOptions = [
 
 class SearchResultsScreen extends ConsumerStatefulWidget {
   final String query;
-  const SearchResultsScreen({required this.query, super.key});
+  final int? categoryId;
+  const SearchResultsScreen({required this.query, this.categoryId, super.key});
 
   @override
   ConsumerState<SearchResultsScreen> createState() => _SearchResultsScreenState();
@@ -59,6 +60,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     try {
       final res = await ApiClient.instance.dio.get('/products', queryParameters: {
         if (widget.query.isNotEmpty) 'search': widget.query,
+        if (widget.categoryId != null) 'category_id': widget.categoryId,
         'sort': _sort,
         'page': _page,
         'per_page': 20,
@@ -86,7 +88,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         elevation: 0,
         title: Text(
           widget.query.isNotEmpty ? widget.query : 'المنتجات',
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 17),
+          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 16),
         ),
         actions: [
           PopupMenuButton<String>(

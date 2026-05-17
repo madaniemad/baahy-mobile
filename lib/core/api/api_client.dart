@@ -4,15 +4,17 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 const _baseUrl = 'https://phplaravel-1620145-6391034.cloudwaysapps.com/api';
 
 class ApiClient {
-  static final _storage = FlutterSecureStorage();
-  static Dio? _instance;
+  static ApiClient? _instance;
+  static ApiClient get instance => _instance ??= ApiClient._();
 
-  static Dio get dio {
-    _instance ??= _build();
-    return _instance!;
+  late final Dio dio;
+  final _storage = const FlutterSecureStorage();
+
+  ApiClient._() {
+    dio = _build();
   }
 
-  static Dio _build() {
+  Dio _build() {
     final d = Dio(BaseOptions(
       baseUrl: _baseUrl,
       connectTimeout: const Duration(seconds: 15),
@@ -23,7 +25,6 @@ class ApiClient {
       },
     ));
 
-    // Auth token interceptor
     d.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final token = await _storage.read(key: 'auth_token');
@@ -34,7 +35,6 @@ class ApiClient {
       },
       onError: (error, handler) {
         if (error.response?.statusCode == 401) {
-          // Token expired — clear and let app redirect to sign-in
           _storage.delete(key: 'auth_token');
         }
         handler.next(error);
@@ -44,12 +44,12 @@ class ApiClient {
     return d;
   }
 
-  static Future<void> setToken(String token) =>
+  Future<void> setToken(String token) =>
       _storage.write(key: 'auth_token', value: token);
 
-  static Future<void> clearToken() =>
+  Future<void> clearToken() =>
       _storage.delete(key: 'auth_token');
 
-  static Future<bool> get isLoggedIn async =>
+  Future<bool> get isLoggedIn async =>
       (await _storage.read(key: 'auth_token')) != null;
 }
