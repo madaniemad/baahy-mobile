@@ -1,5 +1,4 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -40,16 +39,8 @@ Future<void> main() async {
   try {
     await Firebase.initializeApp();
     _firebaseReady = true;
-
-    // Route all Flutter errors to Crashlytics in release mode.
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-    PlatformDispatcher.instance.onError = (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-      return true;
-    };
-
-    // Disable Crashlytics in debug so we see full errors in console.
-    await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(!kDebugMode);
+    // Crashlytics: re-enable after adding google-services.json + GoogleService-Info.plist
+    // and uncomment firebase_crashlytics in pubspec.yaml.
   } catch (e) {
     debugPrint('[Firebase] Not initialized — add config files to enable: $e');
   }
