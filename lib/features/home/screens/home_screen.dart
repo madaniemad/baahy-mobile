@@ -8,7 +8,11 @@ import '../../../core/providers/home_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/notifications_provider.dart';
 import '../../../core/providers/recently_viewed_provider.dart';
+import '../../../core/providers/banner_provider.dart';
+import '../../../core/providers/app_config_provider.dart';
+import '../../../core/models/app_config.dart';
 import '../../../core/models/product.dart';
+import '../../../core/models/banner.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 
@@ -20,6 +24,8 @@ class HomeScreen extends ConsumerWidget {
     final home = ref.watch(homeProvider);
     final user = ref.watch(currentUserProvider);
     final unread = ref.watch(unreadNotificationCountProvider);
+    final banners = ref.watch(bannersProvider).value ?? const BannersData();
+    final config = ref.watch(appConfigProvider).config;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -41,20 +47,19 @@ class HomeScreen extends ConsumerWidget {
               // Active order strip
               const SliverToBoxAdapter(child: _ActiveOrderStrip()),
 
-              // Hero banner with countdown
+              // Hero banner slider (real data from /api/content/banners)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: _HeroBanner(onTap: () =>
-                    context.push('/search/results?q=')),
+                  child: _HeroBannerSlider(banners: banners.hero),
                 ),
               ),
 
               // Promise strip
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 14, 16, 0),
-                  child: _PromiseStrip(),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                  child: _PromiseStrip(config: config),
                 ),
               ),
 
@@ -86,13 +91,17 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
 
-              // Split promo banners
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: _SplitPromoBanners(),
+              // Split promo banners (real data from backend)
+              if (banners.promoLeft.isNotEmpty || banners.promoRight.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: _SplitPromoBanners(
+                      left: banners.promoLeft.isNotEmpty ? banners.promoLeft.first : null,
+                      right: banners.promoRight.isNotEmpty ? banners.promoRight.first : null,
+                    ),
+                  ),
                 ),
-              ),
 
               // Picked for you (featured 2-col grid)
               if (home.featured.isNotEmpty) ...[
@@ -159,11 +168,13 @@ class HomeScreen extends ConsumerWidget {
                   child: _CategoryCarouselSection(section: home.categorySections[2]),
                 ),
 
-              // Editor's pick magazine card
-              const SliverToBoxAdapter(
+              // Mid-banner card (real data from backend)
+              SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 20, 16, 0),
-                  child: _EditorPickCard(),
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                  child: _MidBannerCard(
+                    banner: banners.midBanner.isNotEmpty ? banners.midBanner.first : null,
+                  ),
                 ),
               ),
 
@@ -344,109 +355,212 @@ class _ActiveOrderStrip extends ConsumerWidget {
   }
 }
 
-// ── Hero banner ───────────────────────────────────────────────────────────────
+// ── Hero banner slider ────────────────────────────────────────────────────────
 
-class _HeroBanner extends StatefulWidget {
-  final VoidCallback onTap;
-  const _HeroBanner({required this.onTap});
+class _HeroBannerSlider extends StatefulWidget {
+  final List<AppBanner> banners;
+  const _HeroBannerSlider({required this.banners});
   @override
-  State<_HeroBanner> createState() => _HeroBannerState();
+  State<_HeroBannerSlider> createState() => _HeroBannerSliderState();
 }
 
-class _HeroBannerState extends State<_HeroBanner> {
-  late Timer _timer;
-  int _h = 11, _m = 42, _s = 8;
+class _HeroBannerSliderState extends State<_HeroBannerSlider> {
+  final _pageCtrl = PageController();
+  int _current = 0;
+  Timer? _timer;
+
+  static const _gradients = [
+    [Color(0xFF1F2E2E), Color(0xFF0A1A1A)],
+    [Color(0xFF1A1A3E), Color(0xFF0A0A1A)],
+    [Color(0xFF2E1A1A), Color(0xFF1A0A0A)],
+    [Color(0xFF1A2E1A), Color(0xFF0A1A0A)],
+  ];
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        _s--;
-        if (_s < 0) { _s = 59; _m--; }
-        if (_m < 0) { _m = 59; _h--; }
-        if (_h < 0) { _h = 23; }
+    if (widget.banners.length > 1) {
+      _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (!mounted) return;
+        final next = (_current + 1) % widget.banners.length;
+        _pageCtrl.animateToPage(next,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut);
       });
-    });
+    }
   }
 
   @override
-  void dispose() { _timer.cancel(); super.dispose(); }
+  void dispose() {
+    _timer?.cancel();
+    _pageCtrl.dispose();
+    super.dispose();
+  }
 
-  String _pad(int n) => n.toString().padLeft(2, '0');
+  @override
+  Widget build(BuildContext context) {
+    if (widget.banners.isEmpty) return const _HeroBannerFallback();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        height: 170,
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: _pageCtrl,
+              itemCount: widget.banners.length,
+              onPageChanged: (i) => setState(() => _current = i),
+              itemBuilder: (_, i) => _BannerSlide(
+                banner: widget.banners[i],
+                gradient: _gradients[i % _gradients.length],
+              ),
+            ),
+            if (widget.banners.length > 1)
+              Positioned(
+                bottom: 10, left: 0, right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(widget.banners.length, (i) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: _current == i ? 18 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: _current == i ? 0.9 : 0.35),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  )),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BannerSlide extends StatelessWidget {
+  final AppBanner banner;
+  final List<Color> gradient;
+  const _BannerSlide({required this.banner, required this.gradient});
+
+  void _handleTap(BuildContext context) {
+    final link = banner.buttonLink;
+    if (link == null || link.isEmpty) return;
+    // Translate web-style /products?category_id=X to app route
+    if (link.contains('category_id=')) {
+      final match = RegExp(r'category_id=(\d+)').firstMatch(link);
+      if (match != null) {
+        context.push('/search/results?q=&category=${match.group(1)}');
+        return;
+      }
+    }
+    if (link.contains('/products')) {
+      context.push('/search/results?q=');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1F2E2E), Color(0xFF0A1A1A)],
+      onTap: () => _handleTap(context),
+      child: Stack(fit: StackFit.expand, children: [
+        // Background: real image or gradient
+        if (banner.hasImage)
+          CachedNetworkImage(
+            imageUrl: banner.imageUrl!,
+            fit: BoxFit.cover,
+            placeholder: (_, __) => _gradientBg(gradient),
+            errorWidget: (_, __, ___) => _gradientBg(gradient),
+          )
+        else
+          _gradientBg(gradient),
+
+        // Dark overlay for text readability
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topRight, end: Alignment.bottomLeft,
+              colors: [Colors.transparent, Colors.black.withValues(alpha: 0.65)],
+            ),
           ),
         ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -30, top: -30,
-              child: Container(
-                width: 180, height: 180,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: 0.18),
+
+        // Content
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (banner.badgeText != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(banner.badgeText!,
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                      color: Colors.white, letterSpacing: 0.5)),
                 ),
-                foregroundDecoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: 0.0),
-                ),
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  const Icon(Icons.local_fire_department_rounded,
-                    size: 16, color: AppColors.primary),
-                  const SizedBox(width: 6),
-                  const Text('FLASH DEALS',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                      letterSpacing: 1, color: AppColors.primary)),
-                ]),
-                const SizedBox(height: 6),
-                const Text('خصم حتى 50%',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
-                    color: Colors.white, height: 1.15)),
-                const Text('ينتهي منتصف الليل',
-                  style: TextStyle(fontSize: 12.5, color: Colors.white54)),
-                const SizedBox(height: 10),
-                Row(
-                  children: [_pad(_h), _pad(_m), _pad(_s)].asMap().entries.map((e) {
-                    return Row(children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white12,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(e.value,
-                          style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                            fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
-                      ),
-                      if (e.key < 2)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(':', style: TextStyle(color: Colors.white54))),
-                    ]);
-                  }).toList(),
-                ),
+              if (banner.titleAr != null)
+                Text(banner.titleAr!,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
+                    color: Colors.white, height: 1.2)),
+              if (banner.subtitleAr != null) ...[
+                const SizedBox(height: 4),
+                Text(banner.subtitleAr!,
+                  style: TextStyle(fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.8))),
               ],
-            ),
-          ],
+              if (banner.buttonText != null) ...[
+                const SizedBox(height: 10),
+                Text('${banner.buttonText} ←',
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
+              ],
+            ],
+          ),
         ),
+      ]),
+    );
+  }
+
+  Widget _gradientBg(List<Color> colors) => Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
+    ),
+  );
+}
+
+class _HeroBannerFallback extends StatelessWidget {
+  const _HeroBannerFallback();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 170,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [Color(0xFF1F2E2E), Color(0xFF0A1A1A)],
+        ),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          const Text('أهلاً بك في باهي',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
+              color: Colors.white)),
+          const SizedBox(height: 4),
+          Text('اكتشف آلاف المنتجات من متاجر ليبيا',
+            style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.75))),
+        ],
       ),
     );
   }
@@ -455,9 +569,12 @@ class _HeroBannerState extends State<_HeroBanner> {
 // ── Promise strip ─────────────────────────────────────────────────────────────
 
 class _PromiseStrip extends StatelessWidget {
-  const _PromiseStrip();
+  final AppConfig config;
+  const _PromiseStrip({required this.config});
   @override
   Widget build(BuildContext context) {
+    final threshold = config.freeShippingThreshold.toStringAsFixed(0);
+    final returnDays = config.returnDays;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
       decoration: BoxDecoration(
@@ -469,9 +586,11 @@ class _PromiseStrip extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _PromiseChip(icon: Icons.local_shipping_outlined, ar: 'مجاني فوق 150', en: 'Free over 150'),
+          _PromiseChip(icon: Icons.local_shipping_outlined,
+            ar: 'مجاني فوق $threshold', en: 'Free over $threshold'),
           Container(width: 1, height: 28, color: AppColors.border),
-          _PromiseChip(icon: Icons.refresh_rounded, ar: 'إرجاع 7 أيام', en: '7-day returns'),
+          _PromiseChip(icon: Icons.refresh_rounded,
+            ar: 'إرجاع $returnDays أيام', en: '${returnDays}-day returns'),
           Container(width: 1, height: 28, color: AppColors.border),
           _PromiseChip(icon: Icons.payments_outlined, ar: 'دفع عند الاستلام', en: 'COD available'),
         ],
@@ -663,28 +782,43 @@ class _CategoriesGrid extends StatelessWidget {
 // ── Split promo banners ───────────────────────────────────────────────────────
 
 class _SplitPromoBanners extends StatelessWidget {
-  const _SplitPromoBanners();
+  final AppBanner? left;
+  final AppBanner? right;
+  const _SplitPromoBanners({this.left, this.right});
+
+  static const _tints = [Color(0xFFD97757), Color(0xFF1F9AA0)];
+
+  void _navigate(BuildContext context, AppBanner? banner) {
+    final link = banner?.buttonLink;
+    if (link == null || link.isEmpty) { context.push('/browse'); return; }
+    if (link.contains('category_id=')) {
+      final m = RegExp(r'category_id=(\d+)').firstMatch(link);
+      if (m != null) { context.push('/search/results?q=&category=${m.group(1)}'); return; }
+    }
+    context.push('/browse');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(children: [
       Expanded(child: _PromoTile(
-        titleAr: 'موسم جديد',
-        subtitleAr: 'إصدارات الموضة',
-        ctaAr: 'تسوّق ←',
-        imageUrl: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&auto=format&fit=crop',
-        tint: const Color(0xFFD97757),
+        titleAr: left?.titleAr ?? 'موسم جديد',
+        subtitleAr: left?.subtitleAr ?? 'إصدارات الموضة',
+        ctaAr: left?.buttonText != null ? '${left!.buttonText} ←' : 'تسوّق ←',
+        imageUrl: left?.imageUrl,
+        tint: _tints[0],
         tintOpacity: 0.55,
-        onTap: () => context.push('/browse'),
+        onTap: () => _navigate(context, left),
       )),
       const SizedBox(width: 10),
       Expanded(child: _PromoTile(
-        titleAr: 'خصم 30%',
-        subtitleAr: 'أساسيات المنزل',
-        ctaAr: 'وفّر الآن ←',
-        imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop',
-        tint: const Color(0xFF1F9AA0),
+        titleAr: right?.titleAr ?? 'عروض مميزة',
+        subtitleAr: right?.subtitleAr ?? 'أفضل الأسعار',
+        ctaAr: right?.buttonText != null ? '${right!.buttonText} ←' : 'وفّر الآن ←',
+        imageUrl: right?.imageUrl,
+        tint: _tints[1],
         tintOpacity: 0.55,
-        onTap: () => context.push('/browse'),
+        onTap: () => _navigate(context, right),
       )),
     ]);
   }
@@ -694,13 +828,13 @@ class _PromoTile extends StatelessWidget {
   final String titleAr;
   final String subtitleAr;
   final String ctaAr;
-  final String imageUrl;
+  final String? imageUrl;
   final Color tint;
   final double tintOpacity;
   final VoidCallback onTap;
   const _PromoTile({
     required this.titleAr, required this.subtitleAr, required this.ctaAr,
-    required this.imageUrl, required this.tint, required this.tintOpacity,
+    this.imageUrl, required this.tint, required this.tintOpacity,
     required this.onTap,
   });
   @override
@@ -712,11 +846,14 @@ class _PromoTile extends StatelessWidget {
         child: SizedBox(
           height: 140,
           child: Stack(fit: StackFit.expand, children: [
-            CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => Container(color: tint),
-            ),
+            if (imageUrl != null)
+              CachedNetworkImage(
+                imageUrl: imageUrl!,
+                fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => Container(color: tint),
+              )
+            else
+              Container(color: tint),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -823,7 +960,7 @@ class _BestsellerGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          childAspectRatio: 0.72,
+          mainAxisExtent: 270,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => Stack(
@@ -936,35 +1073,50 @@ class _BudgetGrid extends StatelessWidget {
   }
 }
 
-// ── Editor's pick magazine card ───────────────────────────────────────────────
+// ── Mid banner card (real data from /api/content/banners → mid_banner slot) ───
 
-class _EditorPickCard extends StatelessWidget {
-  const _EditorPickCard();
+class _MidBannerCard extends StatelessWidget {
+  final AppBanner? banner;
+  const _MidBannerCard({this.banner});
+
+  void _handleTap(BuildContext context) {
+    final link = banner?.buttonLink;
+    if (link == null || link.isEmpty) { context.push('/browse'); return; }
+    if (link.contains('category_id=')) {
+      final m = RegExp(r'category_id=(\d+)').firstMatch(link);
+      if (m != null) { context.push('/search/results?q=&category=${m.group(1)}'); return; }
+    }
+    context.push('/browse');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final fallbackGradient = BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [Color(0xFF2D4A4A), Color(0xFF0A1A1A)],
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+      ),
+    );
+
     return GestureDetector(
-      onTap: () => context.push('/browse'),
+      onTap: () => _handleTap(context),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
         child: SizedBox(
           height: 240,
           child: Stack(fit: StackFit.expand, children: [
-            CachedNetworkImage(
-              imageUrl: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800&auto=format&fit=crop',
-              fit: BoxFit.cover,
-              placeholder: (_, __) => Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF2D4A4A), Color(0xFF0A1A1A)],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight),
-                )),
-              errorWidget: (_, __, ___) => Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF2D4A4A), Color(0xFF0A1A1A)],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight),
-                )),
-            ),
+            // Background: real image or gradient
+            if (banner != null && banner!.hasImage)
+              CachedNetworkImage(
+                imageUrl: banner!.imageUrl!,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(decoration: fallbackGradient),
+                errorWidget: (_, __, ___) => Container(decoration: fallbackGradient),
+              )
+            else
+              Container(decoration: fallbackGradient),
+
+            // Overlay
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -974,29 +1126,40 @@ class _EditorPickCard extends StatelessWidget {
                 ),
               ),
             ),
+
+            // Content
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(99),
+                  if (banner?.badgeText != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text(banner!.badgeText!,
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2, color: Colors.white)),
                     ),
-                    child: const Text('صُنع في ليبيا',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2, color: Colors.white)),
-                  ),
                   const Spacer(),
-                  const Text('حرف محلية، توصيل باهي.',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
+                  Text(banner?.titleAr ?? 'حرف محلية، توصيل باهي.',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
                       color: Colors.white, height: 1.15)),
-                  const SizedBox(height: 4),
-                  Text('قطع مختارة من حرفيين في أنحاء البلاد.',
-                    style: TextStyle(fontSize: 12.5,
-                      color: Colors.white.withValues(alpha: 0.85))),
+                  if ((banner?.subtitleAr ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(banner!.subtitleAr!,
+                      style: TextStyle(fontSize: 12.5,
+                        color: Colors.white.withValues(alpha: 0.85))),
+                  ],
+                  if (banner?.buttonText != null) ...[
+                    const SizedBox(height: 10),
+                    Text('${banner!.buttonText} ←',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                        color: AppColors.primary)),
+                  ],
                 ],
               ),
             ),

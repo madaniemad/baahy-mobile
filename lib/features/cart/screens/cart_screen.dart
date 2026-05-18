@@ -89,8 +89,8 @@ class CartScreen extends ConsumerWidget {
                       // Free shipping progress bar
                       if (cart.freeShippingRemaining > 0)
                         _FreeShippingBanner(remaining: cart.freeShippingRemaining,
-                          subtotal: cart.subtotal),
-                      if (cart.subtotal >= kFreeShippingThreshold)
+                          subtotal: cart.subtotal, threshold: cart.freeShippingThreshold),
+                      if (cart.subtotal >= cart.freeShippingThreshold)
                         _FreeShippingAchieved(),
 
                       const SizedBox(height: 10),
@@ -143,11 +143,12 @@ class CartScreen extends ConsumerWidget {
 class _FreeShippingBanner extends StatelessWidget {
   final double remaining;
   final double subtotal;
-  const _FreeShippingBanner({required this.remaining, required this.subtotal});
+  final double threshold;
+  const _FreeShippingBanner({required this.remaining, required this.subtotal, required this.threshold});
 
   @override
   Widget build(BuildContext context) {
-    final progress = (subtotal / kFreeShippingThreshold).clamp(0.0, 1.0);
+    final progress = (subtotal / threshold).clamp(0.0, 1.0);
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(

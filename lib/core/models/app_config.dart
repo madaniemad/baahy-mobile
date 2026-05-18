@@ -34,6 +34,7 @@ class PaymentMethod {
 class AppConfig {
   final double shippingFee;
   final double freeShippingThreshold;
+  final int returnDays;
   final List<PaymentMethod> paymentMethods;
   final String deliveryPromiseAr;
   final List<String> trendingSearches;
@@ -45,6 +46,7 @@ class AppConfig {
   const AppConfig({
     required this.shippingFee,
     required this.freeShippingThreshold,
+    this.returnDays = 7,
     required this.paymentMethods,
     required this.deliveryPromiseAr,
     required this.trendingSearches,
@@ -90,6 +92,7 @@ class AppConfig {
     return AppConfig(
       shippingFee: _d(j['shipping_fee'] ?? defaults.shippingFee),
       freeShippingThreshold: _d(j['free_shipping_threshold'] ?? defaults.freeShippingThreshold),
+      returnDays: (j['return_days'] as num?)?.toInt() ?? defaults.returnDays,
       paymentMethods: (methods?.isNotEmpty == true) ? methods! : defaults.paymentMethods,
       deliveryPromiseAr: delivery?['text_ar'] as String? ?? defaults.deliveryPromiseAr,
       trendingSearches: (j['trending_searches'] as List?)?.cast<String>() ?? defaults.trendingSearches,

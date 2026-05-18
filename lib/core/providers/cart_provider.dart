@@ -20,8 +20,8 @@ class CartState {
     this.items = const [],
     this.couponCode,
     this.discountAmount = 0,
-    this.shippingFee = AppConfig.defaults.shippingFee,
-    this.freeShippingThreshold = AppConfig.defaults.freeShippingThreshold,
+    this.shippingFee = 10.0,
+    this.freeShippingThreshold = 150.0,
   });
 
   double get subtotal => items.fold(0, (s, i) => s + i.total);
@@ -52,8 +52,8 @@ class CartNotifier extends StateNotifier<CartState> {
   final double _threshold;
 
   CartNotifier({
-    double shippingFee = AppConfig.defaults.shippingFee,
-    double freeShippingThreshold = AppConfig.defaults.freeShippingThreshold,
+    double shippingFee = 10.0,
+    double freeShippingThreshold = 150.0,
   })  : _shippingFee = shippingFee,
         _threshold = freeShippingThreshold,
         super(CartState(shippingFee: shippingFee, freeShippingThreshold: freeShippingThreshold)) {

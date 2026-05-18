@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../models/app_config.dart';
 
-// Fetches from /api/app-config. Falls back to built-in defaults if endpoint
-// doesn't exist yet — so backend can add it incrementally without breaking the app.
+// Fetches from /api/app-config (backed by site_settings table in Laravel).
+// Falls back to built-in defaults if endpoint fails for any reason.
 final appConfigProvider = FutureProvider<AppConfig>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/app-config');
