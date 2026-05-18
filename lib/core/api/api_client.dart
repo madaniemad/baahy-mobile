@@ -1,7 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-const _baseUrl = 'https://phplaravel-1620145-6391034.cloudwaysapps.com/api';
+const _baseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+  defaultValue: 'https://phplaravel-1620145-6391034.cloudwaysapps.com/api',
+);
 
 // Callback registered by auth layer to redirect to login on 401.
 typedef OnUnauthorized = void Function();
@@ -26,8 +29,8 @@ class ApiClient {
     final d = Dio(BaseOptions(
       baseUrl: _baseUrl,
       connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 10),
+      sendTimeout: const Duration(seconds: 20),
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',

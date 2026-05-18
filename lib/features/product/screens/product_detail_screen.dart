@@ -15,19 +15,19 @@ import '../../../core/providers/recently_viewed_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
-final _productDetailProvider = FutureProvider.family<Product, int>((ref, id) async {
+final _productDetailProvider = FutureProvider.autoDispose.family<Product, int>((ref, id) async {
   final res = await ApiClient.instance.dio.get('/products/$id');
   return Product.fromJson(res.data['data']);
 });
 
-final _relatedProductsProvider = FutureProvider.family<List<Product>, int>((ref, categoryId) async {
+final _relatedProductsProvider = FutureProvider.autoDispose.family<List<Product>, int>((ref, categoryId) async {
   final res = await ApiClient.instance.dio.get('/products',
     queryParameters: {'category_id': categoryId, 'per_page': 4, 'sort': 'popular'});
   return (res.data['data']['data'] as List?)
       ?.map((p) => Product.fromJson(p)).toList() ?? [];
 });
 
-final _productReviewsProvider = FutureProvider.family<List<Review>, int>((ref, productId) async {
+final _productReviewsProvider = FutureProvider.autoDispose.family<List<Review>, int>((ref, productId) async {
   final res = await ApiClient.instance.dio.get('/products/$productId/reviews',
     queryParameters: {'per_page': 3});
   return (res.data['data'] as List?)

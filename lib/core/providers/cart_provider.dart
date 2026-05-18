@@ -48,16 +48,15 @@ class CartState {
 }
 
 class CartNotifier extends StateNotifier<CartState> {
-  final double _shippingFee;
-  final double _threshold;
-
   CartNotifier({
     double shippingFee = 10.0,
     double freeShippingThreshold = 150.0,
-  })  : _shippingFee = shippingFee,
-        _threshold = freeShippingThreshold,
-        super(CartState(shippingFee: shippingFee, freeShippingThreshold: freeShippingThreshold)) {
+  }) : super(CartState(shippingFee: shippingFee, freeShippingThreshold: freeShippingThreshold)) {
     _load();
+  }
+
+  void updateShipping(double fee, double threshold) {
+    state = state.copyWith(shippingFee: fee, freeShippingThreshold: threshold);
   }
 
   Future<void> _load() async {
@@ -68,7 +67,7 @@ class CartNotifier extends StateNotifier<CartState> {
       final list = (jsonDecode(raw) as List)
           .map((j) => CartItem.fromJson(j as Map<String, dynamic>))
           .toList();
-      state = CartState(items: list, shippingFee: _shippingFee, freeShippingThreshold: _threshold);
+      state = state.copyWith(items: list);
     } catch (_) {}
   }
 
@@ -118,7 +117,7 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 
   Future<void> clear() async {
-    state = CartState(shippingFee: _shippingFee, freeShippingThreshold: _threshold);
+    state = CartState(shippingFee: state.shippingFee, freeShippingThreshold: state.freeShippingThreshold);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kCartKey);
   }
@@ -169,11 +168,17 @@ class CartNotifier extends StateNotifier<CartState> {
 }
 
 final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) {
-  final config = ref.watch(appConfigProvider);
-  return CartNotifier(
+  final config = ref.read(appConfigProvider);
+  final notifier = CartNotifier(
     shippingFee: config.shippingFee,
     freeShippingThreshold: config.freeShippingThreshold,
   );
+  // Update shipping config when AppConfig refreshes without recreating the notifier
+  // (and without reloading the cart from SharedPreferences).
+  ref.listen<AppConfig>(appConfigProvider, (_, next) {
+    notifier.updateShipping(next.shippingFee, next.freeShippingThreshold);
+  });
+  return notifier;
 });
 
 final cartCountProvider =

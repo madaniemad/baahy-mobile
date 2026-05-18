@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../models/product.dart';
+import '../services/cache_service.dart';
 
 class CategorySection {
   final Category category;
@@ -56,8 +57,28 @@ class HomeData {
 
 class HomeNotifier extends StateNotifier<HomeData> {
   final ApiClient _api;
+
+  static const _cacheKey = 'home_data';
+  static const _cacheTtl = Duration(minutes: 5);
+
   HomeNotifier(this._api) : super(const HomeData(loading: true)) {
-    fetch();
+    _loadAndFetch();
+  }
+
+  Future<void> _loadAndFetch() async {
+    // Serve stale cache immediately so user sees content on cold start.
+    final stale = await CacheService.instance.getStale(_cacheKey);
+    if (stale != null) {
+      try {
+        state = _fromCache(stale);
+      } catch (_) {}
+    }
+
+    // Skip network if cache is fresh.
+    final fresh = await CacheService.instance.get(_cacheKey, maxAge: _cacheTtl);
+    if (fresh != null) return;
+
+    await fetch();
   }
 
   // Each API call is wrapped independently — one failure never kills the others.
@@ -118,7 +139,7 @@ class HomeNotifier extends StateNotifier<HomeData> {
       budget: budget,
       categories: categories,
       categorySections: state.categorySections,
-      loading: categories.isNotEmpty, // still loading if we'll fetch category sections
+      loading: categories.isNotEmpty,
     );
 
     // Fetch category sections (top 5 root categories) independently.
@@ -141,6 +162,57 @@ class HomeNotifier extends StateNotifier<HomeData> {
     } else {
       state = state.copyWith(loading: false);
     }
+
+    // Persist to disk for next cold start.
+    if (state.featured.isNotEmpty || state.categories.isNotEmpty) {
+      try {
+        await CacheService.instance.set(_cacheKey, _toCache(state));
+      } catch (_) {}
+    }
+  }
+
+  Map<String, dynamic> _toCache(HomeData d) => {
+    'featured': d.featured.map((p) => p.toJson()).toList(),
+    'newArrivals': d.newArrivals.map((p) => p.toJson()).toList(),
+    'popular': d.popular.map((p) => p.toJson()).toList(),
+    'deals': d.deals.map((p) => p.toJson()).toList(),
+    'budget': d.budget.map((p) => p.toJson()).toList(),
+    'categories': d.categories.map((c) => c.toJson()).toList(),
+    'sections': d.categorySections.map((s) => {
+      'category': s.category.toJson(),
+      'products': s.products.map((p) => p.toJson()).toList(),
+    }).toList(),
+  };
+
+  HomeData _fromCache(Map<String, dynamic> j) {
+    List<Product> prods(String key) =>
+        (j[key] as List? ?? [])
+            .map((p) => Product.fromJson(p as Map<String, dynamic>))
+            .toList();
+
+    final categories = (j['categories'] as List? ?? [])
+        .map((c) => Category.fromJson(c as Map<String, dynamic>))
+        .toList();
+
+    final sections = (j['sections'] as List? ?? []).map((s) {
+      final sm = s as Map<String, dynamic>;
+      return CategorySection(
+        category: Category.fromJson(sm['category'] as Map<String, dynamic>),
+        products: (sm['products'] as List? ?? [])
+            .map((p) => Product.fromJson(p as Map<String, dynamic>))
+            .toList(),
+      );
+    }).toList();
+
+    return HomeData(
+      featured: prods('featured'),
+      newArrivals: prods('newArrivals'),
+      popular: prods('popular'),
+      deals: prods('deals'),
+      budget: prods('budget'),
+      categories: categories,
+      categorySections: sections,
+    );
   }
 }
 
