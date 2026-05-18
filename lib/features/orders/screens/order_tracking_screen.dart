@@ -23,138 +23,200 @@ class OrderTrackingScreen extends ConsumerWidget {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: Colors.white, elevation: 0,
-        title: const Text('تفاصيل الطلب',
-          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+        titleSpacing: 0,
+        title: orderAsync.maybeWhen(
+          data: (o) => Text('الطلب ${o.orderNumber}',
+            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          orElse: () => const Text('تفاصيل الطلب',
+            style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+        ),
       ),
       body: orderAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) => const Center(child: Text('تعذر تحميل الطلب')),
-        data: (order) => SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Status card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: AppShadows.shadowCard,
-                ),
-                child: Column(
-                  children: [
-                    Text(order.orderNumber,
-                      style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                        fontSize: 18, fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 8),
-                    _StatusStepper(status: order.status),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Items
-              ...order.vendorGroups.map((group) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(group.vendor.storeName,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: AppShadows.shadowCard,
-                    ),
-                    child: Column(
-                      children: group.items.map((item) => _OrderItemRow(item: item)).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              )),
-
-              // Price breakdown
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: AppShadows.shadowCard,
-                ),
-                child: Column(
-                  children: [
-                    _Row('المجموع الفرعي', '${order.subtotal.toStringAsFixed(0)} د.ل'),
-                    if (order.shippingCost > 0)
-                      _Row('الشحن', '${order.shippingCost.toStringAsFixed(0)} د.ل'),
-                    if (order.discount > 0)
-                      _Row('الخصم', '-${order.discount.toStringAsFixed(0)} د.ل',
-                        color: AppColors.success),
-                    const Divider(height: 20, color: AppColors.border),
-                    _Row('الإجمالي', '${order.total.toStringAsFixed(0)} د.ل', bold: true),
-                  ],
-                ),
-              ),
-              // Return button for delivered orders
-              if (order.status == 'delivered') ...[
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.push('/orders/${order.id}/return'),
-                    icon: const Icon(Icons.assignment_return_outlined, size: 18),
-                    label: const Text('طلب إرجاع',
-                      style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      side: const BorderSide(color: AppColors.border),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+        data: (order) => _OrderBody(order: order),
       ),
     );
   }
-
-  Widget _Row(String label, String value, {Color? color, bool bold = false}) =>
-    Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 14)),
-          Text(value, style: TextStyle(
-            fontFamily: 'PlusJakartaSans',
-            fontSize: 14,
-            fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-            color: color ?? AppColors.ink0)),
-        ],
-      ),
-    );
 }
 
-class _StatusStepper extends StatelessWidget {
+class _OrderBody extends StatelessWidget {
+  final Order order;
+  const _OrderBody({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = ['shipped', 'processing', 'confirmed'].contains(order.status);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Hero ETA card for active orders
+        if (isActive) ...[
+          _HeroCard(order: order),
+          const SizedBox(height: 14),
+        ],
+
+        // Timeline card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('حالة الطلب',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            _Timeline(status: order.status),
+          ]),
+        ),
+
+        const SizedBox(height: 14),
+
+        // Items
+        ...order.vendorGroups.map((group) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(group.vendor.storeName,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14,
+                  letterSpacing: 0.3)),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: group.items.asMap().entries.map((e) =>
+                  _OrderItemRow(
+                    item: e.value,
+                    hasBorder: e.key < group.items.length - 1,
+                  ),
+                ).toList(),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        )),
+
+        // Price breakdown
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(children: [
+            _SumRow('المجموع الفرعي', '${order.subtotal.toStringAsFixed(0)} د.ل'),
+            if (order.shippingCost > 0)
+              _SumRow('الشحن', '${order.shippingCost.toStringAsFixed(0)} د.ل'),
+            if (order.discount > 0)
+              _SumRow('الخصم', '-${order.discount.toStringAsFixed(0)} د.ل',
+                color: AppColors.success),
+            const Divider(height: 20, color: AppColors.border),
+            _SumRow('الإجمالي', '${order.total.toStringAsFixed(0)} د.ل', bold: true),
+          ]),
+        ),
+
+        // Actions
+        if (order.status == 'delivered') ...[
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => context.push('/orders/${order.id}/return'),
+              icon: const Icon(Icons.assignment_return_outlined, size: 16),
+              label: const Text('إرجاع منتجات',
+                style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                side: const BorderSide(color: AppColors.border),
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.help_outline_rounded, size: 16),
+            label: const Text('مساعدة بخصوص هذا الطلب',
+              style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              side: const BorderSide(color: AppColors.border),
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  final Order order;
+  const _HeroCard({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.ink0,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Stack(children: [
+        Positioned(
+          right: -40, top: -40,
+          child: Container(width: 180, height: 180,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withValues(alpha: 0.2)),
+          ),
+        ),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.local_shipping_outlined, color: AppColors.primary, size: 14),
+            const SizedBox(width: 5),
+            const Text('في الطريق',
+              style: TextStyle(fontFamily: 'Cairo', color: AppColors.primary,
+                fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1)),
+          ]),
+          const SizedBox(height: 8),
+          const Text('قيد التوصيل',
+            style: TextStyle(color: Colors.white,
+              fontSize: 22, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          const Text('1-2 يوم · طرابلس',
+            style: TextStyle(color: Colors.white70, fontSize: 13)),
+        ]),
+      ]),
+    );
+  }
+}
+
+class _Timeline extends StatelessWidget {
   final String status;
-  const _StatusStepper({required this.status});
+  const _Timeline({required this.status});
 
   static const _steps = [
-    ('pending', 'قيد الانتظار', Icons.hourglass_empty_rounded),
-    ('confirmed', 'مؤكد', Icons.check_circle_outline_rounded),
-    ('processing', 'قيد التجهيز', Icons.inventory_2_outlined),
-    ('shipped', 'تم الشحن', Icons.local_shipping_outlined),
-    ('delivered', 'تم التوصيل', Icons.home_outlined),
+    ('pending',     'تم استلام الطلب'),
+    ('confirmed',   'مؤكد'),
+    ('processing',  'قيد التجهيز'),
+    ('shipped',     'في الطريق'),
+    ('delivered',   'تم التسليم'),
   ];
 
   int get _currentIdx {
@@ -167,84 +229,110 @@ class _StatusStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = _currentIdx;
-    return Row(
-      children: List.generate(_steps.length * 2 - 1, (i) {
-        if (i.isOdd) {
-          final stepIdx = i ~/ 2;
-          return Expanded(
-            child: Container(
-              height: 2,
-              color: stepIdx < current ? AppColors.primary : AppColors.border,
-            ),
-          );
-        }
-        final stepIdx = i ~/ 2;
-        final isDone = stepIdx <= current;
-        return Column(
-          children: [
-            Container(
-              width: 32, height: 32,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDone ? AppColors.primary : Colors.white,
-                border: Border.all(
-                  color: isDone ? AppColors.primary : AppColors.border, width: 2),
+    return Column(
+      children: List.generate(_steps.length, (i) {
+        final isDone = i <= current;
+        final isActive = i == current;
+        final isLast = i == _steps.length - 1;
+        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          SizedBox(
+            width: 22,
+            child: Column(children: [
+              Container(
+                width: 22, height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDone ? AppColors.primary : Colors.transparent,
+                  border: Border.all(
+                    color: isDone ? AppColors.primary : AppColors.borderStrong,
+                    width: 2),
+                ),
+                child: isDone
+                    ? const Icon(Icons.check_rounded, size: 12, color: AppColors.ink0)
+                    : null,
               ),
-              child: Icon(_steps[stepIdx].$3, size: 16,
-                color: isDone ? Colors.white : AppColors.ink3),
+              if (!isLast)
+                Container(
+                  width: 2, height: 40,
+                  color: isDone && (i + 1) <= current
+                      ? AppColors.primary
+                      : AppColors.border),
+            ]),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: 1, bottom: isLast ? 0 : 20),
+              child: Text(_steps[i].$2,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  color: isActive ? AppColors.teal600 : AppColors.ink0)),
             ),
-            const SizedBox(height: 4),
-            Text(_steps[stepIdx].$2,
-              style: TextStyle(fontSize: 9, color: isDone ? AppColors.primary : AppColors.ink3,
-                fontWeight: isDone ? FontWeight.w700 : FontWeight.normal)),
-          ],
-        );
+          ),
+        ]);
       }),
     );
   }
 }
 
+Widget _SummaryRow(String label, String value, {Color? color, bool bold = false}) =>
+  Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Text(label, style: const TextStyle(fontSize: 14)),
+      Text(value, style: TextStyle(
+        fontFamily: 'PlusJakartaSans', fontSize: 14,
+        fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+        color: color ?? AppColors.ink0)),
+    ]),
+  );
+
+Widget _SumRow(String label, String value, {Color? color, bool bold = false}) =>
+  _SummaryRow(label, value, color: color, bold: bold);
+
 class _OrderItemRow extends StatelessWidget {
   final OrderItem item;
-  const _OrderItemRow({required this.item});
+  final bool hasBorder;
+  const _OrderItemRow({required this.item, required this.hasBorder});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Container(
       padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              width: 52, height: 52,
-              child: item.productImage != null
-                  ? CachedNetworkImage(imageUrl: item.productImage!, fit: BoxFit.cover)
-                  : Container(color: AppColors.bg,
-                      child: const Icon(Icons.image_outlined, color: AppColors.ink4)),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.productNameAr, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                if (item.variationLabel != null)
-                  Text(item.variationLabel!,
-                    style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
-                Text('${item.quantity} × ${item.price.toStringAsFixed(0)} د.ل',
-                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontSize: 12, color: AppColors.ink2)),
-              ],
-            ),
-          ),
-          Text('${item.total.toStringAsFixed(0)} د.ل',
-            style: const TextStyle(fontFamily: 'PlusJakartaSans',
-              fontWeight: FontWeight.w700, fontSize: 13)),
-        ],
+      decoration: BoxDecoration(
+        border: hasBorder
+            ? const Border(bottom: BorderSide(color: AppColors.border))
+            : null,
       ),
+      child: Row(children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: 44, height: 44,
+            child: item.productImage != null
+                ? CachedNetworkImage(imageUrl: item.productImage!, fit: BoxFit.cover)
+                : Container(color: AppColors.bg,
+                    child: const Icon(Icons.image_outlined, color: AppColors.ink4)),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(item.productNameAr, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, height: 1.3)),
+            if (item.variationLabel != null)
+              Text(item.variationLabel!,
+                style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+            Text('×${item.quantity}',
+              style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                fontSize: 11, color: AppColors.ink2)),
+          ]),
+        ),
+        Text('${item.total.toStringAsFixed(0)} د.ل',
+          style: const TextStyle(fontFamily: 'PlusJakartaSans',
+            fontWeight: FontWeight.w700, fontSize: 13)),
+      ]),
     );
   }
 }

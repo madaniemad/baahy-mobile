@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/product.dart';
@@ -131,8 +130,6 @@ class _RightContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final productsAsync = ref.watch(_categoryProductsProvider(categoryId));
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
-
     return productsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (_, __) => const Center(child: Text('تعذر التحميل', style: TextStyle(color: AppColors.ink2))),

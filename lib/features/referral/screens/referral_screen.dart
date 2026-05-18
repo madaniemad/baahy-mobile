@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -203,11 +204,8 @@ class _CodeCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
-                final msg = Uri.encodeComponent(
-                  'جرّب تطبيق باهي للتسوق! استخدم رمزي $code واحصل على 10 د.ل خصم على أول طلب');
-                // Opens WhatsApp with the share message
-              },
+              onPressed: () => Share.share(
+                'جرّب تطبيق باهي للتسوق! استخدم رمزي $code واحصل على 10 د.ل خصم على أول طلب 🛍️'),
               icon: const Icon(Icons.share_outlined, size: 18),
               label: const Text('مشاركة عبر واتساب',
                 style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),

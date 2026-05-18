@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/order.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -11,11 +12,36 @@ final _ordersProvider = FutureProvider<List<Order>>((ref) async {
       ?.map((o) => Order.fromJson(o)).toList() ?? [];
 });
 
-class OrdersScreen extends ConsumerWidget {
+class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+class _OrdersScreenState extends ConsumerState<OrdersScreen> {
+  String _tab = 'all';
+
+  static const _tabs = [
+    ('all', 'الكل'),
+    ('active', 'نشطة'),
+    ('delivered', 'مكتملة'),
+  ];
+
+  List<Order> _filtered(List<Order> all) {
+    switch (_tab) {
+      case 'active':
+        return all.where((o) =>
+          ['pending', 'confirmed', 'processing', 'shipped'].contains(o.status)).toList();
+      case 'delivered':
+        return all.where((o) => o.status == 'delivered').toList();
+      default:
+        return all;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final ordersAsync = ref.watch(_ordersProvider);
 
     return Scaffold(
@@ -27,28 +53,62 @@ class OrdersScreen extends ConsumerWidget {
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            color: Colors.white,
+            child: Column(children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                child: Row(
+                  children: _tabs.map((t) {
+                    final isActive = _tab == t.$1;
+                    return GestureDetector(
+                      onTap: () => setState(() => _tab = t.$1),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 6, bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: isActive ? AppColors.ink0 : AppColors.surfaceSoft,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(t.$2,
+                          style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600,
+                            color: isActive ? Colors.white : AppColors.ink1)),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const Divider(height: 1, color: AppColors.border),
+            ]),
+          ),
+        ),
       ),
       body: ordersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) => const Center(child: Text('تعذر تحميل الطلبات')),
-        data: (orders) => orders.isEmpty
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.receipt_long_outlined, size: 72, color: AppColors.ink4),
-                    SizedBox(height: 12),
-                    Text('لا توجد طلبات حتى الآن',
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
-                  ],
-                ),
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.all(12),
-                itemCount: orders.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, i) => _OrderCard(order: orders[i]),
-              ),
+        data: (orders) {
+          final list = _filtered(orders);
+          if (list.isEmpty) {
+            return const Center(
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(Icons.receipt_long_outlined, size: 72, color: AppColors.ink4),
+                SizedBox(height: 12),
+                Text('لا توجد طلبات',
+                  style: TextStyle(fontSize: 16, color: AppColors.ink2)),
+              ]),
+            );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.all(12),
+            itemCount: list.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (_, i) => _OrderCard(order: list[i]),
+          );
+        },
       ),
     );
   }
@@ -58,7 +118,7 @@ class _OrderCard extends StatelessWidget {
   final Order order;
   const _OrderCard({required this.order});
 
-  Color _statusColor(String s) {
+  static Color _statusColor(String s) {
     switch (s) {
       case 'delivered': return AppColors.success;
       case 'cancelled':
@@ -68,61 +128,76 @@ class _OrderCard extends StatelessWidget {
     }
   }
 
+  static String _statusLabel(String s) {
+    switch (s) {
+      case 'pending': return 'قيد الانتظار';
+      case 'confirmed': return 'مؤكد';
+      case 'processing': return 'قيد التجهيز';
+      case 'shipped': return 'في الطريق';
+      case 'delivered': return 'تم التسليم';
+      case 'cancelled': return 'ملغي';
+      case 'returned': return 'مُرجَع';
+      default: return s;
+    }
+  }
+
+  bool get _isActive => ['pending', 'confirmed', 'processing', 'shipped'].contains(order.status);
+
   @override
   Widget build(BuildContext context) {
+    final statusColor = _statusColor(order.status);
+    final firstImage = order.allItems.isNotEmpty ? order.allItems.first.productImage : null;
+
     return GestureDetector(
       onTap: () => context.push('/orders/${order.id}'),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: _isActive ? const Color(0xFFEAF8F8) : Colors.white,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: AppShadows.shadowCard,
+          border: Border.all(
+            color: _isActive ? AppColors.primary : AppColors.border),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(order.orderNumber,
-                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontWeight: FontWeight.w700, fontSize: 14)),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _statusColor(order.status).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(order.statusAr,
-                    style: TextStyle(color: _statusColor(order.status),
-                      fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
-              ],
+        child: Row(children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 54, height: 54,
+              child: firstImage != null
+                  ? CachedNetworkImage(imageUrl: firstImage, fit: BoxFit.cover)
+                  : Container(color: AppColors.surfaceSoft,
+                      child: const Icon(Icons.inventory_2_outlined,
+                        color: AppColors.ink3, size: 24)),
             ),
-            const SizedBox(height: 8),
-            Text(
-              '${order.allItems.length} منتج',
-              style: const TextStyle(fontSize: 13, color: AppColors.ink2),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(order.orderNumber,
+                style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                  fontWeight: FontWeight.w700, fontSize: 14)),
+              const SizedBox(height: 3),
+              Row(children: [
+                Text(_statusLabel(order.status),
+                  style: TextStyle(color: statusColor,
+                    fontWeight: FontWeight.w600, fontSize: 12.5)),
+                const Text(' · ', style: TextStyle(color: AppColors.ink3)),
                 Text(
-                  '${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}',
+                  '${order.createdAt.day}/${order.createdAt.month}',
                   style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontSize: 12, color: AppColors.ink3),
-                ),
-                Text(
-                  '${order.total.toStringAsFixed(0)} د.ل',
-                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontSize: 15, fontWeight: FontWeight.w800),
-                ),
-              ],
-            ),
-          ],
-        ),
+                    fontSize: 12, color: AppColors.ink3)),
+                const Text(' · ', style: TextStyle(color: AppColors.ink3)),
+                Text('${order.allItems.length} منتج',
+                  style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
+              ]),
+              const SizedBox(height: 4),
+              Text('${order.total.toStringAsFixed(0)} د.ل',
+                style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                  fontSize: 12, color: AppColors.ink2)),
+            ]),
+          ),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.ink3, size: 20),
+        ]),
       ),
     );
   }

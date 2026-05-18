@@ -17,107 +17,97 @@ class WalletScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final walletAsync = ref.watch(_walletProvider);
+    final balance = user?.walletBalance ?? 0.0;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: Colors.white, elevation: 0,
-        title: const Text('المحفظة',
+        title: const Text('محفظة باهي',
           style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Balance card with top-up button
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, Color(0xFF2BB8BD)],
-                  begin: Alignment.topLeft, end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('الرصيد المتاح',
-                    style: TextStyle(color: Colors.white70, fontFamily: 'Cairo', fontSize: 14)),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${(user?.walletBalance ?? 0).toStringAsFixed(2)} د.ل',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'PlusJakartaSans',
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  GestureDetector(
-                    onTap: () => _showTopUpSheet(context, ref),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                          SizedBox(width: 6),
-                          Text('شحن الرصيد',
-                            style: TextStyle(color: Colors.white, fontFamily: 'Cairo',
-                              fontWeight: FontWeight.w700, fontSize: 14)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _BalanceCard(
+              balance: balance,
+              onTopUp: () => _showTopUpSheet(context, ref),
             ),
+          ),
 
-            const SizedBox(height: 20),
+          // Quick info
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Row(children: [
+              Expanded(child: _InfoTile(
+                icon: Icons.refresh_rounded,
+                title: 'استرداد فوري',
+                subtitle: 'مقابل 3-5 أيام للبطاقة',
+              )),
+              const SizedBox(width: 8),
+              Expanded(child: _InfoTile(
+                icon: Icons.auto_awesome_rounded,
+                title: 'لا تنتهي صلاحيته',
+                subtitle: 'استخدمه متى شئت',
+              )),
+            ]),
+          ),
 
-            // Transactions
-            walletAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (data) {
-                final transactions = (data['transactions'] as List?) ?? [];
-                if (transactions.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.only(top: 40),
+          // Transactions
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text('السجل',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4, color: AppColors.ink1)),
+              ),
+              walletAsync.when(
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(color: AppColors.primary))),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (data) {
+                  final txns = (data['transactions'] as List?) ?? [];
+                  if (txns.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Center(
+                        child: Column(children: [
+                          Icon(Icons.receipt_long_outlined, size: 60, color: AppColors.ink4),
+                          const SizedBox(height: 12),
+                          const Text('لا توجد معاملات',
+                            style: TextStyle(fontSize: 15, color: AppColors.ink2)),
+                        ]),
+                      ),
+                    );
+                  }
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.border),
+                    ),
                     child: Column(
-                      children: [
-                        Icon(Icons.receipt_long_outlined, size: 60, color: AppColors.ink4),
-                        SizedBox(height: 12),
-                        Text('لا توجد معاملات',
-                          style: TextStyle(fontFamily: 'Cairo', fontSize: 15, color: AppColors.ink2)),
-                      ],
+                      children: List.generate(txns.length, (i) =>
+                        _TransactionRow(
+                          tx: Map<String, dynamic>.from(txns[i]),
+                          hasBorder: i < txns.length - 1,
+                        ),
+                      ),
                     ),
                   );
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('المعاملات',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 10),
-                    ...transactions.map((t) => _TransactionRow(tx: Map<String, dynamic>.from(t))),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
+                },
+              ),
+            ]),
+          ),
+        ]),
       ),
     );
   }
@@ -135,6 +125,138 @@ class WalletScreen extends ConsumerWidget {
   }
 }
 
+class _BalanceCard extends StatelessWidget {
+  final double balance;
+  final VoidCallback onTopUp;
+  const _BalanceCard({required this.balance, required this.onTopUp});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          colors: [AppColors.ink0, Color(0xFF1a3838)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(children: [
+        // Background glow
+        Positioned(
+          right: -40, top: -40,
+          child: Container(
+            width: 180, height: 180,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withValues(alpha: 0.18),
+            ),
+          ),
+        ),
+        Positioned(
+          left: -30, bottom: -30,
+          child: Container(
+            width: 120, height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary.withValues(alpha: 0.12),
+            ),
+          ),
+        ),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            const Text('الرصيد المتاح',
+              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
+                letterSpacing: 1.2, color: Colors.white70)),
+            const Icon(Icons.qr_code_2_rounded, color: Colors.white60, size: 20),
+          ]),
+          const SizedBox(height: 8),
+          Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(balance.toStringAsFixed(2),
+                style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                  fontSize: 42, fontWeight: FontWeight.w800, color: Colors.white,
+                  letterSpacing: -1, height: 1)),
+              const SizedBox(width: 8),
+              const Text('د.ل',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600,
+                  color: Colors.white70)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: onTopUp,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.add_rounded, color: AppColors.ink0, size: 16),
+                    SizedBox(width: 6),
+                    Text('شحن',
+                      style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,
+                        fontSize: 13, color: AppColors.ink0)),
+                  ]),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.upload_outlined, color: Colors.white, size: 16),
+                  SizedBox(width: 6),
+                  Text('إرسال',
+                    style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,
+                      fontSize: 13, color: Colors.white)),
+                ]),
+              ),
+            ),
+          ]),
+        ]),
+      ]),
+    );
+  }
+}
+
+class _InfoTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  const _InfoTile({required this.icon, required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, size: 20, color: AppColors.teal600),
+        const SizedBox(height: 8),
+        Text(title,
+          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 2),
+        Text(subtitle,
+          style: const TextStyle(fontSize: 11.5, color: AppColors.ink2, height: 1.4)),
+      ]),
+    );
+  }
+}
+
 // ── Top-up sheet ──────────────────────────────────────────────────────────────
 
 class _TopUpSheet extends StatefulWidget {
@@ -147,22 +269,17 @@ class _TopUpSheet extends StatefulWidget {
 
 class _TopUpSheetState extends State<_TopUpSheet> {
   static const _quickAmounts = [25, 50, 100, 200];
-  int? _selected;
-  final _customCtrl = TextEditingController();
-  int _paymentMethod = 0; // 0=COD/cash, 1=sadad, 2=mobicash
+  int? _selected = 50;
+  int _paymentIdx = 0;
   bool _loading = false;
   String? _error;
 
-  double get _amount {
-    if (_selected != null) return _selected!.toDouble();
-    return double.tryParse(_customCtrl.text) ?? 0;
-  }
+  final _methods = [
+    ('sadad', 'سداد'),
+    ('mobicash', 'موبيكاش'),
+  ];
 
-  @override
-  void dispose() {
-    _customCtrl.dispose();
-    super.dispose();
-  }
+  double get _amount => _selected?.toDouble() ?? 0;
 
   Future<void> _topUp() async {
     if (_amount < 5) {
@@ -173,16 +290,11 @@ class _TopUpSheetState extends State<_TopUpSheet> {
     try {
       await ApiClient.instance.dio.post('/wallet/topup', data: {
         'amount': _amount,
-        'method': ['cash', 'sadad', 'mobicash'][_paymentMethod],
+        'method': _methods[_paymentIdx].$1,
       });
       if (mounted) {
         Navigator.of(context).pop();
         widget.onSuccess();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم طلب الشحن بنجاح'),
-            backgroundColor: AppColors.success,
-          ));
       }
     } catch (_) {
       setState(() { _loading = false; _error = 'حدث خطأ، حاول مجدداً'; });
@@ -199,48 +311,60 @@ class _TopUpSheetState extends State<_TopUpSheet> {
         color: Colors.white,
         borderRadius: BorderRadius.all(Radius.circular(24)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Handle
-          Center(
-            child: Container(width: 40, height: 4,
-              decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
-          ),
-          const SizedBox(height: 18),
-          const Text('شحن الرصيد',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          Center(child: Container(width: 40, height: 4,
+            decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)))),
+          const SizedBox(height: 16),
+          const Text('شحن المحفظة',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          const Text('ادفع مرة، استخدمه عبر الطلبات.',
+            style: TextStyle(fontSize: 13, color: AppColors.ink2)),
           const SizedBox(height: 20),
 
+          // Amount display
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.bg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text('${_selected ?? 0}',
+                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                    fontSize: 42, fontWeight: FontWeight.w800, color: AppColors.ink0)),
+                const SizedBox(width: 8),
+                const Text('د.ل',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.ink2)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
           // Quick amounts
-          const Text('اختر المبلغ',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
-          const SizedBox(height: 10),
           Row(children: _quickAmounts.map((amt) {
             final isSelected = _selected == amt;
             return Expanded(
               child: Padding(
-                padding: EdgeInsets.only(left: amt != _quickAmounts.last ? 8 : 0),
+                padding: EdgeInsets.only(left: amt != _quickAmounts.last ? 6 : 0),
                 child: GestureDetector(
-                  onTap: () => setState(() {
-                    _selected = amt;
-                    _customCtrl.clear();
-                  }),
+                  onTap: () => setState(() => _selected = amt),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
                       color: isSelected ? AppColors.ink0 : Colors.white,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isSelected ? AppColors.ink0 : AppColors.border,
-                        width: 1.5),
+                        color: isSelected ? AppColors.ink0 : AppColors.border, width: 1.5),
                     ),
                     child: Center(
                       child: Text('$amt',
-                        style: TextStyle(
-                          fontFamily: 'PlusJakartaSans',
-                          fontWeight: FontWeight.w800, fontSize: 15,
+                        style: TextStyle(fontFamily: 'PlusJakartaSans',
+                          fontWeight: FontWeight.w800, fontSize: 14,
                           color: isSelected ? Colors.white : AppColors.ink0)),
                     ),
                   ),
@@ -249,66 +373,40 @@ class _TopUpSheetState extends State<_TopUpSheet> {
             );
           }).toList()),
 
-          const SizedBox(height: 14),
-
-          // Custom amount
-          TextField(
-            controller: _customCtrl,
-            keyboardType: TextInputType.number,
-            onChanged: (_) => setState(() => _selected = null),
-            decoration: InputDecoration(
-              hintText: 'مبلغ مخصص',
-              hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink3),
-              suffixText: 'د.ل',
-              suffixStyle: const TextStyle(fontFamily: 'PlusJakartaSans',
-                fontWeight: FontWeight.w700, color: AppColors.ink2),
-              filled: true, fillColor: AppColors.bg,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.border)),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.border)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            ),
-          ),
-
           const SizedBox(height: 20),
 
-          // Payment method
-          const Text('طريقة الدفع',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
-          const SizedBox(height: 10),
-          ...List.generate(3, (i) {
-            final labels = ['نقدي / عند الاستلام', 'سداد', 'موبيكاش'];
-            final icons = [Icons.money_outlined, Icons.credit_card_outlined, Icons.phone_android_outlined];
+          // Payment methods
+          ...List.generate(_methods.length, (i) {
+            final isSelected = _paymentIdx == i;
             return GestureDetector(
-              onTap: () => setState(() => _paymentMethod = i),
+              onTap: () => setState(() => _paymentIdx = i),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _paymentMethod == i
-                      ? AppColors.primary.withValues(alpha: 0.08)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                  color: isSelected ? const Color(0xFFEAF8F8) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _paymentMethod == i ? AppColors.primary : AppColors.border,
-                    width: _paymentMethod == i ? 2 : 1),
+                    color: isSelected ? AppColors.primary : AppColors.border,
+                    width: isSelected ? 1.5 : 1),
                 ),
                 child: Row(children: [
-                  Icon(icons[i], size: 20,
-                    color: _paymentMethod == i ? AppColors.primary : AppColors.ink2),
+                  Container(
+                    width: 18, height: 18,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected ? AppColors.primary : Colors.transparent,
+                      border: isSelected ? null : Border.all(color: AppColors.borderStrong, width: 1.5),
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.circle, size: 8, color: Colors.white)
+                        : null,
+                  ),
                   const SizedBox(width: 12),
-                  Text(labels[i],
-                    style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600,
-                      color: _paymentMethod == i ? AppColors.ink0 : AppColors.ink1)),
+                  Text(_methods[i].$2,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                   const Spacer(),
-                  if (_paymentMethod == i)
-                    const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.primary),
+                  const Icon(Icons.credit_card_outlined, size: 18, color: AppColors.ink3),
                 ]),
               ),
             );
@@ -318,25 +416,23 @@ class _TopUpSheetState extends State<_TopUpSheet> {
             const SizedBox(height: 8),
             Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
           ],
-
           const SizedBox(height: 16),
+
           SizedBox(
             width: double.infinity,
-            height: 50,
+            height: 52,
             child: ElevatedButton(
               onPressed: _loading ? null : _topUp,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               child: _loading
                   ? const SizedBox(width: 20, height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink0))
                   : Text(
-                      _amount > 0
-                        ? 'شحن ${_amount.toStringAsFixed(0)} د.ل'
-                        : 'شحن الرصيد',
+                      _amount > 0 ? 'شحن ${_amount.toStringAsFixed(0)} د.ل' : 'شحن المحفظة',
                       style: const TextStyle(fontFamily: 'Cairo',
                         fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink0)),
             ),
@@ -351,60 +447,56 @@ class _TopUpSheetState extends State<_TopUpSheet> {
 
 class _TransactionRow extends StatelessWidget {
   final Map<String, dynamic> tx;
-  const _TransactionRow({required this.tx});
+  final bool hasBorder;
+  const _TransactionRow({required this.tx, required this.hasBorder});
 
   @override
   Widget build(BuildContext context) {
     final amount = (tx['amount'] as num?)?.toDouble() ?? 0;
     final isCredit = tx['type'] == 'credit' || amount > 0;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: AppShadows.shadowCard,
+        border: hasBorder
+            ? const Border(bottom: BorderSide(color: AppColors.border))
+            : null,
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: (isCredit ? AppColors.success : AppColors.danger).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isCredit ? Icons.add_rounded : Icons.remove_rounded,
-              color: isCredit ? AppColors.success : AppColors.danger, size: 18),
+      child: Row(children: [
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isCredit
+                ? AppColors.success.withValues(alpha: 0.12)
+                : AppColors.surfaceSoft,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(tx['description'] ?? (isCredit ? 'إيداع' : 'سحب'),
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                if (tx['created_at'] != null)
-                  Text(
-                    () {
-                      final dt = DateTime.tryParse(tx['created_at']);
-                      return dt != null ? '${dt.day}/${dt.month}/${dt.year}' : '';
-                    }(),
-                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                      fontSize: 11, color: AppColors.ink3),
-                  ),
-              ],
-            ),
-          ),
-          Text(
-            '${isCredit ? '+' : '-'}${amount.abs().toStringAsFixed(2)} د.ل',
-            style: TextStyle(
-              fontFamily: 'PlusJakartaSans',
-              fontWeight: FontWeight.w800, fontSize: 14,
-              color: isCredit ? AppColors.success : AppColors.danger),
-          ),
-        ],
-      ),
+          child: Icon(
+            isCredit ? Icons.add_rounded : Icons.remove_rounded,
+            color: isCredit ? AppColors.success : AppColors.ink2, size: 16),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(tx['description'] ?? (isCredit ? 'إيداع' : 'سحب'),
+              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, height: 1.3)),
+            if (tx['created_at'] != null)
+              Text(
+                () {
+                  final dt = DateTime.tryParse(tx['created_at']);
+                  return dt != null ? '${dt.day}/${dt.month}/${dt.year}' : '';
+                }(),
+                style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                  fontSize: 11, color: AppColors.ink3),
+              ),
+          ]),
+        ),
+        Text(
+          '${isCredit ? '+' : ''}${amount.toStringAsFixed(0)} د.ل',
+          style: TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontWeight: FontWeight.w800, fontSize: 14,
+            color: isCredit ? AppColors.success : AppColors.ink0)),
+      ]),
     );
   }
 }
