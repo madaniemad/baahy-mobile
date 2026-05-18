@@ -850,7 +850,8 @@ class _BudgetGrid extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: Stack(fit: StackFit.expand, children: [
                 p.firstImage != null
-                    ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover)
+                    ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => Container(color: AppColors.surfaceSoft))
                     : Container(color: AppColors.surfaceSoft),
                 Positioned(
                   left: 6, bottom: 6,
@@ -1042,7 +1043,8 @@ class _RecentlyViewedSection extends ConsumerWidget {
                         child: SizedBox(
                           width: 70, height: 70,
                           child: p.firstImage != null
-                              ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover)
+                              ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => Container(color: AppColors.surfaceSoft))
                               : Container(color: AppColors.surfaceSoft,
                                   child: const Icon(Icons.image_outlined,
                                     color: AppColors.ink4, size: 28)),

@@ -112,7 +112,7 @@ class _WishlistCard extends ConsumerWidget {
             child: SizedBox(
               width: 74, height: 74,
               child: product.firstImage != null
-                  ? CachedNetworkImage(imageUrl: product.firstImage!, fit: BoxFit.cover)
+                  ? CachedNetworkImage(imageUrl: product.firstImage!, fit: BoxFit.cover, errorWidget: (_, __, ___) => Container(color: const Color(0xFFF5F5F5)))
                   : Container(color: AppColors.surfaceSoft,
                       child: const Icon(Icons.image_outlined, color: AppColors.ink4)),
             ),

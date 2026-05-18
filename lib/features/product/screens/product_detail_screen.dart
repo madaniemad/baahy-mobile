@@ -1032,8 +1032,9 @@ class _AddedToCartSheet extends StatelessWidget {
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
+                  final router = GoRouter.of(context);
                   Navigator.of(context).pop();
-                  context.push('/cart');
+                  router.push('/cart');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,

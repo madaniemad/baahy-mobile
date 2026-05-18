@@ -37,15 +37,15 @@ class ProductCard extends ConsumerWidget {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
                   child: AspectRatio(
-                    aspectRatio: 1,
+                    aspectRatio: width != null ? 1.25 : 1.0,
                     child: product.firstImage != null
                         ? CachedNetworkImage(
                             imageUrl: product.firstImage!,
                             fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(color: AppColors.bg),
+                            placeholder: (_, __) => Container(color: AppColors.surfaceSoft),
                             errorWidget: (_, __, ___) => Container(
-                              color: AppColors.bg,
-                              child: const Icon(Icons.image_outlined, color: AppColors.ink4),
+                              color: AppColors.surfaceSoft,
+                              child: const Icon(Icons.image_not_supported_outlined, color: AppColors.ink4, size: 28),
                             ),
                           )
                         : Container(
