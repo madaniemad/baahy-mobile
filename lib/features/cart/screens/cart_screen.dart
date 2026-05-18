@@ -83,11 +83,31 @@ class CartScreen extends ConsumerWidget {
           : Column(
               children: [
                 Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: cart.items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) => _CartItemCard(item: cart.items[i]),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    children: [
+                      // Free shipping progress bar
+                      if (cart.freeShippingRemaining > 0)
+                        _FreeShippingBanner(remaining: cart.freeShippingRemaining,
+                          subtotal: cart.subtotal),
+                      if (cart.subtotal >= kFreeShippingThreshold)
+                        _FreeShippingAchieved(),
+
+                      const SizedBox(height: 10),
+
+                      // Cart items
+                      ...cart.items.map((item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _CartItemCard(item: item),
+                      )),
+
+                      const SizedBox(height: 6),
+
+                      // Coupon section
+                      _CouponSection(cart: cart),
+
+                      const SizedBox(height: 80),
+                    ],
                   ),
                 ),
                 _CartSummary(cart: cart),
@@ -96,6 +116,204 @@ class CartScreen extends ConsumerWidget {
     );
   }
 }
+
+// ── Free shipping banner ──────────────────────────────────────────────────────
+
+class _FreeShippingBanner extends StatelessWidget {
+  final double remaining;
+  final double subtotal;
+  const _FreeShippingBanner({required this.remaining, required this.subtotal});
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = (subtotal / kFreeShippingThreshold).clamp(0.0, 1.0);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: AppShadows.shadowCard,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.teal600),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text.rich(TextSpan(
+                style: const TextStyle(fontSize: 13),
+                children: [
+                  const TextSpan(text: 'أضف ', style: TextStyle(color: AppColors.ink2)),
+                  TextSpan(
+                    text: '${remaining.toStringAsFixed(0)} د.ل',
+                    style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink0,
+                      fontFamily: 'PlusJakartaSans')),
+                  const TextSpan(text: ' للحصول على شحن مجاني',
+                    style: TextStyle(color: AppColors.ink2)),
+                ],
+              )),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: AppColors.border,
+              color: AppColors.teal600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FreeShippingAchieved extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    decoration: BoxDecoration(
+      color: AppColors.success.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+    ),
+    child: const Row(children: [
+      Icon(Icons.check_circle_rounded, size: 16, color: AppColors.success),
+      SizedBox(width: 8),
+      Text('مبروك! حصلت على شحن مجاني',
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.success)),
+    ]),
+  );
+}
+
+// ── Coupon section ────────────────────────────────────────────────────────────
+
+class _CouponSection extends ConsumerStatefulWidget {
+  final CartState cart;
+  const _CouponSection({required this.cart});
+  @override
+  ConsumerState<_CouponSection> createState() => _CouponSectionState();
+}
+
+class _CouponSectionState extends ConsumerState<_CouponSection> {
+  final _ctrl = TextEditingController();
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _apply() async {
+    setState(() { _loading = true; _error = null; });
+    final err = await ref.read(cartProvider.notifier).applyCoupon(_ctrl.text);
+    if (mounted) setState(() { _loading = false; _error = err; });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasCoupon = widget.cart.couponCode != null;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: AppShadows.shadowCard,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(children: [
+            Icon(Icons.local_offer_outlined, size: 16, color: AppColors.ink1),
+            SizedBox(width: 8),
+            Text('كوبون خصم',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+          ]),
+          const SizedBox(height: 10),
+          if (hasCoupon)
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                ),
+                child: Row(children: [
+                  const Icon(Icons.check_circle_rounded, size: 14, color: AppColors.success),
+                  const SizedBox(width: 6),
+                  Text(widget.cart.couponCode!,
+                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontWeight: FontWeight.w700, color: AppColors.success)),
+                  const SizedBox(width: 4),
+                  Text('− ${widget.cart.discountAmount.toStringAsFixed(0)} د.ل',
+                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 12, color: AppColors.success)),
+                ]),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => ref.read(cartProvider.notifier).removeCoupon(),
+                child: const Icon(Icons.close, size: 18, color: AppColors.ink3),
+              ),
+            ])
+          else
+            Row(children: [
+              Expanded(
+                child: TextField(
+                  controller: _ctrl,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: InputDecoration(
+                    hintText: 'أدخل الكوبون',
+                    hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink3),
+                    filled: true, fillColor: AppColors.bg,
+                    errorText: _error,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.border)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.border)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                height: 44,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _apply,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.ink0,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
+                  ),
+                  child: _loading
+                      ? const SizedBox(width: 16, height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('تطبيق',
+                          style: TextStyle(fontFamily: 'Cairo',
+                            fontWeight: FontWeight.w700, color: Colors.white)),
+                ),
+              ),
+            ]),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Cart item card ────────────────────────────────────────────────────────────
 
 class _CartItemCard extends ConsumerWidget {
   final CartItem item;
@@ -190,6 +408,8 @@ class _QtyBtn extends StatelessWidget {
   );
 }
 
+// ── Cart summary ──────────────────────────────────────────────────────────────
+
 class _CartSummary extends ConsumerWidget {
   final CartState cart;
   const _CartSummary({required this.cart});
@@ -205,9 +425,20 @@ class _CartSummary extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          _Row('المجموع الفرعي', '${cart.subtotal.toStringAsFixed(0)} د.ل'),
+          _SummaryRow('المجموع الفرعي', '${cart.subtotal.toStringAsFixed(0)} د.ل'),
+          if (cart.discountAmount > 0)
+            _SummaryRow(
+              'خصم الكوبون',
+              '− ${cart.discountAmount.toStringAsFixed(0)} د.ل',
+              color: AppColors.success,
+            ),
+          _SummaryRow(
+            'الشحن',
+            cart.deliveryFee == 0 ? 'مجاني' : '${cart.deliveryFee.toStringAsFixed(0)} د.ل',
+            color: cart.deliveryFee == 0 ? AppColors.success : null,
+          ),
           const Divider(height: 20, color: AppColors.border),
-          _Row('الإجمالي', '${cart.total.toStringAsFixed(0)} د.ل',
+          _SummaryRow('الإجمالي', '${cart.total.toStringAsFixed(0)} د.ل',
             bold: true, fontSize: 17),
           const SizedBox(height: 14),
           AppButton(
@@ -218,21 +449,31 @@ class _CartSummary extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _Row(String label, String value,
-      {Color? color, bool bold = false, double fontSize = 14}) =>
-    Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: fontSize,
-            fontWeight: bold ? FontWeight.w700 : FontWeight.w500)),
-          Text(value, style: TextStyle(
-            fontFamily: 'PlusJakartaSans',
-            fontSize: fontSize, fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-            color: color ?? AppColors.ink0)),
-        ],
-      ),
-    );
+class _SummaryRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? color;
+  final bool bold;
+  final double fontSize;
+  const _SummaryRow(this.label, this.value,
+      {this.color, this.bold = false, this.fontSize = 14});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: fontSize,
+          fontWeight: bold ? FontWeight.w700 : FontWeight.w500)),
+        Text(value, style: TextStyle(
+          fontFamily: 'PlusJakartaSans',
+          fontSize: fontSize,
+          fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+          color: color ?? AppColors.ink0)),
+      ],
+    ),
+  );
 }

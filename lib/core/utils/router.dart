@@ -21,6 +21,8 @@ import '../../features/address/screens/addresses_screen.dart';
 import '../../features/address/screens/edit_address_screen.dart';
 import '../../features/wallet/screens/wallet_screen.dart';
 import '../../features/product/screens/reviews_screen.dart';
+import '../../features/orders/screens/return_screen.dart';
+import '../../features/referral/screens/referral_screen.dart';
 import '../shell/main_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -68,6 +70,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/addresses/edit', builder: (_, state) =>
           EditAddressScreen(address: state.extra as Map<String, dynamic>?)),
       GoRoute(path: '/wallet',     builder: (_, __) => const WalletScreen()),
+      GoRoute(path: '/orders/:id/return', builder: (_, state) =>
+          ReturnScreen(orderId: int.parse(state.pathParameters['id']!))),
+      GoRoute(path: '/referral',   builder: (_, __) => const ReferralScreen()),
     ],
   );
 });

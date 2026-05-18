@@ -74,7 +74,7 @@ class AccountScreen extends ConsumerWidget {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundColor: AppColors.primary.withOpacity(0.15),
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.15),
                         child: Text(
                           user.name.isNotEmpty ? user.name[0] : 'U',
                           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800,
@@ -134,6 +134,10 @@ class AccountScreen extends ConsumerWidget {
                       _Divider(),
                       _MenuItem(Icons.location_on_outlined, 'عناويني', () => context.push('/addresses')),
                       _Divider(),
+                      _MenuItem(Icons.assignment_return_outlined, 'إرجاع منتج', () => context.push('/orders')),
+                      _Divider(),
+                      _MenuItem(Icons.card_giftcard_outlined, 'ادعُ أصدقاءك واكسب', () => context.push('/referral')),
+                      _Divider(),
                       _MenuItem(Icons.notifications_outlined, 'الإشعارات', () => context.push('/notifications')),
                       _Divider(),
                       _MenuItem(Icons.language_outlined, isAr ? 'English' : 'العربية', () {
@@ -190,7 +194,7 @@ class _StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: AppColors.primary, size: 20),

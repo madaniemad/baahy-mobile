@@ -32,7 +32,7 @@ class WalletScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Balance card
+            // Balance card with top-up button
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -56,6 +56,28 @@ class WalletScreen extends ConsumerWidget {
                       fontFamily: 'PlusJakartaSans',
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: () => _showTopUpSheet(context, ref),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                          SizedBox(width: 6),
+                          Text('شحن الرصيد',
+                            style: TextStyle(color: Colors.white, fontFamily: 'Cairo',
+                              fontWeight: FontWeight.w700, fontSize: 14)),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -99,7 +121,233 @@ class WalletScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _showTopUpSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _TopUpSheet(onSuccess: () {
+        ref.invalidate(_walletProvider);
+        ref.read(authProvider.notifier).refreshProfile();
+      }),
+    );
+  }
 }
+
+// ── Top-up sheet ──────────────────────────────────────────────────────────────
+
+class _TopUpSheet extends StatefulWidget {
+  final VoidCallback onSuccess;
+  const _TopUpSheet({required this.onSuccess});
+
+  @override
+  State<_TopUpSheet> createState() => _TopUpSheetState();
+}
+
+class _TopUpSheetState extends State<_TopUpSheet> {
+  static const _quickAmounts = [25, 50, 100, 200];
+  int? _selected;
+  final _customCtrl = TextEditingController();
+  int _paymentMethod = 0; // 0=COD/cash, 1=sadad, 2=mobicash
+  bool _loading = false;
+  String? _error;
+
+  double get _amount {
+    if (_selected != null) return _selected!.toDouble();
+    return double.tryParse(_customCtrl.text) ?? 0;
+  }
+
+  @override
+  void dispose() {
+    _customCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _topUp() async {
+    if (_amount < 5) {
+      setState(() => _error = 'أقل مبلغ للشحن هو 5 د.ل');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      await ApiClient.instance.dio.post('/wallet/topup', data: {
+        'amount': _amount,
+        'method': ['cash', 'sadad', 'mobicash'][_paymentMethod],
+      });
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onSuccess();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم طلب الشحن بنجاح'),
+            backgroundColor: AppColors.success,
+          ));
+      }
+    } catch (_) {
+      setState(() { _loading = false; _error = 'حدث خطأ، حاول مجدداً'; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(width: 40, height: 4,
+              decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+          ),
+          const SizedBox(height: 18),
+          const Text('شحن الرصيد',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 20),
+
+          // Quick amounts
+          const Text('اختر المبلغ',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
+          const SizedBox(height: 10),
+          Row(children: _quickAmounts.map((amt) {
+            final isSelected = _selected == amt;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: amt != _quickAmounts.last ? 8 : 0),
+                child: GestureDetector(
+                  onTap: () => setState(() {
+                    _selected = amt;
+                    _customCtrl.clear();
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.ink0 : Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isSelected ? AppColors.ink0 : AppColors.border,
+                        width: 1.5),
+                    ),
+                    child: Center(
+                      child: Text('$amt',
+                        style: TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontWeight: FontWeight.w800, fontSize: 15,
+                          color: isSelected ? Colors.white : AppColors.ink0)),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList()),
+
+          const SizedBox(height: 14),
+
+          // Custom amount
+          TextField(
+            controller: _customCtrl,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => setState(() => _selected = null),
+            decoration: InputDecoration(
+              hintText: 'مبلغ مخصص',
+              hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink3),
+              suffixText: 'د.ل',
+              suffixStyle: const TextStyle(fontFamily: 'PlusJakartaSans',
+                fontWeight: FontWeight.w700, color: AppColors.ink2),
+              filled: true, fillColor: AppColors.bg,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Payment method
+          const Text('طريقة الدفع',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
+          const SizedBox(height: 10),
+          ...List.generate(3, (i) {
+            final labels = ['نقدي / عند الاستلام', 'سداد', 'موبيكاش'];
+            final icons = [Icons.money_outlined, Icons.credit_card_outlined, Icons.phone_android_outlined];
+            return GestureDetector(
+              onTap: () => setState(() => _paymentMethod = i),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: _paymentMethod == i
+                      ? AppColors.primary.withValues(alpha: 0.08)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _paymentMethod == i ? AppColors.primary : AppColors.border,
+                    width: _paymentMethod == i ? 2 : 1),
+                ),
+                child: Row(children: [
+                  Icon(icons[i], size: 20,
+                    color: _paymentMethod == i ? AppColors.primary : AppColors.ink2),
+                  const SizedBox(width: 12),
+                  Text(labels[i],
+                    style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600,
+                      color: _paymentMethod == i ? AppColors.ink0 : AppColors.ink1)),
+                  const Spacer(),
+                  if (_paymentMethod == i)
+                    const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.primary),
+                ]),
+              ),
+            );
+          }),
+
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+          ],
+
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _loading ? null : _topUp,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              child: _loading
+                  ? const SizedBox(width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text(
+                      _amount > 0
+                        ? 'شحن ${_amount.toStringAsFixed(0)} د.ل'
+                        : 'شحن الرصيد',
+                      style: const TextStyle(fontFamily: 'Cairo',
+                        fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink0)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Transaction row ───────────────────────────────────────────────────────────
 
 class _TransactionRow extends StatelessWidget {
   final Map<String, dynamic> tx;

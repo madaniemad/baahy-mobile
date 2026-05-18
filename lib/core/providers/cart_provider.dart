@@ -7,16 +7,37 @@ import '../models/product.dart';
 
 const _kCartKey = 'baahy_cart';
 
+const double kFreeShippingThreshold = 150;
+const double kDeliveryFee = 10;
+
 class CartState {
   final List<CartItem> items;
-  const CartState({this.items = const []});
+  final String? couponCode;
+  final double discountAmount;
+
+  const CartState({
+    this.items = const [],
+    this.couponCode,
+    this.discountAmount = 0,
+  });
 
   double get subtotal => items.fold(0, (s, i) => s + i.total);
-  double get total => subtotal;
+  double get deliveryFee => subtotal >= kFreeShippingThreshold ? 0 : kDeliveryFee;
+  double get freeShippingRemaining =>
+      subtotal >= kFreeShippingThreshold ? 0 : kFreeShippingThreshold - subtotal;
+  double get total => subtotal - discountAmount + deliveryFee;
   int get count => items.fold(0, (s, i) => s + i.quantity);
 
-  CartState copyWith({List<CartItem>? items}) =>
-      CartState(items: items ?? this.items);
+  CartState copyWith({
+    List<CartItem>? items,
+    String? couponCode,
+    double? discountAmount,
+    bool clearCoupon = false,
+  }) => CartState(
+    items: items ?? this.items,
+    couponCode: clearCoupon ? null : (couponCode ?? this.couponCode),
+    discountAmount: clearCoupon ? 0 : (discountAmount ?? this.discountAmount),
+  );
 }
 
 class CartNotifier extends StateNotifier<CartState> {
@@ -85,6 +106,26 @@ class CartNotifier extends StateNotifier<CartState> {
     state = const CartState();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kCartKey);
+  }
+
+  /// Returns null on success (coupon applied), or an Arabic error message.
+  Future<String?> applyCoupon(String code) async {
+    if (code.trim().isEmpty) return 'أدخل رمز الكوبون';
+    try {
+      final res = await ApiClient.instance.dio.post('/coupons/validate', data: {
+        'code': code.trim(),
+        'subtotal': state.subtotal,
+      });
+      final discount = (res.data['data']?['discount_amount'] as num?)?.toDouble() ?? 0;
+      state = state.copyWith(couponCode: code.trim(), discountAmount: discount);
+      return null;
+    } catch (_) {
+      return 'الكوبون غير صالح أو منتهي الصلاحية';
+    }
+  }
+
+  void removeCoupon() {
+    state = state.copyWith(clearCoupon: true);
   }
 
   /// Validates cart with the server. Returns null if all items are valid,

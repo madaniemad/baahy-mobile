@@ -17,6 +17,7 @@ class _EditAddressScreenState extends State<EditAddressScreen> {
   late final _cityCtrl = TextEditingController(text: widget.address?['city'] ?? '');
   late final _districtCtrl = TextEditingController(text: widget.address?['district'] ?? '');
   late final _streetCtrl = TextEditingController(text: widget.address?['street'] ?? '');
+  late final _notesCtrl = TextEditingController(text: widget.address?['notes'] ?? '');
   late final _phoneCtrl = TextEditingController(text: widget.address?['phone'] ?? '');
   late bool _isDefault = widget.address?['is_default'] == true;
   bool _loading = false;
@@ -25,7 +26,7 @@ class _EditAddressScreenState extends State<EditAddressScreen> {
 
   @override
   void dispose() {
-    for (final c in [_labelCtrl, _cityCtrl, _districtCtrl, _streetCtrl, _phoneCtrl]) {
+    for (final c in [_labelCtrl, _cityCtrl, _districtCtrl, _streetCtrl, _notesCtrl, _phoneCtrl]) {
       c.dispose();
     }
     super.dispose();
@@ -43,6 +44,7 @@ class _EditAddressScreenState extends State<EditAddressScreen> {
       'city': _cityCtrl.text.trim(),
       'district': _districtCtrl.text.trim(),
       'street': _streetCtrl.text.trim(),
+      'notes': _notesCtrl.text.trim(),
       'phone': _phoneCtrl.text.trim(),
       'is_default': _isDefault,
     };
@@ -85,6 +87,9 @@ class _EditAddressScreenState extends State<EditAddressScreen> {
                   _Field('المدينة *', _cityCtrl),
                   _Field('الحي', _districtCtrl),
                   _Field('الشارع *', _streetCtrl),
+                  _Field('ملاحظات للسائق', _notesCtrl,
+                    hint: 'مقابل المسجد الأبيض، بجانب مخبز المدينة',
+                    maxLines: 2),
                   _Field('رقم الهاتف', _phoneCtrl, keyboardType: TextInputType.phone),
                   const SizedBox(height: 8),
                   CheckboxListTile(
@@ -114,8 +119,10 @@ class _Field extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final TextInputType keyboardType;
+  final String? hint;
+  final int maxLines;
   const _Field(this.label, this.controller,
-    {this.keyboardType = TextInputType.text});
+    {this.keyboardType = TextInputType.text, this.hint, this.maxLines = 1});
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -129,7 +136,10 @@ class _Field extends StatelessWidget {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          maxLines: maxLines,
           decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 12.5, color: AppColors.ink3),
             filled: true,
             fillColor: AppColors.bg,
             border: OutlineInputBorder(
