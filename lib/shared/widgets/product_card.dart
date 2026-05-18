@@ -125,7 +125,9 @@ class ProductCard extends ConsumerWidget {
                   ],
                   const SizedBox(height: 5),
                   if (product.inStock &&
+                      product.productType != 'variable' &&
                       product.stockQuantity != null &&
+                      product.stockQuantity! > 0 &&
                       product.stockQuantity! <= 5)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),

@@ -470,7 +470,10 @@ class _StockEtaStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lowStock = product.inStock &&
-        product.stockQuantity != null && product.stockQuantity! <= 5;
+        product.productType != 'variable' &&
+        product.stockQuantity != null &&
+        product.stockQuantity! > 0 &&
+        product.stockQuantity! <= 5;
 
     return Container(
       padding: const EdgeInsets.all(14),
