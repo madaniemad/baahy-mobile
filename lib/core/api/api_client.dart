@@ -16,9 +16,16 @@ class ApiClient {
 
   late final Dio dio;
   final _storage = const FlutterSecureStorage();
+  // In-memory token cache — avoids Keychain round-trip on every request.
+  String? _token;
 
   ApiClient._() {
     dio = _build();
+    _preloadToken();
+  }
+
+  Future<void> _preloadToken() async {
+    _token = await _storage.read(key: 'auth_token');
   }
 
   static void setUnauthorizedCallback(OnUnauthorized cb) {
@@ -38,10 +45,9 @@ class ApiClient {
     ));
 
     d.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final token = await _storage.read(key: 'auth_token');
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
+      onRequest: (options, handler) {
+        if (_token != null) {
+          options.headers['Authorization'] = 'Bearer $_token';
         }
         handler.next(options);
       },
@@ -51,7 +57,8 @@ class ApiClient {
           // Silent requests (initial auth check) set extra['silent401'] = true
           // to suppress the global redirect without affecting the error itself.
           final isSilent = error.requestOptions.extra['silent401'] == true;
-          final hadToken = await _storage.read(key: 'auth_token') != null;
+          final hadToken = _token != null;
+          _token = null;
           await _storage.delete(key: 'auth_token');
           if (hadToken && !isSilent) _onUnauthorized?.call();
         }
@@ -62,12 +69,18 @@ class ApiClient {
     return d;
   }
 
-  Future<void> setToken(String token) =>
-      _storage.write(key: 'auth_token', value: token);
+  Future<void> setToken(String token) async {
+    _token = token;
+    await _storage.write(key: 'auth_token', value: token);
+  }
 
-  Future<void> clearToken() =>
-      _storage.delete(key: 'auth_token');
+  Future<void> clearToken() async {
+    _token = null;
+    await _storage.delete(key: 'auth_token');
+  }
 
-  Future<bool> get isLoggedIn async =>
-      (await _storage.read(key: 'auth_token')) != null;
+  Future<bool> get isLoggedIn async {
+    _token ??= await _storage.read(key: 'auth_token');
+    return _token != null;
+  }
 }
