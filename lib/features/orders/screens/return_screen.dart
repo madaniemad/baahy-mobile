@@ -96,7 +96,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
                       width: 28, height: 28,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: done || active ? AppColors.primary : AppColors.border,
+                        color: done || active ? AppColors.ink0 : AppColors.surfaceSoft,
                       ),
                       child: Center(
                         child: done
@@ -105,12 +105,12 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
                               style: TextStyle(
                                 fontFamily: 'PlusJakartaSans',
                                 fontWeight: FontWeight.w800, fontSize: 12,
-                                color: active ? AppColors.ink0 : AppColors.ink3)),
+                                color: active ? Colors.white : AppColors.ink3)),
                       ),
                     ),
                     if (i < 1)
                       Expanded(child: Container(height: 2,
-                        color: _step > 0 ? AppColors.primary : AppColors.border)),
+                        color: _step > 0 ? AppColors.ink0 : AppColors.border)),
                   ]),
                 );
               })),
@@ -306,26 +306,43 @@ class _StepDone extends StatelessWidget {
           Container(
             width: 90, height: 90,
             decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              shape: BoxShape.circle),
-            child: const Icon(Icons.check_circle_rounded,
-              size: 50, color: AppColors.success),
+              shape: BoxShape.circle,
+              color: const Color(0xFFEAF8F8),
+              border: Border.all(color: AppColors.primary, width: 3)),
+            child: const Icon(Icons.check_rounded,
+              size: 44, color: AppColors.teal600),
+          ),
+          const SizedBox(height: 16),
+          const Text('تم تقديم طلب الإرجاع',
+            style: TextStyle(fontFamily: 'Cairo',
+              fontSize: 22, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 10),
+          const Text(
+            'سنراجع ونردّ خلال 24 ساعة. عند الموافقة، سيمرّ سائقنا لاستلام المنتجات من باب منزلك.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: AppColors.ink2, height: 1.5, ),
           ),
           const SizedBox(height: 20),
-          const Text('تم إرسال طلب الإرجاع',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 12),
-          const Text(
-            'سيتواصل معك فريقنا خلال 24 ساعة لترتيب استلام المنتج',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: AppColors.ink2, height: 1.6)),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Text('سيعاد الاسترداد إلى',
+                  style: TextStyle(fontSize: 12.5, color: AppColors.ink2)),
+                const Text('محفظة باهي (فوري)',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+              ]),
+            ]),
+          ),
           const SizedBox(height: 32),
           AppButton(
-            label: 'العودة للطلبات',
-            onTap: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-            },
+            label: 'تم',
+            onTap: () => Navigator.of(context).pop(),
           ),
         ],
       ),
