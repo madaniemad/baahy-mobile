@@ -3,13 +3,38 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_button.dart';
 
-final _addressesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final res = await ApiClient.instance.dio.get('/addresses');
-  return (res.data['data'] as List?)
-      ?.map((a) => Map<String, dynamic>.from(a)).toList() ?? [];
+final _addressesProvider =
+    StateNotifierProvider<_AddressesNotifier, AsyncValue<List<Map<String, dynamic>>>>((ref) {
+  return _AddressesNotifier();
 });
+
+class _AddressesNotifier
+    extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
+  _AddressesNotifier() : super(const AsyncLoading()) {
+    load();
+  }
+
+  Future<void> load() async {
+    try {
+      final res = await ApiClient.instance.dio.get('/addresses');
+      state = AsyncData((res.data['data'] as List?)
+          ?.map((a) => Map<String, dynamic>.from(a)).toList() ?? []);
+    } catch (e) {
+      state = AsyncError(e, StackTrace.current);
+    }
+  }
+
+  Future<void> setDefault(int id) async {
+    await ApiClient.instance.dio.put('/addresses/$id/default');
+    await load();
+  }
+
+  Future<void> delete(int id) async {
+    await ApiClient.instance.dio.delete('/addresses/$id');
+    await load();
+  }
+}
 
 class AddressesScreen extends ConsumerWidget {
   const AddressesScreen({super.key});
@@ -22,107 +47,198 @@ class AddressesScreen extends ConsumerWidget {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: Colors.white, elevation: 0,
-        title: const Text('عناويني',
+        title: const Text('العناوين',
           style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
-        actions: [
-          IconButton(
-            onPressed: () => context.push('/addresses/edit'),
-            icon: const Icon(Icons.add, color: AppColors.primary)),
-        ],
       ),
       body: addressesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) => const Center(child: Text('تعذر تحميل العناوين')),
-        data: (addresses) => addresses.isEmpty
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.location_on_outlined, size: 72, color: AppColors.ink4),
-                      const SizedBox(height: 12),
-                      const Text('لا توجد عناوين محفوظة',
-                        style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
-                      const SizedBox(height: 20),
-                      AppButton(
-                        label: 'إضافة عنوان',
-                        width: 200,
-                        onTap: () => context.push('/addresses/edit'),
-                      ),
-                    ],
+        data: (addresses) => SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Address cards
+            ...addresses.map((addr) => _AddressCard(
+              addr: addr,
+              onEdit: () async {
+                await context.push('/addresses/edit', extra: addr);
+                ref.read(_addressesProvider.notifier).load();
+              },
+              onSetDefault: addr['is_default'] == true ? null : () =>
+                ref.read(_addressesProvider.notifier).setDefault(addr['id'] as int),
+              onDelete: addr['is_default'] == true ? null : () =>
+                ref.read(_addressesProvider.notifier).delete(addr['id'] as int),
+            )),
+
+            // Add new
+            GestureDetector(
+              onTap: () async {
+                await context.push('/addresses/edit');
+                ref.read(_addressesProvider.notifier).load();
+              },
+              child: Container(
+                margin: EdgeInsets.only(top: addresses.isEmpty ? 0 : 6, bottom: 16),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.borderStrong,
+                    width: 1.5,
+                    strokeAlign: BorderSide.strokeAlignInside,
                   ),
                 ),
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.all(12),
-                itemCount: addresses.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, i) {
-                  final addr = addresses[i];
-                  return Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: addr['is_default'] == true ? AppColors.primary : AppColors.border,
-                        width: addr['is_default'] == true ? 2 : 1),
-                      boxShadow: AppShadows.shadowCard,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10)),
-                          child: const Icon(Icons.location_on, color: AppColors.primary, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(addr['label'] ?? 'عنوان',
-                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                                  if (addr['is_default'] == true) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary.withOpacity(0.12),
-                                        borderRadius: BorderRadius.circular(4)),
-                                      child: const Text('افتراضي',
-                                        style: TextStyle(fontSize: 10, color: AppColors.primary,
-                                          fontWeight: FontWeight.w700)),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                [addr['city'], addr['district'], addr['street']]
-                                  .where((v) => v != null && v.toString().isNotEmpty)
-                                  .join('، '),
-                                style: const TextStyle(fontSize: 13, color: AppColors.ink2),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => context.push('/addresses/edit', extra: addr),
-                          icon: const Icon(Icons.edit_outlined, color: AppColors.ink2, size: 20)),
-                      ],
-                    ),
-                  );
-                },
+                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.add_rounded, size: 18, color: AppColors.ink2),
+                  SizedBox(width: 8),
+                  Text('إضافة عنوان جديد',
+                    style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink1)),
+                ]),
               ),
+            ),
+
+            // Libya tip
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF8F8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(Icons.info_outline_rounded, size: 18, color: AppColors.teal600),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'في ليبيا، المعالم تساعد سائقينا في الوصول إليك بسرعة. أضف مسجداً قريباً أو مخبزاً أو متجراً.',
+                    style: TextStyle(fontSize: 12.5, height: 1.5, color: AppColors.ink1)),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddressCard extends StatelessWidget {
+  final Map<String, dynamic> addr;
+  final VoidCallback onEdit;
+  final VoidCallback? onSetDefault;
+  final VoidCallback? onDelete;
+  const _AddressCard({
+    required this.addr, required this.onEdit,
+    this.onSetDefault, this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDefault = addr['is_default'] == true;
+    final label = addr['label'] ?? 'عنوان';
+    final icon = label == 'Home' || label == 'المنزل'
+        ? Icons.home_outlined
+        : label == 'Office' || label == 'المكتب'
+            ? Icons.business_outlined
+            : Icons.location_on_outlined;
+    final address = [addr['city'], addr['district'], addr['street']]
+        .where((v) => v != null && v.toString().isNotEmpty).join('، ');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDefault ? const Color(0xFFEAF8F8) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDefault ? AppColors.primary : AppColors.border,
+          width: isDefault ? 1.5 : 1),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(icon, size: 18, color: AppColors.teal600),
+          const SizedBox(width: 8),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          if (isDefault) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(6)),
+              child: const Text('افتراضي',
+                style: TextStyle(color: AppColors.ink0,
+                  fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.4)),
+            ),
+          ],
+        ]),
+        const SizedBox(height: 6),
+        if (addr['name'] != null || addr['phone'] != null)
+          Text('${addr['name'] ?? ''} · ${addr['phone'] ?? ''}',
+            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+        if (address.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(address,
+            style: const TextStyle(fontSize: 12.5, color: AppColors.ink2, height: 1.4)),
+        ],
+        if (addr['notes'] != null && addr['notes'].toString().isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.gold.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text('📍 ${addr['notes']}',
+              style: const TextStyle(fontSize: 11.5, color: Color(0xFF7a5e10))),
+          ),
+        ],
+        const SizedBox(height: 12),
+        Row(children: [
+          _ActionBtn(
+            icon: Icons.edit_outlined, label: 'تعديل', onTap: onEdit),
+          if (onSetDefault != null) ...[
+            const SizedBox(width: 8),
+            _ActionBtn(label: 'اجعله افتراضياً', onTap: onSetDefault!),
+          ],
+          if (onDelete != null) ...[
+            const Spacer(),
+            GestureDetector(
+              onTap: onDelete,
+              child: const Icon(Icons.delete_outline_rounded,
+                size: 18, color: AppColors.danger)),
+          ],
+        ]),
+      ]),
+    );
+  }
+}
+
+class _ActionBtn extends StatelessWidget {
+  final IconData? icon;
+  final String label;
+  final VoidCallback onTap;
+  const _ActionBtn({this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceSoft,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: AppColors.ink1),
+            const SizedBox(width: 4),
+          ],
+          Text(label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+              color: AppColors.ink1)),
+        ]),
       ),
     );
   }
