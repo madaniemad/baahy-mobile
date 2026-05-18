@@ -5,8 +5,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/models/app_config.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/review.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/providers/recently_viewed_provider.dart';
@@ -57,6 +59,22 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     setState(() {});
   }
 
+  Future<void> _notifyMe(int productId) async {
+    try {
+      await ApiClient.instance.dio.post('/products/$productId/notify-me');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('سنعلمك عند توفر المنتج'),
+          backgroundColor: AppColors.success,
+        ));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذّر تسجيل الطلب، حاول مجدداً')));
+    }
+  }
+
   Future<void> _addToCart(Product product, {bool goToCart = false}) async {
     if (product.productType == 'variable' && _selectedVariation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,6 +100,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isAr = context.isAr;
+    final config = ref.watch(appConfigProvider).config;
     final productAsync = ref.watch(_productDetailProvider(widget.id));
 
     return Scaffold(
@@ -294,7 +313,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
                               // Stock + ETA strip
                               const SizedBox(height: 14),
-                              _StockEtaStrip(product: product),
+                              _StockEtaStrip(product: product, deliveryPromise: config.deliveryPromiseAr),
                             ],
                           ),
                         ),
@@ -326,9 +345,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         ),
 
                         // ── Trust block ─────────────────────────────
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16, 20, 16, 0),
-                          child: _TrustBlock(),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                          child: _TrustBlock(config: config),
                         ),
 
                         // ── Description ─────────────────────────────
@@ -418,13 +437,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           width: double.infinity,
                           height: 50,
                           child: ElevatedButton.icon(
-                            onPressed: null,
+                            onPressed: () => _notifyMe(product.id),
                             icon: const Icon(Icons.notifications_outlined, size: 18),
                             label: const Text('أعلمني عند التوفر',
                               style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.surfaceSoft,
-                              foregroundColor: AppColors.ink3,
+                              foregroundColor: AppColors.ink1,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
                               elevation: 0,
@@ -445,7 +464,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
 class _StockEtaStrip extends StatelessWidget {
   final Product product;
-  const _StockEtaStrip({required this.product});
+  final String deliveryPromise;
+  const _StockEtaStrip({required this.product, required this.deliveryPromise});
 
   @override
   Widget build(BuildContext context) {
@@ -492,15 +512,10 @@ class _StockEtaStrip extends StatelessWidget {
             Row(children: [
               const Icon(Icons.local_shipping_outlined, size: 18, color: AppColors.teal600),
               const SizedBox(width: 10),
-              const Expanded(
-                child: Text.rich(TextSpan(
-                  style: TextStyle(fontSize: 12.5),
-                  children: [
-                    TextSpan(text: 'يصلك خلال ', style: TextStyle(color: AppColors.ink2)),
-                    TextSpan(text: '1–2 يوم', style: TextStyle(
-                      fontWeight: FontWeight.w700, color: AppColors.ink0)),
-                  ],
-                )),
+              Expanded(
+                child: Text(deliveryPromise,
+                  style: const TextStyle(fontSize: 12.5,
+                    fontWeight: FontWeight.w600, color: AppColors.ink1)),
               ),
             ]),
           ],
@@ -513,14 +528,20 @@ class _StockEtaStrip extends StatelessWidget {
 // ── Trust block ───────────────────────────────────────────────────────────────
 
 class _TrustBlock extends StatelessWidget {
-  const _TrustBlock();
+  final AppConfig config;
+  const _TrustBlock({required this.config});
 
   @override
   Widget build(BuildContext context) {
+    final paymentLabels = config.paymentMethods
+        .where((m) => m.enabled)
+        .map((m) => m.labelAr)
+        .join(' · ');
     final rows = [
-      (Icons.local_shipping_outlined, 'التوصيل خلال 1-2 يوم'),
-      (Icons.refresh_rounded, 'إرجاع خلال 7 أيام · من باب منزلك'),
-      (Icons.credit_card_outlined, 'سداد · موبيكاش · تداول · الدفع عند الاستلام'),
+      (Icons.local_shipping_outlined, config.deliveryPromiseAr),
+      (Icons.refresh_rounded, 'إرجاع خلال ${config.returnDays} أيام · من باب منزلك'),
+      (Icons.credit_card_outlined, paymentLabels.isNotEmpty
+          ? paymentLabels : 'الدفع عند الاستلام'),
     ];
 
     return Container(

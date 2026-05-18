@@ -68,8 +68,24 @@ class AddressesScreen extends ConsumerWidget {
               },
               onSetDefault: addr['is_default'] == true ? null : () =>
                 ref.read(_addressesProvider.notifier).setDefault(addr['id'] as int),
-              onDelete: addr['is_default'] == true ? null : () =>
-                ref.read(_addressesProvider.notifier).delete(addr['id'] as int),
+              onDelete: addr['is_default'] == true ? null : () async {
+                final ok = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text('حذف العنوان', style: TextStyle(fontFamily: 'Cairo')),
+                    content: const Text('هل تريد حذف هذا العنوان؟'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false),
+                        child: const Text('إلغاء')),
+                      TextButton(onPressed: () => Navigator.pop(context, true),
+                        child: const Text('حذف', style: TextStyle(color: AppColors.danger))),
+                    ],
+                  ),
+                );
+                if (ok == true) {
+                  ref.read(_addressesProvider.notifier).delete(addr['id'] as int);
+                }
+              },
             )),
 
             // Add new

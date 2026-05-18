@@ -56,7 +56,22 @@ class CartScreen extends ConsumerWidget {
         actions: [
           if (cart.items.isNotEmpty)
             TextButton(
-              onPressed: () => ref.read(cartProvider.notifier).clear(),
+              onPressed: () async {
+                final ok = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text('مسح السلة', style: TextStyle(fontFamily: 'Cairo')),
+                    content: const Text('هل تريد إزالة جميع المنتجات من السلة؟'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false),
+                        child: const Text('إلغاء')),
+                      TextButton(onPressed: () => Navigator.pop(context, true),
+                        child: const Text('مسح', style: TextStyle(color: AppColors.danger))),
+                    ],
+                  ),
+                );
+                if (ok == true) ref.read(cartProvider.notifier).clear();
+              },
               child: const Text('مسح الكل',
                 style: TextStyle(color: AppColors.danger, fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
             ),

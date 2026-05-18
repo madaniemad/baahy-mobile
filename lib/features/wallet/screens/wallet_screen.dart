@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -259,17 +260,16 @@ class _InfoTile extends StatelessWidget {
 
 // ── Top-up sheet ──────────────────────────────────────────────────────────────
 
-class _TopUpSheet extends StatefulWidget {
+class _TopUpSheet extends ConsumerStatefulWidget {
   final VoidCallback onSuccess;
   const _TopUpSheet({required this.onSuccess});
 
   @override
-  State<_TopUpSheet> createState() => _TopUpSheetState();
+  ConsumerState<_TopUpSheet> createState() => _TopUpSheetState();
 }
 
-class _TopUpSheetState extends State<_TopUpSheet> {
-  static const _quickAmounts = [25, 50, 100, 200];
-  int? _selected = 50;
+class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
+  int? _selected;
   int _paymentIdx = 0;
   bool _loading = false;
   String? _error;
@@ -281,9 +281,16 @@ class _TopUpSheetState extends State<_TopUpSheet> {
 
   double get _amount => _selected?.toDouble() ?? 0;
 
-  Future<void> _topUp() async {
-    if (_amount < 5) {
-      setState(() => _error = 'أقل مبلغ للشحن هو 5 د.ل');
+  List<int> _buildAmounts(double minTopup) {
+    final min = minTopup.toInt().clamp(1, 100);
+    // Build 4 tiers: min, 2x, 4x, 10x (all >= min)
+    final tiers = [min, min * 2, min * 4, min * 10];
+    return tiers.toSet().toList()..sort();
+  }
+
+  Future<void> _topUp(double minTopup) async {
+    if (_amount < minTopup) {
+      setState(() => _error = 'أقل مبلغ للشحن هو ${minTopup.toStringAsFixed(0)} د.ل');
       return;
     }
     setState(() { _loading = true; _error = null; });
@@ -303,6 +310,10 @@ class _TopUpSheetState extends State<_TopUpSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final config = ref.watch(appConfigProvider).config;
+    final minTopup = config.minWalletTopup;
+    final quickAmounts = _buildAmounts(minTopup);
+    _selected ??= quickAmounts.length >= 2 ? quickAmounts[1] : quickAmounts.first;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return Container(
       margin: const EdgeInsets.all(12),
@@ -345,12 +356,12 @@ class _TopUpSheetState extends State<_TopUpSheet> {
           ),
           const SizedBox(height: 12),
 
-          // Quick amounts
-          Row(children: _quickAmounts.map((amt) {
+          // Quick amounts (dynamic from AppConfig.minWalletTopup)
+          Row(children: quickAmounts.map((amt) {
             final isSelected = _selected == amt;
             return Expanded(
               child: Padding(
-                padding: EdgeInsets.only(left: amt != _quickAmounts.last ? 6 : 0),
+                padding: EdgeInsets.only(left: amt != quickAmounts.last ? 6 : 0),
                 child: GestureDetector(
                   onTap: () => setState(() => _selected = amt),
                   child: Container(
@@ -422,7 +433,7 @@ class _TopUpSheetState extends State<_TopUpSheet> {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: _loading ? null : _topUp,
+              onPressed: _loading ? null : () => _topUp(minTopup),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 elevation: 0,

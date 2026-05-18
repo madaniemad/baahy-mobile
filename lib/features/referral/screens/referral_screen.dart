@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -31,6 +32,9 @@ class ReferralScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final referralAsync = ref.watch(_referralProvider);
+    final config = ref.watch(appConfigProvider).config;
+    final giver = config.referralGiverAmount;
+    final receiver = config.referralReceiverAmount;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -58,14 +62,15 @@ class ReferralScreen extends ConsumerWidget {
             child: Column(children: [
               const Text('🎁', style: TextStyle(fontSize: 56)),
               const SizedBox(height: 8),
-              const Text('أعطِ 10، احصل على 10',
-                style: TextStyle(fontFamily: 'Cairo',
+              Text(config.referralTextAr,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontFamily: 'Cairo',
                   fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
               const SizedBox(height: 6),
-              const Text(
-                'شارك رمزك. صديقك يحصل على خصم 10 د.ل في طلبه الأول، وأنت تحصل على 10 د.ل عند شرائه.',
+              Text(
+                'شارك رمزك. صديقك يحصل على خصم $receiver د.ل في طلبه الأول، وأنت تحصل على $giver د.ل عند شرائه.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: AppColors.ink2,
+                style: const TextStyle(fontSize: 14, color: AppColors.ink2,
                   height: 1.5)),
             ]),
           ),
@@ -78,12 +83,14 @@ class ReferralScreen extends ConsumerWidget {
               child: referralAsync.when(
                 loading: () => const SizedBox(height: 80,
                   child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
-                error: (_, __) => _CodeCard(code: user?.referralCode ?? 'BAAHY10'),
+                error: (_, __) => _CodeCard(code: user?.referralCode ?? 'BAAHY10',
+                  giverAmount: giver, receiverAmount: receiver),
                 data: (data) => _CodeCard(
                   code: data['code'] as String? ?? user?.referralCode ?? 'BAAHY10',
                   invited: _parseInt(data['invited_count']),
                   joined: _parseInt(data['used_count']),
                   earned: _parseDouble(data['earned_amount']),
+                  giverAmount: giver, receiverAmount: receiver,
                 ),
               ),
             ),
@@ -102,7 +109,7 @@ class ReferralScreen extends ConsumerWidget {
               ...[
                 (1, 'شارك رمزك مع صديق'),
                 (2, 'يسجّل ويقوم بطلبه الأول'),
-                (3, 'تحصلان معاً على 10 د.ل في المحفظة'),
+                (3, 'تحصلان معاً على $giver د.ل في المحفظة'),
               ].map((s) => Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Row(children: [
@@ -132,8 +139,11 @@ class _CodeCard extends StatefulWidget {
   final int invited;
   final int joined;
   final double earned;
+  final int giverAmount;
+  final int receiverAmount;
   const _CodeCard({required this.code,
-    this.invited = 0, this.joined = 0, this.earned = 0});
+    this.invited = 0, this.joined = 0, this.earned = 0,
+    this.giverAmount = 10, this.receiverAmount = 10});
 
   @override
   State<_CodeCard> createState() => _CodeCardState();
@@ -216,14 +226,14 @@ class _CodeCardState extends State<_CodeCard> {
           _ShareBtn(label: 'واتساب', color: const Color(0xFF25D366),
             icon: Icons.chat_rounded,
             onTap: () => Share.share(
-              'جرّب تطبيق باهي للتسوق! استخدم رمزي ${widget.code} واحصل على 10 د.ل خصم على أول طلب 🛍️')),
+              'جرّب تطبيق باهي للتسوق! استخدم رمزي ${widget.code} واحصل على ${widget.receiverAmount} د.ل خصم على أول طلب 🛍️')),
           _ShareBtn(label: 'رسالة', color: const Color(0xFF1f8a5b),
             icon: Icons.sms_outlined,
-            onTap: () => Share.share('رمز باهي: ${widget.code}')),
+            onTap: () => Share.share('رمز باهي: ${widget.code} · خصم ${widget.receiverAmount} د.ل')),
           _ShareBtn(label: 'المزيد', color: AppColors.ink2,
             icon: Icons.share_outlined,
             onTap: () => Share.share(
-              'جرّب تطبيق باهي للتسوق! استخدم رمزي ${widget.code} واحصل على 10 د.ل خصم على أول طلب')),
+              'جرّب تطبيق باهي للتسوق! استخدم رمزي ${widget.code} واحصل على ${widget.receiverAmount} د.ل خصم على أول طلب')),
         ]),
 
         // Stats
