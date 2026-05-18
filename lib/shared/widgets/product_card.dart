@@ -37,7 +37,7 @@ class ProductCard extends ConsumerWidget {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
                   child: AspectRatio(
-                    aspectRatio: width != null ? 1.25 : 1.0,
+                    aspectRatio: 0.8,
                     child: product.firstImage != null
                         ? CachedNetworkImage(
                             imageUrl: product.firstImage!,
@@ -251,7 +251,7 @@ class ProductCardSkeleton extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AspectRatio(aspectRatio: 1, child: _shimmer()),
+          AspectRatio(aspectRatio: 0.8, child: _shimmer()),
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(

@@ -669,7 +669,7 @@ class _HorizontalProductList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 268,
+      height: 285,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -948,7 +948,7 @@ class _CategoryCarouselSection extends StatelessWidget {
           onAll: () => context.push('/search/results?q=&category=${section.category.id}'),
         ),
         SizedBox(
-          height: 240,
+          height: 285,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1010,7 +1010,7 @@ class _NewArrivalsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 268,
+      height: 285,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1331,7 +1331,7 @@ class _HomeSkeleton extends StatelessWidget {
               color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(14))))),
         const SizedBox(height: 24),
         SizedBox(
-          height: 240,
+          height: 285,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: 4,

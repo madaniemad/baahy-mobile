@@ -28,7 +28,7 @@ class AppButton extends StatefulWidget {
 }
 
 class _AppButtonState extends State<AppButton> {
-  DateTime? _lastTap;
+  static DateTime? _lastTap; // static — survives widget rebuilds during navigation
 
   void _handleTap() {
     if (widget.onTap == null || widget.loading) return;
