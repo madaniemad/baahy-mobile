@@ -14,6 +14,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+  int _step = 1;
   final _notesCtrl = TextEditingController();
   String _paymentMethod = 'cash_on_delivery';
   Map<String, dynamic>? _selectedAddress;
@@ -47,7 +48,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
     setState(() => _loading = true);
 
-    // Validate cart stock before placing order
     final validationError = await ref.read(cartProvider.notifier).validate();
     if (validationError != null) {
       setState(() => _loading = false);
@@ -96,209 +96,154 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     super.dispose();
   }
 
+  void _next() {
+    if (_step < 3) {
+      setState(() => _step++);
+    } else {
+      _placeOrder();
+    }
+  }
+
+  void _back() {
+    if (_step > 1) {
+      setState(() => _step--);
+    } else {
+      context.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0,
-        title: const Text('إتمام الشراء',
-          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header with step counter
+            Container(
+              color: Colors.white,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Address section
-                  _SectionTitle('عنوان التوصيل'),
-                  const SizedBox(height: 8),
-                  if (_addresses.isEmpty)
-                    GestureDetector(
-                      onTap: () => context.push('/addresses/edit'),
-                      child: _AddressCard(
-                        child: Row(
-                          children: const [
-                            Icon(Icons.add, color: AppColors.primary),
-                            SizedBox(width: 8),
-                            Text('إضافة عنوان جديد',
-                              style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 8, 16, 8),
+                    child: Row(children: [
+                      IconButton(
+                        onPressed: _back,
+                        icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+                      const Expanded(
+                        child: Text('إتمام الطلب',
+                          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
+                            fontSize: 17)),
                       ),
-                    )
-                  else
-                    ...(_addresses.map((addr) => GestureDetector(
-                      onTap: () => setState(() => _selectedAddress = addr),
-                      child: _AddressCard(
-                        selected: _selectedAddress?['id'] == addr['id'],
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(addr['label'] ?? 'عنوان',
-                              style: const TextStyle(fontWeight: FontWeight.w700)),
-                            Text(
-                              [addr['city'], addr['district'], addr['street']]
-                                .where((v) => v != null && v.toString().isNotEmpty)
-                                .join('، '),
-                              style: const TextStyle(color: AppColors.ink2, fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ))),
-
-                  const SizedBox(height: 20),
-
-                  // Payment method
-                  _SectionTitle('طريقة الدفع'),
-                  const SizedBox(height: 8),
-                  _PaymentOption('cash_on_delivery', 'الدفع عند الاستلام', Icons.payments_outlined,
-                    _paymentMethod, (v) => setState(() => _paymentMethod = v)),
-                  const SizedBox(height: 8),
-                  _PaymentOption('wallet', 'المحفظة', Icons.account_balance_wallet_outlined,
-                    _paymentMethod, (v) => setState(() => _paymentMethod = v)),
-
-                  const SizedBox(height: 20),
-
-                  // Notes
-                  _SectionTitle('ملاحظات (اختياري)'),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: TextField(
-                      controller: _notesCtrl,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        hintText: 'أي تعليمات خاصة بطلبك...',
-                        hintStyle: TextStyle(color: AppColors.ink3, fontSize: 14),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.all(14),
-                      ),
-                    ),
+                      Text('$_step/3',
+                        style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                          fontSize: 13, color: AppColors.ink3)),
+                    ]),
                   ),
-
-                  const SizedBox(height: 20),
-
-                  // Order summary
-                  _SectionTitle('ملخص الطلب'),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: AppShadows.shadowCard,
-                    ),
-                    child: Column(
+                  // Step indicator
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                    child: Row(
                       children: [
-                        _SummaryRow('المجموع الفرعي', '${cart.subtotal.toStringAsFixed(0)} د.ل'),
-                        if (cart.discountAmount > 0)
-                          _SummaryRow('خصم الكوبون',
-                            '− ${cart.discountAmount.toStringAsFixed(0)} د.ل',
-                            color: AppColors.success),
-                        _SummaryRow(
-                          'الشحن',
-                          cart.deliveryFee == 0 ? 'مجاني' : '${cart.deliveryFee.toStringAsFixed(0)} د.ل',
-                          color: cart.deliveryFee == 0 ? AppColors.success : null,
-                        ),
-                        const Divider(height: 20, color: AppColors.border),
-                        _SummaryRow('الإجمالي', '${cart.total.toStringAsFixed(0)} د.ل', bold: true),
+                        for (int i = 1; i <= 3; i++) ...[
+                          _StepCircle(number: i, current: _step),
+                          if (i < 3)
+                            Expanded(
+                              child: Container(
+                                height: 2,
+                                color: _step > i ? AppColors.ink0 : AppColors.border,
+                              ),
+                            ),
+                        ],
                       ],
                     ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('العنوان',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                            color: _step == 1 ? AppColors.ink0 : AppColors.ink3)),
+                        Text('الدفع',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                            color: _step == 2 ? AppColors.ink0 : AppColors.ink3)),
+                        Text('مراجعة',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                            color: _step == 3 ? AppColors.ink0 : AppColors.ink3)),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1, color: AppColors.border),
+                ],
+              ),
+            ),
+
+            // Step content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: KeyedSubtree(
+                    key: ValueKey(_step),
+                    child: _step == 1
+                        ? _StepAddress(
+                            addresses: _addresses,
+                            selected: _selectedAddress,
+                            onSelect: (a) => setState(() => _selectedAddress = a),
+                            onAddNew: () => context.push('/addresses/edit'),
+                          )
+                        : _step == 2
+                            ? _StepPayment(
+                                selected: _paymentMethod,
+                                onChanged: (v) => setState(() => _paymentMethod = v),
+                                notesCtrl: _notesCtrl,
+                              )
+                            : _StepReview(
+                                cart: cart,
+                                address: _selectedAddress,
+                                paymentMethod: _paymentMethod,
+                                onChangeAddress: () => setState(() => _step = 1),
+                                onChangePayment: () => setState(() => _step = 2),
+                              ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Bottom bar
+            Container(
+              padding: EdgeInsets.fromLTRB(16, 12, 16,
+                MediaQuery.of(context).padding.bottom + 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: AppShadows.shadowPop,
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('الإجمالي',
+                        style: TextStyle(fontSize: 13, color: AppColors.ink2)),
+                      Text('${cart.total.toStringAsFixed(0)} د.ل',
+                        style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                          fontSize: 18, fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  AppButton(
+                    label: _step < 3 ? 'متابعة' : 'تأكيد الطلب',
+                    onTap: _next,
+                    loading: _loading,
                   ),
                 ],
               ),
             ),
-          ),
-
-          Container(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
-            decoration: BoxDecoration(color: Colors.white, boxShadow: AppShadows.shadowPop),
-            child: AppButton(
-              label: 'تأكيد الطلب',
-              onTap: _placeOrder,
-              loading: _loading,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String text;
-  const _SectionTitle(this.text);
-  @override
-  Widget build(BuildContext context) => Text(text,
-    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800));
-}
-
-class _AddressCard extends StatelessWidget {
-  final Widget child;
-  final bool selected;
-  const _AddressCard({required this.child, this.selected = false});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    margin: const EdgeInsets.only(bottom: 8),
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: selected ? AppColors.primary : AppColors.border, width: selected ? 2 : 1),
-      boxShadow: AppShadows.shadowCard,
-    ),
-    child: child,
-  );
-}
-
-class _PaymentOption extends StatelessWidget {
-  final String value;
-  final String label;
-  final IconData icon;
-  final String selected;
-  final void Function(String) onChanged;
-
-  const _PaymentOption(this.value, this.label, this.icon, this.selected, this.onChanged);
-
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = value == selected;
-    return GestureDetector(
-      onTap: () => onChanged(value),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 2 : 1),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: isSelected ? AppColors.primary : AppColors.ink2, size: 22),
-            const SizedBox(width: 10),
-            Text(label, style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: isSelected ? AppColors.primary : AppColors.ink0)),
-            const Spacer(),
-            if (isSelected)
-              const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
           ],
         ),
       ),
@@ -306,8 +251,348 @@ class _PaymentOption extends StatelessWidget {
   }
 }
 
-Widget _SummaryRow(String label, String value,
-    {Color? color, bool bold = false}) =>
+class _StepCircle extends StatelessWidget {
+  final int number;
+  final int current;
+  const _StepCircle({required this.number, required this.current});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDone = current > number;
+    final isActive = current == number;
+    return Container(
+      width: 26, height: 26,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: (isDone || isActive) ? AppColors.ink0 : AppColors.surfaceSoft,
+      ),
+      child: Center(
+        child: isDone
+            ? const Icon(Icons.check, size: 14, color: Colors.white)
+            : Text('$number',
+                style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontSize: 12, fontWeight: FontWeight.w700,
+                  color: isActive ? Colors.white : AppColors.ink3)),
+      ),
+    );
+  }
+}
+
+// ── Step 1: Address ───────────────────────────────────────────────────────────
+
+class _StepAddress extends StatelessWidget {
+  final List<Map<String, dynamic>> addresses;
+  final Map<String, dynamic>? selected;
+  final void Function(Map<String, dynamic>) onSelect;
+  final VoidCallback onAddNew;
+  const _StepAddress({required this.addresses, required this.selected,
+    required this.onSelect, required this.onAddNew});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('عنوان التسليم',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 4),
+      const Text('أين نوصل الطلب؟',
+        style: TextStyle(fontSize: 13, color: AppColors.ink2)),
+      const SizedBox(height: 16),
+
+      ...addresses.map((addr) => GestureDetector(
+        onTap: () => onSelect(addr),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected?['id'] == addr['id'] ? AppColors.primary : AppColors.border,
+              width: selected?['id'] == addr['id'] ? 1.5 : 1),
+            boxShadow: AppShadows.shadowCard,
+          ),
+          child: Row(children: [
+            Container(
+              width: 18, height: 18,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: selected?['id'] == addr['id']
+                    ? null
+                    : Border.all(color: AppColors.borderStrong, width: 1.5),
+                color: selected?['id'] == addr['id']
+                    ? AppColors.primary : Colors.transparent,
+              ),
+              child: selected?['id'] == addr['id']
+                  ? const Icon(Icons.circle, size: 8, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('${addr['label'] ?? 'عنوان'} · ',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              Text(
+                [addr['city'], addr['district'], addr['street']]
+                  .where((v) => v != null && v.toString().isNotEmpty)
+                  .join('، '),
+                style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
+            ])),
+          ]),
+        ),
+      )),
+
+      if (addresses.isEmpty)
+        GestureDetector(
+          onTap: onAddNew,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary, width: 1.5),
+            ),
+            child: const Row(children: [
+              Icon(Icons.add, color: AppColors.primary, size: 18),
+              SizedBox(width: 8),
+              Text('إضافة عنوان جديد',
+                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+        ),
+
+      if (addresses.isNotEmpty) ...[
+        OutlinedButton.icon(
+          onPressed: onAddNew,
+          icon: const Icon(Icons.add, size: 16),
+          label: const Text('إضافة عنوان جديد'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 44),
+            side: const BorderSide(color: AppColors.border),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        const SizedBox(height: 12),
+      ],
+
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEAF8F8),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Row(children: [
+          Icon(Icons.info_outline_rounded, size: 14, color: AppColors.teal600),
+          SizedBox(width: 8),
+          Expanded(child: Text('معظم طلبات طرابلس تصل خلال 1-2 يوم.',
+            style: TextStyle(fontSize: 12.5, color: AppColors.ink1))),
+        ]),
+      ),
+    ]);
+  }
+}
+
+// ── Step 2: Payment ───────────────────────────────────────────────────────────
+
+class _StepPayment extends StatelessWidget {
+  final String selected;
+  final void Function(String) onChanged;
+  final TextEditingController notesCtrl;
+  const _StepPayment({required this.selected, required this.onChanged, required this.notesCtrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final methods = [
+      ('cash_on_delivery', 'الدفع عند الاستلام', 'رسوم خدمة + 5 د.ل', false),
+      ('wallet', 'محفظة باهي', 'فوري · بدون رسوم', false),
+    ];
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('طريقة الدفع',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 16),
+
+      ...methods.map((m) => GestureDetector(
+        onTap: () => onChanged(m.$1),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: selected == m.$1 ? const Color(0xFFEAF8F8) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected == m.$1 ? AppColors.primary : AppColors.border,
+              width: selected == m.$1 ? 1.5 : 1),
+          ),
+          child: Row(children: [
+            Container(
+              width: 18, height: 18,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: selected == m.$1
+                    ? null
+                    : Border.all(color: AppColors.borderStrong, width: 1.5),
+                color: selected == m.$1 ? AppColors.primary : Colors.transparent,
+              ),
+              child: selected == m.$1
+                  ? const Icon(Icons.circle, size: 8, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(m.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              Text(m.$3, style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
+            ])),
+          ]),
+        ),
+      )),
+
+      const SizedBox(height: 16),
+      const Text('ملاحظات (اختياري)',
+        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 8),
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: TextField(
+          controller: notesCtrl,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'أي تعليمات خاصة بطلبك...',
+            hintStyle: TextStyle(color: AppColors.ink3, fontSize: 14),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.all(14),
+          ),
+        ),
+      ),
+    ]);
+  }
+}
+
+// ── Step 3: Review ────────────────────────────────────────────────────────────
+
+class _StepReview extends StatelessWidget {
+  final CartState cart;
+  final Map<String, dynamic>? address;
+  final String paymentMethod;
+  final VoidCallback onChangeAddress;
+  final VoidCallback onChangePayment;
+  const _StepReview({required this.cart, required this.address,
+    required this.paymentMethod, required this.onChangeAddress,
+    required this.onChangePayment});
+
+  String get _paymentLabel {
+    switch (paymentMethod) {
+      case 'wallet': return 'محفظة باهي';
+      default: return 'الدفع عند الاستلام';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final addr = address;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('مراجعة الطلب',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 16),
+
+      // Address card
+      Container(
+        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(children: [
+          const Icon(Icons.location_on_outlined, size: 18, color: AppColors.ink2),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const Text('التسليم إلى',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
+                  color: AppColors.ink2, letterSpacing: 0.3)),
+              GestureDetector(
+                onTap: onChangeAddress,
+                child: const Text('تغيير',
+                  style: TextStyle(fontSize: 12, color: AppColors.teal600,
+                    fontWeight: FontWeight.w600)),
+              ),
+            ]),
+            const SizedBox(height: 4),
+            if (addr != null) ...[
+              Text('${addr['label'] ?? 'عنوان'}',
+                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+              Text(
+                [addr['city'], addr['district'], addr['street']]
+                  .where((v) => v != null && v.toString().isNotEmpty)
+                  .join('، '),
+                style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
+            ],
+          ])),
+        ]),
+      ),
+
+      // Payment card
+      Container(
+        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(children: [
+          const Icon(Icons.credit_card_outlined, size: 18, color: AppColors.ink2),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              const Text('الدفع',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
+                  color: AppColors.ink2, letterSpacing: 0.3)),
+              GestureDetector(
+                onTap: onChangePayment,
+                child: const Text('تغيير',
+                  style: TextStyle(fontSize: 12, color: AppColors.teal600,
+                    fontWeight: FontWeight.w600)),
+              ),
+            ]),
+            const SizedBox(height: 4),
+            Text(_paymentLabel, style: const TextStyle(fontSize: 13.5)),
+          ])),
+        ]),
+      ),
+
+      // Order summary
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: AppShadows.shadowCard,
+        ),
+        child: Column(children: [
+          _SummaryRow('المجموع الفرعي', '${cart.subtotal.toStringAsFixed(0)} د.ل'),
+          if (cart.discountAmount > 0)
+            _SummaryRow('خصم الكوبون', '− ${cart.discountAmount.toStringAsFixed(0)} د.ل',
+              color: AppColors.success),
+          _SummaryRow(
+            'الشحن',
+            cart.deliveryFee == 0 ? 'مجاني' : '${cart.deliveryFee.toStringAsFixed(0)} د.ل',
+            color: cart.deliveryFee == 0 ? AppColors.success : null,
+          ),
+          const Divider(height: 20, color: AppColors.border),
+          _SummaryRow('الإجمالي', '${cart.total.toStringAsFixed(0)} د.ل', bold: true),
+        ]),
+      ),
+    ]);
+  }
+}
+
+Widget _SummaryRow(String label, String value, {Color? color, bool bold = false}) =>
   Padding(
     padding: const EdgeInsets.symmetric(vertical: 3),
     child: Row(
