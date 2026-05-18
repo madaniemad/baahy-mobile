@@ -20,6 +20,7 @@ class Product {
   final int? soldCount;
   final String? description;
   final String? descriptionAr;
+  final String? brand;
 
   const Product({
     required this.id,
@@ -43,6 +44,7 @@ class Product {
     this.soldCount,
     this.description,
     this.descriptionAr,
+    this.brand,
   });
 
   double get displayPrice => currentPrice ?? salePrice ?? price;
@@ -74,6 +76,7 @@ class Product {
     'sold_count': soldCount,
     'description': description,
     'description_ar': descriptionAr,
+    'brand': brand,
   };
 
   static double _d(dynamic v) {
@@ -105,6 +108,7 @@ class Product {
     soldCount: j['sold_count'] != null ? _d(j['sold_count']).toInt() : null,
     description: j['description'],
     descriptionAr: j['description_ar'],
+    brand: j['brand'] as String?,
   );
 
   static List<String> _parseImages(dynamic raw) {
@@ -261,10 +265,16 @@ class Category {
     id: j['id'],
     name: j['name'] ?? '',
     nameAr: j['name_ar'] ?? j['name'] ?? '',
-    image: j['image'],
+    image: _resolveImage(j['image']),
     parentId: j['parent_id'],
     children: (j['children'] as List?)
         ?.map((c) => Category.fromJson(c)).toList() ?? [],
     sortOrder: j['sort_order'],
   );
+
+  static String? _resolveImage(dynamic v) {
+    if (v == null || (v as String).isEmpty) return null;
+    if (v.startsWith('http')) return v;
+    return 'https://phplaravel-1620145-6391034.cloudwaysapps.com/api/storage/$v';
+  }
 }

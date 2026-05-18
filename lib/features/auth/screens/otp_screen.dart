@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -14,19 +15,27 @@ class OtpScreen extends ConsumerStatefulWidget {
 }
 
 class _OtpScreenState extends ConsumerState<OtpScreen> {
-  final _ctrls = List.generate(6, (_) => TextEditingController());
-  final _focuses = List.generate(6, (_) => FocusNode());
+  final _ctrl = TextEditingController();
+  final _focus = FocusNode();
   bool _loading = false;
   bool _hasError = false;
   int _seconds = 45;
   Timer? _timer;
 
-  String get _code => _ctrls.map((c) => c.text).join();
+  String get _code => _ctrl.text;
 
   @override
   void initState() {
     super.initState();
     _startTimer();
+    _ctrl.addListener(_onCodeChange);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
+  }
+
+  void _onCodeChange() {
+    if (_hasError) setState(() => _hasError = false);
+    setState(() {});
+    if (_ctrl.text.length == 6) _verify();
   }
 
   void _startTimer() {
@@ -44,8 +53,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    for (final c in _ctrls) c.dispose();
-    for (final f in _focuses) f.dispose();
+    _ctrl.removeListener(_onCodeChange);
+    _ctrl.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -57,24 +67,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       if (mounted) context.go('/home');
     } catch (_) {
       setState(() { _hasError = true; _loading = false; });
-      for (final c in _ctrls) c.clear();
-      _focuses[0].requestFocus();
-    }
-  }
-
-  void _onDigitChange(int i, String v) {
-    setState(() => _hasError = false);
-    if (v.isNotEmpty) {
-      if (i < 5) _focuses[i + 1].requestFocus();
-      final full = _code;
-      if (full.length == 6) _verify();
-    } else if (i > 0) {
-      _focuses[i - 1].requestFocus();
+      _ctrl.clear();
+      _focus.requestFocus();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final code = _ctrl.text;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -99,56 +99,89 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             style: TextStyle(fontFamily: 'Cairo',
               fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
           const SizedBox(height: 8),
-          Text.rich(
-            TextSpan(
-              text: 'أرسلنا رمزاً مكوناً من 6 أرقام إلى ',
-              style: const TextStyle(fontSize: 14.5, color: AppColors.ink2, height: 1.5),
-              children: [
-                TextSpan(
-                  text: widget.phone,
+          // Phone number wrapped in LTR so +218... displays left-to-right
+          Row(
+            children: [
+              const Text(
+                'أرسلنا رمزاً من 6 أرقام إلى ',
+                style: TextStyle(fontSize: 14.5, color: AppColors.ink2, height: 1.5),
+              ),
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Text(widget.phone,
                   style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontWeight: FontWeight.w700, color: AppColors.ink0)),
-              ],
-            ),
+                    fontWeight: FontWeight.w700, fontSize: 14.5, color: AppColors.ink0)),
+              ),
+            ],
           ),
           const SizedBox(height: 32),
 
-          // OTP boxes
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(6, (i) => SizedBox(
-              width: 46, height: 56,
-              child: TextField(
-                controller: _ctrls[i],
-                focusNode: _focuses[i],
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.next,
-                textAlign: TextAlign.center,
-                maxLength: 1,
-                style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                  fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.ink0),
-                decoration: InputDecoration(
-                  counterText: '',
-                  filled: true,
-                  fillColor: AppColors.surfaceSoft,
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: _ctrls[i].text.isNotEmpty && !_hasError
-                          ? AppColors.primary
-                          : _hasError ? AppColors.danger : Colors.transparent,
-                      width: 1.5),
+          // Hidden single field + 6 visual boxes
+          GestureDetector(
+            onTap: () => _focus.requestFocus(),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Stack(
+                children: [
+                  // Hidden field captures all input
+                  SizedBox(
+                    height: 0,
+                    child: TextField(
+                      controller: _ctrl,
+                      focusNode: _focus,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      style: const TextStyle(height: 0.001, color: Colors.transparent),
+                      cursorColor: Colors.transparent,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        counterText: '',
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: _hasError ? AppColors.danger : AppColors.primary,
-                      width: 1.5),
+                  // 6 visual boxes
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(6, (i) {
+                      final filled = i < code.length;
+                      final active = _focus.hasFocus && i == code.length;
+                      return Container(
+                        width: 46, height: 56,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceSoft,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            width: 1.5,
+                            color: _hasError
+                                ? AppColors.danger
+                                : active
+                                    ? AppColors.primary
+                                    : filled
+                                        ? AppColors.primary
+                                        : Colors.transparent,
+                          ),
+                        ),
+                        child: filled
+                            ? Text(code[i],
+                                style: const TextStyle(
+                                  fontFamily: 'PlusJakartaSans',
+                                  fontSize: 24, fontWeight: FontWeight.w700,
+                                  color: AppColors.ink0))
+                            : active
+                                ? Container(
+                                    width: 1.5, height: 24,
+                                    color: AppColors.primary,
+                                  )
+                                : null,
+                      );
+                    }),
                   ),
-                ),
-                onChanged: (v) => _onDigitChange(i, v),
+                ],
               ),
-            )),
+            ),
           ),
 
           if (_hasError) ...[
@@ -163,7 +196,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           const SizedBox(height: 28),
           Center(
             child: _seconds > 0
-                ? Text('إعادة الإرسال خلال ${_seconds} ثانية',
+                ? Text('إعادة الإرسال خلال $_seconds ثانية',
                     style: const TextStyle(fontSize: 13, color: AppColors.ink3))
                 : GestureDetector(
                     onTap: () {
@@ -178,7 +211,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
           const Spacer(),
 
-          // Tip
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -201,7 +233,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: (_code.length == 6 && !_loading) ? _verify : null,
+              onPressed: (code.length == 6 && !_loading) ? _verify : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),

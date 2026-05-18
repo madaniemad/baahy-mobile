@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
 class PhoneSignInScreen extends ConsumerStatefulWidget {
@@ -30,7 +31,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
     try {
       final phone = '+218 ${_ctrl.text.trim()}';
       await ref.read(authProvider.notifier).requestOtp(phone);
-      if (mounted) context.push('/otp', extra: phone);
+      if (mounted) await safePush(context, '/otp', extra: phone);
     } catch (_) {
       setState(() => _error = 'تعذر الإرسال، حاول مجدداً');
     } finally {
@@ -71,50 +72,56 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               style: TextStyle(fontSize: 14.5, color: AppColors.ink2, height: 1.5)),
             const SizedBox(height: 24),
 
-            // Phone input
-            Row(children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceSoft,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(children: [
-                  Text('🇱🇾', style: TextStyle(fontSize: 18)),
-                  SizedBox(width: 6),
-                  Text('+218',
-                    style: TextStyle(fontFamily: 'PlusJakartaSans',
-                      fontSize: 15, fontWeight: FontWeight.w600)),
-                ]),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Container(
+            // Phone input — always LTR so country code stays on the left
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.bg,
+                    color: AppColors.surfaceSoft,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _error != null ? AppColors.danger : AppColors.border),
                   ),
-                  child: TextField(
-                    controller: _ctrl,
-                    autofocus: true,
-                    keyboardType: TextInputType.phone,
-                    textDirection: TextDirection.ltr,
-                    onChanged: (_) => setState(() => _error = null),
-                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                      fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 0.5),
-                    decoration: const InputDecoration(
-                      hintText: '91 234 5678',
-                      hintStyle: TextStyle(color: AppColors.ink4, fontWeight: FontWeight.w400),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  child: const Row(children: [
+                    Text('LY', style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 12, fontWeight: FontWeight.w700,
+                      color: AppColors.ink2)),
+                    SizedBox(width: 6),
+                    Text('+218',
+                      style: TextStyle(fontFamily: 'PlusJakartaSans',
+                        fontSize: 15, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.bg,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _error != null ? AppColors.danger : AppColors.border),
                     ),
-                    onSubmitted: (_) => _send(),
+                    child: TextField(
+                      controller: _ctrl,
+                      autofocus: true,
+                      keyboardType: TextInputType.phone,
+                      textDirection: TextDirection.ltr,
+                      onChanged: (_) => setState(() => _error = null),
+                      style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                        fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                      decoration: const InputDecoration(
+                        hintText: '91 234 5678',
+                        hintStyle: TextStyle(color: AppColors.ink4, fontWeight: FontWeight.w400),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      ),
+                      onSubmitted: (_) => _send(),
+                    ),
                   ),
                 ),
-              ),
-            ]),
+              ]),
+            ),
 
             if (_error != null) ...[
               const SizedBox(height: 8),

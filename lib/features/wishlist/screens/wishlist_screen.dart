@@ -11,6 +11,14 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 
+String _decodeHtml(String s) => s
+    .replaceAll('&amp;', '&')
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&nbsp;', ' ');
+
 class WishlistScreen extends ConsumerWidget {
   const WishlistScreen({super.key});
 
@@ -23,8 +31,10 @@ class WishlistScreen extends ConsumerWidget {
       return Scaffold(
         backgroundColor: AppColors.bg,
         appBar: AppBar(
-          title: const Text('المفضلة', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
-          backgroundColor: Colors.white, elevation: 0,
+          title: const Text('المفضلة',
+              style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          backgroundColor: Colors.white,
+          elevation: 0,
         ),
         body: Center(
           child: Column(
@@ -33,24 +43,29 @@ class WishlistScreen extends ConsumerWidget {
               Container(
                 width: 90, height: 90,
                 decoration: const BoxDecoration(
-                  color: AppColors.surfaceSoft, shape: BoxShape.circle),
+                    color: AppColors.surfaceSoft, shape: BoxShape.circle),
                 child: const Icon(Icons.favorite_outline, size: 36, color: AppColors.ink3),
               ),
               const SizedBox(height: 14),
               const Text('مفضلتك فارغة',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w700)),
+                  style: TextStyle(
+                      fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 6),
               const Text('اضغط على القلب لحفظ المنتج للوقت لاحق.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13.5, color: AppColors.ink2)),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13.5, color: AppColors.ink2)),
               const SizedBox(height: 20),
-              AppButton(label: 'تسجيل الدخول', width: 200,
-                onTap: () => context.push('/signin')),
+              AppButton(
+                  label: 'تسجيل الدخول',
+                  width: 200,
+                  onTap: () => safePush(context, '/signin')),
             ],
           ),
         ),
       );
     }
+
+    final discountCount = products.where((p) => p.displayPrice < p.price).length;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -58,7 +73,7 @@ class WishlistScreen extends ConsumerWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text('المفضلة (${products.length})',
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
       ),
       body: products.isEmpty
           ? RefreshIndicator(
@@ -66,22 +81,62 @@ class WishlistScreen extends ConsumerWidget {
               onRefresh: () => ref.read(wishlistProductsProvider.notifier).fetch(),
               child: ListView(children: const [
                 SizedBox(height: 100),
-                Center(child: Column(children: [
-                  Icon(Icons.favorite_outline, size: 72, color: AppColors.ink4),
-                  SizedBox(height: 12),
-                  Text('لا توجد منتجات في المفضلة',
-                    style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
-                ])),
+                Center(
+                  child: Column(children: [
+                    Icon(Icons.favorite_outline, size: 72, color: AppColors.ink4),
+                    SizedBox(height: 12),
+                    Text('لا توجد منتجات في المفضلة',
+                        style: TextStyle(
+                            fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
+                  ]),
+                ),
               ]),
             )
           : RefreshIndicator(
               color: AppColors.primary,
               onRefresh: () => ref.read(wishlistProductsProvider.notifier).fetch(),
-              child: ListView.separated(
+              child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                itemCount: products.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, i) => _WishlistCard(product: products[i]),
+                children: [
+                  // Price drops banner
+                  if (discountCount > 0) ...[
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.25)),
+                      ),
+                      child: Row(children: [
+                        const Icon(Icons.local_fire_department_rounded,
+                            color: AppColors.primary, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('تخفيضات الأسعار',
+                                  style: TextStyle(
+                                      fontFamily: 'Cairo',
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                      color: AppColors.primary)),
+                              Text('$discountCount منتج انخفض سعره — أضفه قبل نفاد الكمية',
+                                  style: const TextStyle(
+                                      fontSize: 12, color: AppColors.ink2, height: 1.4)),
+                            ],
+                          ),
+                        ),
+                      ]),
+                    ),
+                  ],
+                  ...products.map((p) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _WishlistCard(product: p),
+                      )),
+                ],
               ),
             ),
     );
@@ -94,8 +149,17 @@ class _WishlistCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final name = context.isAr ? product.nameAr : product.name;
-    final vendor = product.vendor;
+    final isAr = context.isAr;
+    final name = isAr ? product.nameAr : product.name;
+    final rawBrand = (product.brand != null && product.brand!.isNotEmpty)
+        ? product.brand!
+        : product.vendor != null
+            ? (isAr ? product.vendor!.storeNameAr : product.vendor!.storeName)
+            : null;
+    final brandLabel = rawBrand != null ? _decodeHtml(rawBrand) : null;
+    final salePrice = product.displayPrice;
+    final hasDiscount = salePrice < product.price;
+    final isVariable = product.productType == 'variable';
 
     return GestureDetector(
       onTap: () => safePush(context, '/product/${product.id}'),
@@ -104,19 +168,53 @@ class _WishlistCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: AppShadows.shadowCard,
+          border: Border.all(
+            color: hasDiscount ? AppColors.primary : AppColors.border,
+            width: hasDiscount ? 1.5 : 1,
+          ),
+          boxShadow: hasDiscount ? AppShadows.shadowCard : null,
         ),
         child: Row(children: [
-          // Product image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: SizedBox(
-              width: 74, height: 74,
-              child: product.firstImage != null
-                  ? CachedNetworkImage(imageUrl: product.firstImage!, fit: BoxFit.cover, errorWidget: (_, __, ___) => Container(color: const Color(0xFFF5F5F5)))
-                  : Container(color: AppColors.surfaceSoft,
-                      child: const Icon(Icons.image_outlined, color: AppColors.ink4)),
-            ),
+          // Image with discount badge
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 82, height: 82,
+                  child: product.firstImage != null
+                      ? CachedNetworkImage(
+                          imageUrl: product.firstImage!,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) =>
+                              Container(color: AppColors.surfaceSoft,
+                                child: const Icon(Icons.image_outlined,
+                                    color: AppColors.ink4, size: 28)),
+                        )
+                      : Container(
+                          color: AppColors.surfaceSoft,
+                          child: const Icon(Icons.image_outlined,
+                              color: AppColors.ink4, size: 28)),
+                ),
+              ),
+              if (hasDiscount)
+                Positioned(
+                  top: 4, left: 4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.success,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                        '−${((1 - salePrice / product.price) * 100).round()}%',
+                        style: const TextStyle(
+                            fontSize: 9,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700)),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(width: 12),
 
@@ -125,22 +223,39 @@ class _WishlistCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.3)),
-                if (vendor != null) ...[
-                  const SizedBox(height: 2),
-                  Text(context.isAr ? vendor.storeNameAr : vendor.storeName,
-                    style: const TextStyle(fontSize: 11, color: AppColors.ink2)),
-                ],
+                if (brandLabel != null)
+                  Text(brandLabel,
+                      style: const TextStyle(fontSize: 11, color: AppColors.ink3),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600, height: 1.3)),
                 const SizedBox(height: 6),
-                Text('${product.displayPrice.toStringAsFixed(0)} د.ل',
-                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontSize: 16, fontWeight: FontWeight.w800)),
+                Row(children: [
+                  Text('${salePrice.toStringAsFixed(0)} د.ل',
+                      style: const TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800)),
+                  if (hasDiscount) ...[
+                    const SizedBox(width: 6),
+                    Text('${product.price.toStringAsFixed(0)} د.ل',
+                        style: const TextStyle(
+                            fontFamily: 'PlusJakartaSans',
+                            fontSize: 11,
+                            color: AppColors.ink3,
+                            decoration: TextDecoration.lineThrough)),
+                  ],
+                ]),
               ],
             ),
           ),
+          const SizedBox(width: 8),
 
-          // Actions
+          // Actions: X top, Add bottom
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -148,38 +263,31 @@ class _WishlistCard extends ConsumerWidget {
               GestureDetector(
                 onTap: () => ref.read(wishlistProvider.notifier).toggle(product.id),
                 child: const Padding(
-                  padding: EdgeInsets.all(4),
+                  padding: EdgeInsets.all(2),
                   child: Icon(Icons.close, size: 18, color: AppColors.ink3),
                 ),
               ),
-              const SizedBox(height: 12),
-              if (product.inStock && product.productType != 'variable')
-                GestureDetector(
+              const SizedBox(height: 14),
+              if (isVariable)
+                _ActionChip(
+                  label: 'اختر',
+                  icon: Icons.tune_rounded,
+                  filled: hasDiscount,
+                  onTap: () => safePush(context, '/product/${product.id}'),
+                )
+              else if (product.inStock)
+                _ActionChip(
+                  label: 'أضف',
+                  icon: Icons.shopping_cart_outlined,
+                  filled: true,
                   onTap: () => ref.read(cartProvider.notifier).add(product),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.shopping_cart_outlined, size: 14, color: Colors.white),
-                      const SizedBox(width: 4),
-                      const Text('أضف',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
-                          color: Colors.white)),
-                    ]),
-                  ),
-                ),
-              if (!product.inStock)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceSoft,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text('نفد',
-                    style: TextStyle(fontSize: 11, color: AppColors.ink3)),
+                )
+              else
+                _ActionChip(
+                  label: 'نفد',
+                  icon: Icons.notifications_outlined,
+                  filled: false,
+                  onTap: () => safePush(context, '/product/${product.id}'),
                 ),
             ],
           ),
@@ -189,3 +297,40 @@ class _WishlistCard extends ConsumerWidget {
   }
 }
 
+class _ActionChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool filled;
+  final VoidCallback onTap;
+  const _ActionChip(
+      {required this.label,
+      required this.icon,
+      required this.filled,
+      required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: filled ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: filled ? AppColors.primary : AppColors.border, width: 1.5),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 14, color: filled ? Colors.white : AppColors.ink2),
+          const SizedBox(width: 4),
+          Text(label,
+              style: TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: filled ? Colors.white : AppColors.ink1)),
+        ]),
+      ),
+    );
+  }
+}

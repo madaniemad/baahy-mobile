@@ -9,7 +9,7 @@ import '../../../shared/widgets/product_card.dart';
 
 final _categoryProductsProvider = FutureProvider.family<List<Product>, int>((ref, catId) async {
   final res = await ApiClient.instance.dio.get('/products',
-    queryParameters: {'category_id': catId, 'per_page': 12, 'sort': 'popular'});
+    queryParameters: {'category_id': catId, 'per_page': 20, 'sort': 'popular'});
   return (res.data['data']['data'] as List?)
       ?.map((p) => Product.fromJson(p)).toList() ?? [];
 });
@@ -32,6 +32,10 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     if (categories.isNotEmpty && _activeCategoryId == null) {
       _activeCategoryId = categories.first.id;
     }
+
+    final activeCategory = categories.isEmpty ? null
+        : categories.firstWhere((c) => c.id == _activeCategoryId,
+            orElse: () => categories.first);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -113,9 +117,12 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
 
                 // Right content
                 Expanded(
-                  child: _activeCategoryId == null
+                  child: _activeCategoryId == null || activeCategory == null
                       ? const SizedBox.shrink()
-                      : _RightContent(categoryId: _activeCategoryId!),
+                      : _RightContent(
+                          categoryId: _activeCategoryId!,
+                          category: activeCategory,
+                        ),
                 ),
               ],
             ),
@@ -123,26 +130,71 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   }
 }
 
-class _RightContent extends ConsumerWidget {
+class _RightContent extends ConsumerStatefulWidget {
   final int categoryId;
-  const _RightContent({required this.categoryId});
+  final Category category;
+  const _RightContent({required this.categoryId, required this.category});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final productsAsync = ref.watch(_categoryProductsProvider(categoryId));
+  ConsumerState<_RightContent> createState() => _RightContentState();
+}
+
+class _RightContentState extends ConsumerState<_RightContent> {
+  int? _activeSubId;
+
+  @override
+  void didUpdateWidget(_RightContent old) {
+    super.didUpdateWidget(old);
+    if (old.categoryId != widget.categoryId) {
+      _activeSubId = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final subcats = widget.category.children;
+    final fetchId = _activeSubId ?? widget.categoryId;
+    final productsAsync = ref.watch(_categoryProductsProvider(fetchId));
+
     return productsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (_, __) => const Center(child: Text('تعذر التحميل', style: TextStyle(color: AppColors.ink2))),
       data: (products) => ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          // "TOP PICKS" heading
-          const Padding(
-            padding: EdgeInsets.only(bottom: 10),
-            child: Text('الأكثر شعبية',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
-                color: AppColors.ink2, letterSpacing: 0.5)),
-          ),
+          // Subcategory image tiles — 3-column grid
+          if (subcats.isNotEmpty) ...[
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 1.0,
+              ),
+              itemCount: subcats.length + 1,
+              itemBuilder: (_, i) {
+                if (i == 0) {
+                  return _SubTile(
+                    label: 'الكل',
+                    image: null,
+                    selected: _activeSubId == null,
+                    onTap: () => setState(() => _activeSubId = null),
+                  );
+                }
+                final sub = subcats[i - 1];
+                return _SubTile(
+                  label: isAr ? sub.nameAr : sub.name,
+                  image: sub.image,
+                  selected: _activeSubId == sub.id,
+                  onTap: () => setState(() => _activeSubId = sub.id),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
 
           if (products.isEmpty)
             const Center(child: Padding(
@@ -157,12 +209,92 @@ class _RightContent extends ConsumerWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
-                mainAxisExtent: 260,
+                mainAxisExtent: 320,
               ),
               itemCount: products.length,
               itemBuilder: (_, i) => ProductCard(product: products[i]),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _SubTile extends StatelessWidget {
+  final String label;
+  final String? image;
+  final bool selected;
+  final VoidCallback onTap;
+  const _SubTile({required this.label, required this.image, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.primary : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Background image or color
+              if (image != null)
+                CachedNetworkImage(
+                  imageUrl: image!, fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => Container(color: AppColors.primary.withValues(alpha: 0.15)),
+                )
+              else
+                Container(color: AppColors.primary.withValues(alpha: 0.15)),
+              // Dark overlay
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.1),
+                      Colors.black.withValues(alpha: 0.55),
+                    ],
+                  ),
+                ),
+              ),
+              // Label at bottom
+              Positioned(
+                bottom: 0, left: 0, right: 0,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      shadows: [Shadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 4)],
+                    ),
+                  ),
+                ),
+              ),
+              // Selected teal border highlight
+              if (selected)
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.primary, width: 2.5),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

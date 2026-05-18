@@ -2,8 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/product.dart';
+import '../../../core/providers/home_provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
+
+class _AttrValue {
+  final int id;
+  final String value;
+  final String valueAr;
+  final String? colorHex;
+  const _AttrValue({required this.id, required this.value, required this.valueAr, this.colorHex});
+}
+
+class _AttrType {
+  final int id;
+  final String name;
+  final String nameAr;
+  final String displayType;
+  final List<_AttrValue> values;
+  const _AttrType({required this.id, required this.name, required this.nameAr,
+    required this.displayType, required this.values});
+}
+
+class _FilterOptions {
+  final List<_AttrType> attrTypes;
+  final List<String> brands;
+  const _FilterOptions({this.attrTypes = const [], this.brands = const []});
+}
+
+final _filterOptionsProvider = FutureProvider<_FilterOptions>((_) async {
+  try {
+    final res = await ApiClient.instance.dio.get('/products/filter-options');
+    final data = res.data['data'];
+    final types = (data['attribute_types'] as List? ?? []).map((t) => _AttrType(
+      id: t['id'], name: t['name'] ?? '', nameAr: t['name_ar'] ?? '',
+      displayType: t['display_type'] ?? 'button',
+      values: (t['values'] as List? ?? []).map((v) => _AttrValue(
+        id: v['id'], value: v['value'] ?? '', valueAr: v['value_ar'] ?? '',
+        colorHex: v['color_hex'],
+      )).toList(),
+    )).toList();
+    final brands = (data['brands'] as List? ?? []).map((b) => b.toString()).toList();
+    return _FilterOptions(attrTypes: types, brands: brands);
+  } catch (_) {
+    return const _FilterOptions();
+  }
+});
 
 final _sortOptions = [
   ('latest', 'الأحدث'),
@@ -15,29 +59,51 @@ final _sortOptions = [
 class _FilterState {
   final double? minPrice;
   final double? maxPrice;
-  final int? minRating;   // 1-5, null = any
+  final int? minRating;
   final bool inStockOnly;
+  final bool featuredOnly;
+  final int? categoryId;
+  final String? categoryName;
+  final Set<int> attributeValueIds;
+  final String? brand;
 
   const _FilterState({
     this.minPrice,
     this.maxPrice,
     this.minRating,
     this.inStockOnly = false,
+    this.featuredOnly = false,
+    this.categoryId,
+    this.categoryName,
+    this.attributeValueIds = const {},
+    this.brand,
   });
 
   bool get isActive =>
-      minPrice != null || maxPrice != null || minRating != null || inStockOnly;
+      minPrice != null || maxPrice != null || minRating != null ||
+      inStockOnly || featuredOnly || categoryId != null ||
+      attributeValueIds.isNotEmpty || (brand != null && brand!.isNotEmpty);
 
   _FilterState copyWith({
     Object? minPrice = _unset,
     Object? maxPrice = _unset,
     Object? minRating = _unset,
     bool? inStockOnly,
+    bool? featuredOnly,
+    Object? categoryId = _unset,
+    Object? categoryName = _unset,
+    Set<int>? attributeValueIds,
+    Object? brand = _unset,
   }) => _FilterState(
     minPrice: identical(minPrice, _unset) ? this.minPrice : minPrice as double?,
     maxPrice: identical(maxPrice, _unset) ? this.maxPrice : maxPrice as double?,
     minRating: identical(minRating, _unset) ? this.minRating : minRating as int?,
     inStockOnly: inStockOnly ?? this.inStockOnly,
+    featuredOnly: featuredOnly ?? this.featuredOnly,
+    categoryId: identical(categoryId, _unset) ? this.categoryId : categoryId as int?,
+    categoryName: identical(categoryName, _unset) ? this.categoryName : categoryName as String?,
+    attributeValueIds: attributeValueIds ?? this.attributeValueIds,
+    brand: identical(brand, _unset) ? this.brand : brand as String?,
   );
 
   static const _unset = Object();
@@ -60,11 +126,12 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   int _page = 1;
   bool _hasMore = true;
   String _sort = 'latest';
-  _FilterState _filters = const _FilterState();
+  late _FilterState _filters;
 
   @override
   void initState() {
     super.initState();
+    _filters = _FilterState(categoryId: widget.categoryId);
     _fetch(reset: true);
     _scrollCtrl.addListener(_onScroll);
   }
@@ -92,7 +159,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     try {
       final res = await ApiClient.instance.dio.get('/products', queryParameters: {
         if (widget.query.isNotEmpty) 'search': widget.query,
-        if (widget.categoryId != null) 'category_id': widget.categoryId,
+        if (_filters.categoryId != null) 'category_id': _filters.categoryId
+        else if (widget.categoryId != null) 'category_id': widget.categoryId,
         'sort': _sort,
         'page': _page,
         'per_page': 20,
@@ -100,6 +168,10 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         if (_filters.maxPrice != null) 'max_price': _filters.maxPrice,
         if (_filters.minRating != null) 'min_rating': _filters.minRating,
         if (_filters.inStockOnly) 'in_stock': 1,
+        if (_filters.featuredOnly) 'featured': 1,
+        if (_filters.brand != null && _filters.brand!.isNotEmpty) 'brand': _filters.brand,
+        ..._filters.attributeValueIds.isNotEmpty
+            ? {'attribute_value_ids[]': _filters.attributeValueIds.toList()} : {},
       });
       final data = res.data['data'];
       final newProducts = (data['data'] as List).map((p) => Product.fromJson(p)).toList();
@@ -121,7 +193,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => _FilterSheet(initial: _filters),
     );
     if (result != null && mounted) {
@@ -202,7 +274,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                     crossAxisCount: 2,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    mainAxisExtent: 309,
+                    mainAxisExtent: 350,
                   ),
                   itemCount: _products.length + (_loadingMore ? 2 : 0),
                   itemBuilder: (_, i) {
@@ -216,18 +288,29 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
 
 // ── Filter bottom sheet ───────────────────────────────────────────────────────
 
-class _FilterSheet extends StatefulWidget {
+class _FilterSheet extends ConsumerStatefulWidget {
   final _FilterState initial;
   const _FilterSheet({required this.initial});
   @override
-  State<_FilterSheet> createState() => _FilterSheetState();
+  ConsumerState<_FilterSheet> createState() => _FilterSheetState();
 }
 
-class _FilterSheetState extends State<_FilterSheet> {
+class _FilterSheetState extends ConsumerState<_FilterSheet> {
   late final TextEditingController _minCtrl;
   late final TextEditingController _maxCtrl;
   int? _rating;
   late bool _inStock;
+  late bool _featured;
+  int? _categoryId;
+  String? _categoryName;
+  late Set<int> _attrValueIds;
+  String? _brand;
+  bool _catExpanded = true;
+  bool _priceExpanded = true;
+  bool _ratingExpanded = false;
+  bool _attrExpanded = true;
+  bool _brandExpanded = false;
+  final Set<int> _expandedCats = {};
 
   @override
   void initState() {
@@ -238,6 +321,11 @@ class _FilterSheetState extends State<_FilterSheet> {
       text: widget.initial.maxPrice?.toStringAsFixed(0) ?? '');
     _rating = widget.initial.minRating;
     _inStock = widget.initial.inStockOnly;
+    _featured = widget.initial.featuredOnly;
+    _categoryId = widget.initial.categoryId;
+    _categoryName = widget.initial.categoryName;
+    _attrValueIds = Set.from(widget.initial.attributeValueIds);
+    _brand = widget.initial.brand;
   }
 
   @override
@@ -255,6 +343,11 @@ class _FilterSheetState extends State<_FilterSheet> {
       maxPrice: maxPrice,
       minRating: _rating,
       inStockOnly: _inStock,
+      featuredOnly: _featured,
+      categoryId: _categoryId,
+      categoryName: _categoryName,
+      attributeValueIds: Set.from(_attrValueIds),
+      brand: _brand?.trim().isEmpty == true ? null : _brand?.trim(),
     ));
   }
 
@@ -264,122 +357,409 @@ class _FilterSheetState extends State<_FilterSheet> {
       _maxCtrl.clear();
       _rating = null;
       _inStock = false;
+      _featured = false;
+      _categoryId = null;
+      _categoryName = null;
+      _attrValueIds = {};
+      _brand = null;
     });
+  }
+
+  Widget _sectionHeader(String title, bool expanded, VoidCallback toggle) {
+    return GestureDetector(
+      onTap: toggle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(children: [
+          Text(title,
+            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
+              color: AppColors.ink1)),
+          const Spacer(),
+          Icon(expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+            color: AppColors.ink3, size: 20),
+        ]),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
-      child: Column(mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start, children: [
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final categories = ref.watch(homeProvider).categories;
 
-        Center(child: Container(width: 40, height: 4,
-          decoration: BoxDecoration(color: AppColors.border,
-            borderRadius: BorderRadius.circular(2)))),
-        const SizedBox(height: 16),
-
-        Row(children: [
-          const Text('الفلاتر',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          const Spacer(),
-          TextButton(onPressed: _reset,
-            child: const Text('إعادة تعيين',
-              style: TextStyle(color: AppColors.ink2))),
-        ]),
-        const SizedBox(height: 16),
-
-        // Price range
-        const Text('نطاق السعر (د.ل)',
-          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
-            color: AppColors.ink1)),
-        const SizedBox(height: 10),
-        Row(children: [
-          Expanded(
-            child: _PriceField(controller: _minCtrl, hint: 'الحد الأدنى'),
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, scrollCtrl) => Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Center(child: Container(width: 40, height: 4,
+                decoration: BoxDecoration(color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 14),
+              Row(children: [
+                const Text('الفلاتر',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                const Spacer(),
+                TextButton(onPressed: _reset,
+                  child: const Text('إعادة تعيين',
+                    style: TextStyle(color: AppColors.ink2))),
+              ]),
+              const Divider(height: 1),
+            ]),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10),
-            child: Text('—', style: TextStyle(color: AppColors.ink3))),
-          Expanded(
-            child: _PriceField(controller: _maxCtrl, hint: 'الحد الأقصى'),
-          ),
-        ]),
-        const SizedBox(height: 20),
 
-        // Rating
-        const Text('الحد الأدنى للتقييم',
-          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
-            color: AppColors.ink1)),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: List.generate(5, (i) {
-            final star = i + 1;
-            final selected = _rating == star;
-            return GestureDetector(
-              onTap: () => setState(() => _rating = selected ? null : star),
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected ? AppColors.primary : Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: selected ? AppColors.primary : AppColors.border,
-                      width: 1.5),
+          // Scrollable content
+          Expanded(
+            child: ListView(
+              controller: scrollCtrl,
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              children: [
+
+                // ── Category ──────────────────────────────────────────────
+                _sectionHeader('القسم', _catExpanded,
+                  () => setState(() => _catExpanded = !_catExpanded)),
+
+                if (_catExpanded) ...[
+                  // All
+                  _CatRow(
+                    label: 'كل الأقسام',
+                    selected: _categoryId == null,
+                    onTap: () => setState(() { _categoryId = null; _categoryName = null; }),
                   ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.star_rounded, size: 14,
-                      color: selected ? AppColors.ink0 : AppColors.warn),
-                    const SizedBox(width: 3),
-                    Text('$star+',
-                      style: TextStyle(
-                        fontFamily: 'PlusJakartaSans',
-                        fontSize: 12, fontWeight: FontWeight.w700,
-                        color: selected ? AppColors.ink0 : AppColors.ink1)),
+                  const SizedBox(height: 4),
+                  ...categories.map((cat) {
+                    final isCatSelected = _categoryId == cat.id;
+                    final hasChildren = cat.children.isNotEmpty;
+                    final isExpanded = _expandedCats.contains(cat.id) || isCatSelected ||
+                        cat.children.any((c) => c.id == _categoryId);
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Expanded(
+                            child: _CatRow(
+                              label: isAr ? cat.nameAr : cat.name,
+                              selected: isCatSelected,
+                              onTap: () => setState(() {
+                                _categoryId = cat.id;
+                                _categoryName = isAr ? cat.nameAr : cat.name;
+                              }),
+                            ),
+                          ),
+                          if (hasChildren)
+                            GestureDetector(
+                              onTap: () => setState(() {
+                                _expandedCats.contains(cat.id)
+                                    ? _expandedCats.remove(cat.id)
+                                    : _expandedCats.add(cat.id);
+                              }),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Icon(
+                                  isExpanded ? Icons.remove : Icons.add,
+                                  size: 16, color: AppColors.ink3),
+                              ),
+                            ),
+                        ]),
+                        if (isExpanded && hasChildren) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: Column(
+                              children: cat.children.map((sub) => _CatRow(
+                                label: isAr ? sub.nameAr : sub.name,
+                                selected: _categoryId == sub.id,
+                                small: true,
+                                onTap: () => setState(() {
+                                  _categoryId = sub.id;
+                                  _categoryName = isAr ? sub.nameAr : sub.name;
+                                }),
+                              )).toList(),
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  }),
+                  const SizedBox(height: 8),
+                  const Divider(height: 1),
+                ],
+
+                // ── Price ─────────────────────────────────────────────────
+                _sectionHeader('نطاق السعر (د.ل)', _priceExpanded,
+                  () => setState(() => _priceExpanded = !_priceExpanded)),
+
+                if (_priceExpanded) ...[
+                  Row(children: [
+                    Expanded(child: _PriceField(controller: _minCtrl, hint: 'الحد الأدنى')),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text('—', style: TextStyle(color: AppColors.ink3))),
+                    Expanded(child: _PriceField(controller: _maxCtrl, hint: 'الحد الأقصى')),
                   ]),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                ],
+
+                // ── Deals Only ────────────────────────────────────────────
+                GestureDetector(
+                  onTap: () => setState(() => _featured = !_featured),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Row(children: [
+                      const Text('عروض فقط',
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
+                          color: AppColors.ink1)),
+                      const Spacer(),
+                      Switch(
+                        value: _featured,
+                        onChanged: (v) => setState(() => _featured = v),
+                        activeColor: AppColors.primary,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ]),
+                  ),
                 ),
-              ),
-            );
-          }),
-        ),
-        const SizedBox(height: 20),
+                const Divider(height: 1),
 
-        // In-stock toggle
-        GestureDetector(
-          onTap: () => setState(() => _inStock = !_inStock),
-          child: Row(children: [
-            const Expanded(child: Text('متوفّر فقط',
-              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
-                color: AppColors.ink1))),
-            Switch(
-              value: _inStock,
-              onChanged: (v) => setState(() => _inStock = v),
-              activeColor: AppColors.primary,
-            ),
-          ]),
-        ),
-        const SizedBox(height: 20),
+                // ── In-stock ──────────────────────────────────────────────
+                GestureDetector(
+                  onTap: () => setState(() => _inStock = !_inStock),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Row(children: [
+                      const Text('متوفّر فقط',
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
+                          color: AppColors.ink1)),
+                      const Spacer(),
+                      Switch(
+                        value: _inStock,
+                        onChanged: (v) => setState(() => _inStock = v),
+                        activeColor: AppColors.primary,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ]),
+                  ),
+                ),
+                const Divider(height: 1),
 
-        // Apply
-        SizedBox(
-          width: double.infinity, height: 52,
-          child: ElevatedButton(
-            onPressed: _apply,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                // ── Rating ────────────────────────────────────────────────
+                _sectionHeader('الحد الأدنى للتقييم', _ratingExpanded,
+                  () => setState(() => _ratingExpanded = !_ratingExpanded)),
+
+                if (_ratingExpanded) ...[
+                  Wrap(
+                    spacing: 8, runSpacing: 8,
+                    children: [3, 4, 5].map((star) {
+                      final selected = _rating == star;
+                      return GestureDetector(
+                        onTap: () => setState(() => _rating = selected ? null : star),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: selected ? AppColors.primary : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: selected ? AppColors.primary : AppColors.border,
+                              width: 1.5),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.star_rounded, size: 14,
+                              color: selected ? AppColors.ink0 : AppColors.warn),
+                            const SizedBox(width: 4),
+                            Text('$star+ نجوم',
+                              style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w700,
+                                color: selected ? AppColors.ink0 : AppColors.ink1)),
+                          ]),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                ],
+
+                // ── Attributes (Size, Color, etc.) ────────────────────
+                Consumer(builder: (ctx, attrRef, _) {
+                  final opts = attrRef.watch(_filterOptionsProvider);
+                  return opts.maybeWhen(
+                    data: (options) {
+                      if (options.attrTypes.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: options.attrTypes.map((attrType) {
+                          final typeLabel = isAr ? attrType.nameAr : attrType.name;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _sectionHeader(typeLabel, _attrExpanded,
+                                () => setState(() => _attrExpanded = !_attrExpanded)),
+                              if (_attrExpanded) ...[
+                                Wrap(
+                                  spacing: 8, runSpacing: 8,
+                                  children: attrType.values.map((val) {
+                                    final sel = _attrValueIds.contains(val.id);
+                                    final valLabel = isAr ? val.valueAr : val.value;
+                                    if (attrType.displayType == 'color' && val.colorHex != null) {
+                                      Color? color;
+                                      try {
+                                        color = Color(int.parse(
+                                          val.colorHex!.replaceFirst('#', '0xFF')));
+                                      } catch (_) {}
+                                      return GestureDetector(
+                                        onTap: () => setState(() =>
+                                            sel ? _attrValueIds.remove(val.id)
+                                                : _attrValueIds.add(val.id)),
+                                        child: Container(
+                                          width: 32, height: 32,
+                                          decoration: BoxDecoration(
+                                            color: color ?? AppColors.bg,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: sel ? AppColors.primary : AppColors.border,
+                                              width: sel ? 2.5 : 1.5)),
+                                          child: sel ? const Icon(Icons.check,
+                                            size: 14, color: Colors.white) : null,
+                                        ),
+                                      );
+                                    }
+                                    return GestureDetector(
+                                      onTap: () => setState(() =>
+                                          sel ? _attrValueIds.remove(val.id)
+                                              : _attrValueIds.add(val.id)),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 7),
+                                        decoration: BoxDecoration(
+                                          color: sel ? AppColors.primary : Colors.white,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: sel ? AppColors.primary : AppColors.border,
+                                            width: 1.5)),
+                                        child: Text(valLabel,
+                                          style: TextStyle(
+                                            fontSize: 12, fontWeight: FontWeight.w600,
+                                            color: sel ? AppColors.ink0 : AppColors.ink1)),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                                const SizedBox(height: 12),
+                                const Divider(height: 1),
+                              ],
+                            ],
+                          );
+                        }).toList(),
+                      );
+                    },
+                    orElse: () => const SizedBox.shrink(),
+                  );
+                }),
+
+                // ── Brand ─────────────────────────────────────────────
+                Consumer(builder: (ctx, brandRef, _) {
+                  final opts = brandRef.watch(_filterOptionsProvider);
+                  return opts.maybeWhen(
+                    data: (options) {
+                      if (options.brands.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _sectionHeader('الماركة', _brandExpanded,
+                            () => setState(() => _brandExpanded = !_brandExpanded)),
+                          if (_brandExpanded) ...[
+                            Wrap(
+                              spacing: 8, runSpacing: 8,
+                              children: options.brands.map((b) {
+                                final sel = _brand == b;
+                                return GestureDetector(
+                                  onTap: () => setState(() => _brand = sel ? null : b),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 7),
+                                    decoration: BoxDecoration(
+                                      color: sel ? AppColors.primary : Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: sel ? AppColors.primary : AppColors.border,
+                                        width: 1.5)),
+                                    child: Text(b,
+                                      style: TextStyle(
+                                        fontSize: 12, fontWeight: FontWeight.w600,
+                                        color: sel ? AppColors.ink0 : AppColors.ink1)),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ],
+                      );
+                    },
+                    orElse: () => const SizedBox.shrink(),
+                  );
+                }),
+
+              ],
             ),
-            child: const Text('تطبيق الفلاتر',
-              style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
-                fontSize: 15, color: AppColors.ink0)),
           ),
-        ),
-      ]),
+
+          // Apply button
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, 8, 20, bottom + 16),
+            child: SizedBox(
+              width: double.infinity, height: 52,
+              child: ElevatedButton(
+                onPressed: _apply,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text('تطبيق الفلاتر',
+                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
+                    fontSize: 15, color: AppColors.ink0)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CatRow extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final bool small;
+  final VoidCallback onTap;
+  const _CatRow({required this.label, required this.selected, required this.onTap, this.small = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(children: [
+          Text(label,
+            style: TextStyle(
+              fontSize: small ? 12 : 13,
+              color: selected ? AppColors.primary : AppColors.ink1,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+            )),
+          const Spacer(),
+          if (selected)
+            const Icon(Icons.check_rounded, size: 16, color: AppColors.primary),
+        ]),
+      ),
     );
   }
 }

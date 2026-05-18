@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:badges/badges.dart' as badges;
 import '../providers/cart_provider.dart';
 import '../providers/notifications_provider.dart';
+import '../providers/wishlist_provider.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/offline_banner.dart';
 
@@ -25,6 +26,7 @@ class MainShell extends ConsumerWidget {
     final currentIdx = _tabs.indexWhere((t) => location.startsWith(t.path));
     // select() — rebuild tab bar ONLY when count changes, not on every cart mutation
     final cartCount = ref.watch(cartProvider.select((s) => s.count));
+    final wishlistCount = ref.watch(wishlistProvider.select((s) => s.length));
     final unreadCount = ref.watch(notificationsProvider.select(
         (list) => list.where((n) => !n.isRead).length));
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
@@ -60,6 +62,16 @@ class MainShell extends ConsumerWidget {
                     badgeContent: Text('$cartCount',
                       style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
                     badgeStyle: const badges.BadgeStyle(badgeColor: AppColors.danger),
+                    child: icon,
+                  );
+                }
+
+                // Wishlist badge
+                if (tab.path == '/wishlist' && wishlistCount > 0) {
+                  icon = badges.Badge(
+                    badgeContent: Text('$wishlistCount',
+                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
+                    badgeStyle: const badges.BadgeStyle(badgeColor: AppColors.primary),
                     child: icon,
                   );
                 }

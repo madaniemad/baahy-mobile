@@ -18,12 +18,15 @@ class WishlistNotifier extends StateNotifier<Set<int>> {
     } catch (_) {}
   }
 
-  Future<void> toggle(int productId) async {
+  Future<bool> toggle(int productId) async {
+    if (!await _api.isLoggedIn) return false;
     state = Set.from(state)..toggle(productId);
     try {
       await _api.dio.post('/wishlist/toggle', data: {'product_id': productId});
+      return true;
     } catch (_) {
       state = Set.from(state)..toggle(productId);
+      return false;
     }
   }
 

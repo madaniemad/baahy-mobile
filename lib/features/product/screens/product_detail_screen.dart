@@ -10,6 +10,7 @@ import '../../../core/models/product.dart';
 import '../../../core/models/review.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/cart_provider.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/providers/recently_viewed_provider.dart';
 import '../../../core/utils/l10n.dart';
@@ -85,14 +86,21 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       product, variation: _selectedVariation, qty: _qty);
     if (!mounted) return;
     if (goToCart) {
-      context.push('/cart');
+      safePush(context, '/cart');
     } else {
       showModalBottomSheet(
         context: context,
         backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-        builder: (_) => _AddedToCartSheet(product: product, qty: _qty),
+        builder: (_) => _AddedToCartSheet(
+          product: product,
+          qty: _qty,
+          onViewCart: () {
+            Navigator.of(context).pop();
+            context.go('/cart');
+          },
+        ),
       );
     }
   }
@@ -126,9 +134,27 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
           final name = isAr ? product.nameAr : product.name;
           final inWishlist = ref.watch(wishlistProvider).contains(product.id);
+          // Use selected variation price, or cheapest in-stock variation, or product price
+          final _inStockVarsForPrice = product.variations.where((v) => v.stockQuantity > 0).toList();
+          final _cheapestInStock = _inStockVarsForPrice.isNotEmpty
+              ? _inStockVarsForPrice.map((v) => v.salePrice ?? v.price).reduce((a, b) => a < b ? a : b)
+              : null;
           final displayPrice = _selectedVariation?.salePrice
               ?? _selectedVariation?.price
+              ?? _cheapestInStock
               ?? product.displayPrice;
+
+          // For variable products: compute min/max across IN-STOCK variations only
+          final inStockVars = product.variations.where((v) => v.stockQuantity > 0).toList();
+          final varPrices = inStockVars.map((v) => v.salePrice ?? v.price).toList();
+          final varMinPrice = varPrices.isNotEmpty
+              ? varPrices.reduce((a, b) => a < b ? a : b) : null;
+          final varMaxPrice = varPrices.isNotEmpty
+              ? varPrices.reduce((a, b) => a > b ? a : b) : null;
+          final showRange = product.productType == 'variable' &&
+              _selectedVariation == null &&
+              varMinPrice != null && varMaxPrice != null &&
+              varMinPrice != varMaxPrice;
 
           return Stack(
             children: [
@@ -254,7 +280,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (product.vendor != null)
+                              if (product.brand != null && product.brand!.isNotEmpty)
+                                Text(
+                                  'الماركة: ${product.brand!}',
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                                    color: AppColors.ink3, letterSpacing: 0.5))
+                              else if (product.vendor != null)
                                 Text(
                                   isAr
                                     ? 'الماركة: ${product.vendor!.storeNameAr.isNotEmpty ? product.vendor!.storeNameAr : product.vendor!.storeName}'
@@ -267,7 +298,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               const SizedBox(height: 8),
                               if (product.averageRating != null && product.reviewsCount != null)
                                 GestureDetector(
-                                  onTap: () => context.push('/product/${product.id}/reviews'),
+                                  onTap: () => safePush(context, '/product/${product.id}/reviews'),
                                   child: Row(children: [
                                     const Icon(Icons.star_rounded, size: 14, color: AppColors.gold),
                                     const SizedBox(width: 4),
@@ -289,25 +320,31 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 ),
                               const SizedBox(height: 12),
                               Row(children: [
-                                Text('${displayPrice.toStringAsFixed(0)} د.ل',
-                                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                    fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.ink0)),
-                                if (product.hasDiscount && _selectedVariation == null) ...[
-                                  const SizedBox(width: 8),
-                                  Text('${product.price.toStringAsFixed(0)} د.ل',
+                                if (showRange) ...[
+                                  Text('${varMinPrice!.toStringAsFixed(0)} - ${varMaxPrice!.toStringAsFixed(0)} د.ل',
                                     style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                      fontSize: 15, color: AppColors.ink3,
-                                      decoration: TextDecoration.lineThrough)),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.success.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(6)),
-                                    child: Text('−${product.discountPercent}%',
-                                      style: const TextStyle(color: AppColors.success,
-                                        fontSize: 11, fontWeight: FontWeight.w700)),
-                                  ),
+                                      fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.ink0)),
+                                ] else ...[
+                                  Text('${displayPrice.toStringAsFixed(0)} د.ل',
+                                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                                      fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.ink0)),
+                                  if (displayPrice < product.price) ...[
+                                    const SizedBox(width: 8),
+                                    Text('${product.price.toStringAsFixed(0)} د.ل',
+                                      style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                                        fontSize: 15, color: AppColors.ink3,
+                                        decoration: TextDecoration.lineThrough)),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.success.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(6)),
+                                      child: Text('−${((1 - displayPrice / product.price) * 100).round()}%',
+                                        style: const TextStyle(color: AppColors.success,
+                                          fontSize: 11, fontWeight: FontWeight.w700)),
+                                    ),
+                                  ],
                                 ],
                               ]),
 
@@ -751,7 +788,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                     for (final p in selected.where((p) => p.id != widget.mainProduct.id)) {
                       ref.read(cartProvider.notifier).add(p);
                     }
-                    context.push('/cart');
+                    safePush(context, '/cart');
                   },
                   icon: const Icon(Icons.shopping_cart_outlined, size: 16),
                   label: Text('أضف ${selected.length} للسلة',
@@ -792,7 +829,7 @@ class _ReviewsSnippet extends ConsumerWidget {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             const Spacer(),
             GestureDetector(
-              onTap: () => context.push('/product/$productId/reviews'),
+              onTap: () => safePush(context, '/product/$productId/reviews'),
               child: const Text('الكل ←',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                   color: AppColors.primary)),
@@ -919,22 +956,43 @@ class _VariationPicker extends StatelessWidget {
                 spacing: 8, runSpacing: 8,
                 children: options.map((opt) {
                   final isSelected = selections[typeName] == opt.value;
+                  final isOutOfStock = !product.variations.any((v) =>
+                      v.attributes.any((a) => a.typeName == typeName && a.value == opt.value) &&
+                      v.stockQuantity > 0);
                   return GestureDetector(
-                    onTap: () => onChanged(typeName, opt.value),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.ink0 : Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isSelected ? AppColors.ink0 : AppColors.border,
-                          width: 1.5),
-                      ),
-                      child: Text(opt.value,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: isSelected ? Colors.white : AppColors.ink0)),
+                    onTap: isOutOfStock ? null : () => onChanged(typeName, opt.value),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.ink0
+                                : isOutOfStock ? const Color(0xFFF2F2F2)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected ? AppColors.ink0
+                                  : isOutOfStock ? const Color(0xFFDDDDDD)
+                                  : AppColors.border,
+                              width: 1.5),
+                          ),
+                          child: Text(opt.value,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: isSelected ? Colors.white
+                                  : isOutOfStock ? const Color(0xFFBBBBBB)
+                                  : AppColors.ink0)),
+                        ),
+                        if (isOutOfStock)
+                          Positioned.fill(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(9),
+                              child: CustomPaint(painter: _OutOfStockPainter()),
+                            ),
+                          ),
+                      ],
                     ),
                   );
                 }).toList(),
@@ -995,12 +1053,31 @@ class _QtyBtn extends StatelessWidget {
   );
 }
 
+// ── Out-of-stock diagonal line painter ───────────────────────────────────────
+
+class _OutOfStockPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawLine(
+      Offset(size.width * 0.12, size.height * 0.88),
+      Offset(size.width * 0.88, size.height * 0.12),
+      Paint()
+        ..color = const Color(0xFFAAAAAA)
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+  @override
+  bool shouldRepaint(_) => false;
+}
+
 // ── Added to cart sheet ───────────────────────────────────────────────────────
 
 class _AddedToCartSheet extends StatelessWidget {
   final Product product;
   final int qty;
-  const _AddedToCartSheet({required this.product, required this.qty});
+  final VoidCallback? onViewCart;
+  const _AddedToCartSheet({required this.product, required this.qty, this.onViewCart});
 
   @override
   Widget build(BuildContext context) {
@@ -1056,9 +1133,10 @@ class _AddedToCartSheet extends StatelessWidget {
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
-                  final router = GoRouter.of(context);
                   Navigator.of(context).pop();
-                  router.push('/cart');
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    onViewCart?.call();
+                  });
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,

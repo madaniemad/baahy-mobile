@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/models/product.dart';
 import '../../core/providers/wishlist_provider.dart';
 import '../../core/providers/cart_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/utils/l10n.dart';
 import '../../core/utils/navigation.dart';
 import '../theme/app_theme.dart';
@@ -116,10 +117,15 @@ class ProductCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
                   ),
-                  if (product.vendor != null) ...[
+                  if ((product.brand != null && product.brand!.isNotEmpty) ||
+                      product.vendor != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      isAr ? product.vendor!.storeNameAr : product.vendor!.storeName,
+                      product.brand != null && product.brand!.isNotEmpty
+                          ? product.brand!
+                          : (isAr ? product.vendor!.storeNameAr : product.vendor!.storeName),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 11, color: AppColors.ink3),
                     ),
                   ],
@@ -183,7 +189,14 @@ class _WishlistButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => ref.read(wishlistProvider.notifier).toggle(productId),
+      onTap: () async {
+        final isLoggedIn = ref.read(authProvider).isLoggedIn;
+        if (!isLoggedIn) {
+          safePush(context, '/signin');
+          return;
+        }
+        ref.read(wishlistProvider.notifier).toggle(productId);
+      },
       child: Container(
         width: 30,
         height: 30,
