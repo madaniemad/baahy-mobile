@@ -7,6 +7,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/models/product.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/home_provider.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
 final _searchSuggestionsProvider = FutureProvider.family<List<Product>, String>((ref, q) async {
@@ -56,7 +57,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void _search(String q) {
     if (q.trim().isEmpty) return;
     _focus.unfocus();
-    context.push('/search/results?q=${Uri.encodeComponent(q.trim())}');
+    safePush(context, '/search/results?q=${Uri.encodeComponent(q.trim())}');
   }
 
   @override
@@ -199,7 +200,7 @@ class _LiveResults extends StatelessWidget {
             ...products.map((p) {
               final isAr = Localizations.localeOf(context).languageCode == 'ar';
               return InkWell(
-                onTap: () => context.push('/product/${p.id}'),
+                onTap: () => safePush(context, '/product/${p.id}'),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(children: [

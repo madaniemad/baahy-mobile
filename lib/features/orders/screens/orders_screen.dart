@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/order.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
 final _ordersProvider = FutureProvider<List<Order>>((ref) async {
@@ -149,7 +150,7 @@ class _OrderCard extends StatelessWidget {
     final firstImage = order.allItems.isNotEmpty ? order.allItems.first.productImage : null;
 
     return GestureDetector(
-      onTap: () => context.push('/orders/${order.id}'),
+      onTap: () => safePush(context, '/orders/${order.id}'),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(

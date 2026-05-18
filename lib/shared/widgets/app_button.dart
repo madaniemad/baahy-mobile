@@ -3,7 +3,7 @@ import '../theme/app_theme.dart';
 
 enum AppButtonVariant { primary, outline, ghost, danger }
 
-class AppButton extends StatelessWidget {
+class AppButton extends StatefulWidget {
   final String label;
   final VoidCallback? onTap;
   final AppButtonVariant variant;
@@ -24,10 +24,25 @@ class AppButton extends StatelessWidget {
   });
 
   @override
+  State<AppButton> createState() => _AppButtonState();
+}
+
+class _AppButtonState extends State<AppButton> {
+  DateTime? _lastTap;
+
+  void _handleTap() {
+    if (widget.onTap == null || widget.loading) return;
+    final now = DateTime.now();
+    if (_lastTap != null && now.difference(_lastTap!) < const Duration(milliseconds: 600)) return;
+    _lastTap = now;
+    widget.onTap!();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isPrimary = variant == AppButtonVariant.primary;
-    final isDanger = variant == AppButtonVariant.danger;
-    final isOutline = variant == AppButtonVariant.outline;
+    final isPrimary = widget.variant == AppButtonVariant.primary;
+    final isDanger = widget.variant == AppButtonVariant.danger;
+    final isOutline = widget.variant == AppButtonVariant.outline;
 
     final bg = isPrimary ? AppColors.primary
         : isDanger ? AppColors.danger
@@ -38,18 +53,18 @@ class AppButton extends StatelessWidget {
     final border = isOutline ? Border.all(color: AppColors.primary, width: 1.5) : null;
 
     return GestureDetector(
-      onTap: loading ? null : onTap,
+      onTap: _handleTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        width: width ?? double.infinity,
-        height: height,
+        width: widget.width ?? double.infinity,
+        height: widget.height,
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(14),
           border: border,
         ),
         child: Center(
-          child: loading
+          child: widget.loading
               ? SizedBox(
                   width: 22,
                   height: 22,
@@ -61,9 +76,9 @@ class AppButton extends StatelessWidget {
               : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (icon != null) ...[icon!, const SizedBox(width: 8)],
+                    if (widget.icon != null) ...[widget.icon!, const SizedBox(width: 8)],
                     Text(
-                      label,
+                      widget.label,
                       style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 15,

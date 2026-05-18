@@ -7,6 +7,7 @@ import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/models/product.dart';
 import '../../../core/utils/l10n.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 
@@ -97,7 +98,7 @@ class _WishlistCard extends ConsumerWidget {
     final vendor = product.vendor;
 
     return GestureDetector(
-      onTap: () => context.push('/product/${product.id}'),
+      onTap: () => safePush(context, '/product/${product.id}'),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(

@@ -13,6 +13,7 @@ import '../../../core/providers/app_config_provider.dart';
 import '../../../core/models/app_config.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/banner.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 
@@ -466,12 +467,12 @@ class _BannerSlide extends StatelessWidget {
     if (link.contains('category_id=')) {
       final match = RegExp(r'category_id=(\d+)').firstMatch(link);
       if (match != null) {
-        context.push('/search/results?q=&category=${match.group(1)}');
+        safePush(context, '/search/results?q=&category=${match.group(1)}');
         return;
       }
     }
     if (link.contains('/products')) {
-      context.push('/search/results?q=');
+      safePush(context, '/search/results?q=');
     }
   }
 
@@ -752,7 +753,7 @@ class _CategoriesGrid extends StatelessWidget {
           final name = isAr ? item.cat.nameAr : item.cat.name;
           final icon = _iconFor(item.cat.nameAr + item.cat.name);
           return GestureDetector(
-            onTap: () => context.push('/search/results?q=&category=${item.cat.id}'),
+            onTap: () => safePush(context, '/search/results?q=&category=${item.cat.id}'),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -805,12 +806,12 @@ class _SplitPromoBanners extends StatelessWidget {
 
   void _navigate(BuildContext context, AppBanner? banner) {
     final link = banner?.buttonLink;
-    if (link == null || link.isEmpty) { context.push('/browse'); return; }
+    if (link == null || link.isEmpty) { safePush(context, '/browse'); return; }
     if (link.contains('category_id=')) {
       final m = RegExp(r'category_id=(\d+)').firstMatch(link);
-      if (m != null) { context.push('/search/results?q=&category=${m.group(1)}'); return; }
+      if (m != null) { safePush(context, '/search/results?q=&category=${m.group(1)}'); return; }
     }
-    context.push('/browse');
+    safePush(context, '/browse');
   }
 
   @override
@@ -1058,7 +1059,7 @@ class _BudgetGrid extends StatelessWidget {
         itemBuilder: (_, i) {
           final p = products[i];
           return GestureDetector(
-            onTap: () => context.push('/product/${p.id}'),
+            onTap: () => safePush(context, '/product/${p.id}'),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Stack(fit: StackFit.expand, children: [
@@ -1096,12 +1097,12 @@ class _MidBannerCard extends StatelessWidget {
 
   void _handleTap(BuildContext context) {
     final link = banner?.buttonLink;
-    if (link == null || link.isEmpty) { context.push('/browse'); return; }
+    if (link == null || link.isEmpty) { safePush(context, '/browse'); return; }
     if (link.contains('category_id=')) {
       final m = RegExp(r'category_id=(\d+)').firstMatch(link);
-      if (m != null) { context.push('/search/results?q=&category=${m.group(1)}'); return; }
+      if (m != null) { safePush(context, '/search/results?q=&category=${m.group(1)}'); return; }
     }
-    context.push('/browse');
+    safePush(context, '/browse');
   }
 
   @override
@@ -1271,7 +1272,7 @@ class _RecentlyViewedSection extends ConsumerWidget {
             itemBuilder: (_, i) {
               final p = products[i];
               return GestureDetector(
-                onTap: () => context.push('/product/${p.id}'),
+                onTap: () => safePush(context, '/product/${p.id}'),
                 child: Container(
                   width: 70,
                   margin: EdgeInsets.only(right: i < products.length - 1 ? 10 : 0),
