@@ -60,60 +60,86 @@ class HomeNotifier extends StateNotifier<HomeData> {
     fetch();
   }
 
+  // Each API call is wrapped independently — one failure never kills the others.
+  Future<dynamic> _safeGet(String path, {Map<String, dynamic>? params}) async {
+    try {
+      final res = await _api.dio.get(path, queryParameters: params);
+      return res.data;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<Product> _products(dynamic data, String path) {
+    try {
+      dynamic node = data;
+      for (final key in path.split('.')) {
+        if (node == null) return [];
+        node = node[key];
+      }
+      return (node as List?)?.map((p) => Product.fromJson(p)).toList() ?? [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  List<Category> _categories(dynamic data) {
+    try {
+      return (data?['data'] as List?)?.map((c) => Category.fromJson(c)).toList() ?? [];
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<void> fetch() async {
     state = state.copyWith(loading: true, error: null);
-    try {
-      final results = await Future.wait([
-        _api.dio.get('/products/featured'),
-        _api.dio.get('/products', queryParameters: {'sort': 'latest', 'per_page': 12}),
-        _api.dio.get('/products', queryParameters: {'sort': 'popular', 'per_page': 8}),
-        _api.dio.get('/categories'),
-        _api.dio.get('/products', queryParameters: {'max_price': 50, 'per_page': 6, 'sort': 'latest'}),
-      ]);
 
-      final featured = (results[0].data['data'] as List?)
-          ?.map((p) => Product.fromJson(p)).toList() ?? [];
-      final newArrivals = (results[1].data['data']['data'] as List?)
-          ?.map((p) => Product.fromJson(p)).toList() ?? [];
-      final popular = (results[2].data['data']['data'] as List?)
-          ?.map((p) => Product.fromJson(p)).toList() ?? [];
-      final categories = (results[3].data['data'] as List?)
-          ?.map((c) => Category.fromJson(c)).toList() ?? [];
-      final budget = (results[4].data['data']['data'] as List?)
-          ?.map((p) => Product.fromJson(p)).toList() ?? [];
+    final results = await Future.wait([
+      _safeGet('/products/featured'),
+      _safeGet('/products', params: {'sort': 'latest', 'per_page': 12}),
+      _safeGet('/products', params: {'sort': 'popular', 'per_page': 8}),
+      _safeGet('/categories'),
+      _safeGet('/products', params: {'max_price': 50, 'per_page': 6, 'sort': 'latest'}),
+    ]);
 
-      // Deals = featured products with discounts, or just all discounted
-      final deals = featured.where((p) => p.hasDiscount).toList();
+    final featured  = _products(results[0], 'data');
+    final newArrivals = _products(results[1], 'data.data');
+    final popular   = _products(results[2], 'data.data');
+    final categories = _categories(results[3]);
+    final budget    = _products(results[4], 'data.data');
+    final deals     = featured.where((p) => p.hasDiscount).toList();
 
-      // Category sections — take top 5 root categories and fetch products for each
+    // Emit partial data immediately so user sees content while category sections load.
+    state = HomeData(
+      featured: featured,
+      newArrivals: newArrivals,
+      popular: popular,
+      deals: deals.isNotEmpty ? deals : featured.take(6).toList(),
+      budget: budget,
+      categories: categories,
+      categorySections: state.categorySections,
+      loading: categories.isNotEmpty, // still loading if we'll fetch category sections
+    );
+
+    // Fetch category sections (top 5 root categories) independently.
+    if (categories.isNotEmpty) {
       final rootCats = categories.take(5).toList();
-      List<CategorySection> sections = [];
-      if (rootCats.isNotEmpty) {
-        final catResults = await Future.wait(
-          rootCats.map((cat) => _api.dio.get('/products',
-            queryParameters: {'category_id': cat.id, 'per_page': 8, 'sort': 'latest'})),
-        );
-        for (var i = 0; i < rootCats.length; i++) {
-          final prods = (catResults[i].data['data']['data'] as List?)
-              ?.map((p) => Product.fromJson(p)).toList() ?? [];
-          if (prods.isNotEmpty) {
-            sections.add(CategorySection(category: rootCats[i], products: prods));
-          }
+      final catResults = await Future.wait(
+        rootCats.map((cat) => _safeGet('/products',
+          params: {'category_id': cat.id, 'per_page': 8, 'sort': 'popular'})),
+      );
+
+      final sections = <CategorySection>[];
+      for (var i = 0; i < rootCats.length; i++) {
+        final prods = _products(catResults[i], 'data.data');
+        if (prods.isNotEmpty) {
+          sections.add(CategorySection(category: rootCats[i], products: prods));
         }
       }
 
-      state = HomeData(
-        featured: featured,
-        newArrivals: newArrivals,
-        popular: popular,
-        deals: deals.isNotEmpty ? deals : featured.take(6).toList(),
-        budget: budget,
-        categories: categories,
-        categorySections: sections,
-        loading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(loading: false, error: e.toString());
+      state = state.copyWith(categorySections: sections, loading: false);
+    } else {
+      state = state.copyWith(loading: false);
     }
   }
 }

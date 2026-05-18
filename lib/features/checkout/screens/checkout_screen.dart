@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/cart_provider.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 
@@ -115,6 +116,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
+    final config = ref.watch(appConfigProvider).config;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -196,12 +198,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             selected: _selectedAddress,
                             onSelect: (a) => setState(() => _selectedAddress = a),
                             onAddNew: () => context.push('/addresses/edit'),
+                            deliveryPromise: config.deliveryPromiseAr,
                           )
                         : _step == 2
                             ? _StepPayment(
                                 selected: _paymentMethod,
                                 onChanged: (v) => setState(() => _paymentMethod = v),
                                 notesCtrl: _notesCtrl,
+                                config: config,
                               )
                             : _StepReview(
                                 cart: cart,
@@ -209,6 +213,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 paymentMethod: _paymentMethod,
                                 onChangeAddress: () => setState(() => _step = 1),
                                 onChangePayment: () => setState(() => _step = 2),
+                                config: config,
                               ),
                   ),
                 ),
@@ -286,8 +291,9 @@ class _StepAddress extends StatelessWidget {
   final Map<String, dynamic>? selected;
   final void Function(Map<String, dynamic>) onSelect;
   final VoidCallback onAddNew;
+  final String deliveryPromise;
   const _StepAddress({required this.addresses, required this.selected,
-    required this.onSelect, required this.onAddNew});
+    required this.onSelect, required this.onAddNew, required this.deliveryPromise});
 
   @override
   Widget build(BuildContext context) {
@@ -380,11 +386,11 @@ class _StepAddress extends StatelessWidget {
           color: const Color(0xFFEAF8F8),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Row(children: [
-          Icon(Icons.info_outline_rounded, size: 14, color: AppColors.teal600),
-          SizedBox(width: 8),
-          Expanded(child: Text('معظم طلبات طرابلس تصل خلال 1-2 يوم.',
-            style: TextStyle(fontSize: 12.5, color: AppColors.ink1))),
+        child: Row(children: [
+          const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.teal600),
+          const SizedBox(width: 8),
+          Expanded(child: Text(deliveryPromise,
+            style: const TextStyle(fontSize: 12.5, color: AppColors.ink1))),
         ]),
       ),
     ]);
@@ -397,14 +403,15 @@ class _StepPayment extends StatelessWidget {
   final String selected;
   final void Function(String) onChanged;
   final TextEditingController notesCtrl;
-  const _StepPayment({required this.selected, required this.onChanged, required this.notesCtrl});
+  final dynamic config; // AppConfig
+  const _StepPayment({required this.selected, required this.onChanged,
+    required this.notesCtrl, required this.config});
 
   @override
   Widget build(BuildContext context) {
-    final methods = [
-      ('cash_on_delivery', 'الدفع عند الاستلام', 'رسوم خدمة + 5 د.ل', false),
-      ('wallet', 'محفظة باهي', 'فوري · بدون رسوم', false),
-    ];
+    final methods = (config.paymentMethods as List)
+        .where((m) => m.enabled == true)
+        .toList();
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('طريقة الدفع',
@@ -412,35 +419,38 @@ class _StepPayment extends StatelessWidget {
       const SizedBox(height: 16),
 
       ...methods.map((m) => GestureDetector(
-        onTap: () => onChanged(m.$1),
+        onTap: () => onChanged(m.id),
         child: Container(
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: selected == m.$1 ? const Color(0xFFEAF8F8) : Colors.white,
+            color: selected == m.id ? const Color(0xFFEAF8F8) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected == m.$1 ? AppColors.primary : AppColors.border,
-              width: selected == m.$1 ? 1.5 : 1),
+              color: selected == m.id ? AppColors.primary : AppColors.border,
+              width: selected == m.id ? 1.5 : 1),
           ),
           child: Row(children: [
             Container(
               width: 18, height: 18,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: selected == m.$1
+                border: selected == m.id
                     ? null
                     : Border.all(color: AppColors.borderStrong, width: 1.5),
-                color: selected == m.$1 ? AppColors.primary : Colors.transparent,
+                color: selected == m.id ? AppColors.primary : Colors.transparent,
               ),
-              child: selected == m.$1
+              child: selected == m.id
                   ? const Icon(Icons.circle, size: 8, color: Colors.white)
                   : null,
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(m.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              Text(m.$3, style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
+              Text(m.labelAr, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              Text(
+                m.descriptionAr.isNotEmpty ? m.descriptionAr
+                    : (m.fee > 0 ? 'رسوم خدمة ${m.fee.toStringAsFixed(0)} د.ل' : 'بدون رسوم'),
+                style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
             ])),
           ]),
         ),
@@ -479,14 +489,18 @@ class _StepReview extends StatelessWidget {
   final String paymentMethod;
   final VoidCallback onChangeAddress;
   final VoidCallback onChangePayment;
+  final dynamic config; // AppConfig
   const _StepReview({required this.cart, required this.address,
     required this.paymentMethod, required this.onChangeAddress,
-    required this.onChangePayment});
+    required this.onChangePayment, required this.config});
 
   String get _paymentLabel {
-    switch (paymentMethod) {
-      case 'wallet': return 'محفظة باهي';
-      default: return 'الدفع عند الاستلام';
+    try {
+      final method = (config.paymentMethods as List)
+          .firstWhere((m) => m.id == paymentMethod, orElse: () => null);
+      return method?.labelAr ?? paymentMethod;
+    } catch (_) {
+      return paymentMethod;
     }
   }
 

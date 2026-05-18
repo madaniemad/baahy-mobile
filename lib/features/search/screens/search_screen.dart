@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/product.dart';
+import '../../../core/providers/app_config_provider.dart';
+import '../../../core/providers/home_provider.dart';
 import '../../../shared/theme/app_theme.dart';
 
 final _searchSuggestionsProvider = FutureProvider.family<List<Product>, String>((ref, q) async {
@@ -25,18 +28,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _ctrl = TextEditingController();
   final _focus = FocusNode();
   String _query = '';
-
-  static const _trending = [
-    'عطور وبخور',
-    'سماعات لاسلكية',
-    'عباءات',
-    'كاميرات',
-    'ملابس رياضية',
-  ];
-
-  static const _recentCategories = [
-    'إلكترونيات', 'ملابس', 'أحذية', 'حقائب', 'ساعات', 'عطور',
-  ];
+  String _debouncedQuery = '';
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -46,9 +39,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _ctrl.dispose();
     _focus.dispose();
     super.dispose();
+  }
+
+  void _onChanged(String v) {
+    setState(() => _query = v);
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _debouncedQuery = v);
+    });
   }
 
   void _search(String q) {
@@ -59,10 +61,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hasQuery = _query.trim().length >= 2;
+    final hasQuery = _debouncedQuery.trim().length >= 2;
     final suggestionsAsync = hasQuery
-        ? ref.watch(_searchSuggestionsProvider(_query.trim()))
+        ? ref.watch(_searchSuggestionsProvider(_debouncedQuery.trim()))
         : const AsyncValue<List<Product>>.data([]);
+
+    final config = ref.watch(appConfigProvider).config;
+    final categories = ref.watch(homeProvider).categories;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -110,7 +115,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(vertical: 12),
                           ),
-                          onChanged: (v) => setState(() => _query = v),
+                          onChanged: _onChanged,
                           onSubmitted: _search,
                         ),
                       ),
@@ -118,7 +123,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         GestureDetector(
                           onTap: () {
                             _ctrl.clear();
-                            setState(() => _query = '');
+                            setState(() { _query = ''; _debouncedQuery = ''; });
                           },
                           child: const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 12),
@@ -135,13 +140,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             Expanded(
               child: hasQuery
                   ? _LiveResults(
-                      query: _query,
+                      query: _debouncedQuery,
                       suggestionsAsync: suggestionsAsync,
                       onSearch: _search,
                     )
                   : _EmptyState(
-                      trending: _trending,
-                      categories: _recentCategories,
+                      trending: config.trendingSearches,
+                      categories: categories.map((c) => c.nameAr).take(8).toList(),
                       onSearch: _search,
                     ),
             ),
@@ -203,7 +208,12 @@ class _LiveResults extends StatelessWidget {
                       child: SizedBox(
                         width: 48, height: 48,
                         child: p.firstImage != null
-                            ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover)
+                            ? CachedNetworkImage(
+                                imageUrl: p.firstImage!, fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) => Container(
+                                  color: AppColors.surfaceSoft,
+                                  child: const Icon(Icons.image_outlined, color: AppColors.ink4, size: 20)),
+                              )
                             : Container(color: AppColors.surfaceSoft,
                                 child: const Icon(Icons.image_outlined, color: AppColors.ink4, size: 20)),
                       ),
@@ -282,28 +292,28 @@ class _EmptyState extends StatelessWidget {
             ),
           )),
 
-          const SizedBox(height: 20),
-
-          // Categories
-          const Text('الأقسام',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-              color: AppColors.ink2, letterSpacing: 0.5)),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8, runSpacing: 8,
-            children: categories.map((c) => GestureDetector(
-              onTap: () => onSearch(c),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceSoft,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
+          if (categories.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const Text('الأقسام',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                color: AppColors.ink2, letterSpacing: 0.5)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8, runSpacing: 8,
+              children: categories.map((c) => GestureDetector(
+                onTap: () => onSearch(c),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSoft,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Text(c, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                 ),
-                child: Text(c, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-              ),
-            )).toList(),
-          ),
+              )).toList(),
+            ),
+          ],
         ],
       ),
     );

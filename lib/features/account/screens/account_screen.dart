@@ -1,11 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/api/api_client.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+
+final _activeOrdersCountProvider = FutureProvider<int>((ref) async {
+  try {
+    final res = await ApiClient.instance.dio.get('/orders', queryParameters: {
+      'status': 'pending,confirmed,processing,shipped',
+      'per_page': 1,
+    });
+    return (res.data['data']?['total'] as num?)?.toInt() ?? 0;
+  } catch (_) {
+    return 0;
+  }
+});
+
+final _totalOrdersCountProvider = FutureProvider<int>((ref) async {
+  try {
+    final res = await ApiClient.instance.dio.get('/orders', queryParameters: {'per_page': 1});
+    return (res.data['data']?['total'] as num?)?.toInt() ?? 0;
+  } catch (_) {
+    return 0;
+  }
+});
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -52,6 +74,8 @@ class AccountScreen extends ConsumerWidget {
 
     final user = auth.user!;
     final wishlistCount = ref.watch(wishlistProvider).length;
+    final activeOrders = ref.watch(_activeOrdersCountProvider).value ?? 0;
+    final totalOrders = ref.watch(_totalOrdersCountProvider).value ?? 0;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -125,22 +149,22 @@ class AccountScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       _StatTile(
-                        value: '1',
+                        value: activeOrders > 0 ? '$activeOrders' : '—',
                         label: 'نشط',
-                        accent: true,
+                        accent: activeOrders > 0,
                         onTap: () => context.push('/orders'),
                       ),
                       const SizedBox(width: 8),
                       _StatTile(
-                        value: '${user.loyaltyPoints > 0 ? user.loyaltyPoints : "—"}',
+                        value: totalOrders > 0 ? '$totalOrders' : '—',
                         label: 'طلب',
                         onTap: () => context.push('/orders'),
                       ),
                       const SizedBox(width: 8),
                       _StatTile(
-                        value: '$wishlistCount',
+                        value: wishlistCount > 0 ? '$wishlistCount' : '—',
                         label: 'محفوظ',
-                        onTap: () {},
+                        onTap: () => context.push('/wishlist'),
                       ),
                     ],
                   ),

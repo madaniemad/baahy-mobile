@@ -157,7 +157,7 @@ class _RightContent extends ConsumerWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
-                childAspectRatio: 0.72,
+                mainAxisExtent: 260,
               ),
               itemCount: products.length,
               itemBuilder: (_, i) => ProductCard(product: products[i]),

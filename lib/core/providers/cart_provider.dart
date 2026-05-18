@@ -4,27 +4,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
 import '../models/cart.dart';
 import '../models/product.dart';
+import '../models/app_config.dart';
+import 'app_config_provider.dart';
 
 const _kCartKey = 'baahy_cart';
-
-const double kFreeShippingThreshold = 150;
-const double kDeliveryFee = 10;
 
 class CartState {
   final List<CartItem> items;
   final String? couponCode;
   final double discountAmount;
+  final double shippingFee;
+  final double freeShippingThreshold;
 
   const CartState({
     this.items = const [],
     this.couponCode,
     this.discountAmount = 0,
+    this.shippingFee = AppConfig.defaults.shippingFee,
+    this.freeShippingThreshold = AppConfig.defaults.freeShippingThreshold,
   });
 
   double get subtotal => items.fold(0, (s, i) => s + i.total);
-  double get deliveryFee => subtotal >= kFreeShippingThreshold ? 0 : kDeliveryFee;
+  double get deliveryFee => subtotal >= freeShippingThreshold ? 0 : shippingFee;
   double get freeShippingRemaining =>
-      subtotal >= kFreeShippingThreshold ? 0 : kFreeShippingThreshold - subtotal;
+      subtotal >= freeShippingThreshold ? 0 : freeShippingThreshold - subtotal;
   double get total => subtotal - discountAmount + deliveryFee;
   int get count => items.fold(0, (s, i) => s + i.quantity);
 
@@ -32,16 +35,28 @@ class CartState {
     List<CartItem>? items,
     String? couponCode,
     double? discountAmount,
+    double? shippingFee,
+    double? freeShippingThreshold,
     bool clearCoupon = false,
   }) => CartState(
     items: items ?? this.items,
     couponCode: clearCoupon ? null : (couponCode ?? this.couponCode),
     discountAmount: clearCoupon ? 0 : (discountAmount ?? this.discountAmount),
+    shippingFee: shippingFee ?? this.shippingFee,
+    freeShippingThreshold: freeShippingThreshold ?? this.freeShippingThreshold,
   );
 }
 
 class CartNotifier extends StateNotifier<CartState> {
-  CartNotifier() : super(const CartState()) {
+  final double _shippingFee;
+  final double _threshold;
+
+  CartNotifier({
+    double shippingFee = AppConfig.defaults.shippingFee,
+    double freeShippingThreshold = AppConfig.defaults.freeShippingThreshold,
+  })  : _shippingFee = shippingFee,
+        _threshold = freeShippingThreshold,
+        super(CartState(shippingFee: shippingFee, freeShippingThreshold: freeShippingThreshold)) {
     _load();
   }
 
@@ -53,7 +68,7 @@ class CartNotifier extends StateNotifier<CartState> {
       final list = (jsonDecode(raw) as List)
           .map((j) => CartItem.fromJson(j as Map<String, dynamic>))
           .toList();
-      state = CartState(items: list);
+      state = CartState(items: list, shippingFee: _shippingFee, freeShippingThreshold: _threshold);
     } catch (_) {}
   }
 
@@ -80,7 +95,7 @@ class CartNotifier extends StateNotifier<CartState> {
         quantity: qty,
       ));
     }
-    state = CartState(items: items);
+    state = state.copyWith(items: items);
     await _save();
   }
 
@@ -92,23 +107,22 @@ class CartNotifier extends StateNotifier<CartState> {
     final items = state.items
         .map((i) => i.key == key ? i.copyWith(quantity: qty) : i)
         .toList();
-    state = CartState(items: items);
+    state = state.copyWith(items: items);
     await _save();
   }
 
   Future<void> remove(String key) async {
     final items = state.items.where((i) => i.key != key).toList();
-    state = CartState(items: items);
+    state = state.copyWith(items: items);
     await _save();
   }
 
   Future<void> clear() async {
-    state = const CartState();
+    state = CartState(shippingFee: _shippingFee, freeShippingThreshold: _threshold);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kCartKey);
   }
 
-  /// Returns null on success (coupon applied), or an Arabic error message.
   Future<String?> applyCoupon(String code) async {
     if (code.trim().isEmpty) return 'أدخل رمز الكوبون';
     try {
@@ -129,8 +143,6 @@ class CartNotifier extends StateNotifier<CartState> {
     state = state.copyWith(clearCoupon: true);
   }
 
-  /// Validates cart with the server. Returns null if all items are valid,
-  /// or an Arabic error message if something is wrong.
   Future<String?> validate() async {
     if (state.items.isEmpty) return 'السلة فارغة';
     try {
@@ -156,8 +168,13 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 }
 
-final cartProvider =
-    StateNotifierProvider<CartNotifier, CartState>((ref) => CartNotifier());
+final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) {
+  final config = ref.watch(appConfigProvider).config;
+  return CartNotifier(
+    shippingFee: config.shippingFee,
+    freeShippingThreshold: config.freeShippingThreshold,
+  );
+});
 
 final cartCountProvider =
     Provider<int>((ref) => ref.watch(cartProvider).count);

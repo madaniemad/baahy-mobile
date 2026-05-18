@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/api_client.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/city_screen.dart';
 import '../../features/auth/screens/phone_signin_screen.dart';
@@ -26,7 +27,7 @@ import '../../features/referral/screens/referral_screen.dart';
 import '../shell/main_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: '/splash',
     routes: [
       GoRoute(path: '/splash',   builder: (_, __) => const SplashScreen()),
@@ -75,4 +76,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/referral',   builder: (_, __) => const ReferralScreen()),
     ],
   );
+
+  // Redirect to sign-in whenever the API returns 401 (token expired/revoked).
+  ApiClient.setUnauthorizedCallback(() => router.go('/signin'));
+
+  return router;
 });

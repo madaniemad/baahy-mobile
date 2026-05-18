@@ -3,6 +3,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 const _baseUrl = 'https://phplaravel-1620145-6391034.cloudwaysapps.com/api';
 
+// Callback registered by auth layer to redirect to login on 401.
+typedef OnUnauthorized = void Function();
+OnUnauthorized? _onUnauthorized;
+
 class ApiClient {
   static ApiClient? _instance;
   static ApiClient get instance => _instance ??= ApiClient._();
@@ -14,11 +18,16 @@ class ApiClient {
     dio = _build();
   }
 
+  static void setUnauthorizedCallback(OnUnauthorized cb) {
+    _onUnauthorized = cb;
+  }
+
   Dio _build() {
     final d = Dio(BaseOptions(
       baseUrl: _baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
@@ -33,9 +42,10 @@ class ApiClient {
         }
         handler.next(options);
       },
-      onError: (error, handler) {
+      onError: (error, handler) async {
         if (error.response?.statusCode == 401) {
-          _storage.delete(key: 'auth_token');
+          await _storage.delete(key: 'auth_token');
+          _onUnauthorized?.call();
         }
         handler.next(error);
       },
