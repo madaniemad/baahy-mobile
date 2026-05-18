@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/providers/auth_provider.dart';
 import '../../../shared/theme/app_theme.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -13,31 +12,39 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
+    with TickerProviderStateMixin {
+  late AnimationController _fadeCtrl;
   late Animation<double> _fade;
+  late List<AnimationController> _dotCtrls;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
-    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-    _ctrl.forward();
+    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _fadeCtrl.forward();
+
+    _dotCtrls = List.generate(3, (i) {
+      final c = AnimationController(vsync: this,
+        duration: const Duration(milliseconds: 1200));
+      Future.delayed(Duration(milliseconds: i * 180), () {
+        if (mounted) c.repeat(reverse: true);
+      });
+      return c;
+    });
+
     _navigate();
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(milliseconds: 1600));
     if (!mounted) return;
 
     final prefs = await SharedPreferences.getInstance();
     final cityChosen = prefs.getString('city') != null;
-    final auth = ref.read(authProvider);
 
     if (!cityChosen) {
       context.go('/city');
-    } else if (auth.isLoggedIn) {
-      context.go('/home');
     } else {
       context.go('/home');
     }
@@ -45,50 +52,58 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _fadeCtrl.dispose();
+    for (final c in _dotCtrls) c.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: FadeTransition(
-        opacity: _fade,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 44),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'baahy',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink0,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'تسوق بسهولة',
-                style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 15,
-                  color: AppColors.ink3,
-                ),
-              ),
-            ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Color(0xFFEAF8F8)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
+        ),
+        child: FadeTransition(
+          opacity: _fade,
+          child: Stack(children: [
+            Center(
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Text('baahy',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 64, fontWeight: FontWeight.w800,
+                    color: AppColors.primary, letterSpacing: -1, height: 1)),
+                const SizedBox(height: 10),
+                const Text('سوق ليبيا الإلكتروني',
+                  style: TextStyle(fontSize: 13, color: AppColors.ink3)),
+              ]),
+            ),
+            Positioned(
+              bottom: 60,
+              left: 0, right: 0,
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                for (int i = 0; i < 3; i++) ...[
+                  if (i > 0) const SizedBox(width: 6),
+                  AnimatedBuilder(
+                    animation: _dotCtrls[i],
+                    builder: (_, __) => Container(
+                      width: 6, height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.teal600.withValues(
+                          alpha: 0.3 + 0.7 * _dotCtrls[i].value),
+                      ),
+                    ),
+                  ),
+                ],
+              ]),
+            ),
+          ]),
         ),
       ),
     );

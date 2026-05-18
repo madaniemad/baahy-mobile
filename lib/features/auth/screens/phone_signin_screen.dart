@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_button.dart';
 
 class PhoneSignInScreen extends ConsumerStatefulWidget {
   const PhoneSignInScreen({super.key});
@@ -17,6 +16,8 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
   bool _loading = false;
   String? _error;
 
+  bool get _valid => _ctrl.text.replaceAll(RegExp(r'\D'), '').length >= 9;
+
   @override
   void dispose() {
     _ctrl.dispose();
@@ -24,16 +25,13 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
   }
 
   Future<void> _send() async {
-    final phone = _ctrl.text.trim();
-    if (phone.length < 9) {
-      setState(() => _error = 'أدخل رقم هاتف صحيح');
-      return;
-    }
+    if (!_valid) return;
     setState(() { _loading = true; _error = null; });
     try {
+      final phone = '+218 ${_ctrl.text.trim()}';
       await ref.read(authProvider.notifier).requestOtp(phone);
       if (mounted) context.push('/otp', extra: phone);
-    } catch (e) {
+    } catch (_) {
       setState(() => _error = 'تعذر الإرسال، حاول مجدداً');
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -45,66 +43,129 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
+        backgroundColor: Colors.white, elevation: 0,
         leading: IconButton(
-          onPressed: () => context.go('/home'),
-          icon: const Icon(Icons.close, color: AppColors.ink0),
-        ),
+          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 24),
-            const Text('تسجيل الدخول',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 26, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            const Text('أدخل رقم هاتفك وسنرسل لك رمز التحقق',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 15, color: AppColors.ink2)),
-            const SizedBox(height: 32),
             Container(
+              width: 56, height: 56,
               decoration: BoxDecoration(
-                color: AppColors.bg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _error != null ? AppColors.danger : AppColors.border),
+                color: const Color(0xFFEAF8F8),
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-                    decoration: const BoxDecoration(
-                      border: Border(right: BorderSide(color: AppColors.border)),
-                    ),
-                    child: const Text('+218',
-                      style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 16,
-                        fontWeight: FontWeight.w600)),
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _ctrl,
-                      keyboardType: TextInputType.phone,
-                      textDirection: TextDirection.ltr,
-                      style: const TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 16),
-                      decoration: const InputDecoration(
-                        hintText: '091 234 5678',
-                        hintStyle: TextStyle(color: AppColors.ink4),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 14),
-                      ),
-                      onSubmitted: (_) => _send(),
-                    ),
-                  ),
-                ],
-              ),
+              child: const Icon(Icons.phone_outlined,
+                color: AppColors.teal600, size: 26),
             ),
+            const SizedBox(height: 24),
+            const Text('أدخل رقم هاتفك',
+              style: TextStyle(fontFamily: 'Cairo',
+                fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+            const SizedBox(height: 8),
+            const Text('سنرسل لك رمزاً من 6 أرقام للتأكد من هويتك.',
+              style: TextStyle(fontSize: 14.5, color: AppColors.ink2, height: 1.5)),
+            const SizedBox(height: 24),
+
+            // Phone input
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceSoft,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(children: [
+                  Text('🇱🇾', style: TextStyle(fontSize: 18)),
+                  SizedBox(width: 6),
+                  Text('+218',
+                    style: TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 15, fontWeight: FontWeight.w600)),
+                ]),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.bg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _error != null ? AppColors.danger : AppColors.border),
+                  ),
+                  child: TextField(
+                    controller: _ctrl,
+                    autofocus: true,
+                    keyboardType: TextInputType.phone,
+                    textDirection: TextDirection.ltr,
+                    onChanged: (_) => setState(() => _error = null),
+                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                    decoration: const InputDecoration(
+                      hintText: '91 234 5678',
+                      hintStyle: TextStyle(color: AppColors.ink4, fontWeight: FontWeight.w400),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    ),
+                    onSubmitted: (_) => _send(),
+                  ),
+                ),
+              ),
+            ]),
+
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+              Text(_error!,
+                style: const TextStyle(color: AppColors.danger, fontSize: 13)),
             ],
-            const SizedBox(height: 24),
-            AppButton(label: 'إرسال الرمز', onTap: _send, loading: _loading),
+
+            const Spacer(),
+
+            // Buttons
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: (_valid && !_loading) ? _send : null,
+                icon: _loading
+                    ? const SizedBox(width: 18, height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink0))
+                    : const Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.ink0),
+                label: const Text('إرسال الرمز',
+                  style: TextStyle(fontFamily: 'Cairo',
+                    fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink0)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.chat_outlined, size: 16, color: AppColors.ink1),
+                label: const Text('المتابعة عبر واتساب',
+                  style: TextStyle(fontFamily: 'Cairo',
+                    fontWeight: FontWeight.w700, color: AppColors.ink0)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'بالمتابعة أنت توافق على الشروط وسياسة الخصوصية.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, color: AppColors.ink3, height: 1.5)),
           ],
         ),
       ),
