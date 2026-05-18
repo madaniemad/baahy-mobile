@@ -23,6 +23,7 @@ class ProductCard extends ConsumerWidget {
       onTap: () => context.push('/product/${product.id}'),
       child: Container(
         width: width,
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: AppRadius.cardRadius,

@@ -1,5 +1,11 @@
 import 'product.dart';
 
+double _d(dynamic v) {
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v) ?? 0.0;
+  return 0.0;
+}
+
 class Order {
   final int id;
   final String orderNumber;
@@ -56,10 +62,10 @@ class Order {
     id: j['id'],
     orderNumber: j['order_number'] ?? '#${j['id']}',
     status: j['status'] ?? 'pending',
-    total: (j['total'] as num).toDouble(),
-    subtotal: (j['subtotal'] as num? ?? 0).toDouble(),
-    shippingCost: (j['shipping_cost'] as num? ?? 0).toDouble(),
-    discount: (j['discount'] as num? ?? 0).toDouble(),
+    total: _d(j['total']),
+    subtotal: _d(j['subtotal'] ?? 0),
+    shippingCost: _d(j['shipping_cost'] ?? 0),
+    discount: _d(j['discount'] ?? 0),
     couponCode: j['coupon_code'],
     paymentMethod: j['payment_method'] ?? 'cash',
     paymentStatus: j['payment_status'] ?? 'pending',
@@ -146,9 +152,8 @@ class OrderItem {
       variationId: j['variation_id'],
       variationLabel: j['variation_label'],
       quantity: j['quantity'] ?? 1,
-      price: (j['price'] as num).toDouble(),
-      total: (j['total'] as num? ?? j['subtotal'] as num?
-          ?? (j['price'] as num) * (j['quantity'] as num? ?? 1)).toDouble(),
+      price: _d(j['price']),
+      total: _d(j['total'] ?? j['subtotal'] ?? (_d(j['price']) * (j['quantity'] ?? 1))),
     );
   }
 }

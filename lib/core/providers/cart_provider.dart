@@ -116,7 +116,8 @@ class CartNotifier extends StateNotifier<CartState> {
         'code': code.trim(),
         'subtotal': state.subtotal,
       });
-      final discount = (res.data['data']?['discount_amount'] as num?)?.toDouble() ?? 0;
+      final raw = res.data['data']?['discount_amount'];
+      final discount = raw is num ? raw.toDouble() : double.tryParse(raw?.toString() ?? '') ?? 0.0;
       state = state.copyWith(couponCode: code.trim(), discountAmount: discount);
       return null;
     } catch (_) {

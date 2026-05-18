@@ -452,7 +452,8 @@ class _TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final amount = (tx['amount'] as num?)?.toDouble() ?? 0;
+    final rawAmt = tx['amount'];
+    final amount = rawAmt is num ? rawAmt.toDouble() : double.tryParse(rawAmt?.toString() ?? '') ?? 0.0;
     final isCredit = tx['type'] == 'credit' || amount > 0;
     return Container(
       padding: const EdgeInsets.all(14),

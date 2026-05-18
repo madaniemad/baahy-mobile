@@ -1,3 +1,9 @@
+double _dUser(dynamic v) {
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v) ?? 0.0;
+  return 0.0;
+}
+
 class User {
   final int id;
   final String name;
@@ -28,7 +34,7 @@ class User {
     email: j['email'],
     avatar: j['avatar'],
     city: j['city'],
-    walletBalance: (j['wallet_balance'] as num? ?? 0).toDouble(),
+    walletBalance: j['wallet_balance'] != null ? _dUser(j['wallet_balance']) : 0.0,
     loyaltyPoints: j['loyalty_points'] ?? 0,
     referralCode: j['referral_code'],
   );

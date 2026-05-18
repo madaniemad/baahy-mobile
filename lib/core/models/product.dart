@@ -76,14 +76,20 @@ class Product {
     'description_ar': descriptionAr,
   };
 
+  static double _d(dynamic v) {
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v) ?? 0.0;
+    return 0.0;
+  }
+
   factory Product.fromJson(Map<String, dynamic> j) => Product(
     id: j['id'],
     name: j['name'] ?? '',
     nameAr: j['name_ar'] ?? j['name'] ?? '',
     sku: j['sku'],
-    price: (j['price'] as num).toDouble(),
-    salePrice: j['sale_price'] != null ? (j['sale_price'] as num).toDouble() : null,
-    currentPrice: j['current_price'] != null ? (j['current_price'] as num).toDouble() : null,
+    price: _d(j['price']),
+    salePrice: j['sale_price'] != null ? _d(j['sale_price']) : null,
+    currentPrice: j['current_price'] != null ? _d(j['current_price']) : null,
     inStock: j['in_stock'] == true || j['in_stock'] == 1,
     stockQuantity: j['stock_quantity'],
     status: j['status'] ?? 'active',
@@ -94,9 +100,9 @@ class Product {
     category: j['category'] != null ? Category.fromJson(j['category']) : null,
     variations: (j['variations'] as List?)
         ?.map((v) => ProductVariation.fromJson(v)).toList() ?? [],
-    averageRating: j['average_rating'] != null ? (j['average_rating'] as num).toDouble() : null,
+    averageRating: j['average_rating'] != null ? _d(j['average_rating']) : null,
     reviewsCount: j['reviews_count'],
-    soldCount: j['sold_count'] is int ? j['sold_count'] : (j['sold_count'] as num?)?.toInt(),
+    soldCount: j['sold_count'] != null ? _d(j['sold_count']).toInt() : null,
     description: j['description'],
     descriptionAr: j['description_ar'],
   );
@@ -148,8 +154,8 @@ class ProductVariation {
   factory ProductVariation.fromJson(Map<String, dynamic> j) => ProductVariation(
     id: j['id'],
     sku: j['sku'],
-    price: (j['price'] as num).toDouble(),
-    salePrice: j['sale_price'] != null ? (j['sale_price'] as num).toDouble() : null,
+    price: Product._d(j['price']),
+    salePrice: j['sale_price'] != null ? Product._d(j['sale_price']) : null,
     stockQuantity: j['stock_quantity'] ?? 0,
     isActive: j['is_active'] == true || j['is_active'] == 1,
     attributes: (j['variation_attributes'] as List?)
@@ -218,7 +224,7 @@ class Vendor {
     storeNameAr: j['store_name_ar'] ?? j['store_name'] ?? '',
     logo: j['logo'],
     city: j['city'],
-    averageRating: j['average_rating'] != null ? (j['average_rating'] as num).toDouble() : null,
+    averageRating: j['average_rating'] != null ? Product._d(j['average_rating']) : null,
   );
 }
 

@@ -10,7 +10,8 @@ class OrderConfirmedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final orderNumber = data['order_number'] ?? '#${data['id']}';
     final orderId = data['id'];
-    final total = (data['total'] as num?)?.toDouble();
+    final rawTotal = data['total'];
+    final total = rawTotal is num ? rawTotal.toDouble() : double.tryParse(rawTotal?.toString() ?? '');
 
     return Scaffold(
       backgroundColor: AppColors.bg,

@@ -11,6 +11,19 @@ final _referralProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   return Map<String, dynamic>.from(res.data['data'] ?? {});
 });
 
+int _parseInt(dynamic v) {
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v) ?? 0;
+  return 0;
+}
+
+double _parseDouble(dynamic v) {
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v) ?? 0.0;
+  return 0.0;
+}
+
 class ReferralScreen extends ConsumerWidget {
   const ReferralScreen({super.key});
 
@@ -68,9 +81,9 @@ class ReferralScreen extends ConsumerWidget {
                 error: (_, __) => _CodeCard(code: user?.referralCode ?? 'BAAHY10'),
                 data: (data) => _CodeCard(
                   code: data['code'] as String? ?? user?.referralCode ?? 'BAAHY10',
-                  invited: (data['invited_count'] as num?)?.toInt() ?? 0,
-                  joined: (data['used_count'] as num?)?.toInt() ?? 0,
-                  earned: (data['earned_amount'] as num?)?.toDouble() ?? 0,
+                  invited: _parseInt(data['invited_count']),
+                  joined: _parseInt(data['used_count']),
+                  earned: _parseDouble(data['earned_amount']),
                 ),
               ),
             ),
