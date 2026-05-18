@@ -95,6 +95,27 @@ class CartScreen extends ConsumerWidget {
 
                       const SizedBox(height: 10),
 
+                      // Delivered by baahy header
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(children: [
+                          Container(
+                            width: 28, height: 28,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary, shape: BoxShape.circle),
+                            child: const Icon(Icons.inventory_2_outlined,
+                              size: 16, color: Colors.white),
+                          ),
+                          const SizedBox(width: 10),
+                          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            const Text('توصيل باهي',
+                              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+                            Text('شحنة واحدة · 1-2 يوم',
+                              style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+                          ]),
+                        ]),
+                      ),
+
                       // Cart items
                       ...cart.items.map((item) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -128,40 +149,38 @@ class _FreeShippingBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = (subtotal / kFreeShippingThreshold).clamp(0.0, 1.0);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFEAF8F8),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: AppShadows.shadowCard,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.teal600),
+            const Icon(Icons.local_shipping_outlined, size: 18, color: AppColors.teal600),
             const SizedBox(width: 8),
             Expanded(
               child: Text.rich(TextSpan(
-                style: const TextStyle(fontSize: 13),
+                style: const TextStyle(fontSize: 12.5),
                 children: [
-                  const TextSpan(text: 'أضف ', style: TextStyle(color: AppColors.ink2)),
                   TextSpan(
                     text: '${remaining.toStringAsFixed(0)} د.ل',
                     style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink0,
                       fontFamily: 'PlusJakartaSans')),
-                  const TextSpan(text: ' للحصول على شحن مجاني',
-                    style: TextStyle(color: AppColors.ink2)),
+                  const TextSpan(text: ' حتى الشحن المجاني',
+                    style: TextStyle(color: AppColors.ink1)),
                 ],
               )),
             ),
           ]),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 6,
-              backgroundColor: AppColors.border,
+              minHeight: 4,
+              backgroundColor: const Color(0xFF4CD5DA).withValues(alpha: 0.2),
               color: AppColors.teal600,
             ),
           ),

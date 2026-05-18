@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/review.dart';
@@ -67,11 +68,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     if (goToCart) {
       context.push('/cart');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('تمت الإضافة للسلة'),
-        action: SnackBarAction(label: 'السلة', onPressed: () => context.push('/cart')),
-        backgroundColor: AppColors.success,
-      ));
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        builder: (_) => _AddedToCartSheet(product: product, qty: _qty),
+      );
     }
   }
 
@@ -130,6 +133,23 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       Padding(
                         padding: const EdgeInsets.only(right: 4),
                         child: GestureDetector(
+                          onTap: () => Share.share(
+                            '${product.nameAr}\nhttps://baahy.ly/product/${product.id}'),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.95),
+                              shape: BoxShape.circle,
+                              boxShadow: AppShadows.shadowCard,
+                            ),
+                            child: const Icon(Icons.share_outlined, size: 20, color: AppColors.ink0),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
                           onTap: () => ref.read(wishlistProvider.notifier).toggle(product.id),
                           child: Container(
                             padding: const EdgeInsets.all(8),
@@ -146,7 +166,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                     ],
                     flexibleSpace: FlexibleSpaceBar(
                       background: Stack(
@@ -232,6 +252,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                     const SizedBox(width: 4),
                                     Text('(${product.reviewsCount})',
                                       style: const TextStyle(color: AppColors.ink3, fontSize: 12)),
+                                    if (product.soldCount != null && product.soldCount! > 0) ...[
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 6),
+                                        child: Text('·', style: TextStyle(color: AppColors.ink3)),
+                                      ),
+                                      Text('${product.soldCount} مُباع',
+                                        style: const TextStyle(fontSize: 12, color: AppColors.ink2)),
+                                    ],
                                   ]),
                                 ),
                               const SizedBox(height: 12),
@@ -935,4 +963,85 @@ class _QtyBtn extends StatelessWidget {
         color: onTap != null ? AppColors.ink0 : AppColors.border),
     ),
   );
+}
+
+// ── Added to cart sheet ───────────────────────────────────────────────────────
+
+class _AddedToCartSheet extends StatelessWidget {
+  final Product product;
+  final int qty;
+  const _AddedToCartSheet({required this.product, required this.qty});
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = context.isAr;
+    final name = isAr ? product.nameAr : product.name;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(height: 16),
+          Row(children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.12),
+                shape: BoxShape.circle),
+              child: const Icon(Icons.check_rounded, size: 22, color: AppColors.success),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('تمت الإضافة للسلة',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text('$qty× $name',
+                  style: const TextStyle(fontSize: 12, color: AppColors.ink2),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 20),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('مواصلة التسوّق',
+                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, color: AppColors.ink0)),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.push('/cart');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: const Text('عرض السلة',
+                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: AppColors.ink0)),
+              ),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
 }

@@ -17,6 +17,7 @@ class Product {
   final List<ProductVariation> variations;
   final double? averageRating;
   final int? reviewsCount;
+  final int? soldCount;
   final String? description;
   final String? descriptionAr;
 
@@ -39,6 +40,7 @@ class Product {
     this.variations = const [],
     this.averageRating,
     this.reviewsCount,
+    this.soldCount,
     this.description,
     this.descriptionAr,
   });
@@ -69,6 +71,7 @@ class Product {
     'variations': variations.map((v) => v.toJson()).toList(),
     'average_rating': averageRating,
     'reviews_count': reviewsCount,
+    'sold_count': soldCount,
     'description': description,
     'description_ar': descriptionAr,
   };
@@ -93,6 +96,7 @@ class Product {
         ?.map((v) => ProductVariation.fromJson(v)).toList() ?? [],
     averageRating: j['average_rating'] != null ? (j['average_rating'] as num).toDouble() : null,
     reviewsCount: j['reviews_count'],
+    soldCount: j['sold_count'] is int ? j['sold_count'] : (j['sold_count'] as num?)?.toInt(),
     description: j['description'],
     descriptionAr: j['description_ar'],
   );
