@@ -192,9 +192,9 @@ class HomeScreen extends ConsumerWidget {
               const SliverToBoxAdapter(child: _RecentlyViewedSection()),
 
               // baahy promise closing block
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 20, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
                   child: _BaahyPromiseCard(),
                 ),
               ),
@@ -1172,10 +1172,11 @@ class _MidBannerCard extends StatelessWidget {
 
 // ── baahy promise block ───────────────────────────────────────────────────────
 
-class _BaahyPromiseCard extends StatelessWidget {
+class _BaahyPromiseCard extends ConsumerWidget {
   const _BaahyPromiseCard();
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final config = ref.watch(appConfigProvider).config;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1212,9 +1213,9 @@ class _BaahyPromiseCard extends StatelessWidget {
               style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800,
                 color: Colors.white, height: 1.25)),
             const SizedBox(height: 8),
-            const Text(
-              'منتجات مفحوصة. مستودعات حقيقية. سائقو باهي في 12 مدينة. إذا حدث خطأ، نحن من يحلّه.',
-              style: TextStyle(fontSize: 12.5, color: Colors.white60, height: 1.5)),
+            Text(
+              'منتجات مفحوصة. مستودعات حقيقية. سائقو باهي في ${config.deliveryCitiesCount} مدينة. إذا حدث خطأ، نحن من يحلّه.',
+              style: const TextStyle(fontSize: 12.5, color: Colors.white60, height: 1.5)),
           ],
         ),
       ]),
