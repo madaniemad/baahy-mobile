@@ -7,6 +7,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/providers/home_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/notifications_provider.dart';
+import '../../../core/providers/recently_viewed_provider.dart';
 import '../../../core/models/product.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
@@ -175,6 +176,9 @@ class HomeScreen extends ConsumerWidget {
                 SliverToBoxAdapter(
                   child: _CategoryCarouselSection(section: home.categorySections[4]),
                 ),
+
+              // Recently viewed
+              const SliverToBoxAdapter(child: _RecentlyViewedSection()),
 
               // baahy promise closing block
               const SliverToBoxAdapter(
@@ -989,6 +993,74 @@ class _BaahyPromiseCard extends StatelessWidget {
           ],
         ),
       ]),
+    );
+  }
+}
+
+// ── Recently viewed ───────────────────────────────────────────────────────────
+
+class _RecentlyViewedSection extends ConsumerWidget {
+  const _RecentlyViewedSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final products = ref.watch(recentlyViewedProvider);
+    if (products.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+          child: Row(children: [
+            const Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('شاهدت مؤخراً',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              ]),
+            ),
+          ]),
+        ),
+        SizedBox(
+          height: 110,
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: products.length,
+            itemBuilder: (_, i) {
+              final p = products[i];
+              return GestureDetector(
+                onTap: () => context.push('/product/${p.id}'),
+                child: Container(
+                  width: 70,
+                  margin: EdgeInsets.only(right: i < products.length - 1 ? 10 : 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          width: 70, height: 70,
+                          child: p.firstImage != null
+                              ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover)
+                              : Container(color: AppColors.surfaceSoft,
+                                  child: const Icon(Icons.image_outlined,
+                                    color: AppColors.ink4, size: 28)),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('${p.displayPrice.toStringAsFixed(0)} د.ل',
+                        style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                          fontSize: 11, fontWeight: FontWeight.w700),
+                        textAlign: TextAlign.center),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

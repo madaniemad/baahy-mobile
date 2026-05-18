@@ -9,6 +9,7 @@ import '../../../core/models/product.dart';
 import '../../../core/models/review.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/wishlist_provider.dart';
+import '../../../core/providers/recently_viewed_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -99,6 +100,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           ]),
         ),
         data: (product) {
+          // Track as recently viewed (deferred to avoid setState during build)
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(recentlyViewedProvider.notifier).add(product);
+          });
+
           final name = isAr ? product.nameAr : product.name;
           final inWishlist = ref.watch(wishlistProvider).contains(product.id);
           final displayPrice = _selectedVariation?.salePrice
