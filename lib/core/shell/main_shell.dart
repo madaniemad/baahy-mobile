@@ -30,7 +30,7 @@ class MainShell extends ConsumerWidget {
       body: child,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.92),
+          color: Colors.white.withValues(alpha: 0.92),
           border: const Border(top: BorderSide(color: AppColors.border)),
           boxShadow: AppShadows.shadowPop,
         ),
