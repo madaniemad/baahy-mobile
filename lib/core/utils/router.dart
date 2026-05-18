@@ -29,6 +29,12 @@ import '../shell/main_shell.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: '/splash',
+    // Handle deep links from baahy:// scheme and https://baahy.ly/
+    redirect: (context, state) {
+      final path = state.uri.path;
+      // Normalize: /product/123 → already correct; nothing to do
+      return null;
+    },
     routes: [
       GoRoute(path: '/splash',   builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/city',     builder: (_, __) => const CityScreen()),

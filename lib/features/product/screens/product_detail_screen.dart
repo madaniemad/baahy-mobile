@@ -100,7 +100,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isAr = context.isAr;
-    final config = ref.watch(appConfigProvider).config;
+    final config = ref.watch(appConfigProvider);
     final productAsync = ref.watch(_productDetailProvider(widget.id));
 
     return Scaffold(

@@ -310,7 +310,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final config = ref.watch(appConfigProvider).config;
+    final config = ref.watch(appConfigProvider);
     final minTopup = config.minWalletTopup;
     final quickAmounts = _buildAmounts(minTopup);
     _selected ??= quickAmounts.length >= 2 ? quickAmounts[1] : quickAmounts.first;

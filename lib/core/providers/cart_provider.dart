@@ -169,7 +169,7 @@ class CartNotifier extends StateNotifier<CartState> {
 }
 
 final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) {
-  final config = ref.watch(appConfigProvider).config;
+  final config = ref.watch(appConfigProvider);
   return CartNotifier(
     shippingFee: config.shippingFee,
     freeShippingThreshold: config.freeShippingThreshold,

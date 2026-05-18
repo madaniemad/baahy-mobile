@@ -66,7 +66,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ? ref.watch(_searchSuggestionsProvider(_debouncedQuery.trim()))
         : const AsyncValue<List<Product>>.data([]);
 
-    final config = ref.watch(appConfigProvider).config;
+    final config = ref.watch(appConfigProvider);
     final categories = ref.watch(homeProvider).categories;
 
     return Scaffold(

@@ -113,6 +113,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  connectivity_plus:
+    dependency: "direct main"
+    description:
+      name: connectivity_plus
+      sha256: "62ffa266d9a23b79fb3fcbc206afc00bb979417ba57b1324c546b5aab95ba057"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.1.1"
+  connectivity_plus_platform_interface:
+    dependency: transitive
+    description:
+      name: connectivity_plus_platform_interface
+      sha256: "3c09627c536d22fd24691a905cdd8b14520de69da52c7a97499c8be5284a32ed"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   cross_file:
     dependency: transitive
     description:
@@ -233,6 +249,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.17.5"
+  firebase_crashlytics:
+    dependency: "direct main"
+    description:
+      name: firebase_crashlytics
+      sha256: "4c9872020c0d97a161362ee6af7000cfdb8666234ddc290a15252ad379bb235a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.0"
+  firebase_crashlytics_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_crashlytics_platform_interface
+      sha256: ede8a199ff03378857d3c8cbb7fa58d37c27bb5a6b75faf8415ff6925dcaae2a
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.6.41"
   firebase_messaging:
     dependency: "direct main"
     description:
@@ -621,6 +653,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.17.6"
+  nm:
+    dependency: transitive
+    description:
+      name: nm
+      sha256: "2c9aae4127bdc8993206464fcc063611e0e36e72018696cd9631023a31b24254"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
   objective_c:
     dependency: transitive
     description:

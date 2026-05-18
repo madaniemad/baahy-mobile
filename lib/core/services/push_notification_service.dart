@@ -1,0 +1,155 @@
+import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
+import '../api/api_client.dart';
+
+// Top-level handler — must be a top-level function (not a closure or class method).
+@pragma('vm:entry-point')
+Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
+  // Firebase is already initialized when this runs.
+  // No UI work here — just handle data if needed.
+}
+
+class PushNotificationService {
+  static PushNotificationService? _instance;
+  static PushNotificationService get instance =>
+      _instance ??= PushNotificationService._();
+  PushNotificationService._();
+
+  final _fcm = FirebaseMessaging.instance;
+  final _localNotifications = FlutterLocalNotificationsPlugin();
+  GoRouter? _router;
+
+  static const _androidChannel = AndroidNotificationChannel(
+    'baahy_high',
+    'Baahy Notifications',
+    description: 'Order updates and promotions',
+    importance: Importance.high,
+  );
+
+  Future<void> init(GoRouter router) async {
+    _router = router;
+
+    // Register background handler.
+    FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+
+    // Android: create notification channel.
+    if (Platform.isAndroid) {
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(_androidChannel);
+    }
+
+    // Initialize local notifications.
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+    await _localNotifications.initialize(
+      const InitializationSettings(android: androidSettings, iOS: iosSettings),
+      onDidReceiveNotificationResponse: (details) {
+        _handlePayload(details.payload);
+      },
+    );
+
+    // Request permission.
+    final settings = await _fcm.requestPermission(
+      alert: true, badge: true, sound: true, provisional: false);
+    if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+
+    // Upload FCM token to backend.
+    await _uploadToken();
+
+    // Refresh token when it rotates.
+    _fcm.onTokenRefresh.listen(_sendTokenToServer);
+
+    // Foreground messages: show local notification.
+    FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+
+    // App opened from notification (background → foreground).
+    FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
+
+    // App launched from terminated state via notification.
+    final initial = await _fcm.getInitialMessage();
+    if (initial != null) _onMessageOpened(initial);
+
+    // iOS: show notifications while app is in foreground.
+    await _fcm.setForegroundNotificationPresentationOptions(
+      alert: true, badge: true, sound: true);
+  }
+
+  Future<void> _uploadToken() async {
+    try {
+      final token = await _fcm.getToken();
+      if (token != null) await _sendTokenToServer(token);
+    } catch (_) {}
+  }
+
+  Future<void> _sendTokenToServer(String token) async {
+    try {
+      await ApiClient.instance.dio.post('/device-token', data: {
+        'token': token,
+        'platform': Platform.isIOS ? 'ios' : 'android',
+      });
+    } catch (_) {}
+  }
+
+  void _onForegroundMessage(RemoteMessage message) {
+    final notification = message.notification;
+    if (notification == null) return;
+    _localNotifications.show(
+      notification.hashCode,
+      notification.title,
+      notification.body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _androidChannel.id,
+          _androidChannel.name,
+          channelDescription: _androidChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true, presentBadge: true, presentSound: true),
+      ),
+      payload: _routeFromData(message.data),
+    );
+  }
+
+  void _onMessageOpened(RemoteMessage message) {
+    final route = _routeFromData(message.data);
+    if (route != null && _router != null) {
+      _router!.go(route);
+    }
+  }
+
+  void _handlePayload(String? payload) {
+    if (payload != null && _router != null) {
+      _router!.go(payload);
+    }
+  }
+
+  /// Maps FCM data payload to an app route.
+  String? _routeFromData(Map<String, dynamic> data) {
+    final type = data['type'] as String?;
+    final id = data['id']?.toString();
+    switch (type) {
+      case 'order':
+      case 'order_update':
+        return id != null ? '/orders/$id' : '/orders';
+      case 'product':
+        return id != null ? '/product/$id' : null;
+      case 'wallet':
+        return '/wallet';
+      case 'promotion':
+        return '/home';
+      default:
+        return '/notifications';
+    }
+  }
+}

@@ -32,7 +32,7 @@ class ReferralScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final referralAsync = ref.watch(_referralProvider);
-    final config = ref.watch(appConfigProvider).config;
+    final config = ref.watch(appConfigProvider);
     final giver = config.referralGiverAmount;
     final receiver = config.referralReceiverAmount;
 

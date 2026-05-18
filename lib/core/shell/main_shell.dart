@@ -5,6 +5,7 @@ import 'package:badges/badges.dart' as badges;
 import '../providers/cart_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../../shared/theme/app_theme.dart';
+import '../../shared/widgets/offline_banner.dart';
 
 class MainShell extends ConsumerWidget {
   final Widget child;
@@ -22,12 +23,17 @@ class MainShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.path;
     final currentIdx = _tabs.indexWhere((t) => location.startsWith(t.path));
-    final cartCount = ref.watch(cartCountProvider);
-    final unreadCount = ref.watch(unreadNotificationCountProvider);
+    // select() — rebuild tab bar ONLY when count changes, not on every cart mutation
+    final cartCount = ref.watch(cartProvider.select((s) => s.count));
+    final unreadCount = ref.watch(notificationsProvider.select(
+        (list) => list.where((n) => !n.isRead).length));
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(
-      body: child,
+      body: Stack(children: [
+        child,
+        const Positioned(top: 0, left: 0, right: 0, child: OfflineBanner()),
+      ]),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.92),

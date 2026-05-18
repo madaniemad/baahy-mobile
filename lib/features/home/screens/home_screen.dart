@@ -24,8 +24,8 @@ class HomeScreen extends ConsumerWidget {
     final home = ref.watch(homeProvider);
     final user = ref.watch(currentUserProvider);
     final unread = ref.watch(unreadNotificationCountProvider);
-    final banners = ref.watch(bannersProvider).value ?? const BannersData();
-    final config = ref.watch(appConfigProvider).config;
+    final banners = ref.watch(bannersProvider);
+    final config = ref.watch(appConfigProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -387,6 +387,17 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOut);
       });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Eagerly precache all banner images so scroll transitions are instant.
+    for (final b in widget.banners) {
+      if (b.hasImage) {
+        precacheImage(CachedNetworkImageProvider(b.imageUrl!), context);
+      }
     }
   }
 
@@ -1176,7 +1187,7 @@ class _BaahyPromiseCard extends ConsumerWidget {
   const _BaahyPromiseCard();
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = ref.watch(appConfigProvider).config;
+    final config = ref.watch(appConfigProvider);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

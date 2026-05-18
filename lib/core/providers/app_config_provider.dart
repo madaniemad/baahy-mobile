@@ -1,23 +1,54 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../models/app_config.dart';
+import '../services/cache_service.dart';
 
 // Fetches from /api/app-config (backed by site_settings table in Laravel).
-// Falls back to built-in defaults if endpoint fails for any reason.
-final appConfigProvider = FutureProvider<AppConfig>((ref) async {
-  try {
-    final res = await ApiClient.instance.dio.get('/app-config');
-    final data = res.data['data'];
-    if (data != null && data is Map<String, dynamic>) {
-      return AppConfig.fromJson(data);
-    }
-    return AppConfig.defaults;
-  } catch (_) {
-    return AppConfig.defaults;
-  }
+// Strategy: return disk-cached value immediately (instant UI), then refresh
+// from network in background and update state. Falls back to built-in
+// defaults if both disk and network fail.
+final appConfigProvider = StateNotifierProvider<AppConfigNotifier, AppConfig>((ref) {
+  return AppConfigNotifier();
 });
 
-// Sync accessor — returns defaults while async loads, never null.
+class AppConfigNotifier extends StateNotifier<AppConfig> {
+  static const _cacheKey = 'app_config';
+  static const _cacheTtl = Duration(minutes: 30);
+
+  AppConfigNotifier() : super(AppConfig.defaults) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    // 1. Return stale cache immediately so UI is instant.
+    final stale = await CacheService.instance.getStale(_cacheKey);
+    if (stale != null) {
+      try { state = AppConfig.fromJson(stale); } catch (_) {}
+    }
+
+    // 2. Check if fresh (within TTL) — skip network if so.
+    final fresh = await CacheService.instance.get(_cacheKey, maxAge: _cacheTtl);
+    if (fresh != null) return; // already up to date
+
+    // 3. Fetch from network and update.
+    await refresh();
+  }
+
+  Future<void> refresh() async {
+    try {
+      final res = await ApiClient.instance.dio.get('/app-config');
+      final data = res.data['data'];
+      if (data != null && data is Map<String, dynamic>) {
+        await CacheService.instance.set(_cacheKey, data);
+        state = AppConfig.fromJson(data);
+      }
+    } catch (_) {
+      // Keep current state (stale cache or defaults).
+    }
+  }
+}
+
+// Sync accessor — always returns current state (never null, never blocks).
 extension AppConfigX on AsyncValue<AppConfig> {
   AppConfig get config => value ?? AppConfig.defaults;
 }

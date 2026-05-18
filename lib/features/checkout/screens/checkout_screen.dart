@@ -116,7 +116,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
-    final config = ref.watch(appConfigProvider).config;
+    final config = ref.watch(appConfigProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
