@@ -546,52 +546,113 @@ class _HorizontalProductList extends StatelessWidget {
   }
 }
 
-// ── Categories 4-col grid ────────────────────────────────────────────────────
+// ── Categories 2-row horizontal carousel ─────────────────────────────────────
 
 class _CategoriesGrid extends StatelessWidget {
   final List<Category> categories;
   const _CategoriesGrid({required this.categories});
+
+  static const _parentColors = [
+    Color(0xFF0D9488), Color(0xFF7C3AED), Color(0xFFD97706),
+    Color(0xFFDB2777), Color(0xFF2563EB), Color(0xFF059669), Color(0xFFDC2626),
+  ];
+
+  static IconData _iconFor(String name) {
+    final n = name.toLowerCase();
+    if (n.contains('cloth') || n.contains('ملاب')) return Icons.checkroom_outlined;
+    if (n.contains('shoe') || n.contains('احذية')) return Icons.directions_walk_outlined;
+    if (n.contains('bag') || n.contains('حقيب')) return Icons.shopping_bag_outlined;
+    if (n.contains('watch') || n.contains('ساعة') || n.contains('ساعات')) return Icons.watch_outlined;
+    if (n.contains('eye') || n.contains('نظار')) return Icons.visibility_outlined;
+    if (n.contains('access') || n.contains('اكسسوار')) return Icons.diamond_outlined;
+    if (n.contains('perfume') || n.contains('عطور') || n.contains('عطر')) return Icons.science_outlined;
+    if (n.contains('makeup') || n.contains('مكياج')) return Icons.face_retouching_natural_outlined;
+    if (n.contains('hair') || n.contains('شعر')) return Icons.content_cut_outlined;
+    if (n.contains('skin') || n.contains('بشرة')) return Icons.spa_outlined;
+    if (n.contains('baby') || n.contains('مواليد')) return Icons.child_care_outlined;
+    if (n.contains('girl') || n.contains('بنات')) return Icons.girl_outlined;
+    if (n.contains('boy') || n.contains('اولاد')) return Icons.boy_outlined;
+    if (n.contains('phone') || n.contains('هاتف')) return Icons.smartphone_outlined;
+    if (n.contains('laptop') || n.contains('حاسوب')) return Icons.laptop_outlined;
+    if (n.contains('electron') || n.contains('إلكترون') || n.contains('الكترون')) return Icons.devices_outlined;
+    if (n.contains('kitchen') || n.contains('مطبخ')) return Icons.kitchen_outlined;
+    if (n.contains('furniture') || n.contains('اثاث')) return Icons.weekend_outlined;
+    if (n.contains('home') || n.contains('منزل') || n.contains('بيت')) return Icons.home_outlined;
+    if (n.contains('sport') || n.contains('رياضة')) return Icons.sports_outlined;
+    if (n.contains('women') || n.contains('نساء')) return Icons.woman_outlined;
+    if (n.contains('men') || n.contains('رجال')) return Icons.man_outlined;
+    if (n.contains('kid') || n.contains('اطفال') || n.contains('طفل')) return Icons.child_friendly_outlined;
+    if (n.contains('beauty') || n.contains('جمال')) return Icons.auto_awesome_outlined;
+    return Icons.category_outlined;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    final display = categories.take(8).toList();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+
+    // Build flat list: each parent followed by its children
+    final items = <({Category cat, Color color, bool isParent})>[];
+    for (var i = 0; i < categories.length; i++) {
+      final color = _parentColors[i % _parentColors.length];
+      final parent = categories[i];
+      items.add((cat: parent, color: color, isParent: true));
+      for (final child in parent.children) {
+        items.add((cat: child, color: color, isParent: false));
+      }
+    }
+
+    return SizedBox(
+      height: 174,
       child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4, mainAxisSpacing: 10, crossAxisSpacing: 10,
-          childAspectRatio: 0.85,
+          crossAxisCount: 2,
+          mainAxisExtent: 78,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 10,
         ),
-        itemCount: display.length,
+        itemCount: items.length,
         itemBuilder: (_, i) {
-          final cat = display[i];
+          final item = items[i];
+          final name = isAr ? item.cat.nameAr : item.cat.name;
+          final icon = _iconFor(item.cat.nameAr + item.cat.name);
           return GestureDetector(
-            onTap: () => context.push('/search/results?q=&category=${cat.id}'),
-            child: Column(children: [
-              Expanded(
-                child: Container(
+            onTap: () => context.push('/search/results?q=&category=${item.cat.id}'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 52, height: 52,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: item.isParent
+                        ? item.color.withValues(alpha: 0.15)
+                        : item.color.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(14),
-                    boxShadow: AppShadows.shadowCard,
+                    border: item.isParent
+                        ? Border.all(color: item.color.withValues(alpha: 0.3), width: 1.5)
+                        : Border.all(color: item.color.withValues(alpha: 0.15)),
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: cat.image != null
-                      ? CachedNetworkImage(imageUrl: cat.image!, fit: BoxFit.cover,
-                          width: double.infinity,
-                          errorWidget: (_, __, ___) => const Icon(Icons.grid_view_rounded,
-                            color: AppColors.primary, size: 28))
-                      : const Icon(Icons.grid_view_rounded, color: AppColors.primary, size: 28),
+                  child: item.cat.image != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(13),
+                          child: CachedNetworkImage(imageUrl: item.cat.image!, fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Icon(icon,
+                                size: item.isParent ? 22 : 18, color: item.color)),
+                        )
+                      : Icon(icon, size: item.isParent ? 22 : 18, color: item.color),
                 ),
-              ),
-              const SizedBox(height: 5),
-              Text(isAr ? cat.nameAr : cat.name,
-                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center, maxLines: 2,
-                overflow: TextOverflow.ellipsis),
-            ]),
+                const SizedBox(height: 5),
+                Text(name,
+                  style: TextStyle(
+                    fontSize: item.isParent ? 10.5 : 9.5,
+                    fontWeight: item.isParent ? FontWeight.w700 : FontWeight.w500,
+                    color: item.isParent ? AppColors.ink0 : AppColors.ink1,
+                  ),
+                  textAlign: TextAlign.center, maxLines: 2,
+                  overflow: TextOverflow.ellipsis),
+              ],
+            ),
           );
         },
       ),
@@ -707,7 +768,7 @@ class _TwoColGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          childAspectRatio: 0.72,
+          mainAxisExtent: 270,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => ProductCard(product: products[i]),
