@@ -218,7 +218,7 @@ class _AddToCartButton extends ConsumerWidget {
             color: AppColors.primary,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.white),
+          child: const Icon(Icons.add_rounded, size: 14, color: Colors.white),
         ),
       );
     }
