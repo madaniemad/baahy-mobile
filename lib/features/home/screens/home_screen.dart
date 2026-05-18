@@ -39,6 +39,7 @@ class HomeScreen extends ConsumerWidget {
               delegate: _HomeAppBar(
                 city: user?.city ?? 'ليبيا',
                 unreadCount: unread,
+                topPadding: MediaQuery.of(context).padding.top,
               ),
             ),
             if (home.loading && home.featured.isEmpty)
@@ -213,10 +214,13 @@ class HomeScreen extends ConsumerWidget {
 class _HomeAppBar extends SliverPersistentHeaderDelegate {
   final String city;
   final int unreadCount;
-  const _HomeAppBar({required this.city, required this.unreadCount});
+  final double topPadding;
+  const _HomeAppBar({required this.city, required this.unreadCount, required this.topPadding});
 
-  @override double get minExtent => 100;
-  @override double get maxExtent => 100;
+  double get _height => topPadding + 100;
+
+  @override double get minExtent => _height;
+  @override double get maxExtent => _height;
   @override bool shouldRebuild(_) => true;
 
   @override
@@ -224,7 +228,7 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
     return Container(
       color: Colors.white,
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top,
+        top: topPadding,
         left: 16, right: 16, bottom: 10,
       ),
       child: Column(
@@ -664,7 +668,7 @@ class _HorizontalProductList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 240,
+      height: 268,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -916,7 +920,7 @@ class _TwoColGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 270,
+          mainAxisExtent: 300,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => ProductCard(product: products[i]),
@@ -971,7 +975,7 @@ class _BestsellerGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 270,
+          mainAxisExtent: 300,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => Stack(
@@ -1005,7 +1009,7 @@ class _NewArrivalsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 240,
+      height: 268,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -8,6 +8,15 @@ import '../../core/providers/cart_provider.dart';
 import '../../core/utils/l10n.dart';
 import '../theme/app_theme.dart';
 
+// Prevents double-tap from pushing the same route twice (Navigator key conflict).
+DateTime? _lastNavTime;
+void _safePush(BuildContext context, String path) {
+  final now = DateTime.now();
+  if (_lastNavTime != null && now.difference(_lastNavTime!) < const Duration(milliseconds: 600)) return;
+  _lastNavTime = now;
+  context.push(path);
+}
+
 class ProductCard extends ConsumerWidget {
   final Product product;
   final double? width;
@@ -20,7 +29,7 @@ class ProductCard extends ConsumerWidget {
     final inWishlist = ref.watch(wishlistProvider).contains(product.id);
 
     return GestureDetector(
-      onTap: () => context.push('/product/${product.id}'),
+      onTap: () => _safePush(context, '/product/${product.id}'),
       child: Container(
         width: width,
         clipBehavior: Clip.antiAlias,
@@ -209,7 +218,7 @@ class _AddToCartButton extends ConsumerWidget {
     if (!product.inStock) return const SizedBox.shrink();
     if (product.productType == 'variable') {
       return GestureDetector(
-        onTap: () => context.push('/product/${product.id}'),
+        onTap: () => _safePush(context, '/product/${product.id}'),
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
