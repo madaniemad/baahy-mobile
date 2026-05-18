@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/api/api_client.dart';
 import '../../../core/providers/home_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/notifications_provider.dart';
@@ -284,12 +285,58 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
 
 // ── Active order strip ────────────────────────────────────────────────────────
 
+final _activeOrderProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+  try {
+    final res = await ApiClient.instance.dio.get('/orders',
+      queryParameters: {'status': 'shipped,confirmed,processing', 'per_page': 1});
+    final list = res.data['data']['data'] as List?;
+    if (list != null && list.isNotEmpty) return Map<String, dynamic>.from(list.first);
+    return null;
+  } catch (_) { return null; }
+});
+
 class _ActiveOrderStrip extends ConsumerWidget {
   const _ActiveOrderStrip();
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Show only if user has an active order — fetch from orders provider
-    return const SizedBox.shrink();
+    final orderAsync = ref.watch(_activeOrderProvider);
+    return orderAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (order) {
+        if (order == null) return const SizedBox.shrink();
+        final orderId = order['id'];
+        final orderNum = order['order_number'] ?? '#$orderId';
+        return GestureDetector(
+          onTap: () => context.push('/orders/$orderId'),
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F8F8),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFB2E4E6)),
+            ),
+            child: Row(children: [
+              const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.teal600),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text.rich(TextSpan(
+                  style: const TextStyle(fontSize: 12.5),
+                  children: [
+                    const TextSpan(text: 'في الطريق',
+                      style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink0)),
+                    TextSpan(text: ' · $orderNum',
+                      style: const TextStyle(color: AppColors.ink3)),
+                  ],
+                )),
+              ),
+              const Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.ink3),
+            ]),
+          ),
+        );
+      },
+    );
   }
 }
 
