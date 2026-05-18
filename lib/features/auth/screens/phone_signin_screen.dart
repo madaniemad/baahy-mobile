@@ -45,7 +45,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white, elevation: 0,
         leading: IconButton(
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
       ),
       body: Padding(
@@ -161,7 +161,22 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            Center(
+              child: GestureDetector(
+                onTap: () => context.go('/home'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text('تصفّح كزائر',
+                    style: TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600,
+                      color: AppColors.ink2,
+                      decoration: TextDecoration.underline,
+                      decorationColor: AppColors.ink2)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             const Text(
               'بالمتابعة أنت توافق على الشروط وسياسة الخصوصية.',
               textAlign: TextAlign.center,

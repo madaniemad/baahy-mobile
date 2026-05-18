@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../models/user.dart';
@@ -23,7 +24,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (!await _api.isLoggedIn) return;
     state = state.copyWith(loading: true);
     try {
-      final res = await _api.dio.get('/auth/me');
+      // silent401: true — a stale token here should NOT redirect to sign-in;
+      // user is just browsing as a returning guest.
+      final res = await _api.dio.get('/auth/me',
+          options: Options(extra: {'silent401': true}));
       state = AuthState(user: User.fromJson(res.data['user']));
     } catch (_) {
       await _api.clearToken();

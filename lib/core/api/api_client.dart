@@ -47,8 +47,13 @@ class ApiClient {
       },
       onError: (error, handler) async {
         if (error.response?.statusCode == 401) {
+          // Only redirect to sign-in if the request was made WITH a token.
+          // Silent requests (initial auth check) set extra['silent401'] = true
+          // to suppress the global redirect without affecting the error itself.
+          final isSilent = error.requestOptions.extra['silent401'] == true;
+          final hadToken = await _storage.read(key: 'auth_token') != null;
           await _storage.delete(key: 'auth_token');
-          _onUnauthorized?.call();
+          if (hadToken && !isSilent) _onUnauthorized?.call();
         }
         handler.next(error);
       },
