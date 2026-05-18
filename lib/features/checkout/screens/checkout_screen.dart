@@ -72,7 +72,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         'shipping_phone': addr['phone'] ?? '',
         'shipping_city': addr['city'] ?? '',
         'shipping_address':
-            [addr['district'], addr['street']].where((v) => v != null && v.toString().isNotEmpty).join('، '),
+            [addr['district'], addr['street'], addr['notes']].where((v) => v != null && v.toString().isNotEmpty).join('، '),
+        if (cart.couponCode != null) 'coupon_code': cart.couponCode,
         if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
       });
       await ref.read(cartProvider.notifier).clear();
@@ -204,6 +205,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: Column(
                       children: [
                         _SummaryRow('المجموع الفرعي', '${cart.subtotal.toStringAsFixed(0)} د.ل'),
+                        if (cart.discountAmount > 0)
+                          _SummaryRow('خصم الكوبون',
+                            '− ${cart.discountAmount.toStringAsFixed(0)} د.ل',
+                            color: AppColors.success),
+                        _SummaryRow(
+                          'الشحن',
+                          cart.deliveryFee == 0 ? 'مجاني' : '${cart.deliveryFee.toStringAsFixed(0)} د.ل',
+                          color: cart.deliveryFee == 0 ? AppColors.success : null,
+                        ),
                         const Divider(height: 20, color: AppColors.border),
                         _SummaryRow('الإجمالي', '${cart.total.toStringAsFixed(0)} د.ل', bold: true),
                       ],

@@ -103,6 +103,24 @@ class OrderTrackingScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              // Return button for delivered orders
+              if (order.status == 'delivered') ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push('/orders/${order.id}/return'),
+                    icon: const Icon(Icons.assignment_return_outlined, size: 18),
+                    label: const Text('طلب إرجاع',
+                      style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
