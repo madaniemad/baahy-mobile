@@ -348,6 +348,10 @@ class _HeroBannerState extends State<_HeroBanner> {
                   shape: BoxShape.circle,
                   color: AppColors.primary.withValues(alpha: 0.18),
                 ),
+                foregroundDecoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withValues(alpha: 0.0),
+                ),
               ),
             ),
             Column(
@@ -434,10 +438,10 @@ class _PromiseChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Column(children: [
-      Icon(icon, size: 18, color: AppColors.primary),
+      Icon(icon, size: 20, color: AppColors.teal600),
       const SizedBox(height: 4),
       Text(isAr ? ar : en,
-        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.ink1),
+        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.ink1),
         textAlign: TextAlign.center),
     ]);
   }
@@ -554,16 +558,20 @@ class _SplitPromoBanners extends StatelessWidget {
       Expanded(child: _PromoTile(
         titleAr: 'موسم جديد',
         subtitleAr: 'إصدارات الموضة',
-        color: const Color(0xFFD97757),
-        icon: Icons.checkroom_rounded,
+        ctaAr: 'تسوّق ←',
+        imageUrl: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&auto=format&fit=crop',
+        tint: const Color(0xFFD97757),
+        tintOpacity: 0.55,
         onTap: () => context.push('/browse'),
       )),
       const SizedBox(width: 10),
       Expanded(child: _PromoTile(
         titleAr: 'خصم 30%',
         subtitleAr: 'أساسيات المنزل',
-        color: AppColors.teal600,
-        icon: Icons.home_rounded,
+        ctaAr: 'وفّر الآن ←',
+        imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&auto=format&fit=crop',
+        tint: const Color(0xFF1F9AA0),
+        tintOpacity: 0.55,
         onTap: () => context.push('/browse'),
       )),
     ]);
@@ -573,32 +581,61 @@ class _SplitPromoBanners extends StatelessWidget {
 class _PromoTile extends StatelessWidget {
   final String titleAr;
   final String subtitleAr;
-  final Color color;
-  final IconData icon;
+  final String ctaAr;
+  final String imageUrl;
+  final Color tint;
+  final double tintOpacity;
   final VoidCallback onTap;
-  const _PromoTile({required this.titleAr, required this.subtitleAr,
-    required this.color, required this.icon, required this.onTap});
+  const _PromoTile({
+    required this.titleAr, required this.subtitleAr, required this.ctaAr,
+    required this.imageUrl, required this.tint, required this.tintOpacity,
+    required this.onTap,
+  });
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        height: 100,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.white70, size: 22),
-            const Spacer(),
-            Text(titleAr, style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
-            Text(subtitleAr, style: const TextStyle(
-              color: Colors.white70, fontSize: 11)),
-          ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: SizedBox(
+          height: 140,
+          child: Stack(fit: StackFit.expand, children: [
+            CachedNetworkImage(
+              imageUrl: imageUrl,
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) => Container(color: tint),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  colors: [
+                    tint.withValues(alpha: tintOpacity),
+                    Colors.black.withValues(alpha: 0.65),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(titleAr, style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w800,
+                    fontSize: 16, height: 1.15)),
+                  const SizedBox(height: 3),
+                  Text(subtitleAr, style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9), fontSize: 11.5)),
+                  const SizedBox(height: 8),
+                  Text(ctaAr, style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.95),
+                    fontSize: 11.5, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+          ]),
         ),
       ),
     );
@@ -794,55 +831,64 @@ class _EditorPickCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => context.push('/browse'),
-      child: Container(
-        height: 200,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF2D4A4A), Color(0xFF0A1A1A)],
-          ),
-          boxShadow: AppShadows.shadow2,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(fit: StackFit.expand, children: [
-          Positioned(
-            right: -20, top: -20,
-            child: Container(
-              width: 160, height: 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.15),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: SizedBox(
+          height: 240,
+          child: Stack(fit: StackFit.expand, children: [
+            CachedNetworkImage(
+              imageUrl: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800&auto=format&fit=crop',
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2D4A4A), Color(0xFF0A1A1A)],
+                    begin: Alignment.topLeft, end: Alignment.bottomRight),
+                )),
+              errorWidget: (_, __, ___) => Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2D4A4A), Color(0xFF0A1A1A)],
+                    begin: Alignment.topLeft, end: Alignment.bottomRight),
+                )),
+            ),
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  stops: [0.3, 1.0],
+                  colors: [Colors.transparent, Colors.black87],
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(99),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: const Text('صُنع في ليبيا',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2, color: Colors.white)),
                   ),
-                  child: const Text('صُنع في ليبيا',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                      letterSpacing: 1, color: AppColors.primary)),
-                ),
-                const Spacer(),
-                const Text('حرف محلية، توصيل باهي.',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
-                    color: Colors.white, height: 1.15)),
-                const SizedBox(height: 6),
-                const Text('قطع مختارة من حرفيين في أنحاء البلاد.',
-                  style: TextStyle(fontSize: 12.5, color: Colors.white60)),
-              ],
+                  const Spacer(),
+                  const Text('حرف محلية، توصيل باهي.',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
+                      color: Colors.white, height: 1.15)),
+                  const SizedBox(height: 4),
+                  Text('قطع مختارة من حرفيين في أنحاء البلاد.',
+                    style: TextStyle(fontSize: 12.5,
+                      color: Colors.white.withValues(alpha: 0.85))),
+                ],
+              ),
             ),
-          ),
-        ]),
+          ]),
+        ),
       ),
     );
   }
@@ -870,6 +916,11 @@ class _BaahyPromiseCard extends StatelessWidget {
             width: 140, height: 140,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                  blurRadius: 40, spreadRadius: 10),
+              ],
               color: AppColors.primary.withValues(alpha: 0.2),
             ),
           ),

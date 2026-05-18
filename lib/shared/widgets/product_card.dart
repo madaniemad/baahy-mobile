@@ -85,11 +85,19 @@ class ProductCard extends ConsumerWidget {
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
                       child: Container(
-                        color: Colors.black.withValues(alpha: 0.35),
+                        color: Colors.white.withValues(alpha: 0.55),
                         alignment: Alignment.center,
-                        child: Text(
-                          context.tr('نفذت الكمية', 'Out of Stock'),
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.ink0,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            context.tr('نفدت الكمية', 'OUT OF STOCK'),
+                            style: const TextStyle(color: Colors.white, fontSize: 10,
+                              fontWeight: FontWeight.w700, letterSpacing: 0.4),
+                          ),
                         ),
                       ),
                     ),
@@ -114,7 +122,19 @@ class ProductCard extends ConsumerWidget {
                       style: const TextStyle(fontSize: 11, color: AppColors.ink3),
                     ),
                   ],
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
+                  if (product.inStock &&
+                      product.stockQuantity != null &&
+                      product.stockQuantity! <= 5)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        'تبقّى ${product.stockQuantity} فقط',
+                        style: const TextStyle(
+                          fontSize: 10.5, fontWeight: FontWeight.w700,
+                          color: Color(0xFFB85A3A)),
+                      ),
+                    ),
                   Row(
                     children: [
                       Text(
