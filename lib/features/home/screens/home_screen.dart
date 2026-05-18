@@ -217,7 +217,7 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
   final double topPadding;
   const _HomeAppBar({required this.city, required this.unreadCount, required this.topPadding});
 
-  double get _height => topPadding + 100;
+  double get _height => topPadding + 112;
 
   @override double get minExtent => _height;
   @override double get maxExtent => _height;
@@ -920,7 +920,7 @@ class _TwoColGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 300,
+          mainAxisExtent: 305,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => ProductCard(product: products[i]),
@@ -975,7 +975,7 @@ class _BestsellerGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 300,
+          mainAxisExtent: 305,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => Stack(
