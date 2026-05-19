@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/order.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
 final _orderDetailProvider = FutureProvider.family<Order, int>((ref, id) async {
@@ -133,7 +134,7 @@ class _OrderBody extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => context.push('/orders/${order.id}/return'),
+              onPressed: () => safePush(context, '/orders/${order.id}/return'),
               icon: const Icon(Icons.assignment_return_outlined, size: 16),
               label: const Text('إرجاع منتجات',
                 style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),

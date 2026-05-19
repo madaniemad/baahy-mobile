@@ -31,8 +31,8 @@ class WishlistScreen extends ConsumerWidget {
       return Scaffold(
         backgroundColor: AppColors.bg,
         appBar: AppBar(
-          title: const Text('المفضلة',
-              style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          title: Text(context.s.wishlistTitle,
+              style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
           backgroundColor: Colors.white,
           elevation: 0,
         ),
@@ -47,16 +47,16 @@ class WishlistScreen extends ConsumerWidget {
                 child: const Icon(Icons.favorite_outline, size: 36, color: AppColors.ink3),
               ),
               const SizedBox(height: 14),
-              const Text('مفضلتك فارغة',
-                  style: TextStyle(
+              Text(context.s.wishlistEmpty,
+                  style: const TextStyle(
                       fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 6),
-              const Text('اضغط على القلب لحفظ المنتج للوقت لاحق.',
+              Text(context.s.wishlistSub,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13.5, color: AppColors.ink2)),
+                  style: const TextStyle(fontSize: 13.5, color: AppColors.ink2)),
               const SizedBox(height: 20),
               AppButton(
-                  label: 'تسجيل الدخول',
+                  label: context.s.signIn,
                   width: 200,
                   onTap: () => safePush(context, '/signin')),
             ],
@@ -72,21 +72,21 @@ class WishlistScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text('المفضلة (${products.length})',
+        title: Text('${context.s.wishlistTitle} (${products.length})',
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
       ),
       body: products.isEmpty
           ? RefreshIndicator(
               color: AppColors.primary,
               onRefresh: () => ref.read(wishlistProductsProvider.notifier).fetch(),
-              child: ListView(children: const [
-                SizedBox(height: 100),
+              child: ListView(children: [
+                const SizedBox(height: 100),
                 Center(
                   child: Column(children: [
-                    Icon(Icons.favorite_outline, size: 72, color: AppColors.ink4),
-                    SizedBox(height: 12),
-                    Text('لا توجد منتجات في المفضلة',
-                        style: TextStyle(
+                    const Icon(Icons.favorite_outline, size: 72, color: AppColors.ink4),
+                    const SizedBox(height: 12),
+                    Text(context.s.wishlistEmpty,
+                        style: const TextStyle(
                             fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
                   ]),
                 ),
@@ -117,13 +117,13 @@ class WishlistScreen extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('تخفيضات الأسعار',
-                                  style: TextStyle(
+                              Text(context.s.priceDrops,
+                                  style: const TextStyle(
                                       fontFamily: 'Cairo',
                                       fontWeight: FontWeight.w800,
                                       fontSize: 13,
                                       color: AppColors.primary)),
-                              Text('$discountCount منتج انخفض سعره — أضفه قبل نفاد الكمية',
+                              Text('$discountCount ${context.s.priceDropBanner}',
                                   style: const TextStyle(
                                       fontSize: 12, color: AppColors.ink2, height: 1.4)),
                             ],
@@ -270,21 +270,21 @@ class _WishlistCard extends ConsumerWidget {
               const SizedBox(height: 14),
               if (isVariable)
                 _ActionChip(
-                  label: 'اختر',
+                  label: context.s.choose,
                   icon: Icons.tune_rounded,
                   filled: hasDiscount,
                   onTap: () => safePush(context, '/product/${product.id}'),
                 )
               else if (product.inStock)
                 _ActionChip(
-                  label: 'أضف',
+                  label: context.s.add,
                   icon: Icons.shopping_cart_outlined,
                   filled: true,
                   onTap: () => ref.read(cartProvider.notifier).add(product),
                 )
               else
                 _ActionChip(
-                  label: 'نفد',
+                  label: context.s.soldOut,
                   icon: Icons.notifications_outlined,
                   filled: false,
                   onTap: () => safePush(context, '/product/${product.id}'),

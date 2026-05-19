@@ -8,7 +8,9 @@ class AppColors {
   static const teal600     = Color(0xFF2DBAC0);
   static const teal700     = Color(0xFF1F9AA0);
   static const teal50      = Color(0xFFEBFAFA);
+  static const teal50bg    = Color(0xFFEAF8F8); // soft teal surface (used throughout)
   static const teal100     = Color(0xFFD4F3F4);
+  static const teal100bg   = Color(0xFFB2E4E6); // medium teal border
 
   // Ink (text hierarchy)
   static const ink0        = Color(0xFF0A1A1A); // primary text

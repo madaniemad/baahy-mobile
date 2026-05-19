@@ -13,6 +13,7 @@ import '../../../core/providers/app_config_provider.dart';
 import '../../../core/models/app_config.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/banner.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
@@ -71,7 +72,7 @@ class HomeScreen extends ConsumerWidget {
                   child: _SectionHead(
                     ar: 'عروض اليوم',
                     en: 'Deals of the day',
-                    onAll: () => context.push('/search/results?q='),
+                    onAll: () => safePush(context, '/search/results?q='),
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -127,7 +128,7 @@ class HomeScreen extends ConsumerWidget {
                   child: _SectionHead(
                     ar: 'الأكثر مبيعاً',
                     en: 'Bestsellers',
-                    onAll: () => context.push('/search/results?q=&sort=popular'),
+                    onAll: () => safePush(context, '/search/results?q=&sort=popular'),
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -146,7 +147,7 @@ class HomeScreen extends ConsumerWidget {
                   child: _SectionHead(
                     ar: 'وصل حديثاً',
                     en: 'New arrivals',
-                    onAll: () => context.push('/search/results?q=&sort=latest'),
+                    onAll: () => safePush(context, '/search/results?q=&sort=latest'),
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -158,7 +159,7 @@ class HomeScreen extends ConsumerWidget {
               if (home.budget.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: _SectionHead(ar: 'أقل من 50 د.ل', en: 'Under 50 LYD',
-                    onAll: () => context.push('/search/results?q=&max_price=50')),
+                    onAll: () => safePush(context, '/search/results?q=&max_price=50')),
                 ),
                 SliverToBoxAdapter(
                   child: _BudgetGrid(products: home.budget),
@@ -256,7 +257,7 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
               Stack(
                 children: [
                   IconButton(
-                    onPressed: () => context.push('/notifications'),
+                    onPressed: () => safePush(context, '/notifications'),
                     icon: const Icon(Icons.notifications_none_rounded, color: AppColors.ink0),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -279,7 +280,7 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
           ),
           const SizedBox(height: 8),
           GestureDetector(
-            onTap: () => context.push('/search'),
+            onTap: () => safePush(context, '/search'),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -288,11 +289,10 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
                 borderRadius: BorderRadius.circular(99),
                 border: Border.all(color: AppColors.border),
               ),
-              child: const Row(children: [
+              child: Row(children: const [
                 Icon(Icons.search, size: 18, color: AppColors.ink3),
                 SizedBox(width: 8),
-                Expanded(child: Text('ابحث في باهي',
-                  style: TextStyle(color: AppColors.ink3, fontSize: 14))),
+                Expanded(child: _SearchHintText()),
                 Icon(Icons.mic_none_rounded, size: 18, color: AppColors.ink3),
               ]),
             ),
@@ -301,6 +301,14 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
       ),
     );
   }
+}
+
+class _SearchHintText extends StatelessWidget {
+  const _SearchHintText();
+  @override
+  Widget build(BuildContext context) => Text(
+    context.s.searchHint,
+    style: const TextStyle(color: AppColors.ink3, fontSize: 14));
 }
 
 // ── Active order strip ────────────────────────────────────────────────────────
@@ -328,7 +336,7 @@ class _ActiveOrderStrip extends ConsumerWidget {
         final orderId = order['id'];
         final orderNum = order['order_number'] ?? '#$orderId';
         return GestureDetector(
-          onTap: () => context.push('/orders/$orderId'),
+          onTap: () => safePush(context, '/orders/$orderId'),
           child: Container(
             margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -669,7 +677,7 @@ class _HorizontalProductList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 285,
+      height: 325,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -921,7 +929,7 @@ class _TwoColGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 309,
+          mainAxisExtent: 350,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => ProductCard(product: products[i]),
@@ -945,10 +953,10 @@ class _CategoryCarouselSection extends StatelessWidget {
         _SectionHead(
           ar: 'في $catName',
           en: 'In $catName',
-          onAll: () => context.push('/search/results?q=&category=${section.category.id}'),
+          onAll: () => safePush(context, '\1'),
         ),
         SizedBox(
-          height: 285,
+          height: 325,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -976,7 +984,7 @@ class _BestsellerGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 309,
+          mainAxisExtent: 350,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => Stack(
@@ -1010,7 +1018,7 @@ class _NewArrivalsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 285,
+      height: 325,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1255,11 +1263,9 @@ class _RecentlyViewedSection extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
           child: Row(children: [
-            const Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('شاهدت مؤخراً',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-              ]),
+            Expanded(
+              child: Text(context.s.recentlyViewed,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             ),
           ]),
         ),
@@ -1331,7 +1337,7 @@ class _HomeSkeleton extends StatelessWidget {
               color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(14))))),
         const SizedBox(height: 24),
         SizedBox(
-          height: 285,
+          height: 325,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: 4,

@@ -7,6 +7,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/models/cart.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/widgets/app_button.dart';
 
 class CartScreen extends ConsumerWidget {
@@ -15,34 +16,6 @@ class CartScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
-    final isLoggedIn = ref.watch(authProvider).isLoggedIn;
-
-    if (!isLoggedIn) {
-      return Scaffold(
-        backgroundColor: AppColors.bg,
-        appBar: AppBar(
-          title: const Text('السلة', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
-          backgroundColor: Colors.white, elevation: 0,
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.shopping_bag_outlined, size: 72, color: AppColors.ink4),
-              const SizedBox(height: 12),
-              const Text('سجّل دخولك لعرض السلة',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
-              const SizedBox(height: 20),
-              AppButton(
-                label: 'تسجيل الدخول',
-                width: 200,
-                onTap: () => context.push('/signin'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -57,23 +30,25 @@ class CartScreen extends ConsumerWidget {
           if (cart.items.isNotEmpty)
             TextButton(
               onPressed: () async {
+                final s = context.s;
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
-                    title: const Text('مسح السلة', style: TextStyle(fontFamily: 'Cairo')),
-                    content: const Text('هل تريد إزالة جميع المنتجات من السلة؟'),
+                    title: Text(s.clearCart, style: const TextStyle(fontFamily: 'Cairo')),
+                    content: Text(s.clearCartMsg),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(context, false),
-                        child: const Text('إلغاء')),
+                        child: Text(s.cancel)),
                       TextButton(onPressed: () => Navigator.pop(context, true),
-                        child: const Text('مسح', style: TextStyle(color: AppColors.danger))),
+                        child: Text(context.tr('مسح', 'Clear'),
+                          style: const TextStyle(color: AppColors.danger))),
                     ],
                   ),
                 );
                 if (ok == true) ref.read(cartProvider.notifier).clear();
               },
-              child: const Text('مسح الكل',
-                style: TextStyle(color: AppColors.danger, fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
+              child: Text(context.s.clearAll,
+                style: const TextStyle(color: AppColors.danger, fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
             ),
         ],
       ),
@@ -84,11 +59,11 @@ class CartScreen extends ConsumerWidget {
                 children: [
                   const Icon(Icons.shopping_bag_outlined, size: 72, color: AppColors.ink4),
                   const SizedBox(height: 12),
-                  const Text('السلة فارغة',
-                    style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
+                  Text(context.s.emptyCart,
+                    style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
                   const SizedBox(height: 20),
                   AppButton(
-                    label: 'تسوق الآن',
+                    label: context.s.shopNow,
                     width: 180,
                     onTap: () => context.go('/home'),
                   ),
@@ -118,14 +93,14 @@ class CartScreen extends ConsumerWidget {
                             width: 28, height: 28,
                             decoration: BoxDecoration(
                               color: AppColors.primary, shape: BoxShape.circle),
-                            child: const Icon(Icons.inventory_2_outlined,
+                            child: const Icon(Icons.local_shipping_rounded,
                               size: 16, color: Colors.white),
                           ),
                           const SizedBox(width: 10),
                           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            const Text('توصيل باهي',
-                              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
-                            Text('شحنة واحدة · 1-2 يوم',
+                            Text(context.s.deliveryBy,
+                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+                            Text(context.s.oneShipment,
                               style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
                           ]),
                         ]),
@@ -184,8 +159,8 @@ class _FreeShippingBanner extends StatelessWidget {
                     text: '${remaining.toStringAsFixed(0)} د.ل',
                     style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink0,
                       fontFamily: 'PlusJakartaSans')),
-                  const TextSpan(text: ' حتى الشحن المجاني',
-                    style: TextStyle(color: AppColors.ink1)),
+                  TextSpan(text: ' ${context.tr('حتى الشحن المجاني', 'for free shipping')}',
+                    style: const TextStyle(color: AppColors.ink1)),
                 ],
               )),
             ),
@@ -215,11 +190,11 @@ class _FreeShippingAchieved extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
     ),
-    child: const Row(children: [
-      Icon(Icons.check_circle_rounded, size: 16, color: AppColors.success),
-      SizedBox(width: 8),
-      Text('مبروك! حصلت على شحن مجاني',
-        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.success)),
+    child: Row(children: [
+      const Icon(Icons.check_circle_rounded, size: 16, color: AppColors.success),
+      const SizedBox(width: 8),
+      Text(context.s.freeShipEarned,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.success)),
     ]),
   );
 }
@@ -264,11 +239,11 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(children: [
-            Icon(Icons.local_offer_outlined, size: 16, color: AppColors.ink1),
-            SizedBox(width: 8),
-            Text('كوبون خصم',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+          Row(children: [
+            const Icon(Icons.local_offer_outlined, size: 16, color: AppColors.ink1),
+            const SizedBox(width: 8),
+            Text(context.s.coupon,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
           ]),
           const SizedBox(height: 10),
           if (hasCoupon)
@@ -305,7 +280,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                   controller: _ctrl,
                   textCapitalization: TextCapitalization.characters,
                   decoration: InputDecoration(
-                    hintText: 'أدخل الكوبون',
+                    hintText: context.s.couponHint,
                     hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink3),
                     filled: true, fillColor: AppColors.bg,
                     errorText: _error,
@@ -336,8 +311,8 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                   child: _loading
                       ? const SizedBox(width: 16, height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('تطبيق',
-                          style: TextStyle(fontFamily: 'Cairo',
+                      : Text(context.s.apply,
+                          style: const TextStyle(fontFamily: 'Cairo',
                             fontWeight: FontWeight.w700, color: Colors.white)),
                 ),
               ),
@@ -460,25 +435,27 @@ class _CartSummary extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          _SummaryRow('المجموع الفرعي', '${cart.subtotal.toStringAsFixed(0)} د.ل'),
+          _SummaryRow(context.s.subtotal, '${cart.subtotal.toStringAsFixed(0)} ${context.s.lyd}'),
           if (cart.discountAmount > 0)
             _SummaryRow(
-              'خصم الكوبون',
-              '− ${cart.discountAmount.toStringAsFixed(0)} د.ل',
+              context.s.discount,
+              '− ${cart.discountAmount.toStringAsFixed(0)} ${context.s.lyd}',
               color: AppColors.success,
             ),
           _SummaryRow(
-            'الشحن',
-            cart.deliveryFee == 0 ? 'مجاني' : '${cart.deliveryFee.toStringAsFixed(0)} د.ل',
+            context.s.shipping,
+            cart.deliveryFee == 0 ? context.s.free : '${cart.deliveryFee.toStringAsFixed(0)} ${context.s.lyd}',
             color: cart.deliveryFee == 0 ? AppColors.success : null,
           ),
           const Divider(height: 20, color: AppColors.border),
-          _SummaryRow('الإجمالي', '${cart.total.toStringAsFixed(0)} د.ل',
+          _SummaryRow(context.s.total, '${cart.total.toStringAsFixed(0)} ${context.s.lyd}',
             bold: true, fontSize: 17),
           const SizedBox(height: 14),
           AppButton(
-            label: 'متابعة الشراء',
-            onTap: () => context.push('/checkout'),
+            label: context.s.checkout,
+            onTap: () => ref.read(authProvider).isLoggedIn
+                ? safePush(context, '/checkout')
+                : safePush(context, '/signin'),
           ),
         ],
       ),

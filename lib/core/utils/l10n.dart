@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/strings.dart';
 
 final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>((ref) {
   return LocaleNotifier();
@@ -30,4 +31,5 @@ class LocaleNotifier extends StateNotifier<Locale> {
 extension LocaleExt on BuildContext {
   bool get isAr => Localizations.localeOf(this).languageCode == 'ar';
   String tr(String ar, String en) => isAr ? ar : en;
+  AppStrings get s => AppStrings(isAr);
 }

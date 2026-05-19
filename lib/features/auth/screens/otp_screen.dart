@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
@@ -95,16 +96,16 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             child: const Icon(Icons.check_rounded, color: AppColors.teal600, size: 28),
           ),
           const SizedBox(height: 24),
-          const Text('تأكيد رقمك',
-            style: TextStyle(fontFamily: 'Cairo',
+          Text(context.s.confirmNumber,
+            style: const TextStyle(fontFamily: 'Cairo',
               fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
           const SizedBox(height: 8),
           // Phone number wrapped in LTR so +218... displays left-to-right
           Row(
             children: [
-              const Text(
-                'أرسلنا رمزاً من 6 أرقام إلى ',
-                style: TextStyle(fontSize: 14.5, color: AppColors.ink2, height: 1.5),
+              Text(
+                '${context.s.codeSentTo} ',
+                style: const TextStyle(fontSize: 14.5, color: AppColors.ink2, height: 1.5),
               ),
               Directionality(
                 textDirection: TextDirection.ltr,
@@ -186,9 +187,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
           if (_hasError) ...[
             const SizedBox(height: 12),
-            const Center(
-              child: Text('رمز غير صحيح. حاول مرة أخرى.',
-                style: TextStyle(color: AppColors.danger,
+            Center(
+              child: Text(context.s.wrongCode,
+                style: const TextStyle(color: AppColors.danger,
                   fontSize: 12.5, fontWeight: FontWeight.w600)),
             ),
           ],
@@ -196,15 +197,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           const SizedBox(height: 28),
           Center(
             child: _seconds > 0
-                ? Text('إعادة الإرسال خلال $_seconds ثانية',
+                ? Text('${context.s.resendIn} $_seconds ${context.s.seconds}',
                     style: const TextStyle(fontSize: 13, color: AppColors.ink3))
                 : GestureDetector(
                     onTap: () {
                       ref.read(authProvider.notifier).requestOtp(widget.phone);
                       _startTimer();
                     },
-                    child: const Text('إعادة إرسال الرمز',
-                      style: TextStyle(color: AppColors.teal600,
+                    child: Text(context.s.resendCode,
+                      style: const TextStyle(color: AppColors.teal600,
                         fontSize: 13.5, fontWeight: FontWeight.w700)),
                   ),
           ),
@@ -217,12 +218,12 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               color: AppColors.surfaceSoft,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(Icons.info_outline_rounded, size: 16, color: AppColors.ink3),
-              SizedBox(width: 10),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.ink3),
+              const SizedBox(width: 10),
               Expanded(
-                child: Text('إذا لم يصلك الرمز، تحقق من صحة رقم الهاتف أو حاول مجدداً.',
-                  style: TextStyle(fontSize: 11.5, color: AppColors.ink2, height: 1.45)),
+                child: Text(context.s.notReceivedInfo,
+                  style: const TextStyle(fontSize: 11.5, color: AppColors.ink2, height: 1.45)),
               ),
             ]),
           ),
@@ -243,8 +244,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               child: _loading
                   ? const SizedBox(width: 20, height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink0))
-                  : const Text('تحقق',
-                      style: TextStyle(fontFamily: 'Cairo',
+                  : Text(context.s.verify,
+                      style: const TextStyle(fontFamily: 'Cairo',
                         fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink0)),
             ),
           ),

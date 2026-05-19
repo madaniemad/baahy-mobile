@@ -3,14 +3,16 @@ import 'package:go_router/go_router.dart';
 
 DateTime? _lastNavTime;
 
-void safePush(BuildContext context, String path, {Object? extra}) {
+Future<T?> safePush<T>(BuildContext context, String path, {Object? extra}) {
   final now = DateTime.now();
   if (_lastNavTime != null &&
-      now.difference(_lastNavTime!) < const Duration(milliseconds: 600)) return;
+      now.difference(_lastNavTime!) < const Duration(milliseconds: 600)) {
+    return Future.value(null);
+  }
   _lastNavTime = now;
   if (extra != null) {
-    context.push(path, extra: extra);
+    return context.push<T>(path, extra: extra);
   } else {
-    context.push(path);
+    return context.push<T>(path);
   }
 }

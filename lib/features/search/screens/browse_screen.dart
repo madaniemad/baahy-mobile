@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/product.dart';
 import '../../../core/providers/home_provider.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 
@@ -42,8 +43,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text('الأقسام',
-          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 18)),
+        title: Text(context.s.categories,
+          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 18)),
         centerTitle: true,
       ),
       body: categories.isEmpty
@@ -53,7 +54,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
               children: [
                 // Left rail
                 Container(
-                  width: 88,
+                  width: 94,
                   decoration: const BoxDecoration(
                     color: AppColors.surfaceSoft,
                     border: Border(right: BorderSide(color: AppColors.border)),
@@ -159,7 +160,7 @@ class _RightContentState extends ConsumerState<_RightContent> {
 
     return productsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-      error: (_, __) => const Center(child: Text('تعذر التحميل', style: TextStyle(color: AppColors.ink2))),
+      error: (_, __) => Center(child: Text(context.s.loadError, style: const TextStyle(color: AppColors.ink2))),
       data: (products) => ListView(
         padding: const EdgeInsets.all(12),
         children: [
@@ -178,7 +179,7 @@ class _RightContentState extends ConsumerState<_RightContent> {
               itemBuilder: (_, i) {
                 if (i == 0) {
                   return _SubTile(
-                    label: 'الكل',
+                    label: context.s.all,
                     image: null,
                     selected: _activeSubId == null,
                     onTap: () => setState(() => _activeSubId = null),
@@ -197,9 +198,9 @@ class _RightContentState extends ConsumerState<_RightContent> {
           ],
 
           if (products.isEmpty)
-            const Center(child: Padding(
-              padding: EdgeInsets.all(32),
-              child: Text('لا توجد منتجات', style: TextStyle(color: AppColors.ink2)),
+            Center(child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Text(context.s.noProducts, style: const TextStyle(color: AppColors.ink2)),
             ))
           else
             GridView.builder(

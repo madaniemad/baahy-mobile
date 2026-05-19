@@ -5,6 +5,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/utils/l10n.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 
@@ -35,13 +36,12 @@ class AccountScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
-    final isAr = context.isAr;
 
     if (!auth.isLoggedIn) {
       return Scaffold(
         backgroundColor: AppColors.bg,
         appBar: AppBar(
-          title: const Text('حسابي', style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          title: Text(context.s.myAccount, style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
           backgroundColor: Colors.white, elevation: 0,
         ),
         body: Center(
@@ -57,14 +57,14 @@ class AccountScreen extends ConsumerWidget {
                   child: const Icon(Icons.person_outline, size: 44, color: AppColors.ink3),
                 ),
                 const SizedBox(height: 16),
-                const Text('سجّل دخولك إلى باهي',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 20, fontWeight: FontWeight.w800)),
+                Text(context.s.signInPrompt,
+                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 20, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
-                const Text('احفظ مفضلتك، تتبّع طلباتك، وزامن عبر الأجهزة.',
+                Text(context.s.signInSub,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 14, color: AppColors.ink2)),
+                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 14, color: AppColors.ink2)),
                 const SizedBox(height: 24),
-                AppButton(label: 'تسجيل الدخول', onTap: () => context.push('/signin')),
+                AppButton(label: context.s.signIn, onTap: () => safePush(context, '/signin')),
               ],
             ),
           ),
@@ -85,8 +85,8 @@ class AccountScreen extends ConsumerWidget {
             backgroundColor: Colors.white,
             elevation: 0,
             pinned: true,
-            title: const Text('حسابي',
-              style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+            title: Text(context.s.myAccount,
+              style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
             centerTitle: true,
           ),
           SliverToBoxAdapter(
@@ -112,8 +112,8 @@ class AccountScreen extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('أهلاً بك،',
-                              style: TextStyle(fontSize: 12, color: AppColors.ink3)),
+                            Text(context.s.hello,
+                              style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
                             Text(user.name,
                               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, height: 1.1)),
                             Row(children: [
@@ -130,8 +130,8 @@ class AccountScreen extends ConsumerWidget {
                                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                                   const Icon(Icons.check, size: 8, color: AppColors.success),
                                   const SizedBox(width: 2),
-                                  const Text('موثّق',
-                                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
+                                  Text(context.s.verified,
+                                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
                                       color: AppColors.success, letterSpacing: 0.3)),
                                 ]),
                               ),
@@ -150,21 +150,21 @@ class AccountScreen extends ConsumerWidget {
                     children: [
                       _StatTile(
                         value: activeOrders > 0 ? '$activeOrders' : '—',
-                        label: 'نشط',
+                        label: context.s.activeOrdersLbl,
                         accent: activeOrders > 0,
-                        onTap: () => context.push('/orders'),
+                        onTap: () => safePush(context, '/orders'),
                       ),
                       const SizedBox(width: 8),
                       _StatTile(
                         value: totalOrders > 0 ? '$totalOrders' : '—',
-                        label: 'طلب',
-                        onTap: () => context.push('/orders'),
+                        label: context.s.totalOrdersLbl,
+                        onTap: () => safePush(context, '/orders'),
                       ),
                       const SizedBox(width: 8),
                       _StatTile(
                         value: wishlistCount > 0 ? '$wishlistCount' : '—',
-                        label: 'محفوظ',
-                        onTap: () => context.push('/wishlist'),
+                        label: context.s.savedItems,
+                        onTap: () => safePush(context, '/wishlist'),
                       ),
                     ],
                   ),
@@ -174,7 +174,7 @@ class AccountScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                   child: GestureDetector(
-                    onTap: () => context.push('/wallet'),
+                    onTap: () => safePush(context, '/wallet'),
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
@@ -194,9 +194,9 @@ class AccountScreen extends ConsumerWidget {
                         ),
                         const SizedBox(width: 12),
                         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          const Text('محفظة باهي',
-                            style: TextStyle(fontSize: 12, color: AppColors.ink2)),
-                          Text('${user.walletBalance.toStringAsFixed(0)} د.ل',
+                          Text(context.s.myWallet,
+                            style: const TextStyle(fontSize: 12, color: AppColors.ink2)),
+                          Text('${user.walletBalance.toStringAsFixed(0)} ${context.s.lyd}',
                             style: const TextStyle(fontFamily: 'PlusJakartaSans',
                               fontSize: 18, fontWeight: FontWeight.w800)),
                         ]),
@@ -211,21 +211,21 @@ class AccountScreen extends ConsumerWidget {
 
                 // Menu group 1
                 _MenuGroup([
-                  _MenuRow(Icons.shopping_bag_outlined, 'طلباتي', () => context.push('/orders')),
-                  _MenuRow(Icons.location_on_outlined, 'عناويني', () => context.push('/addresses')),
-                  _MenuRow(Icons.assignment_return_outlined, 'الإرجاعات والاسترداد', () => context.push('/orders')),
-                  _MenuRow(Icons.auto_awesome_outlined, 'ادعُ أصدقاءك · أعطِ 10، احصل 10', () => context.push('/referral')),
+                  _MenuRow(Icons.shopping_bag_outlined, context.s.myOrders, () => safePush(context, '/orders')),
+                  _MenuRow(Icons.location_on_outlined, context.s.myAddresses, () => safePush(context, '/addresses')),
+                  _MenuRow(Icons.assignment_return_outlined, context.tr('الإرجاعات والاسترداد', 'Returns & Refunds'), () => safePush(context, '/orders')),
+                  _MenuRow(Icons.auto_awesome_outlined, context.s.inviteFriends, () => safePush(context, '/referral')),
                 ]),
 
                 const SizedBox(height: 8),
 
                 // Menu group 2
                 _MenuGroup([
-                  _MenuRow(Icons.notifications_outlined, 'الإشعارات', () => context.push('/notifications')),
-                  _MenuRow(Icons.language_outlined, isAr ? 'English' : 'العربية', () {
+                  _MenuRow(Icons.notifications_outlined, context.s.notifications, () => safePush(context, '/notifications')),
+                  _MenuRow(Icons.language_outlined, context.s.switchLang, () {
                     ref.read(localeProvider.notifier).toggle();
                   }),
-                  _MenuRow(Icons.settings_outlined, 'الإعدادات', () {}),
+                  _MenuRow(Icons.settings_outlined, context.tr('الإعدادات', 'Settings'), () {}),
                 ]),
 
                 const SizedBox(height: 16),
@@ -233,7 +233,7 @@ class AccountScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: AppButton(
-                    label: 'تسجيل الخروج',
+                    label: context.s.signOut,
                     variant: AppButtonVariant.outline,
                     onTap: () => ref.read(authProvider.notifier).logout(),
                   ),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/order.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -23,10 +24,10 @@ class OrdersScreen extends ConsumerStatefulWidget {
 class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   String _tab = 'all';
 
-  static const _tabs = [
-    ('all', 'الكل'),
-    ('active', 'نشطة'),
-    ('delivered', 'مكتملة'),
+  List<(String, String)> _tabs(BuildContext context) => [
+    ('all', context.s.allOrders),
+    ('active', context.s.activeOrders),
+    ('delivered', context.s.completedOrders),
   ];
 
   List<Order> _filtered(List<Order> all) {
@@ -49,8 +50,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: Colors.white, elevation: 0,
-        title: const Text('طلباتي',
-          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+        title: Text(context.s.myOrders,
+          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
@@ -63,7 +64,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                 child: Row(
-                  children: _tabs.map((t) {
+                  children: _tabs(context).map((t) {
                     final isActive = _tab == t.$1;
                     return GestureDetector(
                       onTap: () => setState(() => _tab = t.$1),
@@ -90,16 +91,16 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       ),
       body: ordersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (_, __) => const Center(child: Text('تعذر تحميل الطلبات')),
+        error: (_, __) => Center(child: Text(context.s.loadFailed)),
         data: (orders) {
           final list = _filtered(orders);
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.receipt_long_outlined, size: 72, color: AppColors.ink4),
-                SizedBox(height: 12),
-                Text('لا توجد طلبات',
-                  style: TextStyle(fontSize: 16, color: AppColors.ink2)),
+                const Icon(Icons.receipt_long_outlined, size: 72, color: AppColors.ink4),
+                const SizedBox(height: 12),
+                Text(context.s.noOrders,
+                  style: const TextStyle(fontSize: 16, color: AppColors.ink2)),
               ]),
             );
           }
@@ -125,76 +126,89 @@ class _OrderCard extends StatelessWidget {
       case 'cancelled':
       case 'returned': return AppColors.danger;
       case 'shipped': return AppColors.primary;
-      default: return const Color(0xFFE8A020);
+      default: return AppColors.warn;
     }
   }
 
-  static String _statusLabel(String s) {
+  static Color _statusBg(String s) {
     switch (s) {
-      case 'pending': return 'قيد الانتظار';
-      case 'confirmed': return 'مؤكد';
-      case 'processing': return 'قيد التجهيز';
-      case 'shipped': return 'في الطريق';
-      case 'delivered': return 'تم التسليم';
-      case 'cancelled': return 'ملغي';
-      case 'returned': return 'مُرجَع';
-      default: return s;
+      case 'delivered': return const Color(0xFFEAF6F0);
+      case 'cancelled':
+      case 'returned': return const Color(0xFFFDECE9);
+      case 'shipped': return AppColors.teal50bg;
+      default: return const Color(0xFFFFF1EB);
     }
   }
+
+  String _statusLabel(BuildContext context, String s) =>
+      context.s.statusLabel(s);
 
   bool get _isActive => ['pending', 'confirmed', 'processing', 'shipped'].contains(order.status);
 
   @override
   Widget build(BuildContext context) {
     final statusColor = _statusColor(order.status);
+    final statusBg = _statusBg(order.status);
     final firstImage = order.allItems.isNotEmpty ? order.allItems.first.productImage : null;
 
     return GestureDetector(
       onTap: () => safePush(context, '/orders/${order.id}'),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _isActive ? const Color(0xFFEAF8F8) : Colors.white,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _isActive ? AppColors.primary : AppColors.border),
+            color: _isActive ? AppColors.teal100bg : AppColors.border),
+          boxShadow: _isActive ? AppShadows.shadowCard : null,
         ),
         child: Row(children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: SizedBox(
-              width: 54, height: 54,
+              width: 56, height: 56,
               child: firstImage != null
                   ? CachedNetworkImage(imageUrl: firstImage, fit: BoxFit.cover)
                   : Container(color: AppColors.surfaceSoft,
-                      child: const Icon(Icons.inventory_2_outlined,
+                      child: const Icon(Icons.shopping_bag_outlined,
                         color: AppColors.ink3, size: 24)),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(order.orderNumber,
-                style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                  fontWeight: FontWeight.w700, fontSize: 14)),
-              const SizedBox(height: 3),
               Row(children: [
-                Text(_statusLabel(order.status),
-                  style: TextStyle(color: statusColor,
-                    fontWeight: FontWeight.w600, fontSize: 12.5)),
-                const Text(' · ', style: TextStyle(color: AppColors.ink3)),
-                Text(
-                  '${order.createdAt.day}/${order.createdAt.month}',
-                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontSize: 12, color: AppColors.ink3)),
-                const Text(' · ', style: TextStyle(color: AppColors.ink3)),
-                Text('${order.allItems.length} منتج',
-                  style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
+                Expanded(
+                  child: Text(order.orderNumber,
+                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontWeight: FontWeight.w700, fontSize: 14)),
+                ),
+                // Status pill
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(_statusLabel(context, order.status),
+                    style: TextStyle(color: statusColor,
+                      fontWeight: FontWeight.w700, fontSize: 11)),
+                ),
               ]),
-              const SizedBox(height: 4),
-              Text('${order.total.toStringAsFixed(0)} د.ل',
+              const SizedBox(height: 5),
+              Row(children: [
+                Text(
+                  '${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}',
+                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                    fontSize: 11.5, color: AppColors.ink3)),
+                const Text('  ·  ', style: TextStyle(color: AppColors.ink4)),
+                Text('${order.allItems.length} ${context.s.items}',
+                  style: const TextStyle(fontSize: 11.5, color: AppColors.ink3)),
+              ]),
+              const SizedBox(height: 6),
+              Text('${order.total.toStringAsFixed(0)} ${context.s.lyd}',
                 style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                  fontSize: 12, color: AppColors.ink2)),
+                  fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ink0)),
             ]),
           ),
           const Icon(Icons.chevron_right_rounded, color: AppColors.ink3, size: 20),

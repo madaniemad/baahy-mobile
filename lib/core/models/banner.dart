@@ -28,7 +28,7 @@ class AppBanner {
   factory AppBanner.fromJson(Map<String, dynamic> j) => AppBanner(
     id: (j['id'] as num).toInt(),
     slot: j['slot'] as String? ?? '',
-    imageUrl: j['image_url'] as String?,
+    imageUrl: _resolveUrl(j['image_url'] as String?),
     badgeText: j['badge_text'] as String?,
     titleAr: j['title_ar'] as String?,
     titleEn: j['title_en'] as String?,
@@ -40,6 +40,12 @@ class AppBanner {
   );
 
   bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;
+
+  static String? _resolveUrl(String? v) {
+    if (v == null || v.isEmpty) return null;
+    if (v.startsWith('http')) return v;
+    return 'https://phplaravel-1620145-6391034.cloudwaysapps.com/api/storage/${v.replaceFirst(RegExp(r'^/?storage/'), '')}';
+  }
 }
 
 class BannersData {

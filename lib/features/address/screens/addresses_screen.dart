@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
 final _addressesProvider =
@@ -63,7 +64,7 @@ class AddressesScreen extends ConsumerWidget {
             ...addresses.map((addr) => _AddressCard(
               addr: addr,
               onEdit: () async {
-                await context.push('/addresses/edit', extra: addr);
+                await safePush(context, '/addresses/edit', extra: addr);
                 ref.read(_addressesProvider.notifier).load();
               },
               onSetDefault: addr['is_default'] == true ? null : () =>
@@ -91,7 +92,7 @@ class AddressesScreen extends ConsumerWidget {
             // Add new
             GestureDetector(
               onTap: () async {
-                await context.push('/addresses/edit');
+                await safePush(context, '/addresses/edit');
                 ref.read(_addressesProvider.notifier).load();
               },
               child: Container(

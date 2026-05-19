@@ -5,6 +5,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/widgets/app_button.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -197,7 +198,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             addresses: _addresses,
                             selected: _selectedAddress,
                             onSelect: (a) => setState(() => _selectedAddress = a),
-                            onAddNew: () => context.push('/addresses/edit'),
+                            onAddNew: () => safePush(context, '/addresses/edit'),
                             deliveryPromise: config.deliveryPromiseAr,
                           )
                         : _step == 2

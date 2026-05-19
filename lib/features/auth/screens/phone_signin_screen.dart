@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -64,12 +65,12 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 color: AppColors.teal600, size: 26),
             ),
             const SizedBox(height: 24),
-            const Text('أدخل رقم هاتفك',
-              style: TextStyle(fontFamily: 'Cairo',
+            Text(context.s.enterPhone,
+              style: const TextStyle(fontFamily: 'Cairo',
                 fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
             const SizedBox(height: 8),
-            const Text('سنرسل لك رمزاً من 6 أرقام للتأكد من هويتك.',
-              style: TextStyle(fontSize: 14.5, color: AppColors.ink2, height: 1.5)),
+            Text(context.s.phoneSub,
+              style: const TextStyle(fontSize: 14.5, color: AppColors.ink2, height: 1.5)),
             const SizedBox(height: 24),
 
             // Phone input — always LTR so country code stays on the left
@@ -141,8 +142,8 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                     ? const SizedBox(width: 18, height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink0))
                     : const Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.ink0),
-                label: const Text('إرسال الرمز',
-                  style: TextStyle(fontFamily: 'Cairo',
+                label: Text(context.s.sendCode,
+                  style: const TextStyle(fontFamily: 'Cairo',
                     fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink0)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -159,8 +160,8 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               child: OutlinedButton.icon(
                 onPressed: () {},
                 icon: const Icon(Icons.chat_outlined, size: 16, color: AppColors.ink1),
-                label: const Text('المتابعة عبر واتساب',
-                  style: TextStyle(fontFamily: 'Cairo',
+                label: Text(context.s.viaWhatsapp,
+                  style: const TextStyle(fontFamily: 'Cairo',
                     fontWeight: FontWeight.w700, color: AppColors.ink0)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.border),
@@ -174,8 +175,8 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 onTap: () => context.go('/home'),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Text('تصفّح كزائر',
-                    style: TextStyle(
+                  child: Text(context.s.browseAsGuest,
+                    style: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600,
                       color: AppColors.ink2,
                       decoration: TextDecoration.underline,
@@ -184,10 +185,10 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'بالمتابعة أنت توافق على الشروط وسياسة الخصوصية.',
+            Text(
+              context.s.termsAgreement,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11, color: AppColors.ink3, height: 1.5)),
+              style: const TextStyle(fontSize: 11, color: AppColors.ink3, height: 1.5)),
           ],
         ),
       ),
