@@ -25,7 +25,9 @@ class WishlistScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isLoggedIn = ref.watch(authProvider).isLoggedIn;
+    final wishlistIds = ref.watch(wishlistProvider);
     final products = ref.watch(wishlistProductsProvider);
+    final isLoading = isLoggedIn && wishlistIds.isNotEmpty && products.isEmpty;
 
     if (!isLoggedIn) {
       return Scaffold(
@@ -72,10 +74,12 @@ class WishlistScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text('${context.s.wishlistTitle} (${products.length})',
+        title: Text('${context.s.wishlistTitle} (${wishlistIds.length})',
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
       ),
-      body: products.isEmpty
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : products.isEmpty
           ? RefreshIndicator(
               color: AppColors.primary,
               onRefresh: () => ref.read(wishlistProductsProvider.notifier).fetch(),

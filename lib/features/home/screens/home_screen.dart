@@ -677,7 +677,7 @@ class _HorizontalProductList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 325,
+      height: 275,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -929,7 +929,7 @@ class _TwoColGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          childAspectRatio: 0.72,
+          mainAxisExtent: 310,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => ProductCard(product: products[i]),
@@ -956,7 +956,7 @@ class _CategoryCarouselSection extends StatelessWidget {
           onAll: () => safePush(context, '\1'),
         ),
         SizedBox(
-          height: 325,
+          height: 275,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -984,7 +984,7 @@ class _BestsellerGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          childAspectRatio: 0.72,
+          mainAxisExtent: 310,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => Stack(
@@ -1018,7 +1018,7 @@ class _NewArrivalsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 325,
+      height: 275,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1337,7 +1337,7 @@ class _HomeSkeleton extends StatelessWidget {
               color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(14))))),
         const SizedBox(height: 24),
         SizedBox(
-          height: 325,
+          height: 275,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: 4,
