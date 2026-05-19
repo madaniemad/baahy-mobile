@@ -210,7 +210,7 @@ class _RightContentState extends ConsumerState<_RightContent> {
                 crossAxisCount: 2,
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
-                mainAxisExtent: 320,
+                childAspectRatio: 0.72,
               ),
               itemCount: products.length,
               itemBuilder: (_, i) => ProductCard(product: products[i]),

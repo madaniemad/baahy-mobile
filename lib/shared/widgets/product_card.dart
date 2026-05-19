@@ -14,10 +14,21 @@ class ProductCard extends ConsumerWidget {
   final double? width;
   const ProductCard({required this.product, this.width, super.key});
 
+  static String _decode(String s) => s
+      .replaceAll('&amp;', '&').replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>').replaceAll('&quot;', '"')
+      .replaceAll('&#39;', "'").replaceAll('&nbsp;', ' ');
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAr = context.isAr;
-    final name = isAr ? product.nameAr : product.name;
+    final rawName = isAr ? product.nameAr : product.name;
+    final rawBrand = product.brand != null && product.brand!.isNotEmpty
+        ? _decode(product.brand!)
+        : product.vendor != null
+            ? _decode(isAr ? product.vendor!.storeNameAr : product.vendor!.storeName)
+            : null;
+    final name = rawBrand != null ? '$rawBrand $rawName' : rawName;
     final inWishlist = ref.watch(wishlistProvider).contains(product.id);
 
     return GestureDetector(
@@ -117,18 +128,6 @@ class ProductCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
                   ),
-                  if ((product.brand != null && product.brand!.isNotEmpty) ||
-                      product.vendor != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      product.brand != null && product.brand!.isNotEmpty
-                          ? product.brand!
-                          : (isAr ? product.vendor!.storeNameAr : product.vendor!.storeName),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, color: AppColors.ink3),
-                    ),
-                  ],
                   const SizedBox(height: 5),
                   if (product.inStock &&
                       product.productType != 'variable' &&
@@ -138,7 +137,7 @@ class ProductCard extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
-                        'تبقّى ${product.stockQuantity} فقط',
+                        context.tr('تبقّى ${product.stockQuantity} فقط', 'Only ${product.stockQuantity} left'),
                         style: const TextStyle(
                           fontSize: 10.5, fontWeight: FontWeight.w700,
                           color: Color(0xFFB85A3A)),
