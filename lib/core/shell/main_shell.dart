@@ -13,11 +13,11 @@ class MainShell extends ConsumerWidget {
   const MainShell({required this.child, super.key});
 
   static const _tabs = [
-    (path: '/home',     icon: Icons.home_outlined,         activeIcon: Icons.home_rounded,       labelAr: 'الرئيسية', labelEn: 'Home'),
-    (path: '/wishlist', icon: Icons.favorite_outline,       activeIcon: Icons.favorite_rounded,   labelAr: 'المفضلة',  labelEn: 'Wishlist'),
-    (path: '/browse',   icon: Icons.grid_view_outlined,    activeIcon: Icons.grid_view_rounded,  labelAr: 'الأقسام',  labelEn: 'Categories'),
-    (path: '/cart',     icon: Icons.shopping_bag_outlined, activeIcon: Icons.shopping_bag_rounded,labelAr: 'السلة',   labelEn: 'Cart'),
-    (path: '/account',  icon: Icons.person_outline,        activeIcon: Icons.person_rounded,     labelAr: 'حسابي',    labelEn: 'Me'),
+    (path: '/home',     icon: Icons.home_outlined,           labelAr: 'الرئيسية', labelEn: 'Home'),
+    (path: '/wishlist', icon: Icons.favorite_outline,        labelAr: 'المفضلة',  labelEn: 'Wishlist'),
+    (path: '/browse',   icon: Icons.grid_view_outlined,      labelAr: 'الأقسام',  labelEn: 'Categories'),
+    (path: '/cart',     icon: Icons.shopping_cart_outlined,  labelAr: 'السلة',    labelEn: 'Cart'),
+    (path: '/account',  icon: Icons.person_outline,          labelAr: 'حسابي',    labelEn: 'Me'),
   ];
 
   @override
@@ -51,7 +51,7 @@ class MainShell extends ConsumerWidget {
                 final tab = _tabs[i];
                 final isActive = i == currentIdx;
                 Widget icon = Icon(
-                  isActive ? tab.activeIcon : tab.icon,
+                  tab.icon,
                   size: 24,
                   color: isActive ? AppColors.ink0 : AppColors.ink3,
                 );
@@ -71,7 +71,7 @@ class MainShell extends ConsumerWidget {
                   icon = badges.Badge(
                     badgeContent: Text('$wishlistCount',
                       style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
-                    badgeStyle: const badges.BadgeStyle(badgeColor: AppColors.primary),
+                    badgeStyle: const badges.BadgeStyle(badgeColor: AppColors.danger),
                     child: icon,
                   );
                 }

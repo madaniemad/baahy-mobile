@@ -97,7 +97,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           product: product,
           qty: _qty,
           onViewCart: () {
-            Navigator.of(context).pop();
             context.go('/cart');
           },
         ),
@@ -180,45 +179,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         ),
                       ),
                     ),
-                    actions: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: GestureDetector(
-                          onTap: () => Share.share(
-                            '${product.nameAr}\nhttps://baahy.ly/product/${product.id}'),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.95),
-                              shape: BoxShape.circle,
-                              boxShadow: AppShadows.shadowCard,
-                            ),
-                            child: const Icon(Icons.share_outlined, size: 20, color: AppColors.ink0),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: GestureDetector(
-                          onTap: () => ref.read(wishlistProvider.notifier).toggle(product.id),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.95),
-                              shape: BoxShape.circle,
-                              boxShadow: AppShadows.shadowCard,
-                            ),
-                            child: Icon(
-                              inWishlist ? Icons.favorite_rounded : Icons.favorite_outline,
-                              size: 20,
-                              color: inWishlist ? AppColors.danger : AppColors.ink0,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                    ],
                     flexibleSpace: FlexibleSpaceBar(
                       background: Stack(
                         children: [
@@ -230,8 +190,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 return Container(color: AppColors.bg,
                                   child: const Icon(Icons.image_outlined, size: 80, color: AppColors.border));
                               }
-                              return CachedNetworkImage(
-                                imageUrl: product.images[i], fit: BoxFit.contain);
+                              return InteractiveViewer(
+                                minScale: 1.0,
+                                maxScale: 4.0,
+                                child: CachedNetworkImage(
+                                  imageUrl: product.images[i], fit: BoxFit.contain));
                             },
                           ),
                           if (product.images.length > 1)
@@ -425,6 +388,54 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     ),
                   ),
                 ],
+              ),
+
+              // ── Share + Wishlist overlay (above PageView to avoid gesture conflicts) ──
+              Positioned(
+                top: 0, left: 0, right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4, right: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => Share.share(
+                            '${product.nameAr}\nhttps://baahy.ly/product/${product.id}'),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 4),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.95),
+                              shape: BoxShape.circle,
+                              boxShadow: AppShadows.shadowCard,
+                            ),
+                            child: const Icon(Icons.share_outlined, size: 20, color: AppColors.ink0),
+                          ),
+                        ),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => ref.read(wishlistProvider.notifier).toggle(product.id),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 4),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.95),
+                              shape: BoxShape.circle,
+                              boxShadow: AppShadows.shadowCard,
+                            ),
+                            child: Icon(
+                              inWishlist ? Icons.favorite_rounded : Icons.favorite_outline,
+                              size: 20,
+                              color: inWishlist ? AppColors.danger : AppColors.ink0,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
 
               // ── Bottom buy bar ──────────────────────────────────────

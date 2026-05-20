@@ -360,6 +360,15 @@ class _CartItemCard extends ConsumerWidget {
               children: [
                 Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                if (item.variation != null && item.variation!.attributes.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    item.variation!.attributes
+                        .map((a) => isAr && a.valueAr.isNotEmpty ? a.valueAr : a.value)
+                        .join(' · '),
+                    style: const TextStyle(fontSize: 12, color: AppColors.ink2),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(
                   '${item.unitPrice.toStringAsFixed(0)} د.ل',

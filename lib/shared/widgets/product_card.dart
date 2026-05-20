@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/models/product.dart';
 import '../../core/providers/wishlist_provider.dart';
-import '../../core/providers/cart_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/l10n.dart';
 import '../../core/utils/navigation.dart';
@@ -117,60 +116,87 @@ class ProductCard extends ConsumerWidget {
                   ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
-                  ),
-                  const SizedBox(height: 5),
-                  if (product.inStock &&
-                      product.productType != 'variable' &&
-                      product.stockQuantity != null &&
-                      product.stockQuantity! > 0 &&
-                      product.stockQuantity! <= 5)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        context.tr('تبقّى ${product.stockQuantity} فقط', 'Only ${product.stockQuantity} left'),
-                        style: const TextStyle(
-                          fontSize: 10.5, fontWeight: FontWeight.w700,
-                          color: Color(0xFFB85A3A)),
-                      ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
                     ),
-                  Row(
-                    children: [
-                      Text(
-                        '${product.displayPrice.toStringAsFixed(0)} د.ل',
-                        style: const TextStyle(
-                          fontFamily: 'PlusJakartaSans',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink0,
-                        ),
-                      ),
-                      if (product.hasDiscount) ...[
-                        const SizedBox(width: 4),
-                        Text(
-                          product.price.toStringAsFixed(0),
-                          style: const TextStyle(
-                            fontFamily: 'PlusJakartaSans',
-                            fontSize: 11,
-                            color: AppColors.ink3,
-                            decoration: TextDecoration.lineThrough,
+                    const Spacer(),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (product.averageRating != null &&
+                            product.reviewsCount != null &&
+                            product.reviewsCount! > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFAB500)),
+                                const SizedBox(width: 3),
+                                Text(
+                                  product.averageRating!.toStringAsFixed(1),
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.ink1),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '(${product.reviewsCount})',
+                                  style: const TextStyle(fontSize: 10, color: AppColors.ink3),
+                                ),
+                              ],
+                            ),
                           ),
+                        if (product.inStock &&
+                            product.productType != 'variable' &&
+                            product.stockQuantity != null &&
+                            product.stockQuantity! > 0 &&
+                            product.stockQuantity! <= 5)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              context.tr('تبقّى ${product.stockQuantity} فقط', 'Only ${product.stockQuantity} left'),
+                              style: const TextStyle(
+                                fontSize: 10.5, fontWeight: FontWeight.w700,
+                                color: Color(0xFFB85A3A)),
+                            ),
+                          ),
+                        Row(
+                          children: [
+                            Text(
+                              '${product.displayPrice.toStringAsFixed(0)} د.ل',
+                              style: const TextStyle(
+                                fontFamily: 'PlusJakartaSans',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.ink0,
+                              ),
+                            ),
+                            if (product.hasDiscount) ...[
+                              const SizedBox(width: 5),
+                              Text(
+                                product.price.toStringAsFixed(0),
+                                style: const TextStyle(
+                                  fontFamily: 'PlusJakartaSans',
+                                  fontSize: 11,
+                                  color: AppColors.ink3,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
-                      const Spacer(),
-                      _AddToCartButton(product: product),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -214,39 +240,6 @@ class _WishlistButton extends ConsumerWidget {
   }
 }
 
-class _AddToCartButton extends ConsumerWidget {
-  final Product product;
-  const _AddToCartButton({required this.product});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (!product.inStock) return const SizedBox.shrink();
-    if (product.productType == 'variable') {
-      return GestureDetector(
-        onTap: () => safePush(context, '/product/${product.id}'),
-        child: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.add_rounded, size: 14, color: Colors.white),
-        ),
-      );
-    }
-    return GestureDetector(
-      onTap: () => ref.read(cartProvider.notifier).add(product),
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(Icons.add_rounded, size: 14, color: Colors.white),
-      ),
-    );
-  }
-}
 
 class ProductCardSkeleton extends StatelessWidget {
   final double? width;

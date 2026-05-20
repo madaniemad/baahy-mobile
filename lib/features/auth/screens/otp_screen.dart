@@ -137,6 +137,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       cursorColor: Colors.transparent,
                       decoration: const InputDecoration(
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
                         counterText: '',
                         contentPadding: EdgeInsets.zero,
                       ),
@@ -162,7 +164,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                                     ? AppColors.primary
                                     : filled
                                         ? AppColors.primary
-                                        : Colors.transparent,
+                                        : AppColors.borderStrong,
                           ),
                         ),
                         child: filled

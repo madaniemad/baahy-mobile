@@ -225,7 +225,7 @@ class AccountScreen extends ConsumerWidget {
                   _MenuRow(Icons.language_outlined, context.s.switchLang, () {
                     ref.read(localeProvider.notifier).toggle();
                   }),
-                  _MenuRow(Icons.settings_outlined, context.tr('الإعدادات', 'Settings'), () {}),
+                  _MenuRow(Icons.settings_outlined, context.tr('الإعدادات', 'Settings'), () => safePush(context, '/settings')),
                 ]),
 
                 const SizedBox(height: 16),

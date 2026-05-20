@@ -30,9 +30,34 @@ class _FilterOptions {
   const _FilterOptions({this.attrTypes = const [], this.brands = const []});
 }
 
-final _filterOptionsProvider = FutureProvider<_FilterOptions>((_) async {
+// Scope key: category + brand drive dynamic re-fetching of available attributes
+class _FilterScope {
+  final int? categoryId;
+  final String? brand;
+  final Set<int> attrValueIds;
+  const _FilterScope({this.categoryId, this.brand, this.attrValueIds = const {}});
+
+  @override
+  bool operator ==(Object other) =>
+    other is _FilterScope &&
+    other.categoryId == categoryId &&
+    other.brand == brand &&
+    _setEquals(other.attrValueIds, attrValueIds);
+
+  @override
+  int get hashCode => Object.hash(categoryId, brand, Object.hashAll(attrValueIds.toList()..sort()));
+
+  static bool _setEquals(Set<int> a, Set<int> b) =>
+    a.length == b.length && a.containsAll(b);
+}
+
+final _filterOptionsProvider = FutureProvider.family<_FilterOptions, _FilterScope>((_, scope) async {
   try {
-    final res = await ApiClient.instance.dio.get('/products/filter-options');
+    final params = <String, dynamic>{};
+    if (scope.categoryId != null) params['category_id'] = scope.categoryId;
+    if (scope.brand != null && scope.brand!.isNotEmpty) params['brand'] = scope.brand;
+    final res = await ApiClient.instance.dio.get('/products/filter-options',
+      queryParameters: params.isNotEmpty ? params : null);
     final data = res.data['data'];
     final types = (data['attribute_types'] as List? ?? []).map((t) => _AttrType(
       id: t['id'], name: t['name'] ?? '', nameAr: t['name_ar'] ?? '',
@@ -194,7 +219,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => _FilterSheet(initial: _filters),
+      builder: (_) => _FilterSheet(initial: _filters, scopeCategoryId: widget.categoryId),
     );
     if (result != null && mounted) {
       setState(() => _filters = result);
@@ -274,7 +299,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                     crossAxisCount: 2,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    mainAxisExtent: 310,
+                    mainAxisExtent: 348,
                   ),
                   itemCount: _products.length + (_loadingMore ? 2 : 0),
                   itemBuilder: (_, i) {
@@ -290,7 +315,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
 
 class _FilterSheet extends ConsumerStatefulWidget {
   final _FilterState initial;
-  const _FilterSheet({required this.initial});
+  final int? scopeCategoryId;
+  const _FilterSheet({required this.initial, this.scopeCategoryId});
   @override
   ConsumerState<_FilterSheet> createState() => _FilterSheetState();
 }
@@ -386,7 +412,26 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    final categories = ref.watch(homeProvider).categories;
+    final allCategories = ref.watch(homeProvider).categories;
+
+    // Compute scoped subcategories for the category filter section
+    List<Category> scopedCats = [];
+    if (widget.scopeCategoryId != null) {
+      final topLevel = allCategories.where((c) => c.id == widget.scopeCategoryId).firstOrNull;
+      if (topLevel != null) {
+        scopedCats = topLevel.children;
+      } else {
+        for (final parent in allCategories) {
+          final match = parent.children.where((c) => c.id == widget.scopeCategoryId).firstOrNull;
+          if (match != null) {
+            scopedCats = match.children;
+            break;
+          }
+        }
+      }
+    } else {
+      scopedCats = allCategories;
+    }
 
     return DraggableScrollableSheet(
       expand: false,
@@ -422,73 +467,35 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
               children: [
 
-                // ── Category ──────────────────────────────────────────────
-                _sectionHeader('القسم', _catExpanded,
-                  () => setState(() => _catExpanded = !_catExpanded)),
+                // ── Category chips ─────────────────────────────────────
+                if (scopedCats.isNotEmpty) ...[
+                  _sectionHeader('القسم', _catExpanded,
+                    () => setState(() => _catExpanded = !_catExpanded)),
 
-                if (_catExpanded) ...[
-                  // All
-                  _CatRow(
-                    label: 'كل الأقسام',
-                    selected: _categoryId == null,
-                    onTap: () => setState(() { _categoryId = null; _categoryName = null; }),
-                  ),
-                  const SizedBox(height: 4),
-                  ...categories.map((cat) {
-                    final isCatSelected = _categoryId == cat.id;
-                    final hasChildren = cat.children.isNotEmpty;
-                    final isExpanded = _expandedCats.contains(cat.id) || isCatSelected ||
-                        cat.children.any((c) => c.id == _categoryId);
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  if (_catExpanded) ...[
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        Row(children: [
-                          Expanded(
-                            child: _CatRow(
-                              label: isAr ? cat.nameAr : cat.name,
-                              selected: isCatSelected,
-                              onTap: () => setState(() {
-                                _categoryId = cat.id;
-                                _categoryName = isAr ? cat.nameAr : cat.name;
-                              }),
-                            ),
-                          ),
-                          if (hasChildren)
-                            GestureDetector(
-                              onTap: () => setState(() {
-                                _expandedCats.contains(cat.id)
-                                    ? _expandedCats.remove(cat.id)
-                                    : _expandedCats.add(cat.id);
-                              }),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Icon(
-                                  isExpanded ? Icons.remove : Icons.add,
-                                  size: 16, color: AppColors.ink3),
-                              ),
-                            ),
-                        ]),
-                        if (isExpanded && hasChildren) ...[
-                          Padding(
-                            padding: const EdgeInsets.only(right: 16),
-                            child: Column(
-                              children: cat.children.map((sub) => _CatRow(
-                                label: isAr ? sub.nameAr : sub.name,
-                                selected: _categoryId == sub.id,
-                                small: true,
-                                onTap: () => setState(() {
-                                  _categoryId = sub.id;
-                                  _categoryName = isAr ? sub.nameAr : sub.name;
-                                }),
-                              )).toList(),
-                            ),
-                          ),
-                        ],
+                        _CatChip(
+                          label: 'الكل',
+                          selected: _categoryId == null || _categoryId == widget.scopeCategoryId,
+                          onTap: () => setState(() { _categoryId = null; _categoryName = null; }),
+                        ),
+                        ...scopedCats.map((cat) => _CatChip(
+                          label: isAr ? cat.nameAr : cat.name,
+                          selected: _categoryId == cat.id ||
+                              cat.children.any((c) => c.id == _categoryId),
+                          onTap: () => setState(() {
+                            _categoryId = cat.id;
+                            _categoryName = isAr ? cat.nameAr : cat.name;
+                          }),
+                        )),
                       ],
-                    );
-                  }),
-                  const SizedBox(height: 8),
-                  const Divider(height: 1),
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                  ],
                 ],
 
                 // ── Price ─────────────────────────────────────────────────
@@ -588,13 +595,20 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
 
                 // ── Attributes (Size, Color, etc.) ────────────────────
                 Consumer(builder: (ctx, attrRef, _) {
-                  final opts = attrRef.watch(_filterOptionsProvider);
+                  final opts = attrRef.watch(_filterOptionsProvider(_FilterScope(
+                    categoryId: widget.scopeCategoryId, brand: _brand)));
                   return opts.maybeWhen(
                     data: (options) {
-                      if (options.attrTypes.isEmpty) return const SizedBox.shrink();
+                      // Filter out brand attribute type — handled by the dedicated brand section
+                      final attrTypes = options.attrTypes.where((t) {
+                        final n = t.name.toLowerCase();
+                        final na = t.nameAr;
+                        return !n.contains('brand') && !na.contains('ماركة');
+                      }).toList();
+                      if (attrTypes.isEmpty) return const SizedBox.shrink();
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: options.attrTypes.map((attrType) {
+                        children: attrTypes.map((attrType) {
                           final typeLabel = isAr ? attrType.nameAr : attrType.name;
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -665,7 +679,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
 
                 // ── Brand ─────────────────────────────────────────────
                 Consumer(builder: (ctx, brandRef, _) {
-                  final opts = brandRef.watch(_filterOptionsProvider);
+                  final opts = brandRef.watch(_filterOptionsProvider(_FilterScope(
+                    categoryId: widget.scopeCategoryId)));
                   return opts.maybeWhen(
                     data: (options) {
                       if (options.brands.isEmpty) return const SizedBox.shrink();
@@ -759,6 +774,37 @@ class _CatRow extends StatelessWidget {
           if (selected)
             const Icon(Icons.check_rounded, size: 16, color: AppColors.primary),
         ]),
+      ),
+    );
+  }
+}
+
+class _CatChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _CatChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.border,
+            width: 1.5),
+        ),
+        child: Text(label,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? AppColors.ink0 : AppColors.ink1,
+          )),
       ),
     );
   }

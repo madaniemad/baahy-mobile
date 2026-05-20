@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/models/app_config.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -70,11 +72,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           'quantity': i.quantity,
         }).toList(),
         'payment_method': _paymentMethod,
-        'shipping_name': addr['label'] ?? addr['name'] ?? '',
+        'shipping_name': addr['name'] ?? addr['label'] ?? '',
         'shipping_phone': addr['phone'] ?? '',
         'shipping_city': addr['city'] ?? '',
-        'shipping_address':
-            [addr['district'], addr['street'], addr['notes']].where((v) => v != null && v.toString().isNotEmpty).join('، '),
+        'shipping_address': addr['address'] ?? '',
         if (cart.couponCode != null) 'coupon_code': cart.couponCode,
         if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
       });
@@ -244,6 +245,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   const SizedBox(height: 10),
                   AppButton(
                     label: _step < 3 ? 'متابعة' : 'تأكيد الطلب',
+                    icon: _step < 3
+                        ? const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: Colors.white)
+                        : const Icon(Icons.check_rounded, size: 16, color: Colors.white),
                     onTap: _next,
                     loading: _loading,
                   ),
@@ -339,7 +343,7 @@ class _StepAddress extends StatelessWidget {
               Text('${addr['label'] ?? 'عنوان'} · ',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
               Text(
-                [addr['city'], addr['district'], addr['street']]
+                [addr['city'], addr['address']]
                   .where((v) => v != null && v.toString().isNotEmpty)
                   .join('، '),
                 style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
@@ -496,18 +500,17 @@ class _StepReview extends StatelessWidget {
     required this.onChangePayment, required this.config});
 
   String get _paymentLabel {
-    try {
-      final method = (config.paymentMethods as List)
-          .firstWhere((m) => m.id == paymentMethod, orElse: () => null);
-      return method?.labelAr ?? paymentMethod;
-    } catch (_) {
-      return paymentMethod;
-    }
+    final match = (config.paymentMethods as List<PaymentMethod>)
+        .where((m) => m.id == paymentMethod)
+        .firstOrNull;
+    return match?.labelAr ?? paymentMethod;
   }
 
   @override
   Widget build(BuildContext context) {
     final addr = address;
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('مراجعة الطلب',
         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
@@ -522,8 +525,11 @@ class _StepReview extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.border),
         ),
-        child: Row(children: [
-          const Icon(Icons.location_on_outlined, size: 18, color: AppColors.ink2),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Icon(Icons.location_on_outlined, size: 18, color: AppColors.ink2),
+          ),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -537,15 +543,24 @@ class _StepReview extends StatelessWidget {
                     fontWeight: FontWeight.w600)),
               ),
             ]),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             if (addr != null) ...[
-              Text('${addr['label'] ?? 'عنوان'}',
-                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+              if ((addr['name'] as String?)?.isNotEmpty == true)
+                Text(addr['name'] as String,
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+              if ((addr['phone'] as String?)?.isNotEmpty == true)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(addr['phone'] as String,
+                    style: const TextStyle(fontSize: 12.5, color: AppColors.ink2,
+                      fontFamily: 'PlusJakartaSans')),
+                ),
+              const SizedBox(height: 3),
               Text(
-                [addr['city'], addr['district'], addr['street']]
+                [addr['label'], addr['city'], addr['address']]
                   .where((v) => v != null && v.toString().isNotEmpty)
-                  .join('، '),
-                style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
+                  .join(' · '),
+                style: const TextStyle(fontSize: 12.5, color: AppColors.ink1)),
             ],
           ])),
         ]),
@@ -576,8 +591,78 @@ class _StepReview extends StatelessWidget {
               ),
             ]),
             const SizedBox(height: 4),
-            Text(_paymentLabel, style: const TextStyle(fontSize: 13.5)),
+            Text(_paymentLabel, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
           ])),
+        ]),
+      ),
+
+      // Product list
+      Container(
+        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('المنتجات (${cart.items.length})',
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
+              color: AppColors.ink2, letterSpacing: 0.3)),
+          const SizedBox(height: 10),
+          ...cart.items.map((item) {
+            final variationLabel = item.variation?.attributes
+                .map((a) => isAr ? a.valueAr : a.value)
+                .where((v) => v.isNotEmpty)
+                .join(' · ');
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: item.image != null
+                      ? CachedNetworkImage(
+                          imageUrl: item.image!,
+                          width: 56, height: 56,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => Container(
+                            width: 56, height: 56,
+                            color: AppColors.surfaceSoft,
+                            child: const Icon(Icons.image_not_supported_outlined,
+                              size: 20, color: AppColors.ink3),
+                          ),
+                        )
+                      : Container(
+                          width: 56, height: 56,
+                          color: AppColors.surfaceSoft,
+                          child: const Icon(Icons.image_not_supported_outlined,
+                            size: 20, color: AppColors.ink3),
+                        ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(isAr ? item.product.nameAr : item.product.name,
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  if (variationLabel != null && variationLabel.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(variationLabel,
+                        style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
+                    ),
+                  const SizedBox(height: 4),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Text('× ${item.quantity}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.ink2,
+                        fontFamily: 'PlusJakartaSans')),
+                    Text('${item.total.toStringAsFixed(0)} د.ل',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                        fontFamily: 'PlusJakartaSans')),
+                  ]),
+                ])),
+              ]),
+            );
+          }),
         ]),
       ),
 

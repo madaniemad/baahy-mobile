@@ -5,6 +5,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/models/product.dart';
 import '../../../core/providers/home_provider.dart';
 import '../../../core/utils/l10n.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 
@@ -67,7 +68,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                       return GestureDetector(
                         onTap: () => setState(() => _activeCategoryId = cat.id),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+                          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
                           decoration: BoxDecoration(
                             color: isActive ? Colors.white : Colors.transparent,
                             border: Border(
@@ -79,34 +80,22 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                           child: Column(
                             children: [
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: SizedBox(
-                                  width: 40, height: 40,
+                                borderRadius: BorderRadius.circular(12),
+                                child: AspectRatio(
+                                  aspectRatio: 1.0,
                                   child: cat.image != null
                                       ? CachedNetworkImage(
                                           imageUrl: cat.image!, fit: BoxFit.cover,
                                           errorWidget: (_, __, ___) =>
                                             Container(color: AppColors.primary.withValues(alpha: 0.1),
                                               child: const Icon(Icons.grid_view_rounded,
-                                                color: AppColors.primary, size: 20)),
+                                                color: AppColors.primary, size: 28)),
                                         )
                                       : Container(
                                           color: AppColors.primary.withValues(alpha: 0.1),
                                           child: const Icon(Icons.grid_view_rounded,
-                                            color: AppColors.primary, size: 20)),
+                                            color: AppColors.primary, size: 28)),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                Localizations.localeOf(context).languageCode == 'ar'
-                                    ? cat.nameAr : cat.name,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                                  color: isActive ? AppColors.ink0 : AppColors.ink2,
-                                  height: 1.2),
-                                textAlign: TextAlign.center,
-                                maxLines: 2, overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -141,22 +130,12 @@ class _RightContent extends ConsumerStatefulWidget {
 }
 
 class _RightContentState extends ConsumerState<_RightContent> {
-  int? _activeSubId;
-
-  @override
-  void didUpdateWidget(_RightContent old) {
-    super.didUpdateWidget(old);
-    if (old.categoryId != widget.categoryId) {
-      _activeSubId = null;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final subcats = widget.category.children;
-    final fetchId = _activeSubId ?? widget.categoryId;
-    final productsAsync = ref.watch(_categoryProductsProvider(fetchId));
+    // Always show main category's popular products — subcats navigate away
+    final productsAsync = ref.watch(_categoryProductsProvider(widget.categoryId));
 
     return productsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -164,10 +143,11 @@ class _RightContentState extends ConsumerState<_RightContent> {
       data: (products) => ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          // Subcategory image tiles — 3-column grid
+          // Subcategory tiles — tap navigates to search results
           if (subcats.isNotEmpty) ...[
             GridView.builder(
               shrinkWrap: true,
+              padding: EdgeInsets.zero,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
@@ -175,22 +155,13 @@ class _RightContentState extends ConsumerState<_RightContent> {
                 crossAxisSpacing: 8,
                 childAspectRatio: 1.0,
               ),
-              itemCount: subcats.length + 1,
+              itemCount: subcats.length,
               itemBuilder: (_, i) {
-                if (i == 0) {
-                  return _SubTile(
-                    label: context.s.all,
-                    image: null,
-                    selected: _activeSubId == null,
-                    onTap: () => setState(() => _activeSubId = null),
-                  );
-                }
-                final sub = subcats[i - 1];
+                final sub = subcats[i];
                 return _SubTile(
                   label: isAr ? sub.nameAr : sub.name,
                   image: sub.image,
-                  selected: _activeSubId == sub.id,
-                  onTap: () => setState(() => _activeSubId = sub.id),
+                  onTap: () => safePush(context, '/search/results?q=&category=${sub.id}'),
                 );
               },
             ),
@@ -205,12 +176,13 @@ class _RightContentState extends ConsumerState<_RightContent> {
           else
             GridView.builder(
               shrinkWrap: true,
+              padding: EdgeInsets.zero,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
-                mainAxisExtent: 310,
+                mainAxisExtent: 290,
               ),
               itemCount: products.length,
               itemBuilder: (_, i) => ProductCard(product: products[i]),
@@ -224,77 +196,56 @@ class _RightContentState extends ConsumerState<_RightContent> {
 class _SubTile extends StatelessWidget {
   final String label;
   final String? image;
-  final bool selected;
   final VoidCallback onTap;
-  const _SubTile({required this.label, required this.image, required this.selected, required this.onTap});
+  const _SubTile({required this.label, required this.image, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? AppColors.primary : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Background image or color
-              if (image != null)
-                CachedNetworkImage(
-                  imageUrl: image!, fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => Container(color: AppColors.primary.withValues(alpha: 0.15)),
-                )
-              else
-                Container(color: AppColors.primary.withValues(alpha: 0.15)),
-              // Dark overlay
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.1),
-                      Colors.black.withValues(alpha: 0.55),
-                    ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (image != null)
+              CachedNetworkImage(
+                imageUrl: image!, fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => Container(color: AppColors.primary.withValues(alpha: 0.15)),
+              )
+            else
+              Container(color: AppColors.primary.withValues(alpha: 0.15)),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.1),
+                    Colors.black.withValues(alpha: 0.55),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 0, left: 0, right: 0,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    shadows: [Shadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 4)],
                   ),
                 ),
               ),
-              // Label at bottom
-              Positioned(
-                bottom: 0, left: 0, right: 0,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      shadows: [Shadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 4)],
-                    ),
-                  ),
-                ),
-              ),
-              // Selected teal border highlight
-              if (selected)
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.primary, width: 2.5),
-                  ),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -26,8 +26,7 @@ class WishlistScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLoggedIn = ref.watch(authProvider).isLoggedIn;
     final wishlistIds = ref.watch(wishlistProvider);
-    final products = ref.watch(wishlistProductsProvider);
-    final isLoading = isLoggedIn && wishlistIds.isNotEmpty && products.isEmpty;
+    final productsAsync = ref.watch(wishlistProductsProvider);
 
     if (!isLoggedIn) {
       return Scaffold(
@@ -67,8 +66,6 @@ class WishlistScreen extends ConsumerWidget {
       );
     }
 
-    final discountCount = products.where((p) => p.displayPrice < p.price).length;
-
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
@@ -77,72 +74,72 @@ class WishlistScreen extends ConsumerWidget {
         title: Text('${context.s.wishlistTitle} (${wishlistIds.length})',
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : products.isEmpty
-          ? RefreshIndicator(
+      body: productsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        error: (_, __) => Center(
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Text(context.s.loadError, style: const TextStyle(color: AppColors.ink2)),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => ref.read(wishlistProductsProvider.notifier).fetch(),
+              child: const Text('إعادة المحاولة'),
+            ),
+          ]),
+        ),
+        data: (products) {
+          if (products.isEmpty) {
+            return RefreshIndicator(
               color: AppColors.primary,
               onRefresh: () => ref.read(wishlistProductsProvider.notifier).fetch(),
               child: ListView(children: [
                 const SizedBox(height: 100),
-                Center(
-                  child: Column(children: [
-                    const Icon(Icons.favorite_outline, size: 72, color: AppColors.ink4),
-                    const SizedBox(height: 12),
-                    Text(context.s.wishlistEmpty,
-                        style: const TextStyle(
-                            fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
-                  ]),
-                ),
+                Center(child: Column(children: [
+                  const Icon(Icons.favorite_outline, size: 72, color: AppColors.ink4),
+                  const SizedBox(height: 12),
+                  Text(context.s.wishlistEmpty,
+                      style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
+                ])),
               ]),
-            )
-          : RefreshIndicator(
-              color: AppColors.primary,
-              onRefresh: () => ref.read(wishlistProductsProvider.notifier).fetch(),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                children: [
-                  // Price drops banner
-                  if (discountCount > 0) ...[
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                      margin: const EdgeInsets.only(bottom: 14),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.25)),
-                      ),
-                      child: Row(children: [
-                        const Icon(Icons.local_fire_department_rounded,
-                            color: AppColors.primary, size: 20),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(context.s.priceDrops,
-                                  style: const TextStyle(
-                                      fontFamily: 'Cairo',
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                      color: AppColors.primary)),
-                              Text('$discountCount ${context.s.priceDropBanner}',
-                                  style: const TextStyle(
-                                      fontSize: 12, color: AppColors.ink2, height: 1.4)),
-                            ],
-                          ),
-                        ),
-                      ]),
+            );
+          }
+          final discountCount = products.where((p) => p.displayPrice < p.price).length;
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () => ref.read(wishlistProductsProvider.notifier).fetch(),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              children: [
+                if (discountCount > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
                     ),
-                  ],
-                  ...products.map((p) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _WishlistCard(product: p),
-                      )),
+                    child: Row(children: [
+                      const Icon(Icons.local_fire_department_rounded, color: AppColors.primary, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(context.s.priceDrops, style: const TextStyle(
+                            fontFamily: 'Cairo', fontWeight: FontWeight.w800,
+                            fontSize: 13, color: AppColors.primary)),
+                        Text('$discountCount ${context.s.priceDropBanner}',
+                            style: const TextStyle(fontSize: 12, color: AppColors.ink2, height: 1.4)),
+                      ])),
+                    ]),
+                  ),
                 ],
-              ),
+                ...products.map((p) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _WishlistCard(product: p),
+                )),
+              ],
             ),
+          );
+        },
+      ),
     );
   }
 }
@@ -265,7 +262,10 @@ class _WishlistCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               GestureDetector(
-                onTap: () => ref.read(wishlistProvider.notifier).toggle(product.id),
+                onTap: () {
+                  ref.read(wishlistProvider.notifier).toggle(product.id);
+                  ref.read(wishlistProductsProvider.notifier).remove(product.id);
+                },
                 child: const Padding(
                   padding: EdgeInsets.all(2),
                   child: Icon(Icons.close, size: 18, color: AppColors.ink3),

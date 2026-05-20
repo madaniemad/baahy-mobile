@@ -29,8 +29,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final res = await _api.dio.get('/auth/me',
           options: Options(extra: {'silent401': true}));
       state = AuthState(user: User.fromJson(res.data['user']));
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await _api.clearToken();
+      }
+      state = const AuthState();
     } catch (_) {
-      await _api.clearToken();
       state = const AuthState();
     }
   }

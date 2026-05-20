@@ -41,23 +41,35 @@ final wishlistProvider = StateNotifierProvider<WishlistNotifier, Set<int>>((ref)
   return WishlistNotifier(ApiClient.instance);
 });
 
-class WishlistProductsNotifier extends StateNotifier<List<Product>> {
+class WishlistProductsNotifier extends StateNotifier<AsyncValue<List<Product>>> {
   final ApiClient _api;
-  WishlistProductsNotifier(this._api) : super([]) {
+  WishlistProductsNotifier(this._api) : super(const AsyncValue.loading()) {
     fetch();
   }
 
   Future<void> fetch() async {
-    if (!await _api.isLoggedIn) return;
+    state = const AsyncValue.loading();
+    if (!await _api.isLoggedIn) {
+      state = const AsyncValue.data([]);
+      return;
+    }
     try {
       final res = await _api.dio.get('/wishlist');
-      state = (res.data['data'] as List?)
-          ?.map((item) => Product.fromJson(item['product'])).toList() ?? [];
-    } catch (_) {}
+      state = AsyncValue.data((res.data['data'] as List?)
+          ?.map((item) => Product.fromJson(item['product'])).toList() ?? []);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  void remove(int productId) {
+    state.whenData((products) {
+      state = AsyncValue.data(products.where((p) => p.id != productId).toList());
+    });
   }
 }
 
 final wishlistProductsProvider =
-    StateNotifierProvider<WishlistProductsNotifier, List<Product>>((ref) {
+    StateNotifierProvider<WishlistProductsNotifier, AsyncValue<List<Product>>>((ref) {
   return WishlistProductsNotifier(ApiClient.instance);
 });

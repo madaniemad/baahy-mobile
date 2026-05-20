@@ -10,6 +10,7 @@ import '../../../core/providers/notifications_provider.dart';
 import '../../../core/providers/recently_viewed_provider.dart';
 import '../../../core/providers/banner_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
+import '../../../core/providers/address_provider.dart';
 import '../../../core/models/app_config.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/banner.dart';
@@ -24,10 +25,10 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final home = ref.watch(homeProvider);
-    final user = ref.watch(currentUserProvider);
     final unread = ref.watch(unreadNotificationCountProvider);
     final banners = ref.watch(bannersProvider);
     final config = ref.watch(appConfigProvider);
+    final city = ref.watch(cityProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -39,7 +40,7 @@ class HomeScreen extends ConsumerWidget {
             SliverPersistentHeader(
               pinned: true,
               delegate: _HomeAppBar(
-                city: user?.city ?? 'ليبيا',
+                city: city,
                 unreadCount: unread,
                 topPadding: MediaQuery.of(context).padding.top,
               ),
@@ -94,8 +95,8 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
 
-              // Split promo banners (real data from backend)
-              if (banners.promoLeft.isNotEmpty || banners.promoRight.isNotEmpty)
+              // Split promo banners — only show when at least one has a real image
+              if (banners.promoLeft.any((b) => b.hasImage) || banners.promoRight.any((b) => b.hasImage))
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -237,21 +238,23 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
         children: [
           Row(
             children: [
-              const Text('baahy',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 22,
-                  fontWeight: FontWeight.w800, color: AppColors.primary)),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceSoft,
-                  borderRadius: BorderRadius.circular(99),
+              GestureDetector(
+                onTap: () => context.push('/city'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSoft,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.location_on_rounded, size: 12, color: AppColors.teal600),
+                    const SizedBox(width: 4),
+                    Text(city, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 3),
+                    const Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: AppColors.ink3),
+                  ]),
                 ),
-                child: Row(children: [
-                  const Icon(Icons.location_on_rounded, size: 12, color: AppColors.teal600),
-                  const SizedBox(width: 4),
-                  Text(city, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                ]),
               ),
               const Spacer(),
               Stack(
@@ -652,7 +655,7 @@ class _SectionHead extends StatelessWidget {
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
       child: Row(children: [
         Text(isAr ? ar : en,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
@@ -677,13 +680,13 @@ class _HorizontalProductList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 275,
+      height: 328,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: products.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (_, i) => ProductCard(product: products[i], width: 155),
+        itemBuilder: (_, i) => ProductCard(product: products[i], width: 165),
       ),
     );
   }
@@ -745,15 +748,15 @@ class _CategoriesGrid extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 174,
+      height: 230,
       child: GridView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          mainAxisExtent: 78,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 10,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 6,
+          mainAxisExtent: 96,
         ),
         itemCount: items.length,
         itemBuilder: (_, i) {
@@ -763,36 +766,30 @@ class _CategoriesGrid extends StatelessWidget {
           return GestureDetector(
             onTap: () => safePush(context, '/search/results?q=&category=${item.cat.id}'),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 52, height: 52,
-                  decoration: BoxDecoration(
-                    color: item.isParent
-                        ? item.color.withValues(alpha: 0.15)
-                        : item.color.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(14),
-                    border: item.isParent
-                        ? Border.all(color: item.color.withValues(alpha: 0.3), width: 1.5)
-                        : Border.all(color: item.color.withValues(alpha: 0.15)),
+                SizedBox(
+                  width: 82, height: 82,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: item.cat.image != null
+                        ? CachedNetworkImage(imageUrl: item.cat.image!, fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Container(
+                              color: item.color.withValues(alpha: 0.15),
+                              child: Icon(icon, size: 26, color: item.color)))
+                        : Container(
+                            color: item.color.withValues(alpha: 0.15),
+                            child: Icon(icon, size: 26, color: item.color)),
                   ),
-                  child: item.cat.image != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(13),
-                          child: CachedNetworkImage(imageUrl: item.cat.image!, fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => Icon(icon,
-                                size: item.isParent ? 22 : 18, color: item.color)),
-                        )
-                      : Icon(icon, size: item.isParent ? 22 : 18, color: item.color),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 4),
                 Text(name,
                   style: TextStyle(
-                    fontSize: item.isParent ? 10.5 : 9.5,
+                    fontSize: 10,
                     fontWeight: item.isParent ? FontWeight.w700 : FontWeight.w500,
                     color: item.isParent ? AppColors.ink0 : AppColors.ink1,
                   ),
-                  textAlign: TextAlign.center, maxLines: 2,
+                  textAlign: TextAlign.center, maxLines: 1,
                   overflow: TextOverflow.ellipsis),
               ],
             ),
@@ -824,26 +821,32 @@ class _SplitPromoBanners extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showLeft  = left  != null && (left!.imageUrl  != null && left!.imageUrl!.isNotEmpty);
+    final showRight = right != null && (right!.imageUrl != null && right!.imageUrl!.isNotEmpty);
+    if (!showLeft && !showRight) return const SizedBox.shrink();
     return Row(children: [
-      Expanded(child: _PromoTile(
-        titleAr: left?.titleAr ?? 'موسم جديد',
-        subtitleAr: left?.subtitleAr ?? 'إصدارات الموضة',
-        ctaAr: left?.buttonText != null ? '${left!.buttonText} ←' : 'تسوّق ←',
-        imageUrl: left?.imageUrl,
-        tint: _tints[0],
-        tintOpacity: 0.55,
-        onTap: () => _navigate(context, left),
-      )),
-      const SizedBox(width: 10),
-      Expanded(child: _PromoTile(
-        titleAr: right?.titleAr ?? 'عروض مميزة',
-        subtitleAr: right?.subtitleAr ?? 'أفضل الأسعار',
-        ctaAr: right?.buttonText != null ? '${right!.buttonText} ←' : 'وفّر الآن ←',
-        imageUrl: right?.imageUrl,
-        tint: _tints[1],
-        tintOpacity: 0.55,
-        onTap: () => _navigate(context, right),
-      )),
+      if (showLeft) ...[
+        Expanded(child: _PromoTile(
+          titleAr: left!.titleAr ?? 'موسم جديد',
+          subtitleAr: left!.subtitleAr ?? 'إصدارات الموضة',
+          ctaAr: left!.buttonText != null ? '${left!.buttonText} ←' : 'تسوّق ←',
+          imageUrl: left!.imageUrl,
+          tint: _tints[0],
+          tintOpacity: 0.55,
+          onTap: () => _navigate(context, left),
+        )),
+        if (showRight) const SizedBox(width: 10),
+      ],
+      if (showRight)
+        Expanded(child: _PromoTile(
+          titleAr: right!.titleAr ?? 'عروض مميزة',
+          subtitleAr: right!.subtitleAr ?? 'أفضل الأسعار',
+          ctaAr: right!.buttonText != null ? '${right!.buttonText} ←' : 'وفّر الآن ←',
+          imageUrl: right!.imageUrl,
+          tint: _tints[1],
+          tintOpacity: 0.55,
+          onTap: () => _navigate(context, right),
+        )),
     ]);
   }
 }
@@ -926,10 +929,11 @@ class _TwoColGrid extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
         shrinkWrap: true,
+        padding: EdgeInsets.zero,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 310,
+          mainAxisExtent: 340,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => ProductCard(product: products[i]),
@@ -945,6 +949,7 @@ class _CategoryCarouselSection extends StatelessWidget {
   const _CategoryCarouselSection({required this.section});
   @override
   Widget build(BuildContext context) {
+    if (section.products.isEmpty) return const SizedBox.shrink();
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final catName = isAr ? section.category.nameAr : section.category.name;
     return Column(
@@ -956,13 +961,13 @@ class _CategoryCarouselSection extends StatelessWidget {
           onAll: () => safePush(context, '\1'),
         ),
         SizedBox(
-          height: 275,
+          height: 328,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: section.products.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) => ProductCard(product: section.products[i], width: 155),
+            itemBuilder: (_, i) => ProductCard(product: section.products[i], width: 165),
           ),
         ),
       ],
@@ -981,30 +986,14 @@ class _BestsellerGrid extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
         shrinkWrap: true,
+        padding: EdgeInsets.zero,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 310,
+          mainAxisExtent: 340,
         ),
         itemCount: products.length,
-        itemBuilder: (_, i) => Stack(
-          children: [
-            ProductCard(product: products[i]),
-            Positioned(
-              top: 12, left: 12,
-              child: Container(
-                width: 26, height: 26,
-                decoration: const BoxDecoration(
-                  color: AppColors.ink0, shape: BoxShape.circle),
-                child: Center(
-                  child: Text('#${i + 1}',
-                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                      fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primary)),
-                ),
-              ),
-            ),
-          ],
-        ),
+        itemBuilder: (_, i) => ProductCard(product: products[i]),
       ),
     );
   }
@@ -1018,30 +1007,13 @@ class _NewArrivalsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 275,
+      height: 328,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: products.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (_, i) => Stack(
-          children: [
-            ProductCard(product: products[i], width: 155),
-            Positioned(
-              top: 12, left: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.ink0,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: const Text('NEW',
-                  style: TextStyle(color: Colors.white, fontSize: 9,
-                    fontWeight: FontWeight.w700, letterSpacing: 0.5)),
-              ),
-            ),
-          ],
-        ),
+        itemBuilder: (_, i) => ProductCard(product: products[i], width: 165),
       ),
     );
   }
@@ -1058,6 +1030,7 @@ class _BudgetGrid extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
         shrinkWrap: true,
+        padding: EdgeInsets.zero,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3, mainAxisSpacing: 8, crossAxisSpacing: 8,
@@ -1261,7 +1234,7 @@ class _RecentlyViewedSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
           child: Row(children: [
             Expanded(
               child: Text(context.s.recentlyViewed,
@@ -1337,12 +1310,12 @@ class _HomeSkeleton extends StatelessWidget {
               color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(14))))),
         const SizedBox(height: 24),
         SizedBox(
-          height: 275,
+          height: 320,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: 4,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, __) => ProductCardSkeleton(width: 155),
+            itemBuilder: (_, __) => ProductCardSkeleton(width: 165),
           ),
         ),
       ]),

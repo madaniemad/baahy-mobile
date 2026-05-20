@@ -116,14 +116,14 @@ class HomeNotifier extends StateNotifier<HomeData> {
     state = state.copyWith(loading: true, error: null);
 
     final results = await Future.wait([
-      _safeGet('/products/featured'),
+      _safeGet('/products', params: {'featured': '1', 'per_page': 12}),
       _safeGet('/products', params: {'sort': 'latest', 'per_page': 12}),
       _safeGet('/products', params: {'sort': 'popular', 'per_page': 8}),
       _safeGet('/categories'),
       _safeGet('/products', params: {'max_price': 50, 'per_page': 6, 'sort': 'latest'}),
     ]);
 
-    final featured  = _products(results[0], 'data');
+    final featured  = _products(results[0], 'data.data');
     final newArrivals = _products(results[1], 'data.data');
     final popular   = _products(results[2], 'data.data');
     final categories = _categories(results[3]);

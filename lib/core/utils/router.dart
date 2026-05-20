@@ -24,6 +24,7 @@ import '../../features/wallet/screens/wallet_screen.dart';
 import '../../features/product/screens/reviews_screen.dart';
 import '../../features/orders/screens/return_screen.dart';
 import '../../features/referral/screens/referral_screen.dart';
+import '../../features/account/screens/settings_screen.dart';
 import '../shell/main_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -80,6 +81,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/orders/:id/return', builder: (_, state) =>
           ReturnScreen(orderId: int.parse(state.pathParameters['id']!))),
       GoRoute(path: '/referral',   builder: (_, __) => const ReferralScreen()),
+      GoRoute(path: '/settings',   builder: (_, __) => const SettingsScreen()),
     ],
   );
 
