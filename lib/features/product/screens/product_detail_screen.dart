@@ -560,6 +560,27 @@ class _StockEtaStrip extends StatelessWidget {
             const SizedBox(height: 10),
             const Divider(height: 1, color: AppColors.border),
             const SizedBox(height: 10),
+            if (product.fulfilledByBaahy)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.bolt_rounded, size: 13, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      const Text('يُوصَّل مباشرةً من مستودعات باهي',
+                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
+                          color: AppColors.primary)),
+                    ]),
+                  ),
+                ]),
+              ),
             Row(children: [
               const Icon(Icons.local_shipping_outlined, size: 18, color: AppColors.teal600),
               const SizedBox(width: 10),

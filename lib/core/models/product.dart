@@ -21,6 +21,7 @@ class Product {
   final String? description;
   final String? descriptionAr;
   final String? brand;
+  final String fulfillmentType;
 
   const Product({
     required this.id,
@@ -45,10 +46,16 @@ class Product {
     this.description,
     this.descriptionAr,
     this.brand,
+    this.fulfillmentType = 'inherit',
   });
 
   double get displayPrice => currentPrice ?? salePrice ?? price;
   bool get hasDiscount => salePrice != null && salePrice! < price;
+  bool get fulfilledByBaahy {
+    if (fulfillmentType == 'baahy') return true;
+    if (fulfillmentType == 'vendor') return false;
+    return vendor?.fulfillmentType == 'baahy';
+  }
   int get discountPercent => hasDiscount
       ? ((1 - displayPrice / price) * 100).round()
       : 0;
@@ -77,6 +84,7 @@ class Product {
     'description': description,
     'description_ar': descriptionAr,
     'brand': brand,
+    'fulfillment_type': fulfillmentType,
   };
 
   static double _d(dynamic v) {
@@ -109,20 +117,30 @@ class Product {
     description: j['description'],
     descriptionAr: j['description_ar'],
     brand: j['brand'] as String?,
+    fulfillmentType: j['fulfillment_type'] as String? ?? 'inherit',
   );
+
+  static const _storageBase = 'https://phplaravel-1620145-6391034.cloudwaysapps.com/storage/';
+
+  static String _resolveImageUrl(String path) {
+    if (path.startsWith('http')) return path;
+    return _storageBase + path.replaceAll(RegExp(r'^/+'), '');
+  }
 
   static List<String> _parseImages(dynamic raw) {
     if (raw == null) return [];
-    if (raw is List) return raw.map((e) => e.toString()).toList();
-    if (raw is String) {
-      // Sometimes images come as JSON string
+    List<String> paths;
+    if (raw is List) {
+      paths = raw.map((e) => e.toString()).toList();
+    } else if (raw is String) {
       try {
-        final decoded = raw.replaceAll(RegExp(r'^\[|\]$'), '').split(',')
+        paths = raw.replaceAll(RegExp(r'^\[|\]$'), '').split(',')
             .map((e) => e.trim().replaceAll('"', '')).where((e) => e.isNotEmpty).toList();
-        return decoded;
       } catch (_) { return []; }
+    } else {
+      return [];
     }
-    return [];
+    return paths.where((p) => p.isNotEmpty).map(_resolveImageUrl).toList();
   }
 }
 
@@ -203,6 +221,7 @@ class Vendor {
   final String? logo;
   final String? city;
   final double? averageRating;
+  final String fulfillmentType;
 
   const Vendor({
     required this.id,
@@ -211,7 +230,10 @@ class Vendor {
     this.logo,
     this.city,
     this.averageRating,
+    this.fulfillmentType = 'vendor',
   });
+
+  bool get fulfilledByBaahy => fulfillmentType == 'baahy';
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -220,6 +242,7 @@ class Vendor {
     'logo': logo,
     'city': city,
     'average_rating': averageRating,
+    'fulfillment_type': fulfillmentType,
   };
 
   factory Vendor.fromJson(Map<String, dynamic> j) => Vendor(
@@ -229,6 +252,7 @@ class Vendor {
     logo: j['logo'],
     city: j['city'],
     averageRating: j['average_rating'] != null ? Product._d(j['average_rating']) : null,
+    fulfillmentType: j['fulfillment_type'] as String? ?? 'vendor',
   );
 }
 
@@ -275,6 +299,6 @@ class Category {
   static String? _resolveImage(dynamic v) {
     if (v == null || (v as String).isEmpty) return null;
     if (v.startsWith('http')) return v;
-    return 'https://phplaravel-1620145-6391034.cloudwaysapps.com/api/storage/$v';
+    return 'https://phplaravel-1620145-6391034.cloudwaysapps.com/storage/${v.replaceAll(RegExp(r'^/+'), '')}';
   }
 }

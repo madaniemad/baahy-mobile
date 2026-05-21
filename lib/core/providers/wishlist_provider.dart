@@ -1,11 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../models/product.dart';
+import 'auth_provider.dart';
 
 class WishlistNotifier extends StateNotifier<Set<int>> {
   final ApiClient _api;
-  WishlistNotifier(this._api) : super({}) {
+  WishlistNotifier(this._api, Ref ref) : super({}) {
     fetch();
+    ref.listen<AuthState>(authProvider, (prev, next) {
+      if (!next.isLoggedIn) {
+        state = {}; // clear local cache only — server still holds the wishlist
+      } else if (prev?.isLoggedIn != true) {
+        fetch(); // just logged in — reload from server
+      }
+    });
   }
 
   Future<void> fetch() async {
@@ -38,13 +46,20 @@ extension _SetToggle<T> on Set<T> {
 }
 
 final wishlistProvider = StateNotifierProvider<WishlistNotifier, Set<int>>((ref) {
-  return WishlistNotifier(ApiClient.instance);
+  return WishlistNotifier(ApiClient.instance, ref);
 });
 
 class WishlistProductsNotifier extends StateNotifier<AsyncValue<List<Product>>> {
   final ApiClient _api;
-  WishlistProductsNotifier(this._api) : super(const AsyncValue.loading()) {
+  WishlistProductsNotifier(this._api, Ref ref) : super(const AsyncValue.loading()) {
     fetch();
+    ref.listen<AuthState>(authProvider, (prev, next) {
+      if (!next.isLoggedIn) {
+        state = const AsyncValue.data([]); // clear local only — server retains it
+      } else if (prev?.isLoggedIn != true) {
+        fetch(); // just logged in — reload from server
+      }
+    });
   }
 
   Future<void> fetch() async {
@@ -71,5 +86,5 @@ class WishlistProductsNotifier extends StateNotifier<AsyncValue<List<Product>>> 
 
 final wishlistProductsProvider =
     StateNotifierProvider<WishlistProductsNotifier, AsyncValue<List<Product>>>((ref) {
-  return WishlistProductsNotifier(ApiClient.instance);
+  return WishlistProductsNotifier(ApiClient.instance, ref);
 });

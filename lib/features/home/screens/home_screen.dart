@@ -67,20 +67,6 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
 
-              // Deals of the day
-              if (home.deals.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: _SectionHead(
-                    ar: 'عروض اليوم',
-                    en: 'Deals of the day',
-                    onAll: () => safePush(context, '/search/results?q='),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _HorizontalProductList(products: home.deals),
-                ),
-              ],
-
               // Categories 4-col grid
               if (home.categories.isNotEmpty) ...[
                 SliverToBoxAdapter(
@@ -92,6 +78,20 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 SliverToBoxAdapter(
                   child: _CategoriesGrid(categories: home.categories),
+                ),
+              ],
+
+              // Deals of the day
+              if (home.deals.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: _SectionHead(
+                    ar: 'عروض اليوم',
+                    en: 'Deals of the day',
+                    onAll: () => safePush(context, '/search/results?q='),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: _HorizontalProductList(products: home.deals),
                 ),
               ],
 
@@ -107,13 +107,17 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
 
-              // Picked for you (featured 2-col grid)
+              // Picked for you (horizontal carousel)
               if (home.featured.isNotEmpty) ...[
                 SliverToBoxAdapter(
-                  child: _SectionHead(ar: 'مختار لك', en: 'Picked for you'),
+                  child: _SectionHead(
+                    ar: 'مختار لك',
+                    en: 'Picked for you',
+                    onAll: () => safePush(context, '/search/results?q=&sort=featured'),
+                  ),
                 ),
                 SliverToBoxAdapter(
-                  child: _TwoColGrid(products: home.featured.take(6).toList()),
+                  child: _HorizontalProductList(products: home.featured),
                 ),
               ],
 
@@ -182,15 +186,13 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
 
-              if (home.categorySections.length > 3)
-                SliverToBoxAdapter(
-                  child: _CategoryCarouselSection(section: home.categorySections[3]),
+              // Remaining category carousels (sections 3+)
+              ...List.generate(
+                (home.categorySections.length - 3).clamp(0, 20),
+                (i) => SliverToBoxAdapter(
+                  child: _CategoryCarouselSection(section: home.categorySections[3 + i]),
                 ),
-
-              if (home.categorySections.length > 4)
-                SliverToBoxAdapter(
-                  child: _CategoryCarouselSection(section: home.categorySections[4]),
-                ),
+              ),
 
               // Recently viewed
               const SliverToBoxAdapter(child: _RecentlyViewedSection()),
@@ -680,7 +682,7 @@ class _HorizontalProductList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 328,
+      height: 366,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -748,7 +750,7 @@ class _CategoriesGrid extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 230,
+      height: 270,
       child: GridView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -756,7 +758,7 @@ class _CategoriesGrid extends StatelessWidget {
           crossAxisCount: 2,
           mainAxisSpacing: 8,
           crossAxisSpacing: 6,
-          mainAxisExtent: 96,
+          mainAxisExtent: 116,
         ),
         itemCount: items.length,
         itemBuilder: (_, i) {
@@ -769,7 +771,7 @@ class _CategoriesGrid extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(
-                  width: 82, height: 82,
+                  width: 100, height: 100,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: item.cat.image != null
@@ -933,7 +935,7 @@ class _TwoColGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 340,
+          mainAxisExtent: 378,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => ProductCard(product: products[i]),
@@ -961,7 +963,7 @@ class _CategoryCarouselSection extends StatelessWidget {
           onAll: () => safePush(context, '\1'),
         ),
         SizedBox(
-          height: 328,
+          height: 366,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -990,7 +992,7 @@ class _BestsellerGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 340,
+          mainAxisExtent: 378,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => ProductCard(product: products[i]),
@@ -1007,7 +1009,7 @@ class _NewArrivalsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 328,
+      height: 366,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),

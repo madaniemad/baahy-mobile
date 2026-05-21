@@ -33,6 +33,7 @@ class PaymentMethod {
 
 class AppConfig {
   final double shippingFee;
+  final double collectionFee;
   final double freeShippingThreshold;
   final int returnDays;
   final int deliveryCitiesCount;
@@ -46,6 +47,7 @@ class AppConfig {
 
   const AppConfig({
     required this.shippingFee,
+    this.collectionFee = 0,
     required this.freeShippingThreshold,
     this.returnDays = 7,
     this.deliveryCitiesCount = 12,
@@ -60,6 +62,7 @@ class AppConfig {
 
   static const AppConfig defaults = AppConfig(
     shippingFee: 10,
+    collectionFee: 0,
     freeShippingThreshold: 150,
     paymentMethods: [
       PaymentMethod(
@@ -93,6 +96,7 @@ class AppConfig {
     final delivery = j['delivery_promise'] as Map<String, dynamic>?;
     return AppConfig(
       shippingFee: _d(j['shipping_fee'] ?? defaults.shippingFee),
+      collectionFee: _d(j['collection_fee'] ?? defaults.collectionFee),
       freeShippingThreshold: _d(j['free_shipping_threshold'] ?? defaults.freeShippingThreshold),
       returnDays: (j['return_days'] as num?)?.toInt() ?? defaults.returnDays,
       deliveryCitiesCount: (j['delivery_cities_count'] as num?)?.toInt() ?? defaults.deliveryCitiesCount,

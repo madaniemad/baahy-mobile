@@ -25,7 +25,7 @@ class OrderTrackingScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.white, elevation: 0,
         leading: IconButton(
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/orders'),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
         titleSpacing: 0,
         title: orderAsync.maybeWhen(

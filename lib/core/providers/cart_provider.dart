@@ -5,7 +5,9 @@ import '../api/api_client.dart';
 import '../models/cart.dart';
 import '../models/product.dart';
 import '../models/app_config.dart';
+import '../models/shipping_rate.dart';
 import 'app_config_provider.dart';
+import 'shipping_provider.dart';
 
 const _kCartKey = 'baahy_cart';
 
@@ -13,21 +15,40 @@ class CartState {
   final List<CartItem> items;
   final String? couponCode;
   final double discountAmount;
-  final double shippingFee;
-  final double freeShippingThreshold;
+  // City-specific rate (null = city unknown, fall back to fallbackShippingFee)
+  final ShippingRate? cityRate;
+  // Fallback estimate shown before city is selected
+  final double fallbackShippingFee;
+  final double collectionFee;
 
   const CartState({
     this.items = const [],
     this.couponCode,
     this.discountAmount = 0,
-    this.shippingFee = 10.0,
-    this.freeShippingThreshold = 150.0,
+    this.cityRate,
+    this.fallbackShippingFee = 10.0,
+    this.collectionFee = 0,
   });
 
   double get subtotal => items.fold(0, (s, i) => s + i.total);
-  double get deliveryFee => subtotal >= freeShippingThreshold ? 0 : shippingFee;
-  double get freeShippingRemaining =>
-      subtotal >= freeShippingThreshold ? 0 : freeShippingThreshold - subtotal;
+
+  bool get hasVendorFulfilledItems => items.any((i) => !i.product.fulfilledByBaahy);
+
+  double get deliveryFee {
+    final base = cityRate != null
+        ? cityRate!.effectiveRate(subtotal)
+        : (subtotal >= 150 ? 0 : fallbackShippingFee);
+    if (base == 0) return 0; // free shipping — waive collection fee too
+    return base + (hasVendorFulfilledItems ? collectionFee : 0);
+  }
+
+  double get freeShippingThreshold => cityRate?.freeShippingThreshold ?? 150;
+
+  // For UI: how much more until free shipping kicks in
+  double get freeShippingRemaining {
+    return subtotal >= freeShippingThreshold ? 0 : freeShippingThreshold - subtotal;
+  }
+
   double get total => subtotal - discountAmount + deliveryFee;
   int get count => items.fold(0, (s, i) => s + i.quantity);
 
@@ -35,28 +56,35 @@ class CartState {
     List<CartItem>? items,
     String? couponCode,
     double? discountAmount,
-    double? shippingFee,
-    double? freeShippingThreshold,
+    ShippingRate? cityRate,
+    bool clearCityRate = false,
+    double? fallbackShippingFee,
+    double? collectionFee,
     bool clearCoupon = false,
   }) => CartState(
     items: items ?? this.items,
     couponCode: clearCoupon ? null : (couponCode ?? this.couponCode),
     discountAmount: clearCoupon ? 0 : (discountAmount ?? this.discountAmount),
-    shippingFee: shippingFee ?? this.shippingFee,
-    freeShippingThreshold: freeShippingThreshold ?? this.freeShippingThreshold,
+    cityRate: clearCityRate ? null : (cityRate ?? this.cityRate),
+    fallbackShippingFee: fallbackShippingFee ?? this.fallbackShippingFee,
+    collectionFee: collectionFee ?? this.collectionFee,
   );
 }
 
 class CartNotifier extends StateNotifier<CartState> {
   CartNotifier({
-    double shippingFee = 10.0,
-    double freeShippingThreshold = 150.0,
-  }) : super(CartState(shippingFee: shippingFee, freeShippingThreshold: freeShippingThreshold)) {
+    double fallbackShippingFee = 10.0,
+    double collectionFee = 0,
+  }) : super(CartState(fallbackShippingFee: fallbackShippingFee, collectionFee: collectionFee)) {
     _load();
   }
 
-  void updateShipping(double fee, double threshold) {
-    state = state.copyWith(shippingFee: fee, freeShippingThreshold: threshold);
+  void updateCollectionFee(double fee) {
+    state = state.copyWith(collectionFee: fee);
+  }
+
+  void updateCityRate(ShippingRate? rate) {
+    state = state.copyWith(cityRate: rate, clearCityRate: rate == null);
   }
 
   Future<void> _load() async {
@@ -117,7 +145,7 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 
   Future<void> clear() async {
-    state = CartState(shippingFee: state.shippingFee, freeShippingThreshold: state.freeShippingThreshold);
+    state = CartState(fallbackShippingFee: state.fallbackShippingFee, collectionFee: state.collectionFee);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kCartKey);
   }
@@ -170,14 +198,18 @@ class CartNotifier extends StateNotifier<CartState> {
 final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) {
   final config = ref.read(appConfigProvider);
   final notifier = CartNotifier(
-    shippingFee: config.shippingFee,
-    freeShippingThreshold: config.freeShippingThreshold,
+    fallbackShippingFee: config.shippingFee,
+    collectionFee: config.collectionFee,
   );
-  // Update shipping config when AppConfig refreshes without recreating the notifier
-  // (and without reloading the cart from SharedPreferences).
   ref.listen<AppConfig>(appConfigProvider, (_, next) {
-    notifier.updateShipping(next.shippingFee, next.freeShippingThreshold);
+    notifier.updateCollectionFee(next.collectionFee);
   });
+  ref.listen<ShippingRate?>(cityShippingRateProvider, (_, next) {
+    notifier.updateCityRate(next);
+  });
+  // Apply immediately if city rate is already available
+  final initialRate = ref.read(cityShippingRateProvider);
+  if (initialRate != null) notifier.updateCityRate(initialRate);
   return notifier;
 });
 

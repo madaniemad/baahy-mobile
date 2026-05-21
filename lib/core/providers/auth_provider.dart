@@ -1,7 +1,11 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
 import '../models/user.dart';
+
+const _kCachedUser = 'cached_user';
 
 class AuthState {
   final User? user;
@@ -21,21 +25,49 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> _init() async {
-    if (!await _api.isLoggedIn) return;
-    state = state.copyWith(loading: true);
+    final prefs = await SharedPreferences.getInstance();
+
+    // Step 1: Restore from cache immediately (no network, no secure-storage needed).
+    // This runs even before checking the token so the UI is instant on every open.
+    final cached = prefs.getString(_kCachedUser);
+    if (cached != null) {
+      try {
+        state = AuthState(user: User.fromJson(jsonDecode(cached) as Map<String, dynamic>));
+      } catch (_) {}
+    }
+
+    // Step 2: Check for a stored token.
+    final hasToken = await _api.isLoggedIn;
+    if (!hasToken) {
+      // No token at all — clear any stale cache and stay logged out.
+      if (state.isLoggedIn) {
+        await prefs.remove(_kCachedUser);
+        state = const AuthState();
+      }
+      return;
+    }
+
+    // Step 3: Token exists — silently refresh profile from API.
+    if (!state.isLoggedIn) state = state.copyWith(loading: true);
     try {
-      // silent401: true — a stale token here should NOT redirect to sign-in;
-      // user is just browsing as a returning guest.
       final res = await _api.dio.get('/auth/me',
           options: Options(extra: {'silent401': true}));
-      state = AuthState(user: User.fromJson(res.data['user']));
+      final userJson = res.data['user'] as Map<String, dynamic>;
+      await prefs.setString(_kCachedUser, jsonEncode(userJson));
+      state = AuthState(user: User.fromJson(userJson));
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
+        // Token genuinely expired — log out and clear cache.
         await _api.clearToken();
+        await prefs.remove(_kCachedUser);
+        state = const AuthState();
       }
-      state = const AuthState();
+      // Any other error (network, timeout): keep the cached user logged in.
+      else if (state.loading) {
+        state = const AuthState();
+      }
     } catch (_) {
-      state = const AuthState();
+      if (state.loading) state = const AuthState();
     }
   }
 
@@ -46,19 +78,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> verifyOtp(String phone, String code) async {
     final res = await _api.dio.post('/auth/otp/verify', data: {'phone': phone, 'code': code});
     await _api.setToken(res.data['token']);
-    state = AuthState(user: User.fromJson(res.data['user']));
+    final userJson = res.data['user'] as Map<String, dynamic>;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kCachedUser, jsonEncode(userJson));
+    state = AuthState(user: User.fromJson(userJson));
   }
 
   Future<void> logout() async {
     try { await _api.dio.post('/auth/logout'); } catch (_) {}
     await _api.clearToken();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kCachedUser);
     state = const AuthState();
   }
 
   Future<void> refreshProfile() async {
     try {
       final res = await _api.dio.get('/auth/me');
-      state = AuthState(user: User.fromJson(res.data['user']));
+      final userJson = res.data['user'] as Map<String, dynamic>;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kCachedUser, jsonEncode(userJson));
+      state = AuthState(user: User.fromJson(userJson));
     } catch (_) {}
   }
 }

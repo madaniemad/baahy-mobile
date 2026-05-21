@@ -1,7 +1,9 @@
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../models/product.dart';
 import '../services/cache_service.dart';
+import 'recently_viewed_provider.dart';
 
 class CategorySection {
   final Category category;
@@ -81,6 +83,20 @@ class HomeNotifier extends StateNotifier<HomeData> {
     await fetch();
   }
 
+  Future<dynamic> _fetchRecommended() async {
+    try {
+      final viewedIds = await RecentlyViewedNotifier.loadStoredIds();
+      final params = <String, dynamic>{'limit': '16'};
+      if (viewedIds.isNotEmpty) {
+        params['viewed_ids[]'] = viewedIds.take(20).map((id) => id.toString()).toList();
+      }
+      final res = await _api.dio.get('/products/recommended', queryParameters: params);
+      return res.data;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // Each API call is wrapped independently — one failure never kills the others.
   Future<dynamic> _safeGet(String path, {Map<String, dynamic>? params}) async {
     try {
@@ -116,52 +132,67 @@ class HomeNotifier extends StateNotifier<HomeData> {
     state = state.copyWith(loading: true, error: null);
 
     final results = await Future.wait([
-      _safeGet('/products', params: {'featured': '1', 'per_page': 12}),
-      _safeGet('/products', params: {'sort': 'latest', 'per_page': 12}),
-      _safeGet('/products', params: {'sort': 'popular', 'per_page': 8}),
+      _fetchRecommended(),
+      _safeGet('/products', params: {'sort': 'latest', 'per_page': 12, 'has_image': '1'}),
+      _safeGet('/products', params: {'sort': 'popular', 'per_page': 8, 'has_image': '1'}),
       _safeGet('/categories'),
-      _safeGet('/products', params: {'max_price': 50, 'per_page': 6, 'sort': 'latest'}),
+      _safeGet('/products', params: {'max_price': 50, 'per_page': 6, 'sort': 'latest', 'has_image': '1'}),
+      _safeGet('/products', params: {'on_sale': '1', 'sort': 'popular', 'per_page': 16, 'has_image': '1'}),
     ]);
 
-    final featured  = _products(results[0], 'data.data');
+    // recommended returns flat array at 'data', not paginated 'data.data'
+    final featured    = _products(results[0], 'data')..shuffle(Random());
     final newArrivals = _products(results[1], 'data.data');
-    final popular   = _products(results[2], 'data.data');
-    final categories = _categories(results[3]);
-    final budget    = _products(results[4], 'data.data');
-    final deals     = featured.where((p) => p.hasDiscount).toList();
+    final popular     = _products(results[2], 'data.data');
+    final categories  = _categories(results[3]);
+    final budget      = _products(results[4], 'data.data');
+    final dealsRaw    = _products(results[5], 'data.data');
+    // Deals: use dedicated on_sale fetch; fall back to discounted featured products
+    final deals = dealsRaw.isNotEmpty
+        ? dealsRaw
+        : featured.where((p) => p.hasDiscount).toList();
 
     // Emit partial data immediately so user sees content while category sections load.
     state = HomeData(
       featured: featured,
       newArrivals: newArrivals,
       popular: popular,
-      deals: deals.isNotEmpty ? deals : featured.take(6).toList(),
+      deals: deals,
       budget: budget,
       categories: categories,
       categorySections: state.categorySections,
       loading: categories.isNotEmpty,
     );
 
-    // Fetch category sections (top 5 root categories) independently.
-    if (categories.isNotEmpty) {
-      final rootCats = categories.take(5).toList();
-      final catResults = await Future.wait(
-        rootCats.map((cat) => _safeGet('/products',
-          params: {'category_id': cat.id, 'per_page': 8, 'sort': 'popular'})),
-      );
+    // Fetch category sections: top-level API categories + additional specific sub-categories.
+    const pinnedCats = [
+      Category(id: 1,   name: "Women's Fashion",       nameAr: 'أزياء النساء'),
+      Category(id: 25,  name: "Men's Fashion",          nameAr: 'أزياء الرجال'),
+      Category(id: 46,  name: "Kid's Fashion",          nameAr: 'أزياء الاطفال'),
+      Category(id: 61,  name: 'Perfumes',               nameAr: 'عطور وبخور'),
+      Category(id: 64,  name: 'Beauty & Personal Care', nameAr: 'الجمال والعناية'),
+      Category(id: 90,  name: 'Electronics',            nameAr: 'إلكترونيات'),
+      Category(id: 119, name: 'Home',                   nameAr: 'المنزل'),
+      // Additional specific sub-categories
+      Category(id: 63,  name: 'Men Perfumes',           nameAr: 'عطور رجالية'),
+      Category(id: 101, name: 'Sound & Audio',          nameAr: 'أجهزة الصوت'),
+      Category(id: 53,  name: 'Baby',                   nameAr: 'اطفال مواليد'),
+      Category(id: 73,  name: 'Skincare',               nameAr: 'عناية البشرة'),
+      Category(id: 14,  name: 'Women Shoes',            nameAr: 'احذية نسائية'),
+    ];
+    final catResults = await Future.wait(
+      pinnedCats.map((cat) => _safeGet('/products',
+        params: {'category_id': cat.id, 'per_page': 8, 'sort': 'popular', 'has_image': '1'})),
+    );
 
-      final sections = <CategorySection>[];
-      for (var i = 0; i < rootCats.length; i++) {
-        final prods = _products(catResults[i], 'data.data');
-        if (prods.isNotEmpty) {
-          sections.add(CategorySection(category: rootCats[i], products: prods));
-        }
+    final sections = <CategorySection>[];
+    for (var i = 0; i < pinnedCats.length; i++) {
+      final prods = _products(catResults[i], 'data.data');
+      if (prods.isNotEmpty) {
+        sections.add(CategorySection(category: pinnedCats[i], products: prods));
       }
-
-      state = state.copyWith(categorySections: sections, loading: false);
-    } else {
-      state = state.copyWith(loading: false);
     }
+    state = state.copyWith(categorySections: sections, loading: false);
 
     // Persist to disk for next cold start.
     if (state.featured.isNotEmpty || state.categories.isNotEmpty) {

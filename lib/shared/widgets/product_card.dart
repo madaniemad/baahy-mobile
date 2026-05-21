@@ -160,7 +160,7 @@ class ProductCard extends ConsumerWidget {
                             product.stockQuantity! > 0 &&
                             product.stockQuantity! <= 5)
                           Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.only(bottom: 3),
                             child: Text(
                               context.tr('تبقّى ${product.stockQuantity} فقط', 'Only ${product.stockQuantity} left'),
                               style: const TextStyle(
@@ -169,6 +169,7 @@ class ProductCard extends ConsumerWidget {
                             ),
                           ),
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               '${product.displayPrice.toStringAsFixed(0)} د.ل',
@@ -180,7 +181,7 @@ class ProductCard extends ConsumerWidget {
                               ),
                             ),
                             if (product.hasDiscount) ...[
-                              const SizedBox(width: 5),
+                              const SizedBox(width: 4),
                               Text(
                                 product.price.toStringAsFixed(0),
                                 style: const TextStyle(
@@ -193,6 +194,32 @@ class ProductCard extends ConsumerWidget {
                             ],
                           ],
                         ),
+                        if (product.fulfilledByBaahy)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFE849),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.bolt_rounded, size: 10, color: Color(0xFF1A1A1A)),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    context.tr('إكسبرس', 'Express'),
+                                    style: const TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF1A1A1A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ],
