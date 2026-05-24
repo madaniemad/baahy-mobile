@@ -91,7 +91,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             width: 56, height: 56,
             decoration: BoxDecoration(
               color: const Color(0xFFEAF8F8),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.check_rounded, color: AppColors.teal600, size: 28),
           ),
@@ -241,7 +241,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 backgroundColor: AppColors.primary,
                 disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               child: _loading
                   ? const SizedBox(width: 20, height: 20,

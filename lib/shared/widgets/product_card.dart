@@ -13,6 +13,19 @@ class ProductCard extends ConsumerWidget {
   final double? width;
   const ProductCard({required this.product, this.width, super.key});
 
+  static bool _isClothing(String ar, String en) =>
+      ar.contains('ملاب') || en.contains('cloth') || en.contains('clothing');
+
+  static BoxFit _imageFit(Product p) {
+    final cat = p.category;
+    if (cat == null) return BoxFit.contain;
+    // Check the leaf category OR its parent — API now returns both.
+    if (_isClothing(cat.nameAr, cat.name.toLowerCase())) return BoxFit.cover;
+    final par = cat.parent;
+    if (par != null && _isClothing(par.nameAr, par.name.toLowerCase())) return BoxFit.cover;
+    return BoxFit.contain;
+  }
+
   static String _decode(String s) => s
       .replaceAll('&amp;', '&').replaceAll('&lt;', '<')
       .replaceAll('&gt;', '>').replaceAll('&quot;', '"')
@@ -52,7 +65,7 @@ class ProductCard extends ConsumerWidget {
                     child: product.firstImage != null
                         ? CachedNetworkImage(
                             imageUrl: product.firstImage!,
-                            fit: BoxFit.cover,
+                            fit: _imageFit(product),
                             placeholder: (_, __) => Container(color: AppColors.surfaceSoft),
                             errorWidget: (_, __, ___) => Container(
                               color: AppColors.surfaceSoft,
@@ -201,7 +214,7 @@ class ProductCard extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFE849),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,

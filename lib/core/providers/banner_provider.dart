@@ -3,32 +3,27 @@ import '../api/api_client.dart';
 import '../models/banner.dart';
 import '../services/cache_service.dart';
 
-// Same stale-while-revalidate strategy as AppConfigNotifier.
-// Banners load from disk instantly on cold start, then refresh in background.
+// Banners: show stale cache instantly on cold start, always fetch fresh in background.
+// No TTL gate — admin changes must reflect on every app launch.
 final bannersProvider = StateNotifierProvider<BannersNotifier, BannersData>((ref) {
   return BannersNotifier();
 });
 
 class BannersNotifier extends StateNotifier<BannersData> {
   static const _cacheKey = 'banners';
-  static const _cacheTtl = Duration(minutes: 30);
 
   BannersNotifier() : super(const BannersData()) {
     _load();
   }
 
   Future<void> _load() async {
-    // 1. Return stale cache immediately.
+    // 1. Show stale cache immediately so the screen isn't blank on launch.
     final stale = await CacheService.instance.getStale(_cacheKey);
     if (stale != null) {
       try { state = BannersData.fromJson(stale); } catch (_) {}
     }
 
-    // 2. Skip network if cache is fresh.
-    final fresh = await CacheService.instance.get(_cacheKey, maxAge: _cacheTtl);
-    if (fresh != null) return;
-
-    // 3. Fetch and update.
+    // 2. Always fetch fresh — no TTL gate so admin changes reflect immediately.
     await refresh();
   }
 

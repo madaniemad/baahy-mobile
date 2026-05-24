@@ -179,7 +179,7 @@ class AccountScreen extends ConsumerWidget {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(10),
                         boxShadow: AppShadows.shadowCard,
                       ),
                       child: Row(children: [
@@ -268,7 +268,7 @@ class _StatTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: accent ? const Color(0xFFE8F8F8) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: accent ? const Color(0xFFB2E4E6) : AppColors.border),
           boxShadow: accent ? null : AppShadows.shadowCard,
@@ -297,7 +297,7 @@ class _MenuGroup extends StatelessWidget {
     margin: const EdgeInsets.symmetric(horizontal: 12),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(10),
       border: Border.all(color: AppColors.border),
     ),
     child: Column(
@@ -328,7 +328,7 @@ class _MenuRow extends StatelessWidget {
           width: 32, height: 32,
           decoration: BoxDecoration(
             color: AppColors.surfaceSoft,
-            borderRadius: BorderRadius.circular(9),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, size: 18, color: AppColors.ink2),
         ),

@@ -14,6 +14,7 @@ import '../../../core/providers/address_provider.dart';
 import '../../../core/models/app_config.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/banner.dart';
+import '../../../core/utils/banner_link.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -81,33 +82,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
 
-              // Deals of the day
-              if (home.deals.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: _SectionHead(
-                    ar: 'عروض اليوم',
-                    en: 'Deals of the day',
-                    onAll: () => safePush(context, '/search/results?q='),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _HorizontalProductList(products: home.deals),
-                ),
-              ],
-
-              // Split promo banners — only show when at least one has a real image
-              if (banners.promoLeft.any((b) => b.hasImage) || banners.promoRight.any((b) => b.hasImage))
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    child: _SplitPromoBanners(
-                      left: banners.promoLeft.isNotEmpty ? banners.promoLeft.first : null,
-                      right: banners.promoRight.isNotEmpty ? banners.promoRight.first : null,
-                    ),
-                  ),
-                ),
-
-              // Picked for you (horizontal carousel)
+              // ── Picked for you (matches web: featured before promo) ──
               if (home.featured.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: _SectionHead(
@@ -121,13 +96,42 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
 
-              // Category carousels interleaved with popular/bestsellers
+              // ── Promo banners — full-width, same 1920/700 ratio as hero ──
+              if (banners.promoLeft.any((b) => b.hasImage) || banners.promoRight.any((b) => b.hasImage))
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: _BannerStack(
+                      banners: [
+                        ...banners.promoLeft.where((b) => b.hasImage),
+                        ...banners.promoRight.where((b) => b.hasImage),
+                      ],
+                      aspectRatio: 1920 / 700,
+                    ),
+                  ),
+                ),
+
+              // ── Deals of the day (matches web: after promo) ──
+              if (home.deals.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: _SectionHead(
+                    ar: 'عروض اليوم',
+                    en: 'Deals of the day',
+                    onAll: () => safePush(context, '/search/results?q='),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: _HorizontalProductList(products: home.deals),
+                ),
+              ],
+
+              // ── Category carousel 0 ──
               if (home.categorySections.isNotEmpty)
                 SliverToBoxAdapter(
                   child: _CategoryCarouselSection(section: home.categorySections[0]),
                 ),
 
-              // Bestsellers 2x2 ranked
+              // ── Bestsellers 2x2 ──
               if (home.popular.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: _SectionHead(
@@ -141,12 +145,31 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
 
+              // ── Category carousel 1 ──
               if (home.categorySections.length > 1)
                 SliverToBoxAdapter(
                   child: _CategoryCarouselSection(section: home.categorySections[1]),
                 ),
 
-              // New arrivals with NEW badge
+              // ── Fashion banner cards carousel (slot: fashion_banner) ──
+              if (banners.fashionBanner.any((b) => b.hasImage))
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: _FashionBannerTiles(banners: banners.fashionBanner),
+                  ),
+                ),
+
+              // ── Brand carousel — immediately after fashion cards ──
+              if (banners.promoStrip.any((b) => b.hasImage))
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: _BrandCarousel(brands: banners.promoStrip),
+                  ),
+                ),
+
+              // ── New arrivals ──
               if (home.newArrivals.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: _SectionHead(
@@ -160,7 +183,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
 
-              // Under 50 LYD
+              // ── Under 50 LYD ──
               if (home.budget.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: _SectionHead(ar: 'أقل من 50 د.ل', en: 'Under 50 LYD',
@@ -171,22 +194,35 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
 
+              // ── Tile carousel ──
+              if (banners.tile1.isNotEmpty || banners.tile2.isNotEmpty || banners.tile3.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: _TileCarousel(banners: [
+                      ...banners.tile1.where((b) => b.hasImage),
+                      ...banners.tile2.where((b) => b.hasImage),
+                      ...banners.tile3.where((b) => b.hasImage),
+                    ]),
+                  ),
+                ),
+
+              // ── Category carousel 2 ──
               if (home.categorySections.length > 2)
                 SliverToBoxAdapter(
                   child: _CategoryCarouselSection(section: home.categorySections[2]),
                 ),
 
-              // Mid-banner card (real data from backend)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                  child: _MidBannerCard(
-                    banner: banners.midBanner.isNotEmpty ? banners.midBanner.first : null,
+              // ── Mid banners ──
+              if (banners.midBanner.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                    child: _BannerStack(banners: banners.midBanner),
                   ),
                 ),
-              ),
 
-              // Remaining category carousels (sections 3+)
+              // ── Remaining category carousels (3+) ──
               ...List.generate(
                 (home.categorySections.length - 3).clamp(0, 20),
                 (i) => SliverToBoxAdapter(
@@ -431,9 +467,9 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
     if (widget.banners.isEmpty) return const _HeroBannerFallback();
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: SizedBox(
-        height: 170,
+      borderRadius: BorderRadius.circular(10),
+      child: AspectRatio(
+        aspectRatio: 1920 / 700,
         child: Stack(
           children: [
             PageView.builder(
@@ -473,21 +509,8 @@ class _BannerSlide extends StatelessWidget {
   final List<Color> gradient;
   const _BannerSlide({required this.banner, required this.gradient});
 
-  void _handleTap(BuildContext context) {
-    final link = banner.buttonLink;
-    if (link == null || link.isEmpty) return;
-    // Translate web-style /products?category_id=X to app route
-    if (link.contains('category_id=')) {
-      final match = RegExp(r'category_id=(\d+)').firstMatch(link);
-      if (match != null) {
-        safePush(context, '/search/results?q=&category=${match.group(1)}');
-        return;
-      }
-    }
-    if (link.contains('/products')) {
-      safePush(context, '/search/results?q=');
-    }
-  }
+  void _handleTap(BuildContext context) =>
+      BannerLink.navigate(context, banner.buttonLink);
 
   @override
   Widget build(BuildContext context) {
@@ -505,54 +528,59 @@ class _BannerSlide extends StatelessWidget {
         else
           _gradientBg(gradient),
 
-        // Dark overlay for text readability
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topRight, end: Alignment.bottomLeft,
-              colors: [Colors.transparent, Colors.black.withValues(alpha: 0.65)],
+        if (banner.showOverlay) ...[
+          // Dark gradient for text readability
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: banner.textSide == 'left' ? Alignment.topLeft : Alignment.topRight,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.65)],
+              ),
             ),
           ),
-        ),
 
-        // Content
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (banner.badgeText != null)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(99),
+          // Text content
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: banner.textSide == 'left'
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (banner.badgeText != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(banner.badgeText!,
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                        color: Colors.white, letterSpacing: 0.5)),
                   ),
-                  child: Text(banner.badgeText!,
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                      color: Colors.white, letterSpacing: 0.5)),
-                ),
-              if (banner.titleAr != null)
-                Text(banner.titleAr!,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
-                    color: Colors.white, height: 1.2)),
-              if (banner.subtitleAr != null) ...[
-                const SizedBox(height: 4),
-                Text(banner.subtitleAr!,
-                  style: TextStyle(fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.8))),
+                if (banner.titleAr != null)
+                  Text(banner.titleAr!,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
+                      color: Colors.white, height: 1.2)),
+                if (banner.subtitleAr != null) ...[
+                  const SizedBox(height: 4),
+                  Text(banner.subtitleAr!,
+                    style: TextStyle(fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.8))),
+                ],
+                if (banner.buttonText != null) ...[
+                  const SizedBox(height: 10),
+                  Text('${banner.buttonText} ←',
+                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700,
+                      color: AppColors.primary)),
+                ],
               ],
-              if (banner.buttonText != null) ...[
-                const SizedBox(height: 10),
-                Text('${banner.buttonText} ←',
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700,
-                    color: AppColors.primary)),
-              ],
-            ],
+            ),
           ),
-        ),
+        ],
       ]),
     );
   }
@@ -569,10 +597,11 @@ class _HeroBannerFallback extends StatelessWidget {
   const _HeroBannerFallback();
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 170,
+    return AspectRatio(
+      aspectRatio: 1920 / 700,
+      child: Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(10),
         gradient: const LinearGradient(
           begin: Alignment.topLeft, end: Alignment.bottomRight,
           colors: [Color(0xFF1F2E2E), Color(0xFF0A1A1A)],
@@ -591,6 +620,44 @@ class _HeroBannerFallback extends StatelessWidget {
             style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.75))),
         ],
       ),
+      ),
+    );
+  }
+}
+
+// ── Generic banner stack (N banners, vertically stacked) ─────────────────────
+
+class _BannerStack extends StatelessWidget {
+  final List<AppBanner> banners;
+  final double aspectRatio;
+  const _BannerStack({required this.banners, this.aspectRatio = 1920 / 700});
+
+  static const _gradients = [
+    [Color(0xFF1F2E2E), Color(0xFF0A1A1A)],
+    [Color(0xFF1A1A3E), Color(0xFF0A0A1A)],
+    [Color(0xFF2E1A1A), Color(0xFF1A0A0A)],
+    [Color(0xFF1A2E1A), Color(0xFF0A1A0A)],
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    if (banners.isEmpty) return const SizedBox.shrink();
+    return Column(
+      children: [
+        for (int i = 0; i < banners.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: AspectRatio(
+              aspectRatio: aspectRatio,
+              child: _BannerSlide(
+                banner: banners[i],
+                gradient: _gradients[i % _gradients.length],
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -608,7 +675,7 @@ class _PromiseStrip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.border),
         boxShadow: AppShadows.shadowCard,
       ),
@@ -750,7 +817,7 @@ class _CategoriesGrid extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 270,
+      height: 190,
       child: GridView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -758,7 +825,7 @@ class _CategoriesGrid extends StatelessWidget {
           crossAxisCount: 2,
           mainAxisSpacing: 8,
           crossAxisSpacing: 6,
-          mainAxisExtent: 116,
+          mainAxisExtent: 80,
         ),
         itemCount: items.length,
         itemBuilder: (_, i) {
@@ -771,9 +838,9 @@ class _CategoriesGrid extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(
-                  width: 100, height: 100,
+                  width: 64, height: 64,
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     child: item.cat.image != null
                         ? CachedNetworkImage(imageUrl: item.cat.image!, fit: BoxFit.cover,
                             errorWidget: (_, __, ___) => Container(
@@ -781,13 +848,13 @@ class _CategoriesGrid extends StatelessWidget {
                               child: Icon(icon, size: 26, color: item.color)))
                         : Container(
                             color: item.color.withValues(alpha: 0.15),
-                            child: Icon(icon, size: 26, color: item.color)),
+                            child: Icon(icon, size: 20, color: item.color)),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(name,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: item.isParent ? FontWeight.w700 : FontWeight.w500,
                     color: item.isParent ? AppColors.ink0 : AppColors.ink1,
                   ),
@@ -802,119 +869,215 @@ class _CategoriesGrid extends StatelessWidget {
   }
 }
 
-// ── Split promo banners ───────────────────────────────────────────────────────
+// ── Fashion banner portrait tiles ─────────────────────────────────────────────
 
-class _SplitPromoBanners extends StatelessWidget {
-  final AppBanner? left;
-  final AppBanner? right;
-  const _SplitPromoBanners({this.left, this.right});
-
-  static const _tints = [Color(0xFFD97757), Color(0xFF1F9AA0)];
-
-  void _navigate(BuildContext context, AppBanner? banner) {
-    final link = banner?.buttonLink;
-    if (link == null || link.isEmpty) { safePush(context, '/browse'); return; }
-    if (link.contains('category_id=')) {
-      final m = RegExp(r'category_id=(\d+)').firstMatch(link);
-      if (m != null) { safePush(context, '/search/results?q=&category=${m.group(1)}'); return; }
-    }
-    safePush(context, '/browse');
-  }
+class _FashionBannerTiles extends StatelessWidget {
+  final List<AppBanner> banners;
+  const _FashionBannerTiles({required this.banners});
 
   @override
   Widget build(BuildContext context) {
-    final showLeft  = left  != null && (left!.imageUrl  != null && left!.imageUrl!.isNotEmpty);
-    final showRight = right != null && (right!.imageUrl != null && right!.imageUrl!.isNotEmpty);
-    if (!showLeft && !showRight) return const SizedBox.shrink();
-    return Row(children: [
-      if (showLeft) ...[
-        Expanded(child: _PromoTile(
-          titleAr: left!.titleAr ?? 'موسم جديد',
-          subtitleAr: left!.subtitleAr ?? 'إصدارات الموضة',
-          ctaAr: left!.buttonText != null ? '${left!.buttonText} ←' : 'تسوّق ←',
-          imageUrl: left!.imageUrl,
-          tint: _tints[0],
-          tintOpacity: 0.55,
-          onTap: () => _navigate(context, left),
-        )),
-        if (showRight) const SizedBox(width: 10),
-      ],
-      if (showRight)
-        Expanded(child: _PromoTile(
-          titleAr: right!.titleAr ?? 'عروض مميزة',
-          subtitleAr: right!.subtitleAr ?? 'أفضل الأسعار',
-          ctaAr: right!.buttonText != null ? '${right!.buttonText} ←' : 'وفّر الآن ←',
-          imageUrl: right!.imageUrl,
-          tint: _tints[1],
-          tintOpacity: 0.55,
-          onTap: () => _navigate(context, right),
-        )),
-    ]);
+    final visible = banners.where((b) => b.hasImage).toList();
+    if (visible.isEmpty) return const SizedBox.shrink();
+
+    final sw = MediaQuery.of(context).size.width;
+    // Height fixed from original formula; width slightly increased (peek shrinks to 10px).
+    final cardH = ((sw - 46) / 2) * 16 / 9;
+    final cardW = (sw - 16 - 2 - 10) / 2;
+
+    return SizedBox(
+      height: cardH,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 16),
+        itemCount: visible.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 2),
+        itemBuilder: (_, i) => _FashionTile(banner: visible[i], width: cardW, height: cardH),
+      ),
+    );
   }
 }
 
-class _PromoTile extends StatelessWidget {
-  final String titleAr;
-  final String subtitleAr;
-  final String ctaAr;
-  final String? imageUrl;
-  final Color tint;
-  final double tintOpacity;
-  final VoidCallback onTap;
-  const _PromoTile({
-    required this.titleAr, required this.subtitleAr, required this.ctaAr,
-    this.imageUrl, required this.tint, required this.tintOpacity,
-    required this.onTap,
-  });
+class _FashionTile extends StatelessWidget {
+  final AppBanner banner;
+  final double width;
+  final double height;
+  const _FashionTile({required this.banner, required this.width, required this.height});
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => BannerLink.navigate(context, banner.buttonLink),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         child: SizedBox(
-          height: 140,
+          width: width,
+          height: height,
           child: Stack(fit: StackFit.expand, children: [
-            if (imageUrl != null)
-              CachedNetworkImage(
-                imageUrl: imageUrl!,
-                fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => Container(color: tint),
-              )
+            if (banner.hasImage)
+              CachedNetworkImage(imageUrl: banner.imageUrl!, fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)))
             else
-              Container(color: tint),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [
-                    tint.withValues(alpha: tintOpacity),
-                    Colors.black.withValues(alpha: 0.65),
+              Container(color: const Color(0xFF1A1A3E)),
+            if (banner.showOverlay) ...[
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.6)],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (banner.badgeText != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary, borderRadius: BorderRadius.circular(99)),
+                        child: Text(banner.badgeText!,
+                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
+                            color: Colors.white)),
+                      ),
+                    if (banner.titleAr != null)
+                      Text(banner.titleAr!,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
+                          color: Colors.white, height: 1.2)),
+                    if (banner.buttonText != null) ...[
+                      const SizedBox(height: 8),
+                      Text('${banner.buttonText} ←',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                          color: AppColors.primary)),
+                    ],
                   ],
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(titleAr, style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w800,
-                    fontSize: 16, height: 1.15)),
-                  const SizedBox(height: 3),
-                  Text(subtitleAr, style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9), fontSize: 11.5)),
-                  const SizedBox(height: 8),
-                  Text(ctaAr, style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    fontSize: 11.5, fontWeight: FontWeight.w700)),
-                ],
-              ),
-            ),
+            ],
           ]),
         ),
+      ),
+    );
+  }
+}
+
+// ── Brand logo carousel ───────────────────────────────────────────────────────
+
+class _BrandCarousel extends StatelessWidget {
+  final List<AppBanner> brands;
+  const _BrandCarousel({required this.brands});
+
+  static const double _tileSize = 78;
+  static const double _gap = 8;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Text('تسوق حسب البراند',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            textAlign: TextAlign.center),
+        ),
+        SizedBox(
+          height: _tileSize * 2 + _gap,
+          child: GridView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: _gap,
+              crossAxisSpacing: _gap,
+              mainAxisExtent: _tileSize,
+            ),
+            itemCount: brands.length,
+            itemBuilder: (_, i) {
+              final brand = brands[i];
+              return GestureDetector(
+                onTap: () => BannerLink.navigate(context, brand.buttonLink),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: brand.hasImage
+                      ? CachedNetworkImage(imageUrl: brand.imageUrl!, fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => Container(color: AppColors.surfaceSoft,
+                            child: const Icon(Icons.store_outlined, color: AppColors.ink3, size: 24)))
+                      : Container(color: AppColors.surfaceSoft,
+                          child: const Icon(Icons.store_outlined, color: AppColors.ink3, size: 24)),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Tile carousel — full-width swipeable, 1920/700 ratio (all tile slots) ──────
+
+class _TileCarousel extends StatefulWidget {
+  final List<AppBanner> banners;
+  const _TileCarousel({required this.banners});
+  @override
+  State<_TileCarousel> createState() => _TileCarouselState();
+}
+
+class _TileCarouselState extends State<_TileCarousel> {
+  final _pageCtrl = PageController();
+  int _current = 0;
+
+  static const _gradients = [
+    [Color(0xFF1F2E2E), Color(0xFF0A1A1A)],
+    [Color(0xFF1A1A3E), Color(0xFF0A0A1A)],
+    [Color(0xFF2E1A1A), Color(0xFF1A0A0A)],
+  ];
+
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.banners.isEmpty) return const SizedBox.shrink();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: AspectRatio(
+        aspectRatio: 1920 / 700,
+        child: Stack(children: [
+          PageView.builder(
+            controller: _pageCtrl,
+            itemCount: widget.banners.length,
+            onPageChanged: (i) => setState(() => _current = i),
+            itemBuilder: (_, i) => _BannerSlide(
+              banner: widget.banners[i],
+              gradient: _gradients[i % _gradients.length],
+            ),
+          ),
+          if (widget.banners.length > 1)
+            Positioned(
+              bottom: 10, left: 0, right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(widget.banners.length, (i) => Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: _current == i ? 18 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: _current == i ? 0.9 : 0.35),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                )),
+              ),
+            ),
+        ]),
       ),
     );
   }
@@ -1044,7 +1207,7 @@ class _BudgetGrid extends StatelessWidget {
           return GestureDetector(
             onTap: () => safePush(context, '/product/${p.id}'),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               child: Stack(fit: StackFit.expand, children: [
                 p.firstImage != null
                     ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover,
@@ -1072,103 +1235,6 @@ class _BudgetGrid extends StatelessWidget {
   }
 }
 
-// ── Mid banner card (real data from /api/content/banners → mid_banner slot) ───
-
-class _MidBannerCard extends StatelessWidget {
-  final AppBanner? banner;
-  const _MidBannerCard({this.banner});
-
-  void _handleTap(BuildContext context) {
-    final link = banner?.buttonLink;
-    if (link == null || link.isEmpty) { safePush(context, '/browse'); return; }
-    if (link.contains('category_id=')) {
-      final m = RegExp(r'category_id=(\d+)').firstMatch(link);
-      if (m != null) { safePush(context, '/search/results?q=&category=${m.group(1)}'); return; }
-    }
-    safePush(context, '/browse');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final fallbackGradient = BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xFF2D4A4A), Color(0xFF0A1A1A)],
-        begin: Alignment.topLeft, end: Alignment.bottomRight,
-      ),
-    );
-
-    return GestureDetector(
-      onTap: () => _handleTap(context),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: SizedBox(
-          height: 240,
-          child: Stack(fit: StackFit.expand, children: [
-            // Background: real image or gradient
-            if (banner != null && banner!.hasImage)
-              CachedNetworkImage(
-                imageUrl: banner!.imageUrl!,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => Container(decoration: fallbackGradient),
-                errorWidget: (_, __, ___) => Container(decoration: fallbackGradient),
-              )
-            else
-              Container(decoration: fallbackGradient),
-
-            // Overlay
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  stops: [0.3, 1.0],
-                  colors: [Colors.transparent, Colors.black87],
-                ),
-              ),
-            ),
-
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (banner?.badgeText != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                      child: Text(banner!.badgeText!,
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2, color: Colors.white)),
-                    ),
-                  const Spacer(),
-                  Text(banner?.titleAr ?? 'حرف محلية، توصيل باهي.',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
-                      color: Colors.white, height: 1.15)),
-                  if ((banner?.subtitleAr ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(banner!.subtitleAr!,
-                      style: TextStyle(fontSize: 12.5,
-                        color: Colors.white.withValues(alpha: 0.85))),
-                  ],
-                  if (banner?.buttonText != null) ...[
-                    const SizedBox(height: 10),
-                    Text('${banner!.buttonText} ←',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                        color: AppColors.primary)),
-                  ],
-                ],
-              ),
-            ),
-          ]),
-        ),
-      ),
-    );
-  }
-}
-
 // ── baahy promise block ───────────────────────────────────────────────────────
 
 class _BaahyPromiseCard extends ConsumerWidget {
@@ -1179,7 +1245,7 @@ class _BaahyPromiseCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(10),
         gradient: const LinearGradient(
           begin: Alignment.topLeft, end: Alignment.bottomRight,
           colors: [AppColors.ink0, Color(0xFF1A3838)],
@@ -1299,17 +1365,17 @@ class _HomeSkeleton extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Column(children: [
         Container(height: 130, decoration: BoxDecoration(
-          color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(18))),
+          color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(10))),
         const SizedBox(height: 14),
         Container(height: 54, decoration: BoxDecoration(
-          color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(14))),
+          color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(10))),
         const SizedBox(height: 24),
         Wrap(spacing: 10, runSpacing: 10,
           children: List.generate(8, (_) => Container(
             width: (MediaQuery.of(context).size.width - 82) / 4,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(14))))),
+              color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(10))))),
         const SizedBox(height: 24),
         SizedBox(
           height: 320,

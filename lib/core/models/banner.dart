@@ -10,6 +10,8 @@ class AppBanner {
   final String? buttonText;
   final String? buttonLink;
   final int sortOrder;
+  final bool showOverlay;
+  final String textSide;
 
   const AppBanner({
     required this.id,
@@ -23,6 +25,8 @@ class AppBanner {
     this.buttonText,
     this.buttonLink,
     this.sortOrder = 0,
+    this.showOverlay = true,
+    this.textSide = 'right',
   });
 
   factory AppBanner.fromJson(Map<String, dynamic> j) => AppBanner(
@@ -37,6 +41,8 @@ class AppBanner {
     buttonText: j['button_text'] as String?,
     buttonLink: j['button_link'] as String?,
     sortOrder: (j['sort_order'] as num?)?.toInt() ?? 0,
+    showOverlay: (j['show_overlay'] == true || j['show_overlay'] == 1),
+    textSide: j['text_side'] as String? ?? 'right',
   );
 
   bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;

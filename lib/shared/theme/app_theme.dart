@@ -35,13 +35,13 @@ class AppColors {
 }
 
 class AppRadius {
-  static const sm  = Radius.circular(8);
-  static const md  = Radius.circular(12);
-  static const lg  = Radius.circular(18);
-  static const xl  = Radius.circular(26);
+  static const sm  = Radius.circular(10);
+  static const md  = Radius.circular(10);
+  static const lg  = Radius.circular(10);
+  static const xl  = Radius.circular(10);
   static const pill= Radius.circular(9999);
 
-  static const double card = 14; // used as double in ClipRRect
+  static const double card = 10; // used as double in ClipRRect
   static const cardRadius  = BorderRadius.all(Radius.circular(card));
 
   static const smBorder  = BorderRadius.all(sm);

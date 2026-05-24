@@ -235,7 +235,7 @@ class _StepReason extends StatelessWidget {
                     color: reason == r
                         ? AppColors.primary.withValues(alpha: 0.08)
                         : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: reason == r ? AppColors.primary : AppColors.border,
                       width: reason == r ? 2 : 1),
@@ -262,13 +262,13 @@ class _StepReason extends StatelessWidget {
                   hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink3),
                   filled: true, fillColor: AppColors.bg,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     borderSide: const BorderSide(color: AppColors.border)),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     borderSide: const BorderSide(color: AppColors.border)),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                   contentPadding: const EdgeInsets.all(14),
                 ),
@@ -327,7 +327,7 @@ class _StepDone extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.border),
             ),
             child: Column(children: [

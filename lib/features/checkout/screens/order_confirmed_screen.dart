@@ -51,7 +51,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: AppColors.border),
                         ),
                         child: Column(
@@ -96,7 +96,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 50),
                       side: const BorderSide(color: AppColors.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     child: const Text('مواصلة التسوّق',
                       style: TextStyle(fontFamily: 'Cairo',
@@ -118,7 +118,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                       backgroundColor: AppColors.ink0,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     child: const Text('تتبّع الطلب',
                       style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),

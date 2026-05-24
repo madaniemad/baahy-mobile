@@ -115,7 +115,7 @@ class WishlistScreen extends ConsumerWidget {
                     margin: const EdgeInsets.only(bottom: 14),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
                     ),
                     child: Row(children: [
@@ -168,7 +168,7 @@ class _WishlistCard extends ConsumerWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: hasDiscount ? AppColors.primary : AppColors.border,
             width: hasDiscount ? 1.5 : 1,
@@ -205,7 +205,7 @@ class _WishlistCard extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.success,
-                      borderRadius: BorderRadius.circular(5),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                         '−${((1 - salePrice / product.price) * 100).round()}%',
@@ -320,7 +320,7 @@ class _ActionChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           color: filled ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
               color: filled ? AppColors.primary : AppColors.border, width: 1.5),
         ),

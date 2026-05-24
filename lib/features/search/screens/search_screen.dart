@@ -205,7 +205,7 @@ class _LiveResults extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       child: SizedBox(
                         width: 48, height: 48,
                         child: p.firstImage != null
@@ -307,7 +307,7 @@ class _EmptyState extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceSoft,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Text(c, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),

@@ -317,7 +317,7 @@ class _StepAddress extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: selected?['id'] == addr['id'] ? AppColors.primary : AppColors.border,
               width: selected?['id'] == addr['id'] ? 1.5 : 1),
@@ -359,7 +359,7 @@ class _StepAddress extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.primary, width: 1.5),
             ),
             child: const Row(children: [
@@ -379,7 +379,7 @@ class _StepAddress extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(double.infinity, 44),
             side: const BorderSide(color: AppColors.border),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
         const SizedBox(height: 12),
@@ -430,7 +430,7 @@ class _StepPayment extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: selected == m.id ? const Color(0xFFEAF8F8) : Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: selected == m.id ? AppColors.primary : AppColors.border,
               width: selected == m.id ? 1.5 : 1),
@@ -468,7 +468,7 @@ class _StepPayment extends StatelessWidget {
       Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppColors.border),
         ),
         child: TextField(
@@ -522,7 +522,7 @@ class _StepReview extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppColors.border),
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -572,7 +572,7 @@ class _StepReview extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppColors.border),
         ),
         child: Row(children: [
@@ -602,7 +602,7 @@ class _StepReview extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppColors.border),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -619,7 +619,7 @@ class _StepReview extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                   child: item.image != null
                       ? CachedNetworkImage(
                           imageUrl: item.image!,
@@ -671,7 +671,7 @@ class _StepReview extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: AppShadows.shadowCard,
         ),
         child: Column(children: [

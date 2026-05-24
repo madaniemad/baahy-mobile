@@ -92,7 +92,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         context: context,
         backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(10))),
         builder: (_) => _AddedToCartSheet(
           product: product,
           qty: _qty,
@@ -457,7 +457,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 side: const BorderSide(color: AppColors.border),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                                  borderRadius: BorderRadius.circular(10)),
                               ),
                               child: const Text('أضف للسلة',
                                 style: TextStyle(fontFamily: 'Cairo',
@@ -472,7 +472,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 backgroundColor: AppColors.primary,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                                  borderRadius: BorderRadius.circular(10)),
                                 elevation: 0,
                               ),
                               child: const Text('اشترِ الآن',
@@ -493,7 +493,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               backgroundColor: AppColors.surfaceSoft,
                               foregroundColor: AppColors.ink1,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                                borderRadius: BorderRadius.circular(10)),
                               elevation: 0,
                             ),
                           ),
@@ -527,7 +527,7 @@ class _StockEtaStrip extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceSoft,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         children: [
@@ -619,7 +619,7 @@ class _TrustBlock extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -754,7 +754,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: Column(
@@ -769,7 +769,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                             Container(
                               width: 20, height: 20,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(5),
+                                borderRadius: BorderRadius.circular(10),
                                 color: _checked[all[i].id] == true ? AppColors.ink0 : Colors.white,
                                 border: _checked[all[i].id] == true
                                     ? null : Border.all(color: AppColors.borderStrong, width: 1.8),
@@ -827,7 +827,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                     style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
@@ -911,7 +911,7 @@ class _ReviewCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceSoft,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1020,7 +1020,7 @@ class _VariationPicker extends StatelessWidget {
                         if (isOutOfStock)
                           Positioned.fill(
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(9),
+                              borderRadius: BorderRadius.circular(10),
                               child: CustomPaint(painter: _OutOfStockPainter()),
                             ),
                           ),
@@ -1155,7 +1155,7 @@ class _AddedToCartSheet extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   side: const BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: const Text('مواصلة التسوّق',
                   style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, color: AppColors.ink0)),
@@ -1173,7 +1173,7 @@ class _AddedToCartSheet extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
                 ),
                 child: const Text('عرض السلة',

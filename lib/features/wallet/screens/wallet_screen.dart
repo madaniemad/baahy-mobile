@@ -92,7 +92,7 @@ class WalletScreen extends ConsumerWidget {
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Column(
@@ -136,7 +136,7 @@ class _BalanceCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(10),
         gradient: const LinearGradient(
           colors: [AppColors.ink0, Color(0xFF1a3838)],
           begin: Alignment.topLeft,
@@ -242,7 +242,7 @@ class _InfoTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -320,7 +320,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.all(Radius.circular(24)),
+        borderRadius: BorderRadius.all(Radius.circular(10)),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -340,7 +340,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: AppColors.bg,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic,
@@ -396,7 +396,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFFEAF8F8) : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isSelected ? AppColors.primary : AppColors.border,
                     width: isSelected ? 1.5 : 1),
@@ -437,7 +437,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               child: _loading
                   ? const SizedBox(width: 20, height: 20,

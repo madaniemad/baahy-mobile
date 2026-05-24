@@ -123,7 +123,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
             backgroundColor: AppColors.ink1,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12)),
+              borderRadius: BorderRadius.circular(10)),
           ),
         );
       }
@@ -302,7 +302,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                     horizontal: 14, vertical: 11),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     boxShadow: [BoxShadow(
                       color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 8, offset: const Offset(0, 2))],
@@ -335,7 +335,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                 padding: EdgeInsets.fromLTRB(16, 16, 16, bottom + 16),
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
                   boxShadow: [BoxShadow(
                     color: Colors.black12,
                     blurRadius: 20, offset: Offset(0, -4))],
@@ -356,7 +356,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                       width: 44, height: 44,
                       decoration: BoxDecoration(
                         color: AppColors.surfaceSoft,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.location_pin,
                         color: AppColors.primary, size: 22),
@@ -397,7 +397,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                             width: 44, height: 44,
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                               boxShadow: [BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 8, offset: const Offset(0, 2))],
@@ -427,7 +427,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                                 : null,
                             color: _city.isEmpty || _geocoding
                                 ? AppColors.border : null,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
                           child: Text(
@@ -466,7 +466,7 @@ class _MapBtn extends StatelessWidget {
       width: 44, height: 44,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [BoxShadow(
           color: Colors.black.withValues(alpha: 0.1),
           blurRadius: 8, offset: const Offset(0, 2))],

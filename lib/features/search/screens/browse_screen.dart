@@ -65,10 +65,11 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                     itemBuilder: (_, i) {
                       final cat = categories[i];
                       final isActive = cat.id == _activeCategoryId;
+                      final isAr = Localizations.localeOf(context).languageCode == 'ar';
                       return GestureDetector(
                         onTap: () => setState(() => _activeCategoryId = cat.id),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 5),
                           decoration: BoxDecoration(
                             color: isActive ? Colors.white : Colors.transparent,
                             border: Border(
@@ -80,7 +81,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                           child: Column(
                             children: [
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(10),
                                 child: AspectRatio(
                                   aspectRatio: 1.0,
                                   child: cat.image != null
@@ -89,12 +90,25 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                                           errorWidget: (_, __, ___) =>
                                             Container(color: AppColors.primary.withValues(alpha: 0.1),
                                               child: const Icon(Icons.grid_view_rounded,
-                                                color: AppColors.primary, size: 28)),
+                                                color: AppColors.primary, size: 24)),
                                         )
                                       : Container(
                                           color: AppColors.primary.withValues(alpha: 0.1),
                                           child: const Icon(Icons.grid_view_rounded,
-                                            color: AppColors.primary, size: 28)),
+                                            color: AppColors.primary, size: 24)),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                isAr ? cat.nameAr : cat.name,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                  color: isActive ? AppColors.primary : AppColors.ink2,
+                                  fontFamily: 'Cairo',
                                 ),
                               ),
                             ],
@@ -153,7 +167,7 @@ class _RightContentState extends ConsumerState<_RightContent> {
                 crossAxisCount: 3,
                 mainAxisSpacing: 8,
                 crossAxisSpacing: 8,
-                childAspectRatio: 1.0,
+                childAspectRatio: 0.78,
               ),
               itemCount: subcats.length,
               itemBuilder: (_, i) {
@@ -203,50 +217,35 @@ class _SubTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (image != null)
-              CachedNetworkImage(
-                imageUrl: image!, fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => Container(color: AppColors.primary.withValues(alpha: 0.15)),
-              )
-            else
-              Container(color: AppColors.primary.withValues(alpha: 0.15)),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.1),
-                    Colors.black.withValues(alpha: 0.55),
-                  ],
-                ),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: image != null
+                  ? CachedNetworkImage(
+                      imageUrl: image!, fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) =>
+                          Container(color: AppColors.primary.withValues(alpha: 0.12)),
+                    )
+                  : Container(color: AppColors.primary.withValues(alpha: 0.12)),
             ),
-            Positioned(
-              bottom: 0, left: 0, right: 0,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    shadows: [Shadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 4)],
-                  ),
-                ),
-              ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink0,
+              fontFamily: 'Cairo',
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

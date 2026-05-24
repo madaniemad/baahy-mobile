@@ -166,7 +166,7 @@ class _CodeCardState extends State<_CodeCard> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: AppShadows.shadowCard,
       ),
       child: Column(children: [
@@ -244,7 +244,7 @@ class _CodeCardState extends State<_CodeCard> {
           Container(
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.border),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(children: [
               _StatCell('${widget.invited}', 'دعوة'),

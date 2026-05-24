@@ -59,7 +59,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               width: 56, height: 56,
               decoration: BoxDecoration(
                 color: const Color(0xFFEAF8F8),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.phone_outlined,
                 color: AppColors.teal600, size: 26),
@@ -149,7 +149,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   backgroundColor: AppColors.primary,
                   disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
             ),
@@ -165,7 +165,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                     fontWeight: FontWeight.w700, color: AppColors.ink0)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.border),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
             ),

@@ -159,7 +159,7 @@ class _NotifCard extends ConsumerWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: n.isRead ? Colors.white : AppColors.teal50bg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: n.isRead ? AppColors.border : AppColors.teal100bg,
             width: 1,
@@ -174,7 +174,7 @@ class _NotifCard extends ConsumerWidget {
               width: 40, height: 40,
               decoration: BoxDecoration(
                 color: _iconBg(n.type),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(_icon(n.type), color: _iconColor(n.type), size: 20),
             ),

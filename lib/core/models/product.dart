@@ -262,6 +262,7 @@ class Category {
   final String nameAr;
   final String? image;
   final int? parentId;
+  final Category? parent;
   final List<Category> children;
   final int? sortOrder;
 
@@ -271,6 +272,7 @@ class Category {
     required this.nameAr,
     this.image,
     this.parentId,
+    this.parent,
     this.children = const [],
     this.sortOrder,
   });
@@ -291,6 +293,7 @@ class Category {
     nameAr: j['name_ar'] ?? j['name'] ?? '',
     image: _resolveImage(j['image']),
     parentId: j['parent_id'],
+    parent: j['parent'] != null ? Category.fromJson(j['parent']) : null,
     children: (j['children'] as List?)
         ?.map((c) => Category.fromJson(c)).toList() ?? [],
     sortOrder: j['sort_order'],

@@ -218,7 +218,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(10))),
       builder: (_) => _FilterSheet(initial: _filters, scopeCategoryId: widget.categoryId),
     );
     if (result != null && mounted) {
@@ -653,7 +653,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                           horizontal: 12, vertical: 7),
                                         decoration: BoxDecoration(
                                           color: sel ? AppColors.primary : Colors.white,
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(10),
                                           border: Border.all(
                                             color: sel ? AppColors.primary : AppColors.border,
                                             width: 1.5)),
@@ -701,7 +701,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                       horizontal: 12, vertical: 7),
                                     decoration: BoxDecoration(
                                       color: sel ? AppColors.primary : Colors.white,
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
                                         color: sel ? AppColors.primary : AppColors.border,
                                         width: 1.5)),
@@ -736,7 +736,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: const Text('تطبيق الفلاتر',
                   style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
@@ -794,7 +794,7 @@ class _CatChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.border,
             width: 1.5),

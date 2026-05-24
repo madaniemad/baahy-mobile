@@ -143,7 +143,7 @@ class _FreeShippingBanner extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
         color: const Color(0xFFEAF8F8),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +187,7 @@ class _FreeShippingAchieved extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     decoration: BoxDecoration(
       color: AppColors.success.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
     ),
     child: Row(children: [
@@ -233,7 +233,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: AppShadows.shadowCard,
       ),
       child: Column(
@@ -252,7 +252,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: AppColors.success.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                 ),
                 child: Row(children: [
@@ -338,7 +338,7 @@ class _CartItemCard extends ConsumerWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: AppShadows.shadowCard,
       ),
       child: Row(
@@ -440,7 +440,7 @@ class _CartSummary extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: AppShadows.shadowPop,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
       ),
       child: Column(
         children: [

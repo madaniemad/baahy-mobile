@@ -196,7 +196,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                   Container(
                     decoration: BoxDecoration(
                       color: AppColors.bg,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Directionality(
@@ -230,7 +230,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFF0E9E96), Color(0xFF14B8AE)]),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.my_location_rounded,
                       color: Colors.white, size: 20),
@@ -245,7 +245,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                         horizontal: 14, vertical: 13),
                       decoration: BoxDecoration(
                         color: AppColors.bg,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: _city != null ? AppColors.primary : AppColors.border,
                           width: _city != null ? 1.5 : 1),
@@ -285,7 +285,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.bg,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: TextField(
@@ -371,7 +371,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
       ),
       padding: EdgeInsets.fromLTRB(16, 12, 16, bottom + 16),
       height: MediaQuery.of(context).size.height * 0.75,
@@ -393,7 +393,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
         Container(
           decoration: BoxDecoration(
             color: AppColors.surfaceSoft,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.border),
           ),
           child: TextField(
@@ -486,7 +486,7 @@ class _TextField extends StatelessWidget {
       Container(
         decoration: BoxDecoration(
           color: AppColors.bg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppColors.border),
         ),
         child: TextField(

@@ -72,7 +72,7 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(10),
       border: Border.all(color: AppColors.border),
     ),
     child: Column(children: [

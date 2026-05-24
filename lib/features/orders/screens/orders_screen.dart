@@ -73,7 +73,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                         decoration: BoxDecoration(
                           color: isActive ? AppColors.ink0 : AppColors.surfaceSoft,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(t.$2,
                           style: TextStyle(
@@ -157,7 +157,7 @@ class _OrderCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: _isActive ? AppColors.teal100bg : AppColors.border),
           boxShadow: _isActive ? AppShadows.shadowCard : null,
@@ -188,7 +188,7 @@ class _OrderCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: statusBg,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(_statusLabel(context, order.status),
                     style: TextStyle(color: statusColor,
