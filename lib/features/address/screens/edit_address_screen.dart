@@ -167,7 +167,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFEAF8F8) : Colors.white,
+                          color: isSelected ? const Color(0xFFF5F5F5) : Colors.white,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isSelected ? AppColors.primary : AppColors.border,
@@ -435,7 +435,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: selected
-                        ? const Color(0xFFEAF8F8) : AppColors.surfaceSoft,
+                        ? const Color(0xFFF5F5F5) : AppColors.surfaceSoft,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: selected ? AppColors.primary : AppColors.border,

@@ -26,6 +26,31 @@ class ProductCard extends ConsumerWidget {
     return BoxFit.contain;
   }
 
+  static Widget _buildProductImage(Product p) {
+    final fit = _imageFit(p);
+    Widget img = p.firstImage != null
+        ? CachedNetworkImage(
+            imageUrl: p.firstImage!,
+            fit: fit,
+            placeholder: (_, __) => Container(color: AppColors.surfaceSoft),
+            errorWidget: (_, __, ___) => Container(
+              color: AppColors.surfaceSoft,
+              child: const Icon(Icons.image_not_supported_outlined, color: AppColors.ink4, size: 28),
+            ),
+          )
+        : Container(
+            color: AppColors.bg,
+            child: const Icon(Icons.image_outlined, color: AppColors.ink4),
+          );
+    if (fit == BoxFit.contain) {
+      img = ColorFiltered(
+        colorFilter: const ColorFilter.mode(AppColors.bg, BlendMode.multiply),
+        child: img,
+      );
+    }
+    return img;
+  }
+
   static String _decode(String s) => s
       .replaceAll('&amp;', '&').replaceAll('&lt;', '<')
       .replaceAll('&gt;', '>').replaceAll('&quot;', '"')
@@ -62,20 +87,7 @@ class ProductCard extends ConsumerWidget {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
                   child: AspectRatio(
                     aspectRatio: 0.8,
-                    child: product.firstImage != null
-                        ? CachedNetworkImage(
-                            imageUrl: product.firstImage!,
-                            fit: _imageFit(product),
-                            placeholder: (_, __) => Container(color: AppColors.surfaceSoft),
-                            errorWidget: (_, __, ___) => Container(
-                              color: AppColors.surfaceSoft,
-                              child: const Icon(Icons.image_not_supported_outlined, color: AppColors.ink4, size: 28),
-                            ),
-                          )
-                        : Container(
-                            color: AppColors.bg,
-                            child: const Icon(Icons.image_outlined, color: AppColors.ink4),
-                          ),
+                    child: _buildProductImage(product),
                   ),
                 ),
                 Positioned(

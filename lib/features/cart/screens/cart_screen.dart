@@ -142,7 +142,7 @@ class _FreeShippingBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF8F8),
+        color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -171,7 +171,7 @@ class _FreeShippingBanner extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 4,
-              backgroundColor: const Color(0xFF4CD5DA).withValues(alpha: 0.2),
+              backgroundColor: AppColors.teal100,
               color: AppColors.teal600,
             ),
           ),

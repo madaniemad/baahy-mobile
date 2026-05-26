@@ -28,7 +28,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                       width: 96, height: 96,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFFEAF8F8),
+                        color: const Color(0xFFF5F5F5),
                         border: Border.all(color: AppColors.primary, width: 3),
                       ),
                       child: const Icon(Icons.check_rounded,

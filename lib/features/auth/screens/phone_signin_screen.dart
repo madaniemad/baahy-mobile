@@ -58,7 +58,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
             Container(
               width: 56, height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFFEAF8F8),
+                color: const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.phone_outlined,

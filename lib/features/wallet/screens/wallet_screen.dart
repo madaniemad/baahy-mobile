@@ -395,7 +395,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFEAF8F8) : Colors.white,
+                  color: isSelected ? const Color(0xFFF5F5F5) : Colors.white,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isSelected ? AppColors.primary : AppColors.border,

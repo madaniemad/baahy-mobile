@@ -54,7 +54,7 @@ class ReferralScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFEAF8F8), Colors.white],
+                colors: [Color(0xFFF5F5F5), Colors.white],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -116,7 +116,7 @@ class ReferralScreen extends ConsumerWidget {
                   Container(
                     width: 28, height: 28,
                     decoration: const BoxDecoration(
-                      color: Color(0xFFEAF8F8), shape: BoxShape.circle),
+                      color: Color(0xFFF5F5F5), shape: BoxShape.circle),
                     child: Center(child: Text('${s.$1}',
                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
                         fontSize: 13, fontWeight: FontWeight.w800,

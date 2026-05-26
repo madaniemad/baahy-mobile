@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 
 // ── Baahy design tokens (from claude.ai/design handoff) ──────────────────────
 class AppColors {
-  // Brand
-  static const primary     = Color(0xFF4CD5DA); // alias used throughout app
-  static const teal        = Color(0xFF4CD5DA);
-  static const teal600     = Color(0xFF2DBAC0);
-  static const teal700     = Color(0xFF1F9AA0);
-  static const teal50      = Color(0xFFEBFAFA);
-  static const teal50bg    = Color(0xFFEAF8F8); // soft teal surface (used throughout)
-  static const teal100     = Color(0xFFD4F3F4);
-  static const teal100bg   = Color(0xFFB2E4E6); // medium teal border
+  // Brand — dark charcoal palette (replaces tiffany)
+  static const primary     = Color(0xFF1A1A1A);
+  static const teal        = Color(0xFF1A1A1A);
+  static const teal600     = Color(0xFF1A1A1A);
+  static const teal700     = Color(0xFF111111);
+  static const teal50      = Color(0xFFF5F5F5);
+  static const teal50bg    = Color(0xFFF5F5F5);
+  static const teal100     = Color(0xFFEEEEEE);
+  static const teal100bg   = Color(0xFFE0E0E0);
 
   // Ink (text hierarchy)
   static const ink0        = Color(0xFF0A1A1A); // primary text
@@ -71,7 +71,7 @@ ThemeData buildAppTheme() {
     useMaterial3: true,
     colorScheme: ColorScheme.light(
       primary: AppColors.teal,
-      onPrimary: AppColors.ink0,
+      onPrimary: Colors.white,
       secondary: AppColors.ink0,
       onSecondary: Colors.white,
       surface: AppColors.surface,
@@ -96,7 +96,7 @@ ThemeData buildAppTheme() {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.teal,
-        foregroundColor: AppColors.ink0,
+        foregroundColor: Colors.white,
         shape: const StadiumBorder(),
         textStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w700),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -121,7 +121,7 @@ ThemeData buildAppTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: AppRadius.smBorder,
-        borderSide: const BorderSide(color: AppColors.teal),
+        borderSide: const BorderSide(color: AppColors.borderStrong),
       ),
       hintStyle: const TextStyle(color: AppColors.ink3, fontFamily: 'Cairo'),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

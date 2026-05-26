@@ -49,9 +49,6 @@ class HomeScreen extends ConsumerWidget {
             if (home.loading && home.featured.isEmpty)
               const SliverFillRemaining(child: _HomeSkeleton())
             else ...[
-              // Active order strip
-              const SliverToBoxAdapter(child: _ActiveOrderStrip()),
-
               // Hero banner slider (real data from /api/content/banners)
               SliverToBoxAdapter(
                 child: Padding(
@@ -60,6 +57,15 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
 
+              // Categories 4-col grid (before trust strip, no header)
+              if (home.categories.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: _CategoriesGrid(categories: home.categories),
+                  ),
+                ),
+
               // Promise strip
               SliverToBoxAdapter(
                 child: Padding(
@@ -67,20 +73,6 @@ class HomeScreen extends ConsumerWidget {
                   child: _PromiseStrip(config: config),
                 ),
               ),
-
-              // Categories 4-col grid
-              if (home.categories.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: _SectionHead(
-                    ar: 'تسوّق حسب القسم',
-                    en: 'Categories',
-                    onAll: () => context.go('/browse'),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _CategoriesGrid(categories: home.categories),
-                ),
-              ],
 
               // ── Picked for you (matches web: featured before promo) ──
               if (home.featured.isNotEmpty) ...[
@@ -282,11 +274,11 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceSoft,
-                    borderRadius: BorderRadius.circular(99),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Row(children: [
-                    const Icon(Icons.location_on_rounded, size: 12, color: AppColors.teal600),
+                    const Icon(Icons.location_on_outlined, size: 18, color: AppColors.teal600),
                     const SizedBox(width: 4),
                     Text(city, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                     const SizedBox(width: 3),
@@ -327,7 +319,7 @@ class _HomeAppBar extends SliverPersistentHeaderDelegate {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
               decoration: BoxDecoration(
                 color: AppColors.surfaceSoft,
-                borderRadius: BorderRadius.circular(99),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: AppColors.border),
               ),
               child: Row(children: const [
@@ -384,7 +376,7 @@ class _ActiveOrderStrip extends ConsumerWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFE8F8F8),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFB2E4E6)),
+              border: Border.all(color: const Color(0xFFE0E0E0)),
             ),
             child: Row(children: [
               const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.teal600),
@@ -823,8 +815,8 @@ class _CategoriesGrid extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 6,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
           mainAxisExtent: 80,
         ),
         itemCount: items.length,

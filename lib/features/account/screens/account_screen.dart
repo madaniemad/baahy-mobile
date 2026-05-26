@@ -270,7 +270,7 @@ class _StatTile extends StatelessWidget {
           color: accent ? const Color(0xFFE8F8F8) : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: accent ? const Color(0xFFB2E4E6) : AppColors.border),
+            color: accent ? const Color(0xFFE0E0E0) : AppColors.border),
           boxShadow: accent ? null : AppShadows.shadowCard,
         ),
         child: Column(children: [

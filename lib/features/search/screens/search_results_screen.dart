@@ -24,6 +24,20 @@ class _AttrType {
     required this.displayType, required this.values});
 }
 
+class _Vendor {
+  final int id;
+  final String name;
+  const _Vendor({required this.id, required this.name});
+}
+
+final _vendorsProvider = FutureProvider<List<_Vendor>>((ref) async {
+  try {
+    final res = await ApiClient.instance.dio.get('/vendors', queryParameters: {'per_page': 100});
+    final list = res.data['data']['data'] as List? ?? [];
+    return list.map((v) => _Vendor(id: v['id'] as int, name: v['store_name'] as String? ?? '')).toList();
+  } catch (_) { return []; }
+});
+
 class _FilterOptions {
   final List<_AttrType> attrTypes;
   final List<String> brands;
@@ -91,6 +105,7 @@ class _FilterState {
   final String? categoryName;
   final Set<int> attributeValueIds;
   final String? brand;
+  final int? vendorId;
 
   const _FilterState({
     this.minPrice,
@@ -102,12 +117,14 @@ class _FilterState {
     this.categoryName,
     this.attributeValueIds = const {},
     this.brand,
+    this.vendorId,
   });
 
   bool get isActive =>
       minPrice != null || maxPrice != null || minRating != null ||
       inStockOnly || featuredOnly || categoryId != null ||
-      attributeValueIds.isNotEmpty || (brand != null && brand!.isNotEmpty);
+      attributeValueIds.isNotEmpty || (brand != null && brand!.isNotEmpty) ||
+      vendorId != null;
 
   _FilterState copyWith({
     Object? minPrice = _unset,
@@ -119,6 +136,7 @@ class _FilterState {
     Object? categoryName = _unset,
     Set<int>? attributeValueIds,
     Object? brand = _unset,
+    Object? vendorId = _unset,
   }) => _FilterState(
     minPrice: identical(minPrice, _unset) ? this.minPrice : minPrice as double?,
     maxPrice: identical(maxPrice, _unset) ? this.maxPrice : maxPrice as double?,
@@ -129,6 +147,7 @@ class _FilterState {
     categoryName: identical(categoryName, _unset) ? this.categoryName : categoryName as String?,
     attributeValueIds: attributeValueIds ?? this.attributeValueIds,
     brand: identical(brand, _unset) ? this.brand : brand as String?,
+    vendorId: identical(vendorId, _unset) ? this.vendorId : vendorId as int?,
   );
 
   static const _unset = Object();
@@ -195,6 +214,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         if (_filters.inStockOnly) 'in_stock': 1,
         if (_filters.featuredOnly) 'featured': 1,
         if (_filters.brand != null && _filters.brand!.isNotEmpty) 'brand': _filters.brand,
+        if (_filters.vendorId != null) 'vendor_id': _filters.vendorId,
         ..._filters.attributeValueIds.isNotEmpty
             ? {'attribute_value_ids[]': _filters.attributeValueIds.toList()} : {},
       });
@@ -331,11 +351,13 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   String? _categoryName;
   late Set<int> _attrValueIds;
   String? _brand;
+  int? _vendorId;
   bool _catExpanded = true;
   bool _priceExpanded = true;
-  bool _ratingExpanded = false;
+  bool _ratingExpanded = true;
   bool _attrExpanded = true;
-  bool _brandExpanded = false;
+  bool _brandExpanded = true;
+  bool _vendorExpanded = true;
   final Set<int> _expandedCats = {};
 
   @override
@@ -352,6 +374,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
     _categoryName = widget.initial.categoryName;
     _attrValueIds = Set.from(widget.initial.attributeValueIds);
     _brand = widget.initial.brand;
+    _vendorId = widget.initial.vendorId;
   }
 
   @override
@@ -374,6 +397,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
       categoryName: _categoryName,
       attributeValueIds: Set.from(_attrValueIds),
       brand: _brand?.trim().isEmpty == true ? null : _brand?.trim(),
+      vendorId: _vendorId,
     ));
   }
 
@@ -388,6 +412,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
       _categoryName = null;
       _attrValueIds = {};
       _brand = null;
+      _vendorId = null;
     });
   }
 
@@ -449,6 +474,18 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 14),
               Row(children: [
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 32, height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceSoft,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: const Icon(Icons.close_rounded, size: 18, color: AppColors.ink1),
+                  ),
+                ),
+                const SizedBox(width: 12),
                 const Text('الفلاتر',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                 const Spacer(),
@@ -671,6 +708,50 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                             ],
                           );
                         }).toList(),
+                      );
+                    },
+                    orElse: () => const SizedBox.shrink(),
+                  );
+                }),
+
+                // ── Vendor / Seller ───────────────────────────────────
+                Consumer(builder: (ctx, vendorRef, _) {
+                  final vendors = vendorRef.watch(_vendorsProvider);
+                  return vendors.maybeWhen(
+                    data: (list) {
+                      if (list.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _sectionHeader('المتجر', _vendorExpanded,
+                            () => setState(() => _vendorExpanded = !_vendorExpanded)),
+                          if (_vendorExpanded) ...[
+                            Wrap(
+                              spacing: 8, runSpacing: 8,
+                              children: list.map((v) {
+                                final sel = _vendorId == v.id;
+                                return GestureDetector(
+                                  onTap: () => setState(() => _vendorId = sel ? null : v.id),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                    decoration: BoxDecoration(
+                                      color: sel ? AppColors.primary : Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: sel ? AppColors.primary : AppColors.border,
+                                        width: 1.5)),
+                                    child: Text(v.name,
+                                      style: TextStyle(
+                                        fontSize: 12, fontWeight: FontWeight.w600,
+                                        color: sel ? AppColors.ink0 : AppColors.ink1)),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 12),
+                            const Divider(height: 1),
+                          ],
+                        ],
                       );
                     },
                     orElse: () => const SizedBox.shrink(),
