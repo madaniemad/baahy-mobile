@@ -268,7 +268,7 @@ class _Timeline extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: isActive ? AppColors.teal600 : AppColors.ink0)),
+                  color: isActive ? AppColors.primary : AppColors.ink0)),
             ),
           ),
         ]);

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,24 +39,110 @@ class HomeScreen extends ConsumerWidget {
         onRefresh: () => ref.read(homeProvider.notifier).fetch(),
         child: CustomScrollView(
           slivers: [
-            SliverPersistentHeader(
+            SliverAppBar(
               pinned: true,
-              delegate: _HomeAppBar(
-                city: city,
-                unreadCount: unread,
-                topPadding: MediaQuery.of(context).padding.top,
+              automaticallyImplyLeading: false,
+              backgroundColor: const Color(0xFF32DDE5),
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              toolbarHeight: 28,
+              titleSpacing: 0,
+              flexibleSpace: FlexibleSpaceBar(
+                collapseMode: CollapseMode.none,
+                background: Stack(fit: StackFit.expand, children: [
+                  Container(color: const Color(0xFF32DDE5)),
+                  Opacity(
+                    opacity: 0.28,
+                    child: Image.asset('assets/images/onb-pattern.png', fit: BoxFit.cover),
+                  ),
+                ]),
+              ),
+              title: Padding(
+                padding: const EdgeInsets.only(right: 16, left: 8),
+                child: Row(children: [
+                  GestureDetector(
+                    onTap: () => context.push('/city'),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.location_on_outlined, size: 15, color: Colors.white),
+                      const SizedBox(width: 3),
+                      Text(city, style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w700,
+                        fontFamily: 'Cairo', color: Colors.white)),
+                      const SizedBox(width: 2),
+                      const Icon(Icons.keyboard_arrow_down_rounded, size: 15, color: Colors.white70),
+                    ]),
+                  ),
+                  const Spacer(),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        onPressed: () => safePush(context, '/notifications'),
+                        icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      if (unread > 0)
+                        Positioned(
+                          top: -1, right: -1,
+                          child: Container(
+                            width: 8, height: 8,
+                            decoration: BoxDecoration(
+                              color: AppColors.danger, shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFF32DDE5), width: 1.5),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ]),
+              ),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(50),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: GestureDetector(
+                    onTap: () => safePush(context, '/search'),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Row(children: [
+                        Icon(Icons.search, size: 17, color: AppColors.ink3),
+                        SizedBox(width: 7),
+                        Expanded(child: _SearchHintText()),
+                        Icon(Icons.mic_none_rounded, size: 17, color: AppColors.ink3),
+                      ]),
+                    ),
+                  ),
+                ),
               ),
             ),
             if (home.loading && home.featured.isEmpty)
               const SliverFillRemaining(child: _HomeSkeleton())
             else ...[
+              // Active order strip — shows when user has a live order
+              const SliverToBoxAdapter(child: _ActiveOrderStrip()),
+
               // Hero banner slider (real data from /api/content/banners)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  padding: const EdgeInsets.only(top: 12),
                   child: _HeroBannerSlider(banners: banners.hero),
                 ),
               ),
+
+              // Sub-hero banner — half height of hero, fades between images
+              if (banners.subHero.any((b) => b.hasImage))
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                    child: _SubHeroBanner(banners: banners.subHero),
+                  ),
+                ),
 
               // Categories 4-col grid (before trust strip, no header)
               if (home.categories.isNotEmpty)
@@ -103,45 +190,17 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
 
-              // ── Deals of the day (matches web: after promo) ──
+              // ── Deals of the day with countdown timer ──
               if (home.deals.isNotEmpty) ...[
                 SliverToBoxAdapter(
-                  child: _SectionHead(
-                    ar: 'عروض اليوم',
-                    en: 'Deals of the day',
-                    onAll: () => safePush(context, '/search/results?q='),
+                  child: _DealsHead(
+                    onAll: () => safePush(context, '/search/results?q=&on_sale=1&sort=popular'),
                   ),
                 ),
                 SliverToBoxAdapter(
                   child: _HorizontalProductList(products: home.deals),
                 ),
               ],
-
-              // ── Category carousel 0 ──
-              if (home.categorySections.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: _CategoryCarouselSection(section: home.categorySections[0]),
-                ),
-
-              // ── Bestsellers 2x2 ──
-              if (home.popular.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: _SectionHead(
-                    ar: 'الأكثر مبيعاً',
-                    en: 'Bestsellers',
-                    onAll: () => safePush(context, '/search/results?q=&sort=popular'),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _BestsellerGrid(products: home.popular.take(4).toList()),
-                ),
-              ],
-
-              // ── Category carousel 1 ──
-              if (home.categorySections.length > 1)
-                SliverToBoxAdapter(
-                  child: _CategoryCarouselSection(section: home.categorySections[1]),
-                ),
 
               // ── Fashion banner cards carousel (slot: fashion_banner) ──
               if (banners.fashionBanner.any((b) => b.hasImage))
@@ -161,30 +220,78 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
 
-              // ── New arrivals ──
+              // ── Featured Products ──
               if (home.newArrivals.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: _SectionHead(
-                    ar: 'وصل حديثاً',
-                    en: 'New arrivals',
-                    onAll: () => safePush(context, '/search/results?q=&sort=latest'),
+                    ar: 'منتجات مميزة',
+                    en: 'Featured Products',
+                    onAll: () => safePush(context, '/search/results?q=&featured=1&sort=popular'),
                   ),
                 ),
                 SliverToBoxAdapter(
-                  child: _NewArrivalsRow(products: home.newArrivals),
+                  child: _HorizontalProductList(products: home.newArrivals),
                 ),
               ],
 
-              // ── Under 50 LYD ──
-              if (home.budget.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: _SectionHead(ar: 'أقل من 50 د.ل', en: 'Under 50 LYD',
-                    onAll: () => safePush(context, '/search/results?q=&max_price=50')),
-                ),
-                SliverToBoxAdapter(
-                  child: _BudgetGrid(products: home.budget),
-                ),
-              ],
+              // ── Admin-controlled sections in exact admin order ──
+              ...home.orderedDynamicSections.expand((item) sync* {
+                if (item is DynGrid) {
+                  yield SliverToBoxAdapter(
+                    child: _SectionHead(
+                      ar: item.titleAr.isNotEmpty ? item.titleAr : 'منتجات',
+                      en: item.titleEn.isNotEmpty ? item.titleEn : 'Products',
+                      onAll: item.viewAllUrl != null
+                          ? () => safePush(context, '/search/results?q=${item.viewAllUrl}')
+                          : null,
+                    ),
+                  );
+                  yield SliverToBoxAdapter(child: _BudgetCarousel(products: item.products));
+                } else if (item is DynCarousel) {
+                  yield SliverToBoxAdapter(
+                    child: _CategoryCarouselSection(section: item.section),
+                  );
+                } else if (item is DynBannerDuo) {
+                  yield SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _DuoBannerRow(section: item.section),
+                    ),
+                  );
+                } else if (item is DynStripBanner) {
+                  yield SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: GestureDetector(
+                        onTap: () => BannerLink.navigate(context, item.linkUrl),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: AspectRatio(
+                            aspectRatio: 1920 / 350,
+                            child: CachedNetworkImage(
+                              imageUrl: item.imageUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Container(color: AppColors.surfaceSoft),
+                              errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                } else if (item is DynCategoryCarousel) {
+                  yield SliverToBoxAdapter(
+                    child: _CategoryImagesCarousel(item: item),
+                  );
+                } else if (item is DynBanner) {
+                  yield SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: _SingleBannerSection(item: item),
+                    ),
+                  );
+                }
+              }),
 
               // ── Tile carousel ──
               if (banners.tile1.isNotEmpty || banners.tile2.isNotEmpty || banners.tile3.isNotEmpty)
@@ -199,12 +306,6 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
 
-              // ── Category carousel 2 ──
-              if (home.categorySections.length > 2)
-                SliverToBoxAdapter(
-                  child: _CategoryCarouselSection(section: home.categorySections[2]),
-                ),
-
               // ── Mid banners ──
               if (banners.midBanner.isNotEmpty)
                 SliverToBoxAdapter(
@@ -213,14 +314,6 @@ class HomeScreen extends ConsumerWidget {
                     child: _BannerStack(banners: banners.midBanner),
                   ),
                 ),
-
-              // ── Remaining category carousels (3+) ──
-              ...List.generate(
-                (home.categorySections.length - 3).clamp(0, 20),
-                (i) => SliverToBoxAdapter(
-                  child: _CategoryCarouselSection(section: home.categorySections[3 + i]),
-                ),
-              ),
 
               // Recently viewed
               const SliverToBoxAdapter(child: _RecentlyViewedSection()),
@@ -244,104 +337,13 @@ class HomeScreen extends ConsumerWidget {
 
 // ── App Bar ──────────────────────────────────────────────────────────────────
 
-class _HomeAppBar extends SliverPersistentHeaderDelegate {
-  final String city;
-  final int unreadCount;
-  final double topPadding;
-  const _HomeAppBar({required this.city, required this.unreadCount, required this.topPadding});
-
-  double get _height => topPadding + 112;
-
-  @override double get minExtent => _height;
-  @override double get maxExtent => _height;
-  @override bool shouldRebuild(_) => true;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: Colors.white,
-      padding: EdgeInsets.only(
-        top: topPadding,
-        left: 16, right: 16, bottom: 10,
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => context.push('/city'),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceSoft,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(children: [
-                    const Icon(Icons.location_on_outlined, size: 18, color: AppColors.teal600),
-                    const SizedBox(width: 4),
-                    Text(city, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                    const SizedBox(width: 3),
-                    const Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: AppColors.ink3),
-                  ]),
-                ),
-              ),
-              const Spacer(),
-              Stack(
-                children: [
-                  IconButton(
-                    onPressed: () => safePush(context, '/notifications'),
-                    icon: const Icon(Icons.notifications_none_rounded, color: AppColors.ink0),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      top: 0, right: 0,
-                      child: Container(
-                        width: 8, height: 8,
-                        decoration: BoxDecoration(
-                          color: AppColors.danger,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () => safePush(context, '/search'),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceSoft,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(children: const [
-                Icon(Icons.search, size: 18, color: AppColors.ink3),
-                SizedBox(width: 8),
-                Expanded(child: _SearchHintText()),
-                Icon(Icons.mic_none_rounded, size: 18, color: AppColors.ink3),
-              ]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _SearchHintText extends StatelessWidget {
   const _SearchHintText();
   @override
   Widget build(BuildContext context) => Text(
     context.s.searchHint,
-    style: const TextStyle(color: AppColors.ink3, fontSize: 14));
+    style: const TextStyle(color: AppColors.ink0, fontSize: 14));
 }
 
 // ── Active order strip ────────────────────────────────────────────────────────
@@ -379,7 +381,7 @@ class _ActiveOrderStrip extends ConsumerWidget {
               border: Border.all(color: const Color(0xFFE0E0E0)),
             ),
             child: Row(children: [
-              const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.teal600),
+              const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.primary),
               const SizedBox(width: 10),
               Expanded(
                 child: Text.rich(TextSpan(
@@ -411,7 +413,8 @@ class _HeroBannerSlider extends StatefulWidget {
 }
 
 class _HeroBannerSliderState extends State<_HeroBannerSlider> {
-  final _pageCtrl = PageController();
+  static const _multiplier = 1000;
+  late final PageController _pageCtrl;
   int _current = 0;
   Timer? _timer;
 
@@ -425,11 +428,14 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
   @override
   void initState() {
     super.initState();
-    if (widget.banners.length > 1) {
+    final n = widget.banners.length;
+    final startPage = n > 1 ? _multiplier * n : 0;
+    _pageCtrl = PageController(viewportFraction: 0.9, initialPage: startPage);
+    _current = n > 0 ? startPage % n : 0;
+    if (n > 1) {
       _timer = Timer.periodic(const Duration(seconds: 4), (_) {
         if (!mounted) return;
-        final next = (_current + 1) % widget.banners.length;
-        _pageCtrl.animateToPage(next,
+        _pageCtrl.nextPage(
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOut);
       });
@@ -458,21 +464,28 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
   Widget build(BuildContext context) {
     if (widget.banners.isEmpty) return const _HeroBannerFallback();
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: AspectRatio(
-        aspectRatio: 1920 / 700,
-        child: Stack(
-          children: [
-            PageView.builder(
-              controller: _pageCtrl,
-              itemCount: widget.banners.length,
-              onPageChanged: (i) => setState(() => _current = i),
-              itemBuilder: (_, i) => _BannerSlide(
-                banner: widget.banners[i],
-                gradient: _gradients[i % _gradients.length],
-              ),
-            ),
+    return AspectRatio(
+      aspectRatio: 1400 / 480,
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageCtrl,
+            itemCount: widget.banners.length > 1 ? widget.banners.length * _multiplier * 2 : widget.banners.length,
+            onPageChanged: (i) => setState(() => _current = i % widget.banners.length),
+            itemBuilder: (_, i) {
+              final idx = i % widget.banners.length;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: _BannerSlide(
+                    banner: widget.banners[idx],
+                    gradient: _gradients[idx % _gradients.length],
+                  ),
+                ),
+              );
+            },
+          ),
             if (widget.banners.length > 1)
               Positioned(
                 bottom: 10, left: 0, right: 0,
@@ -491,7 +504,6 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
               ),
           ],
         ),
-      ),
     );
   }
 }
@@ -590,7 +602,7 @@ class _HeroBannerFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 1920 / 700,
+      aspectRatio: 1400 / 480,
       child: Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
@@ -612,6 +624,65 @@ class _HeroBannerFallback extends StatelessWidget {
             style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.75))),
         ],
       ),
+      ),
+    );
+  }
+}
+
+// ── Sub-hero banner: fades between multiple images on a timer ────────────────
+
+class _SubHeroBanner extends StatefulWidget {
+  final List<AppBanner> banners;
+  const _SubHeroBanner({required this.banners});
+  @override
+  State<_SubHeroBanner> createState() => _SubHeroBannerState();
+}
+
+class _SubHeroBannerState extends State<_SubHeroBanner> {
+  int _current = 0;
+  Timer? _timer;
+
+  List<AppBanner> get _visible => widget.banners.where((b) => b.hasImage).toList();
+
+  @override
+  void initState() {
+    super.initState();
+    if (_visible.length > 1) {
+      _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (mounted) setState(() => _current = (_current + 1) % _visible.length);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final banners = _visible;
+    if (banners.isEmpty) return const SizedBox.shrink();
+    final banner = banners[_current];
+    return GestureDetector(
+      onTap: () => BannerLink.navigate(context, banner.buttonLink),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: AspectRatio(
+          aspectRatio: 1920 / 350,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 700),
+            child: CachedNetworkImage(
+              key: ValueKey(banner.imageUrl),
+              imageUrl: banner.imageUrl!,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              placeholder: (_, __) => Container(color: AppColors.surfaceSoft),
+              errorWidget: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -654,6 +725,114 @@ class _BannerStack extends StatelessWidget {
   }
 }
 
+// ── Duo banner row (2 square banners side by side) ───────────────────────────
+
+class _DuoBannerRow extends StatelessWidget {
+  final BannerDuoSection section;
+  const _DuoBannerRow({required this.section});
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final badge1 = isAr ? section.badgeAr : section.badgeEn;
+    final badge2 = isAr ? section.badgeAr2 : section.badgeEn2;
+
+    Widget tile(String? url, String? link, String? badge) {
+      if (url == null || url.isEmpty) return const SizedBox.shrink();
+      return Expanded(
+        child: GestureDetector(
+          onTap: () { if (link != null && link.isNotEmpty) BannerLink.navigate(context, link); },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CachedNetworkImage(imageUrl: url, fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(color: Colors.grey.shade100),
+                    errorWidget: (_, __, ___) => Container(color: Colors.grey.shade200),
+                  ),
+                  if (section.showOverlay)
+                    Container(color: Colors.black.withValues(alpha: 0.2)),
+                  if (badge != null && badge.isNotEmpty)
+                    Positioned(
+                      bottom: 10, right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(badge,
+                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        tile(section.imageUrl, section.linkUrl, badge1),
+        const SizedBox(width: 8),
+        tile(section.imageUrl2, section.linkUrl2, badge2),
+      ],
+    );
+  }
+}
+
+// ── Single banner section ─────────────────────────────────────────────────────
+
+class _SingleBannerSection extends StatelessWidget {
+  final DynBanner item;
+  const _SingleBannerSection({required this.item});
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final badge = isAr ? item.badgeAr : item.badgeEn;
+    return GestureDetector(
+      onTap: () { if (item.linkUrl != null) BannerLink.navigate(context, item.linkUrl!); },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: AspectRatio(
+          aspectRatio: 1920 / 700,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CachedNetworkImage(imageUrl: item.imageUrl!, fit: BoxFit.cover,
+                placeholder: (_, __) => Container(color: Colors.grey.shade100),
+                errorWidget: (_, __, ___) => Container(color: Colors.grey.shade200),
+              ),
+              if (item.showOverlay)
+                Container(color: Colors.black.withValues(alpha: 0.3)),
+              if (badge != null && badge.isNotEmpty)
+                Positioned(
+                  bottom: 12, right: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(badge,
+                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Promise strip ─────────────────────────────────────────────────────────────
 
 class _PromiseStrip extends StatelessWidget {
@@ -661,10 +840,8 @@ class _PromiseStrip extends StatelessWidget {
   const _PromiseStrip({required this.config});
   @override
   Widget build(BuildContext context) {
-    final threshold = config.freeShippingThreshold.toStringAsFixed(0);
-    final returnDays = config.returnDays;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -674,13 +851,14 @@ class _PromiseStrip extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _PromiseChip(icon: Icons.local_shipping_outlined,
-            ar: 'مجاني فوق $threshold', en: 'Free over $threshold'),
-          Container(width: 1, height: 28, color: AppColors.border),
-          _PromiseChip(icon: Icons.refresh_rounded,
-            ar: 'إرجاع $returnDays أيام', en: '${returnDays}-day returns'),
-          Container(width: 1, height: 28, color: AppColors.border),
-          _PromiseChip(icon: Icons.payments_outlined, ar: 'دفع عند الاستلام', en: 'COD available'),
+          const _PromiseChip(icon: Icons.local_shipping_outlined,
+            ar: 'توصيل سريع', en: 'Fast delivery'),
+          Container(width: 1, height: 24, color: AppColors.border),
+          const _PromiseChip(icon: Icons.refresh_rounded,
+            ar: 'ارجاع واستبدال', en: 'Returns & exchanges'),
+          Container(width: 1, height: 24, color: AppColors.border),
+          const _PromiseChip(icon: Icons.verified_outlined,
+            ar: 'ضمان المنتج', en: 'Product warranty'),
         ],
       ),
     );
@@ -691,21 +869,90 @@ class _PromiseChip extends StatelessWidget {
   final IconData icon;
   final String ar;
   final String en;
-  const _PromiseChip({required this.icon, required this.ar, required this.en});
+  const _PromiseChip({required this.icon, required this.ar, required this.en, super.key});
   @override
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Column(children: [
-      Icon(icon, size: 20, color: AppColors.teal600),
-      const SizedBox(height: 4),
+      Icon(icon, size: 18, color: AppColors.primary),
+      const SizedBox(height: 3),
       Text(isAr ? ar : en,
-        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.ink1),
+        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.ink1),
         textAlign: TextAlign.center),
     ]);
   }
 }
 
 // ── Section head ──────────────────────────────────────────────────────────────
+
+// ── Category images carousel (admin section type: category_carousel) ──────────
+
+class _CategoryImagesCarousel extends StatelessWidget {
+  final DynCategoryCarousel item;
+  const _CategoryImagesCarousel({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final title = isAr ? item.titleAr : item.titleEn;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+            child: Text(title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Cairo')),
+          ),
+        SizedBox(
+          height: 110,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: item.categories.length,
+            itemBuilder: (_, i) {
+              final cat = item.categories[i];
+              return GestureDetector(
+                onTap: () => safePush(context, '/search/results?q=&category=${cat.id}'),
+                child: Container(
+                  width: 80,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: CachedNetworkImage(
+                          imageUrl: cat.image!,
+                          width: 72, height: 72,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(
+                            width: 72, height: 72, color: AppColors.surfaceSoft),
+                          errorWidget: (_, __, ___) => Container(
+                            width: 72, height: 72, color: AppColors.surfaceSoft,
+                            child: const Icon(Icons.category_outlined,
+                              size: 28, color: AppColors.ink3)),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        isAr ? cat.nameAr : cat.name,
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                          fontFamily: 'Cairo', color: AppColors.ink1),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _SectionHead extends StatelessWidget {
   final String ar;
@@ -733,6 +980,90 @@ class _SectionHead extends StatelessWidget {
   }
 }
 
+// ── Deals section header with live countdown to midnight ─────────────────────
+
+class _DealsHead extends StatefulWidget {
+  final VoidCallback? onAll;
+  const _DealsHead({this.onAll});
+  @override
+  State<_DealsHead> createState() => _DealsHeadState();
+}
+
+class _DealsHeadState extends State<_DealsHead> {
+  late Duration _remaining;
+  Timer? _timer;
+
+  Duration _calcRemaining() {
+    final now = DateTime.now();
+    final midnight = DateTime(now.year, now.month, now.day + 1);
+    return midnight.difference(now);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _remaining = _calcRemaining();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _remaining = _calcRemaining());
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String _fmt(int n) => n.toString().padLeft(2, '0');
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final h = _fmt(_remaining.inHours);
+    final m = _fmt(_remaining.inMinutes.remainder(60));
+    final s = _fmt(_remaining.inSeconds.remainder(60));
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+          decoration: BoxDecoration(
+            color: AppColors.danger,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: const Icon(Icons.bolt_rounded, size: 14, color: Colors.white),
+        ),
+        const SizedBox(width: 8),
+        Text(isAr ? 'عروض اليوم' : "Today's Deals",
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        const SizedBox(width: 10),
+        // Countdown badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3E0),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text('$h:$m:$s',
+            style: const TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 11, fontWeight: FontWeight.w800,
+              color: Color(0xFFE65100), letterSpacing: 0.3)),
+        ),
+        const Spacer(),
+        if (widget.onAll != null)
+          GestureDetector(
+            onTap: widget.onAll,
+            child: Text(isAr ? '← الكل' : 'See all →',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                color: AppColors.primary)),
+          ),
+      ]),
+    );
+  }
+}
+
 // ── Horizontal product list ───────────────────────────────────────────────────
 
 class _HorizontalProductList extends StatelessWidget {
@@ -741,13 +1072,16 @@ class _HorizontalProductList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 366,
+      height: 340,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: products.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (_, i) => ProductCard(product: products[i], width: 165),
+        itemBuilder: (_, i) => Align(
+          alignment: Alignment.topCenter,
+          child: ProductCard(product: products[i], width: 165),
+        ),
       ),
     );
   }
@@ -755,14 +1089,46 @@ class _HorizontalProductList extends StatelessWidget {
 
 // ── Categories 2-row horizontal carousel ─────────────────────────────────────
 
-class _CategoriesGrid extends StatelessWidget {
+class _CategoriesGrid extends StatefulWidget {
   final List<Category> categories;
   const _CategoriesGrid({required this.categories});
+  @override
+  State<_CategoriesGrid> createState() => _CategoriesGridState();
+}
+
+class _CategoriesGridState extends State<_CategoriesGrid> {
+  List<({Category cat, Color color, bool isParent})> _items = [];
 
   static const _parentColors = [
     Color(0xFF0D9488), Color(0xFF7C3AED), Color(0xFFD97706),
     Color(0xFFDB2777), Color(0xFF2563EB), Color(0xFF059669), Color(0xFFDC2626),
   ];
+
+  void _buildAndShuffle(List<Category> categories) {
+    final flat = <({Category cat, Color color, bool isParent})>[];
+    for (var i = 0; i < categories.length; i++) {
+      final color = _parentColors[i % _parentColors.length];
+      for (final child in categories[i].children) {
+        flat.add((cat: child, color: color, isParent: false));
+      }
+    }
+    flat.shuffle(Random());
+    setState(() => _items = flat);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _buildAndShuffle(widget.categories);
+  }
+
+  @override
+  void didUpdateWidget(_CategoriesGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.categories.length != widget.categories.length) {
+      _buildAndShuffle(widget.categories);
+    }
+  }
 
   static IconData _iconFor(String name) {
     final n = name.toLowerCase();
@@ -797,17 +1163,6 @@ class _CategoriesGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
-    // Build flat list: each parent followed by its children
-    final items = <({Category cat, Color color, bool isParent})>[];
-    for (var i = 0; i < categories.length; i++) {
-      final color = _parentColors[i % _parentColors.length];
-      final parent = categories[i];
-      items.add((cat: parent, color: color, isParent: true));
-      for (final child in parent.children) {
-        items.add((cat: child, color: color, isParent: false));
-      }
-    }
-
     return SizedBox(
       height: 190,
       child: GridView.builder(
@@ -819,9 +1174,9 @@ class _CategoriesGrid extends StatelessWidget {
           crossAxisSpacing: 4,
           mainAxisExtent: 80,
         ),
-        itemCount: items.length,
+        itemCount: _items.length,
         itemBuilder: (_, i) {
-          final item = items[i];
+          final item = _items[i];
           final name = isAr ? item.cat.nameAr : item.cat.name;
           final icon = _iconFor(item.cat.nameAr + item.cat.name);
           return GestureDetector(
@@ -873,17 +1228,17 @@ class _FashionBannerTiles extends StatelessWidget {
     if (visible.isEmpty) return const SizedBox.shrink();
 
     final sw = MediaQuery.of(context).size.width;
-    // Height fixed from original formula; width slightly increased (peek shrinks to 10px).
-    final cardH = ((sw - 46) / 2) * 16 / 9;
-    final cardW = (sw - 16 - 2 - 10) / 2;
+    // 2.5 cards visible: 16px right gap aligns with content, 8px between cards
+    final cardW = (sw - 16 - 8 * 2) / 2.5;
+    final cardH = cardW * 1.7; // portrait aspect ratio
 
     return SizedBox(
       height: cardH,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 16),
+        padding: const EdgeInsets.only(right: 16),
         itemCount: visible.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 2),
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) => _FashionTile(banner: visible[i], width: cardW, height: cardH),
       ),
     );
@@ -963,7 +1318,8 @@ class _BrandCarousel extends StatelessWidget {
   final List<AppBanner> brands;
   const _BrandCarousel({required this.brands});
 
-  static const double _tileSize = 78;
+  static const double _tileW = 78;
+  static const double _tileH = 64;
   static const double _gap = 8;
 
   @override
@@ -978,15 +1334,15 @@ class _BrandCarousel extends StatelessWidget {
             textAlign: TextAlign.center),
         ),
         SizedBox(
-          height: _tileSize * 2 + _gap,
+          height: _tileH,
           child: GridView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+              crossAxisCount: 1,
               mainAxisSpacing: _gap,
               crossAxisSpacing: _gap,
-              mainAxisExtent: _tileSize,
+              mainAxisExtent: _tileW,
             ),
             itemCount: brands.length,
             itemBuilder: (_, i) {
@@ -1023,6 +1379,7 @@ class _TileCarousel extends StatefulWidget {
 class _TileCarouselState extends State<_TileCarousel> {
   final _pageCtrl = PageController();
   int _current = 0;
+  Timer? _timer;
 
   static const _gradients = [
     [Color(0xFF1F2E2E), Color(0xFF0A1A1A)],
@@ -1031,7 +1388,22 @@ class _TileCarouselState extends State<_TileCarousel> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.banners.length > 1) {
+      _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (!mounted) return;
+        final next = (_current + 1) % widget.banners.length;
+        _pageCtrl.animateToPage(next,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut);
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    _timer?.cancel();
     _pageCtrl.dispose();
     super.dispose();
   }
@@ -1090,7 +1462,7 @@ class _TwoColGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 378,
+          mainAxisExtent: 364,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => ProductCard(product: products[i]),
@@ -1109,22 +1481,28 @@ class _CategoryCarouselSection extends StatelessWidget {
     if (section.products.isEmpty) return const SizedBox.shrink();
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final catName = isAr ? section.category.nameAr : section.category.name;
+    final viewAllRoute = section.viewAllUrl != null
+        ? '/search/results?q=${section.viewAllUrl}'
+        : '/search/results?q=&category=${section.category.id}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionHead(
-          ar: 'في $catName',
-          en: 'In $catName',
-          onAll: () => safePush(context, '\1'),
+          ar: catName,
+          en: catName,
+          onAll: () => safePush(context, viewAllRoute),
         ),
         SizedBox(
-          height: 366,
+          height: 340,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: section.products.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) => ProductCard(product: section.products[i], width: 165),
+            itemBuilder: (_, i) => Align(
+              alignment: Alignment.topCenter,
+              child: ProductCard(product: section.products[i], width: 165),
+            ),
           ),
         ),
       ],
@@ -1147,7 +1525,7 @@ class _BestsellerGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 378,
+          mainAxisExtent: 364,
         ),
         itemCount: products.length,
         itemBuilder: (_, i) => ProductCard(product: products[i]),
@@ -1164,36 +1542,45 @@ class _NewArrivalsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 366,
+      height: 340,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: products.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (_, i) => ProductCard(product: products[i], width: 165),
+        itemBuilder: (_, i) => Align(
+          alignment: Alignment.topCenter,
+          child: ProductCard(product: products[i], width: 165),
+        ),
       ),
     );
   }
 }
 
-// ── Under 50 LYD 3-col mini grid ─────────────────────────────────────────────
+// ── Under 100 LYD — horizontal 2-row carousel with partial 4th column peek ───
 
-class _BudgetGrid extends StatelessWidget {
+class _BudgetCarousel extends StatelessWidget {
   final List<Product> products;
-  const _BudgetGrid({required this.products});
+  const _BudgetCarousel({required this.products});
+
+  static const double _tileW = 108;
+  static const double _tileH = 96;
+  static const double _gap   = 8;
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return SizedBox(
+      height: _tileH * 2 + _gap,
       child: GridView.builder(
-        shrinkWrap: true,
-        padding: EdgeInsets.zero,
-        physics: const NeverScrollableScrollPhysics(),
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 16, right: 6),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3, mainAxisSpacing: 8, crossAxisSpacing: 8,
-          childAspectRatio: 1,
+          crossAxisCount: 2,
+          mainAxisSpacing: _gap,
+          crossAxisSpacing: _gap,
+          mainAxisExtent: _tileW,
         ),
-        itemCount: products.length.clamp(0, 6),
+        itemCount: products.length,
         itemBuilder: (_, i) {
           final p = products[i];
           return GestureDetector(
@@ -1210,12 +1597,12 @@ class _BudgetGrid extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.95),
+                      color: const Color(0xFFD32F2F).withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text('${p.displayPrice.toStringAsFixed(0)} د.ل',
                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                        fontSize: 10, fontWeight: FontWeight.w700)),
+                        fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
                   ),
                 ),
               ]),
@@ -1293,53 +1680,22 @@ class _RecentlyViewedSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
-          child: Row(children: [
-            Expanded(
-              child: Text(context.s.recentlyViewed,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ),
-          ]),
+        _SectionHead(
+          ar: context.s.recentlyViewed,
+          en: context.s.recentlyViewed,
+          onAll: null,
         ),
         SizedBox(
-          height: 110,
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+          height: 340,
+          child: ListView.separated(
             scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: products.length,
-            itemBuilder: (_, i) {
-              final p = products[i];
-              return GestureDetector(
-                onTap: () => safePush(context, '/product/${p.id}'),
-                child: Container(
-                  width: 70,
-                  margin: EdgeInsets.only(right: i < products.length - 1 ? 10 : 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: SizedBox(
-                          width: 70, height: 70,
-                          child: p.firstImage != null
-                              ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover,
-                                  errorWidget: (_, __, ___) => Container(color: AppColors.surfaceSoft))
-                              : Container(color: AppColors.surfaceSoft,
-                                  child: const Icon(Icons.image_outlined,
-                                    color: AppColors.ink4, size: 28)),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text('${p.displayPrice.toStringAsFixed(0)} د.ل',
-                        style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                          fontSize: 11, fontWeight: FontWeight.w700),
-                        textAlign: TextAlign.center),
-                    ],
-                  ),
-                ),
-              );
-            },
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) => Align(
+          alignment: Alignment.topCenter,
+          child: ProductCard(product: products[i], width: 165),
+        ),
           ),
         ),
       ],

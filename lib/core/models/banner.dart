@@ -57,6 +57,7 @@ class AppBanner {
 class BannersData {
   final List<AppBanner> hero;
   final List<AppBanner> heroSide;
+  final List<AppBanner> subHero;
   final List<AppBanner> promoStrip;
   final List<AppBanner> promoLeft;
   final List<AppBanner> promoRight;
@@ -69,6 +70,7 @@ class BannersData {
   const BannersData({
     this.hero = const [],
     this.heroSide = const [],
+    this.subHero = const [],
     this.promoStrip = const [],
     this.promoLeft = const [],
     this.promoRight = const [],
@@ -87,6 +89,7 @@ class BannersData {
     return BannersData(
       hero: _parse('hero'),
       heroSide: _parse('hero_side'),
+      subHero: _parse('sub_hero'),
       promoStrip: _parse('promo_strip'),
       promoLeft: _parse('promo_left'),
       promoRight: _parse('promo_right'),

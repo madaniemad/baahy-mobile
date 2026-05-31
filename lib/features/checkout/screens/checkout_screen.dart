@@ -24,11 +24,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Map<String, dynamic>? _selectedAddress;
   bool _loading = false;
   List<Map<String, dynamic>> _addresses = [];
+  double _walletBalance = 0;
+  bool _useWallet = false;
+  bool _walletLoading = false;
 
   @override
   void initState() {
     super.initState();
     _loadAddresses();
+    _loadWallet();
   }
 
   Future<void> _loadAddresses() async {
@@ -42,6 +46,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           (a) => a['is_default'] == true, orElse: () => list.isNotEmpty ? list.first : {});
       });
     } catch (_) {}
+  }
+
+  Future<void> _loadWallet() async {
+    setState(() => _walletLoading = true);
+    try {
+      final res = await ApiClient.instance.dio.get('/wallet');
+      final balance = (res.data['data']?['balance'] as num?)?.toDouble() ?? 0.0;
+      setState(() => _walletBalance = balance);
+    } catch (_) {}
+    setState(() => _walletLoading = false);
   }
 
   Future<void> _placeOrder() async {
@@ -65,13 +79,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     try {
       final cart = ref.read(cartProvider);
       final addr = _selectedAddress!;
+      final walletActive = _useWallet && _walletBalance > 0;
+      final walletCoversAll = walletActive && _walletBalance >= cart.total;
+      final walletDeduct = walletActive ? (_walletBalance < cart.total ? _walletBalance : cart.total) : 0.0;
+
       final res = await ApiClient.instance.dio.post('/orders', data: {
         'items': cart.items.map((i) => {
           'product_id': i.productId,
           if (i.variationId != null) 'variation_id': i.variationId,
           'quantity': i.quantity,
         }).toList(),
-        'payment_method': _paymentMethod,
+        'payment_method': walletCoversAll ? 'wallet' : _paymentMethod,
+        if (walletActive && !walletCoversAll) ...{
+          'use_wallet_partial': true,
+          'wallet_amount': walletDeduct,
+        },
         'shipping_name': addr['name'] ?? addr['label'] ?? '',
         'shipping_phone': addr['phone'] ?? '',
         'shipping_city': addr['city'] ?? '',
@@ -99,8 +121,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     super.dispose();
   }
 
+  bool get _selectedAddressIsTrioli {
+    final city = (_selectedAddress?['city'] ?? '').toString().toLowerCase();
+    return city.contains('طرابلس') || city.contains('tripoli');
+  }
+
   void _next() {
-    if (_step < 3) {
+    if (_step == 1) {
+      // Auto-switch away from COD if address is non-Tripoli
+      if (!_selectedAddressIsTrioli && _paymentMethod == 'cash_on_delivery') {
+        final methods = (ref.read(appConfigProvider).paymentMethods as List)
+            .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet' && m.id != 'cash_on_delivery')
+            .toList();
+        if (methods.isNotEmpty) {
+          setState(() => _paymentMethod = methods.first.id);
+        }
+      }
+      setState(() => _step++);
+    } else if (_step < 3) {
       setState(() => _step++);
     } else {
       _placeOrder();
@@ -199,7 +237,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             addresses: _addresses,
                             selected: _selectedAddress,
                             onSelect: (a) => setState(() => _selectedAddress = a),
-                            onAddNew: () => safePush(context, '/addresses/edit'),
+                            onAddNew: () async {
+                              await safePush(context, '/addresses/edit');
+                              await _loadAddresses();
+                            },
                             deliveryPromise: config.deliveryPromiseAr,
                           )
                         : _step == 2
@@ -208,6 +249,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 onChanged: (v) => setState(() => _paymentMethod = v),
                                 notesCtrl: _notesCtrl,
                                 config: config,
+                                walletBalance: _walletBalance,
+                                walletLoading: _walletLoading,
+                                useWallet: _useWallet,
+                                onWalletToggle: () => setState(() => _useWallet = !_useWallet),
+                                onChargeWallet: () async {
+                                  await safePush(context, '/wallet');
+                                  _loadWallet();
+                                },
+                                total: ref.read(cartProvider).total,
+                                selectedAddress: _selectedAddress,
                               )
                             : _StepReview(
                                 cart: cart,
@@ -246,8 +297,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   AppButton(
                     label: _step < 3 ? 'متابعة' : 'تأكيد الطلب',
                     icon: _step < 3
-                        ? const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: Colors.white)
-                        : const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                        ? const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: AppColors.ink0)
+                        : const Icon(Icons.check_rounded, size: 16, color: AppColors.ink0),
                     onTap: _next,
                     loading: _loading,
                   ),
@@ -335,7 +386,7 @@ class _StepAddress extends StatelessWidget {
                     ? AppColors.primary : Colors.transparent,
               ),
               child: selected?['id'] == addr['id']
-                  ? const Icon(Icons.circle, size: 8, color: Colors.white)
+                  ? const Icon(Icons.circle, size: 8, color: AppColors.ink0)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -392,7 +443,7 @@ class _StepAddress extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(children: [
-          const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.teal600),
+          const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.primary),
           const SizedBox(width: 8),
           Expanded(child: Text(deliveryPromise,
             style: const TextStyle(fontSize: 12.5, color: AppColors.ink1))),
@@ -408,58 +459,217 @@ class _StepPayment extends StatelessWidget {
   final String selected;
   final void Function(String) onChanged;
   final TextEditingController notesCtrl;
-  final dynamic config; // AppConfig
-  const _StepPayment({required this.selected, required this.onChanged,
-    required this.notesCtrl, required this.config});
+  final dynamic config;
+  final double walletBalance;
+  final bool walletLoading;
+  final bool useWallet;
+  final VoidCallback onWalletToggle;
+  final VoidCallback onChargeWallet;
+  final double total;
+  final Map<String, dynamic>? selectedAddress;
+
+  const _StepPayment({
+    required this.selected, required this.onChanged,
+    required this.notesCtrl, required this.config,
+    required this.walletBalance, required this.walletLoading,
+    required this.useWallet, required this.onWalletToggle,
+    required this.onChargeWallet,
+    required this.total, required this.selectedAddress,
+  });
+
+  bool get _isTripoliAddress {
+    final city = (selectedAddress?['city'] ?? '').toString().toLowerCase();
+    return city.contains('طرابلس') || city.contains('tripoli');
+  }
 
   @override
   Widget build(BuildContext context) {
-    final methods = (config.paymentMethods as List)
-        .where((m) => m.enabled == true)
+    // Sadad and wallet removed from radio list; COD only for Tripoli
+    final allMethods = (config.paymentMethods as List)
+        .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet')
         .toList();
+    final isTrioli = _isTripoliAddress;
+    final methods = isTrioli
+        ? allMethods
+        : allMethods.where((m) => m.id != 'cash_on_delivery').toList();
+
+    final walletActive = useWallet && walletBalance > 0;
+    final walletCoversAll = walletActive && walletBalance >= total;
+    final walletDeduct = walletActive ? (walletBalance < total ? walletBalance : total) : 0.0;
+    final amountDue = walletActive ? (total - walletDeduct).clamp(0.0, total) : total;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('طريقة الدفع',
         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 16),
 
-      ...methods.map((m) => GestureDetector(
-        onTap: () => onChanged(m.id),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
+      // COD warning for non-Tripoli addresses
+      if (!isTrioli) ...[
+        Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: selected == m.id ? const Color(0xFFF5F5F5) : Colors.white,
+            color: const Color(0xFFFFFBEB),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.warn.withValues(alpha: 0.4)),
+          ),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.payments_outlined, size: 16, color: AppColors.warn),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'الدفع عند الاستلام متاح فقط لمناطق طرابلس. يرجى اختيار طريقة دفع إلكترونية.',
+                style: TextStyle(fontSize: 12.5, color: AppColors.warn, height: 1.5)),
+            ),
+          ]),
+        ),
+      ],
+
+      // ── Wallet toggle ──────────────────────────────────────────────────────
+      GestureDetector(
+        onTap: walletBalance > 0 ? onWalletToggle : null,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: walletActive ? const Color(0xFFEFF6FF) : Colors.white,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: selected == m.id ? AppColors.primary : AppColors.border,
-              width: selected == m.id ? 1.5 : 1),
+              color: walletActive ? AppColors.primary : AppColors.border,
+              width: walletActive ? 1.5 : 1),
           ),
           child: Row(children: [
             Container(
-              width: 18, height: 18,
+              width: 36, height: 36,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: selected == m.id
-                    ? null
-                    : Border.all(color: AppColors.borderStrong, width: 1.5),
-                color: selected == m.id ? AppColors.primary : Colors.transparent,
+                color: walletActive ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surfaceSoft,
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: selected == m.id
-                  ? const Icon(Icons.circle, size: 8, color: Colors.white)
-                  : null,
+              child: Icon(Icons.account_balance_wallet_outlined, size: 18,
+                color: walletActive ? AppColors.primary : AppColors.ink3),
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(m.labelAr, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              Text(
-                m.descriptionAr.isNotEmpty ? m.descriptionAr
-                    : (m.fee > 0 ? 'رسوم خدمة ${m.fee.toStringAsFixed(0)} د.ل' : 'بدون رسوم'),
-                style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
+              const Text('المحفظة',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              walletLoading
+                  ? const Text('جاري التحميل...',
+                      style: TextStyle(fontSize: 11.5, color: AppColors.ink3))
+                  : Row(children: [
+                      Text(
+                        walletBalance > 0
+                            ? 'رصيدك: ${walletBalance.toStringAsFixed(0)} د.ل'
+                            : 'رصيدك فارغ',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: walletBalance > 0 ? AppColors.success : AppColors.ink3)),
+                      const SizedBox(width: 8),
+                      // Charge button
+                      GestureDetector(
+                        onTap: onChargeWallet,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.teal50,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.teal100),
+                          ),
+                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.add, size: 10, color: AppColors.primary),
+                            SizedBox(width: 2),
+                            Text('شحن', style: TextStyle(
+                              fontSize: 10.5, fontWeight: FontWeight.w700,
+                              color: AppColors.primary)),
+                          ]),
+                        ),
+                      ),
+                    ]),
             ])),
+            // Toggle switch
+            Container(
+              width: 44, height: 24,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                color: walletActive ? AppColors.primary : AppColors.ink4,
+              ),
+              child: AnimatedAlign(
+                duration: const Duration(milliseconds: 150),
+                alignment: walletActive ? Alignment.centerLeft : Alignment.centerRight,
+                child: Container(
+                  width: 18, height: 18,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle, color: Colors.white),
+                ),
+              ),
+            ),
           ]),
         ),
-      )),
+      ),
+
+      // Wallet coverage info
+      if (walletActive) ...[
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: walletCoversAll ? const Color(0xFFF0FDF4) : const Color(0xFFEFF6FF),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: walletCoversAll ? AppColors.success : AppColors.primary,
+              width: 1),
+          ),
+          child: Text(
+            walletCoversAll
+                ? 'محفظتك تغطي كامل الطلب (${walletDeduct.toStringAsFixed(0)} د.ل)'
+                : 'محفظة: ${walletDeduct.toStringAsFixed(0)} د.ل  +  ${amountDue.toStringAsFixed(0)} د.ل عبر:',
+            style: TextStyle(
+              fontSize: 12.5, fontWeight: FontWeight.w600,
+              color: walletCoversAll ? AppColors.success : AppColors.primary),
+          ),
+        ),
+      ],
+
+      // Payment method radios — hidden if wallet covers all
+      if (!walletCoversAll) ...[
+        ...methods.map((m) => GestureDetector(
+          onTap: () => onChanged(m.id),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: selected == m.id ? const Color(0xFFF5F5F5) : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: selected == m.id ? AppColors.primary : AppColors.border,
+                width: selected == m.id ? 1.5 : 1),
+            ),
+            child: Row(children: [
+              Container(
+                width: 18, height: 18,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: selected == m.id
+                      ? null
+                      : Border.all(color: AppColors.borderStrong, width: 1.5),
+                  color: selected == m.id ? AppColors.primary : Colors.transparent,
+                ),
+                child: selected == m.id
+                    ? const Icon(Icons.circle, size: 8, color: AppColors.ink0)
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(m.labelAr, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                Text(
+                  m.descriptionAr.isNotEmpty ? m.descriptionAr
+                      : (m.fee > 0 ? 'رسوم خدمة ${m.fee.toStringAsFixed(0)} د.ل' : 'بدون رسوم'),
+                  style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
+              ])),
+            ]),
+          ),
+        )),
+      ],
 
       const SizedBox(height: 16),
       const Text('ملاحظات (اختياري)',
@@ -539,7 +749,7 @@ class _StepReview extends StatelessWidget {
               GestureDetector(
                 onTap: onChangeAddress,
                 child: const Text('تغيير',
-                  style: TextStyle(fontSize: 12, color: AppColors.teal600,
+                  style: TextStyle(fontSize: 12, color: AppColors.primary,
                     fontWeight: FontWeight.w600)),
               ),
             ]),
@@ -586,7 +796,7 @@ class _StepReview extends StatelessWidget {
               GestureDetector(
                 onTap: onChangePayment,
                 child: const Text('تغيير',
-                  style: TextStyle(fontSize: 12, color: AppColors.teal600,
+                  style: TextStyle(fontSize: 12, color: AppColors.primary,
                     fontWeight: FontWeight.w600)),
               ),
             ]),

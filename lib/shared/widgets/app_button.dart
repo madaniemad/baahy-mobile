@@ -47,7 +47,8 @@ class _AppButtonState extends State<AppButton> {
     final bg = isPrimary ? AppColors.primary
         : isDanger ? AppColors.danger
         : Colors.transparent;
-    final fg = (isPrimary || isDanger) ? Colors.white
+    final fg = isDanger ? Colors.white
+        : isPrimary ? AppColors.ink0
         : isOutline ? AppColors.primary
         : AppColors.ink1;
     final border = isOutline ? Border.all(color: AppColors.primary, width: 1.5) : null;

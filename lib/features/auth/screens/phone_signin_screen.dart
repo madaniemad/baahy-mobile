@@ -62,7 +62,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.phone_outlined,
-                color: AppColors.teal600, size: 26),
+                color: AppColors.primary, size: 26),
             ),
             const SizedBox(height: 24),
             Text(context.s.enterPhone,
@@ -140,7 +140,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 onPressed: (_valid && !_loading) ? _send : null,
                 icon: _loading
                     ? const SizedBox(width: 18, height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink0))
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.ink0),
                 label: Text(context.s.sendCode,
                   style: const TextStyle(fontFamily: 'Cairo',

@@ -44,7 +44,7 @@ class NotificationsScreen extends ConsumerWidget {
               child: Text(context.s.markAllRead,
                   style: const TextStyle(
                       fontFamily: 'Cairo',
-                      color: AppColors.teal600,
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                       fontSize: 13)),
             ),
@@ -118,7 +118,7 @@ class _NotifCard extends ConsumerWidget {
 
   static Color _iconColor(String? type) {
     switch (type) {
-      case 'order': return AppColors.teal600;
+      case 'order': return AppColors.primary;
       case 'promo': return const Color(0xFFD97757);
       case 'system': return AppColors.ink2;
       default: return AppColors.ink2;

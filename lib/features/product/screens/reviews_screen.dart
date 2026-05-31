@@ -23,12 +23,33 @@ class ReviewsScreen extends ConsumerStatefulWidget {
 class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   int? _filterRating;
 
+  void _showWriteReview() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (_) => _WriteReviewSheet(
+        productId: widget.productId,
+        onSubmitted: () => ref.refresh(_reviewsProvider(widget.productId)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final reviewsAsync = ref.watch(_reviewsProvider(widget.productId));
 
     return Scaffold(
       backgroundColor: Colors.white,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showWriteReview,
+        backgroundColor: AppColors.ink0,
+        icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 18),
+        label: const Text('اكتب تقييماً',
+          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: Colors.white)),
+      ),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -234,7 +255,7 @@ class _ReviewCard extends StatelessWidget {
               child: Text(
                 review.reviewerName.isNotEmpty ? review.reviewerName[0] : '؟',
                 style: const TextStyle(
-                  fontWeight: FontWeight.w800, color: AppColors.teal600, fontSize: 15)),
+                  fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 15)),
             ),
             const SizedBox(width: 10),
             Expanded(child: Column(
@@ -272,6 +293,131 @@ class _ReviewCard extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _WriteReviewSheet extends StatefulWidget {
+  final int productId;
+  final VoidCallback onSubmitted;
+  const _WriteReviewSheet({required this.productId, required this.onSubmitted});
+
+  @override
+  State<_WriteReviewSheet> createState() => _WriteReviewSheetState();
+}
+
+class _WriteReviewSheetState extends State<_WriteReviewSheet> {
+  double _rating = 5;
+  final _ctrl = TextEditingController();
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_rating == 0) return;
+    setState(() => _loading = true);
+    try {
+      await ApiClient.instance.dio.post(
+        '/products/${widget.productId}/reviews',
+        data: {'rating': _rating.toInt(), 'body': _ctrl.text.trim()},
+      );
+      widget.onSubmitted();
+      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('شكراً! تم إرسال تقييمك'),
+            backgroundColor: AppColors.success,
+          ));
+      }
+    } catch (_) {
+      setState(() => _loading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('حدث خطأ، حاول مجدداً')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20, right: 20, top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text('اكتب تقييمك',
+            style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 16),
+          Center(
+            child: RatingBar.builder(
+              initialRating: _rating,
+              minRating: 1,
+              itemSize: 36,
+              itemBuilder: (_, __) => const Icon(Icons.star_rounded, color: AppColors.gold),
+              onRatingUpdate: (r) => setState(() => _rating = r),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _ctrl,
+            maxLines: 4,
+            textDirection: TextDirection.rtl,
+            decoration: InputDecoration(
+              hintText: 'شارك رأيك في هذا المنتج...',
+              hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink3),
+              filled: true,
+              fillColor: AppColors.bg,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+              contentPadding: const EdgeInsets.all(14),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _loading ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.ink0,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: _loading
+                ? const SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text('نشر التقييم',
+                    style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 15)),
+            ),
+          ),
         ],
       ),
     );

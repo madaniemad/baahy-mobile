@@ -9,7 +9,7 @@ class OfflineBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isOnline = ref.watch(connectivityProvider).isOnline;
+    final isOnline = ref.watch(connectivityProvider);
 
     return AnimatedSlide(
       offset: isOnline ? const Offset(0, -1) : Offset.zero,

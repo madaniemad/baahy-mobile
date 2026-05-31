@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/product.dart';
 import '../../../core/providers/home_provider.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 
@@ -30,18 +33,12 @@ class _Vendor {
   const _Vendor({required this.id, required this.name});
 }
 
-final _vendorsProvider = FutureProvider<List<_Vendor>>((ref) async {
-  try {
-    final res = await ApiClient.instance.dio.get('/vendors', queryParameters: {'per_page': 100});
-    final list = res.data['data']['data'] as List? ?? [];
-    return list.map((v) => _Vendor(id: v['id'] as int, name: v['store_name'] as String? ?? '')).toList();
-  } catch (_) { return []; }
-});
 
 class _FilterOptions {
   final List<_AttrType> attrTypes;
   final List<String> brands;
-  const _FilterOptions({this.attrTypes = const [], this.brands = const []});
+  final List<_Vendor> vendors;
+  const _FilterOptions({this.attrTypes = const [], this.brands = const [], this.vendors = const []});
 }
 
 // Scope key: category + brand drive dynamic re-fetching of available attributes
@@ -82,7 +79,12 @@ final _filterOptionsProvider = FutureProvider.family<_FilterOptions, _FilterScop
       )).toList(),
     )).toList();
     final brands = (data['brands'] as List? ?? []).map((b) => b.toString()).toList();
-    return _FilterOptions(attrTypes: types, brands: brands);
+    final vendors = (data['vendors'] as List? ?? []).map((v) {
+      final id = v is Map ? (v['id'] as int? ?? 0) : 0;
+      final name = v is Map ? (v['store_name'] ?? v['name'] ?? '').toString() : v.toString();
+      return _Vendor(id: id, name: name);
+    }).where((v) => v.id != 0 && v.name.isNotEmpty).toList();
+    return _FilterOptions(attrTypes: types, brands: brands, vendors: vendors);
   } catch (_) {
     return const _FilterOptions();
   }
@@ -156,7 +158,17 @@ class _FilterState {
 class SearchResultsScreen extends ConsumerStatefulWidget {
   final String query;
   final int? categoryId;
-  const SearchResultsScreen({required this.query, this.categoryId, super.key});
+  final bool onSale;
+  final double? maxPrice;
+  final String? initialSort;
+  const SearchResultsScreen({
+    required this.query,
+    this.categoryId,
+    this.onSale = false,
+    this.maxPrice,
+    this.initialSort,
+    super.key,
+  });
 
   @override
   ConsumerState<SearchResultsScreen> createState() => _SearchResultsScreenState();
@@ -169,13 +181,18 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   bool _loadingMore = false;
   int _page = 1;
   bool _hasMore = true;
-  String _sort = 'latest';
+  late String _sort;
   late _FilterState _filters;
 
   @override
   void initState() {
     super.initState();
-    _filters = _FilterState(categoryId: widget.categoryId);
+    _sort = widget.initialSort ?? 'latest';
+    _filters = _FilterState(
+      categoryId: widget.categoryId,
+      maxPrice: widget.maxPrice,
+      inStockOnly: false,
+    );
     _fetch(reset: true);
     _scrollCtrl.addListener(_onScroll);
   }
@@ -215,6 +232,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         if (_filters.featuredOnly) 'featured': 1,
         if (_filters.brand != null && _filters.brand!.isNotEmpty) 'brand': _filters.brand,
         if (_filters.vendorId != null) 'vendor_id': _filters.vendorId,
+        if (widget.onSale) 'on_sale': '1',
         ..._filters.attributeValueIds.isNotEmpty
             ? {'attribute_value_ids[]': _filters.attributeValueIds.toList()} : {},
       });
@@ -247,8 +265,49 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     }
   }
 
+  // Find a category anywhere in the tree by id
+  Category? _findCategory(List<Category> cats, int id) {
+    for (final c in cats) {
+      if (c.id == id) return c;
+      for (final ch in c.children) {
+        if (ch.id == id) return ch;
+        for (final gc in ch.children) {
+          if (gc.id == id) return gc;
+        }
+      }
+    }
+    return null;
+  }
+
+  void _selectSubcat(int? catId) {
+    setState(() => _filters = _filters.copyWith(
+      categoryId: catId,
+      categoryName: null,
+      attributeValueIds: const {},
+      brand: null,
+      vendorId: null,
+    ));
+    _fetch(reset: true);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final allCategories = ref.watch(homeProvider).categories;
+
+    // Subcategory tabs: children of the page's scope category
+    final scopeCat = widget.categoryId != null
+        ? _findCategory(allCategories, widget.categoryId!)
+        : null;
+    final subcats = scopeCat?.children ?? <Category>[];
+
+    // Banners: use selected sub-cat's banners, fallback to scope cat's banners
+    final bannerCatId = _filters.categoryId ?? widget.categoryId;
+    final bannerCat = bannerCatId != null ? _findCategory(allCategories, bannerCatId) : null;
+    var banners = bannerCat?.banners ?? <CategoryBanner>[];
+    if (banners.isEmpty && bannerCatId != widget.categoryId && scopeCat != null) {
+      banners = scopeCat.banners;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
@@ -259,7 +318,6 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 16),
         ),
         actions: [
-          // Filter icon with active indicator
           Stack(
             children: [
               IconButton(
@@ -287,46 +345,239 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : _products.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.search_off, size: 64, color: AppColors.ink4),
-                      const SizedBox(height: 12),
-                      const Text('لا توجد نتائج',
-                        style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
-                      if (_filters.isActive) ...[
-                        const SizedBox(height: 12),
-                        TextButton.icon(
-                          onPressed: () {
-                            setState(() => _filters = const _FilterState());
-                            _fetch(reset: true);
-                          },
-                          icon: const Icon(Icons.clear_rounded, size: 16),
-                          label: const Text('إزالة الفلاتر'),
+      body: Column(
+        children: [
+          // Subcategory tabs
+          if (subcats.isNotEmpty)
+            _SubcatTabs(
+              categories: subcats,
+              selectedId: _filters.categoryId,
+              onSelect: _selectSubcat,
+            ),
+          // Banner slider
+          if (banners.isNotEmpty) _BannerSlider(banners: banners),
+          // Products
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                : _products.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.search_off, size: 64, color: AppColors.ink4),
+                            const SizedBox(height: 12),
+                            const Text('لا توجد نتائج',
+                              style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
+                            if (_filters.isActive) ...[
+                              const SizedBox(height: 12),
+                              TextButton.icon(
+                                onPressed: () {
+                                  setState(() => _filters = const _FilterState());
+                                  _fetch(reset: true);
+                                },
+                                icon: const Icon(Icons.clear_rounded, size: 16),
+                                label: const Text('إزالة الفلاتر'),
+                              ),
+                            ],
+                          ],
                         ),
-                      ],
-                    ],
-                  ),
-                )
-              : GridView.builder(
-                  controller: _scrollCtrl,
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    mainAxisExtent: 366,
-                  ),
-                  itemCount: _products.length + (_loadingMore ? 2 : 0),
-                  itemBuilder: (_, i) {
-                    if (i >= _products.length) return const ProductCardSkeleton();
-                    return ProductCard(product: _products[i]);
-                  },
+                      )
+                    : GridView.builder(
+                        controller: _scrollCtrl,
+                        padding: const EdgeInsets.all(12),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          mainAxisExtent: 342,
+                        ),
+                        itemCount: _products.length + (_loadingMore ? 2 : 0),
+                        itemBuilder: (_, i) {
+                          if (i >= _products.length) return const ProductCardSkeleton();
+                          return Align(
+                            alignment: Alignment.topCenter,
+                            child: ProductCard(product: _products[i]),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Subcategory tab row ───────────────────────────────────────────────────────
+
+class _SubcatTabs extends StatelessWidget {
+  final List<Category> categories;
+  final int? selectedId;
+  final ValueChanged<int?> onSelect;
+  const _SubcatTabs({required this.categories, required this.selectedId, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    return Container(
+      color: Colors.white,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                _Tab(
+                  label: isAr ? 'الكل' : 'All',
+                  selected: selectedId == null,
+                  onTap: () => onSelect(null),
                 ),
+                const SizedBox(width: 8),
+                ...categories.map((cat) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _Tab(
+                    label: isAr ? cat.nameAr : cat.name,
+                    selected: selectedId == cat.id,
+                    onTap: () => onSelect(selectedId == cat.id ? null : cat.id),
+                  ),
+                )),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+        ],
+      ),
+    );
+  }
+}
+
+class _Tab extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _Tab({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.ink0 : AppColors.surfaceSoft,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(label,
+          style: TextStyle(
+            fontFamily: 'Cairo',
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? Colors.white : AppColors.ink1,
+          )),
+      ),
+    );
+  }
+}
+
+// ── Banner slider ─────────────────────────────────────────────────────────────
+
+class _BannerSlider extends StatefulWidget {
+  final List<CategoryBanner> banners;
+  const _BannerSlider({required this.banners});
+  @override
+  State<_BannerSlider> createState() => _BannerSliderState();
+}
+
+class _BannerSliderState extends State<_BannerSlider> {
+  late final _ctrl = PageController(viewportFraction: 0.88);
+  int _current = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.banners.length > 1) {
+      _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (!mounted) return;
+        final next = (_current + 1) % widget.banners.length;
+        _ctrl.animateToPage(next,
+          duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      child: LayoutBuilder(builder: (context, constraints) {
+        final itemW = constraints.maxWidth * 0.88;
+        final sliderH = itemW / 2.6;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: sliderH,
+              child: PageView.builder(
+                clipBehavior: Clip.none,
+                padEnds: false,
+                controller: _ctrl,
+                itemCount: widget.banners.length,
+                onPageChanged: (i) => setState(() => _current = i),
+                itemBuilder: (_, i) {
+                  final banner = widget.banners[i];
+                  return Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 10),
+                    child: GestureDetector(
+                      onTap: () {
+                        if (banner.action != null && banner.action!.isNotEmpty) {
+                          safePush(context, banner.action!);
+                        }
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CachedNetworkImage(
+                          imageUrl: banner.imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(color: AppColors.cardImageBg),
+                          errorWidget: (_, __, ___) => Container(color: AppColors.cardImageBg),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            if (widget.banners.length > 1) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(widget.banners.length, (i) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: _current == i ? 16 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: _current == i ? AppColors.ink0 : AppColors.border,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                )),
+              ),
+            ],
+          ],
+        );
+      }),
     );
   }
 }
@@ -399,6 +650,21 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
       brand: _brand?.trim().isEmpty == true ? null : _brand?.trim(),
       vendorId: _vendorId,
     ));
+  }
+
+  // The category driving filter-option scoping: user's in-sheet pick, else page scope.
+  int? get _effectiveCategoryId => _categoryId ?? widget.scopeCategoryId;
+
+  // Cascade-clear dependent selections when category changes.
+  void _selectCategory(int? catId, String? catName) {
+    setState(() {
+      _categoryId = catId;
+      _categoryName = catName;
+      // Clear selections that are category-specific.
+      _attrValueIds = {};
+      _brand = null;
+      _vendorId = null;
+    });
   }
 
   void _reset() {
@@ -517,16 +783,13 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                         _CatChip(
                           label: 'الكل',
                           selected: _categoryId == null || _categoryId == widget.scopeCategoryId,
-                          onTap: () => setState(() { _categoryId = null; _categoryName = null; }),
+                          onTap: () => _selectCategory(null, null),
                         ),
                         ...scopedCats.map((cat) => _CatChip(
                           label: isAr ? cat.nameAr : cat.name,
                           selected: _categoryId == cat.id ||
                               cat.children.any((c) => c.id == _categoryId),
-                          onTap: () => setState(() {
-                            _categoryId = cat.id;
-                            _categoryName = isAr ? cat.nameAr : cat.name;
-                          }),
+                          onTap: () => _selectCategory(cat.id, isAr ? cat.nameAr : cat.name),
                         )),
                       ],
                     ),
@@ -534,6 +797,136 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     const Divider(height: 1),
                   ],
                 ],
+
+                // ── Attributes (Size, Color, etc.) ────────────────────
+                Consumer(builder: (ctx, attrRef, _) {
+                  final opts = attrRef.watch(_filterOptionsProvider(_FilterScope(
+                    categoryId: _effectiveCategoryId, brand: _brand)));
+                  return opts.maybeWhen(
+                    data: (options) {
+                      // Filter out brand attribute type — handled by the dedicated brand section
+                      final attrTypes = options.attrTypes.where((t) {
+                        final n = t.name.toLowerCase();
+                        final na = t.nameAr;
+                        return !n.contains('brand') && !na.contains('ماركة');
+                      }).toList();
+                      if (attrTypes.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: attrTypes.map((attrType) {
+                          final typeLabel = isAr ? attrType.nameAr : attrType.name;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _sectionHeader(typeLabel, _attrExpanded,
+                                () => setState(() => _attrExpanded = !_attrExpanded)),
+                              if (_attrExpanded) ...[
+                                Wrap(
+                                  spacing: 8, runSpacing: 8,
+                                  children: attrType.values.map((val) {
+                                    final sel = _attrValueIds.contains(val.id);
+                                    final valLabel = isAr ? val.valueAr : val.value;
+                                    if (attrType.displayType == 'color' && val.colorHex != null) {
+                                      Color? color;
+                                      try {
+                                        color = Color(int.parse(
+                                          val.colorHex!.replaceFirst('#', '0xFF')));
+                                      } catch (_) {}
+                                      return GestureDetector(
+                                        onTap: () => setState(() =>
+                                            sel ? _attrValueIds.remove(val.id)
+                                                : _attrValueIds.add(val.id)),
+                                        child: Container(
+                                          width: 32, height: 32,
+                                          decoration: BoxDecoration(
+                                            color: color ?? AppColors.bg,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: sel ? AppColors.ink0 : AppColors.border,
+                                              width: sel ? 2.5 : 1.5)),
+                                          child: sel ? const Icon(Icons.check,
+                                            size: 14, color: Colors.white) : null,
+                                        ),
+                                      );
+                                    }
+                                    return GestureDetector(
+                                      onTap: () => setState(() =>
+                                          sel ? _attrValueIds.remove(val.id)
+                                              : _attrValueIds.add(val.id)),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 7),
+                                        decoration: BoxDecoration(
+                                          color: sel ? AppColors.ink0 : Colors.white,
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: sel ? AppColors.ink0 : AppColors.border,
+                                            width: 1.5)),
+                                        child: Text(valLabel,
+                                          style: TextStyle(
+                                            fontSize: 12, fontWeight: FontWeight.w600,
+                                            color: sel ? Colors.white : AppColors.ink1)),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                                const SizedBox(height: 12),
+                                const Divider(height: 1),
+                              ],
+                            ],
+                          );
+                        }).toList(),
+                      );
+                    },
+                    orElse: () => const SizedBox.shrink(),
+                  );
+                }),
+
+                // ── Brand ─────────────────────────────────────────────
+                Consumer(builder: (ctx, brandRef, _) {
+                  final opts = brandRef.watch(_filterOptionsProvider(_FilterScope(
+                    categoryId: _effectiveCategoryId)));
+                  return opts.maybeWhen(
+                    data: (options) {
+                      if (options.brands.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _sectionHeader('الماركة', _brandExpanded,
+                            () => setState(() => _brandExpanded = !_brandExpanded)),
+                          if (_brandExpanded) ...[
+                            Wrap(
+                              spacing: 8, runSpacing: 8,
+                              children: options.brands.map((b) {
+                                final sel = _brand == b;
+                                return GestureDetector(
+                                  onTap: () => setState(() => _brand = sel ? null : b),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 7),
+                                    decoration: BoxDecoration(
+                                      color: sel ? AppColors.ink0 : Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: sel ? AppColors.ink0 : AppColors.border,
+                                        width: 1.5)),
+                                    child: Text(b,
+                                      style: TextStyle(
+                                        fontSize: 12, fontWeight: FontWeight.w600,
+                                        color: sel ? Colors.white : AppColors.ink1)),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 12),
+                            const Divider(height: 1),
+                          ],
+                        ],
+                      );
+                    },
+                    orElse: () => const SizedBox.shrink(),
+                  );
+                }),
 
                 // ── Price ─────────────────────────────────────────────────
                 _sectionHeader('نطاق السعر (د.ل)', _priceExpanded,
@@ -607,20 +1000,20 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: selected ? AppColors.primary : Colors.white,
+                            color: selected ? AppColors.ink0 : Colors.white,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: selected ? AppColors.primary : AppColors.border,
+                              color: selected ? AppColors.ink0 : AppColors.border,
                               width: 1.5),
                           ),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             Icon(Icons.star_rounded, size: 14,
-                              color: selected ? AppColors.ink0 : AppColors.warn),
+                              color: selected ? Colors.white : AppColors.warn),
                             const SizedBox(width: 4),
                             Text('$star+ نجوم',
                               style: TextStyle(
                                 fontSize: 12, fontWeight: FontWeight.w700,
-                                color: selected ? AppColors.ink0 : AppColors.ink1)),
+                                color: selected ? Colors.white : AppColors.ink1)),
                           ]),
                         ),
                       );
@@ -630,176 +1023,43 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   const Divider(height: 1),
                 ],
 
-                // ── Attributes (Size, Color, etc.) ────────────────────
-                Consumer(builder: (ctx, attrRef, _) {
-                  final opts = attrRef.watch(_filterOptionsProvider(_FilterScope(
-                    categoryId: widget.scopeCategoryId, brand: _brand)));
-                  return opts.maybeWhen(
-                    data: (options) {
-                      // Filter out brand attribute type — handled by the dedicated brand section
-                      final attrTypes = options.attrTypes.where((t) {
-                        final n = t.name.toLowerCase();
-                        final na = t.nameAr;
-                        return !n.contains('brand') && !na.contains('ماركة');
-                      }).toList();
-                      if (attrTypes.isEmpty) return const SizedBox.shrink();
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: attrTypes.map((attrType) {
-                          final typeLabel = isAr ? attrType.nameAr : attrType.name;
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _sectionHeader(typeLabel, _attrExpanded,
-                                () => setState(() => _attrExpanded = !_attrExpanded)),
-                              if (_attrExpanded) ...[
-                                Wrap(
-                                  spacing: 8, runSpacing: 8,
-                                  children: attrType.values.map((val) {
-                                    final sel = _attrValueIds.contains(val.id);
-                                    final valLabel = isAr ? val.valueAr : val.value;
-                                    if (attrType.displayType == 'color' && val.colorHex != null) {
-                                      Color? color;
-                                      try {
-                                        color = Color(int.parse(
-                                          val.colorHex!.replaceFirst('#', '0xFF')));
-                                      } catch (_) {}
-                                      return GestureDetector(
-                                        onTap: () => setState(() =>
-                                            sel ? _attrValueIds.remove(val.id)
-                                                : _attrValueIds.add(val.id)),
-                                        child: Container(
-                                          width: 32, height: 32,
-                                          decoration: BoxDecoration(
-                                            color: color ?? AppColors.bg,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: sel ? AppColors.primary : AppColors.border,
-                                              width: sel ? 2.5 : 1.5)),
-                                          child: sel ? const Icon(Icons.check,
-                                            size: 14, color: Colors.white) : null,
-                                        ),
-                                      );
-                                    }
-                                    return GestureDetector(
-                                      onTap: () => setState(() =>
-                                          sel ? _attrValueIds.remove(val.id)
-                                              : _attrValueIds.add(val.id)),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12, vertical: 7),
-                                        decoration: BoxDecoration(
-                                          color: sel ? AppColors.primary : Colors.white,
-                                          borderRadius: BorderRadius.circular(10),
-                                          border: Border.all(
-                                            color: sel ? AppColors.primary : AppColors.border,
-                                            width: 1.5)),
-                                        child: Text(valLabel,
-                                          style: TextStyle(
-                                            fontSize: 12, fontWeight: FontWeight.w600,
-                                            color: sel ? AppColors.ink0 : AppColors.ink1)),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                                const SizedBox(height: 12),
-                                const Divider(height: 1),
-                              ],
-                            ],
-                          );
-                        }).toList(),
-                      );
-                    },
-                    orElse: () => const SizedBox.shrink(),
-                  );
-                }),
-
                 // ── Vendor / Seller ───────────────────────────────────
                 Consumer(builder: (ctx, vendorRef, _) {
-                  final vendors = vendorRef.watch(_vendorsProvider);
-                  return vendors.maybeWhen(
-                    data: (list) {
-                      if (list.isEmpty) return const SizedBox.shrink();
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _sectionHeader('المتجر', _vendorExpanded,
-                            () => setState(() => _vendorExpanded = !_vendorExpanded)),
-                          if (_vendorExpanded) ...[
-                            Wrap(
-                              spacing: 8, runSpacing: 8,
-                              children: list.map((v) {
-                                final sel = _vendorId == v.id;
-                                return GestureDetector(
-                                  onTap: () => setState(() => _vendorId = sel ? null : v.id),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                                    decoration: BoxDecoration(
-                                      color: sel ? AppColors.primary : Colors.white,
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color: sel ? AppColors.primary : AppColors.border,
-                                        width: 1.5)),
-                                    child: Text(v.name,
-                                      style: TextStyle(
-                                        fontSize: 12, fontWeight: FontWeight.w600,
-                                        color: sel ? AppColors.ink0 : AppColors.ink1)),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(height: 12),
-                            const Divider(height: 1),
-                          ],
-                        ],
-                      );
-                    },
-                    orElse: () => const SizedBox.shrink(),
-                  );
-                }),
-
-                // ── Brand ─────────────────────────────────────────────
-                Consumer(builder: (ctx, brandRef, _) {
-                  final opts = brandRef.watch(_filterOptionsProvider(_FilterScope(
-                    categoryId: widget.scopeCategoryId)));
-                  return opts.maybeWhen(
-                    data: (options) {
-                      if (options.brands.isEmpty) return const SizedBox.shrink();
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _sectionHeader('الماركة', _brandExpanded,
-                            () => setState(() => _brandExpanded = !_brandExpanded)),
-                          if (_brandExpanded) ...[
-                            Wrap(
-                              spacing: 8, runSpacing: 8,
-                              children: options.brands.map((b) {
-                                final sel = _brand == b;
-                                return GestureDetector(
-                                  onTap: () => setState(() => _brand = sel ? null : b),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 7),
-                                    decoration: BoxDecoration(
-                                      color: sel ? AppColors.primary : Colors.white,
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color: sel ? AppColors.primary : AppColors.border,
-                                        width: 1.5)),
-                                    child: Text(b,
-                                      style: TextStyle(
-                                        fontSize: 12, fontWeight: FontWeight.w600,
-                                        color: sel ? AppColors.ink0 : AppColors.ink1)),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                        ],
-                      );
-                    },
-                    orElse: () => const SizedBox.shrink(),
+                  final optsAsync = vendorRef.watch(_filterOptionsProvider(_FilterScope(
+                    categoryId: _effectiveCategoryId)));
+                  final list = optsAsync.maybeWhen(data: (o) => o.vendors, orElse: () => <_Vendor>[]);
+                  if (list.isEmpty) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _sectionHeader('المتجر', _vendorExpanded,
+                        () => setState(() => _vendorExpanded = !_vendorExpanded)),
+                      if (_vendorExpanded) ...[
+                        Wrap(
+                          spacing: 8, runSpacing: 8,
+                          children: list.map((v) {
+                            final sel = _vendorId == v.id;
+                            return GestureDetector(
+                              onTap: () => setState(() => _vendorId = sel ? null : v.id),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                decoration: BoxDecoration(
+                                  color: sel ? AppColors.ink0 : Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: sel ? AppColors.ink0 : AppColors.border,
+                                    width: 1.5)),
+                                child: Text(v.name,
+                                  style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.w600,
+                                    color: sel ? Colors.white : AppColors.ink1)),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ],
                   );
                 }),
 
@@ -874,17 +1134,17 @@ class _CatChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
+          color: selected ? AppColors.ink0 : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
+            color: selected ? AppColors.ink0 : AppColors.border,
             width: 1.5),
         ),
         child: Text(label,
           style: TextStyle(
             fontSize: 12.5,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? AppColors.ink0 : AppColors.ink1,
+            color: selected ? Colors.white : AppColors.ink1,
           )),
       ),
     );

@@ -6,6 +6,21 @@ class OrderConfirmedScreen extends StatelessWidget {
   final Map<String, dynamic> data;
   const OrderConfirmedScreen({required this.data, super.key});
 
+  String _deliveryLabel() {
+    // Derive from shipping_rate if present, otherwise fall back to city-based estimate.
+    final rate = data['shipping_rate'];
+    if (rate is Map) {
+      final days = rate['estimated_days'];
+      final city = rate['city_name'] ?? rate['city'] ?? '';
+      if (days != null && city.isNotEmpty) return '$days يوم · $city';
+      if (days != null) return '$days يوم';
+    }
+    final city = (data['city'] ?? data['shipping_city'] ?? '').toString();
+    final isTripoli = city.toLowerCase().contains('طرابلس') || city.toLowerCase().contains('tripoli');
+    final days = isTripoli ? '1-2' : '2-5';
+    return '$days يوم${city.isNotEmpty ? ' · $city' : ''}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final orderNumber = data['order_number'] ?? '#${data['id']}';
@@ -32,7 +47,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                         border: Border.all(color: AppColors.primary, width: 3),
                       ),
                       child: const Icon(Icons.check_rounded,
-                        color: AppColors.teal600, size: 48),
+                        color: AppColors.primary, size: 48),
                     ),
                     const SizedBox(height: 16),
                     const Text('تم الطلب!',
@@ -61,8 +76,8 @@ class OrderConfirmedScreen extends StatelessWidget {
                               children: [
                                 const Text('التسليم',
                                   style: TextStyle(fontSize: 13, color: AppColors.ink2)),
-                                const Text('1-2 يوم · طرابلس',
-                                  style: TextStyle(fontSize: 13.5,
+                                Text(_deliveryLabel(),
+                                  style: const TextStyle(fontSize: 13.5,
                                     fontWeight: FontWeight.w600)),
                               ],
                             ),
@@ -75,7 +90,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                                 Text('${total.toStringAsFixed(0)} د.ل',
                                   style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                     fontSize: 15, fontWeight: FontWeight.w800,
-                                    color: AppColors.teal600)),
+                                    color: AppColors.primary)),
                               ],
                             ),
                           ],

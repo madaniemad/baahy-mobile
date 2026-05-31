@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
-// ── Baahy design tokens (from claude.ai/design handoff) ──────────────────────
+// ── Baahy design tokens ───────────────────────────────────────────────────────
 class AppColors {
-  // Brand — dark charcoal palette (replaces tiffany)
-  static const primary     = Color(0xFF1A1A1A);
-  static const teal        = Color(0xFF1A1A1A);
-  static const teal600     = Color(0xFF1A1A1A);
-  static const teal700     = Color(0xFF111111);
-  static const teal50      = Color(0xFFF5F5F5);
-  static const teal50bg    = Color(0xFFF5F5F5);
-  static const teal100     = Color(0xFFEEEEEE);
-  static const teal100bg   = Color(0xFFE0E0E0);
+  // Brand primary — tiffany cyan for buttons/CTAs
+  static const primary     = Color(0xFF32DDE5);
+
+  // Tiffany — highlight/accent only (active nav, links, selections, spinner)
+  static const teal        = Color(0xFF4ECDC4);
+  static const teal600     = Color(0xFF3BBDB5);
+  static const teal700     = Color(0xFF2A9D94);
+  static const teal50      = Color(0xFFEAF9F8);
+  static const teal50bg    = Color(0xFFEAF9F8);
+  static const teal100     = Color(0xFFC5F0ED);
+  static const teal100bg   = Color(0xFFC5F0ED);
 
   // Ink (text hierarchy)
   static const ink0        = Color(0xFF0A1A1A); // primary text
@@ -20,17 +22,19 @@ class AppColors {
   static const ink4        = Color(0xFFC4CCCE); // hairline
 
   // Surface
-  static const bg          = Color(0xFFF7F8F8);
+  static const bg          = Color(0xFFFAFBFC);  // slightly lighter than gray-50
   static const surface     = Color(0xFFFFFFFF);
-  static const surfaceSoft = Color(0xFFF1F3F3);
+  static const surfaceSoft = Color(0xFFF6F7F7);  // lighter containers (search box, etc.)
+  static const cardImageBg = Color(0xFFEDEFEF);  // card image section — distinct from white info
   static const border      = Color(0xFFECEFEF);
   static const borderStrong= Color(0xFFD8DDDD);
 
   // Semantic
-  static const danger      = Color(0xFFE2553F);
-  static const success     = Color(0xFF1F8A5B);
-  static const warn        = Color(0xFFD97757);
-  static const gold        = Color(0xFFD4A82E);
+  static const danger      = Color(0xFFE2553F); // red  — cancelled, errors, badges
+  static const success     = Color(0xFF1F8A5B); // green — delivered, in-stock
+  static const warn        = Color(0xFFD97757); // amber — pending, low-stock
+  static const info        = Color(0xFF3B82F6); // blue  — shipped/in-delivery
+  static const gold        = Color(0xFFD4A82E); // gold  — stars, rating
   static const hilite      = Color(0xFFFFF8D6);
 }
 
@@ -70,8 +74,8 @@ ThemeData buildAppTheme() {
   return ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.light(
-      primary: AppColors.teal,
-      onPrimary: Colors.white,
+      primary: AppColors.primary,
+      onPrimary: AppColors.ink0,
       secondary: AppColors.ink0,
       onSecondary: Colors.white,
       surface: AppColors.surface,
@@ -95,8 +99,8 @@ ThemeData buildAppTheme() {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.teal,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.ink0,
         shape: const StadiumBorder(),
         textStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w700),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),

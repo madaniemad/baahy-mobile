@@ -114,17 +114,17 @@ class WishlistScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                     margin: const EdgeInsets.only(bottom: 14),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.08),
+                      color: const Color(0xFFFFF1EB),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                      border: Border.all(color: AppColors.warn.withValues(alpha: 0.35)),
                     ),
                     child: Row(children: [
-                      const Icon(Icons.local_fire_department_rounded, color: AppColors.primary, size: 20),
+                      const Icon(Icons.local_fire_department_rounded, color: AppColors.warn, size: 20),
                       const SizedBox(width: 10),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(context.s.priceDrops, style: const TextStyle(
                             fontFamily: 'Cairo', fontWeight: FontWeight.w800,
-                            fontSize: 13, color: AppColors.primary)),
+                            fontSize: 13, color: AppColors.warn)),
                         Text('$discountCount ${context.s.priceDropBanner}',
                             style: const TextStyle(fontSize: 12, color: AppColors.ink2, height: 1.4)),
                       ])),
@@ -169,11 +169,8 @@ class _WishlistCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: hasDiscount ? AppColors.primary : AppColors.border,
-            width: hasDiscount ? 1.5 : 1,
-          ),
-          boxShadow: hasDiscount ? AppShadows.shadowCard : null,
+          border: Border.all(color: AppColors.border),
+          boxShadow: AppShadows.shadowCard,
         ),
         child: Row(children: [
           // Image with discount badge

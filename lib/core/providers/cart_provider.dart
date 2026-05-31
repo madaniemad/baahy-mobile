@@ -193,6 +193,55 @@ class CartNotifier extends StateNotifier<CartState> {
       return 'تعذر التحقق من السلة';
     }
   }
+
+  // Returns all cart issues (unavailable OR price-changed) so the cart screen
+  // can prompt the user before entering checkout.
+  // type: 'unavailable' | 'price_changed'
+  Future<List<({CartItem item, String message, String type, double? newPrice, double? oldPrice})>>
+      validateAndGetIssues() async {
+    if (state.items.isEmpty) return [];
+    try {
+      final res = await ApiClient.instance.dio.post('/cart/validate', data: {
+        'items': state.items
+            .map((i) => {
+                  'product_id': i.productId,
+                  if (i.variationId != null) 'variation_id': i.variationId,
+                  'quantity': i.quantity,
+                  'price': i.unitPrice,
+                })
+            .toList(),
+      });
+      if (res.data['valid'] == true) return [];
+      final issues = <({CartItem item, String message, String type, double? newPrice, double? oldPrice})>[];
+      for (final apiItem in (res.data['items'] as List? ?? [])) {
+        if (apiItem['ok'] != false) continue;
+        final pid = apiItem['product_id'] as int?;
+        final vid = apiItem['variation_id'] as int?;
+        final msg = (apiItem['message'] as String?) ?? 'مشكلة في المنتج';
+        final issueType = (apiItem['type'] as String?) ?? 'unavailable';
+        final newPrice = (apiItem['current_price'] as num?)?.toDouble();
+        final oldPrice = (apiItem['old_price'] as num?)?.toDouble();
+        final cartItem = state.items.where((i) =>
+          i.productId == pid &&
+          (vid == null ? i.variationId == null : i.variationId == vid)
+        ).firstOrNull;
+        if (cartItem != null) {
+          issues.add((item: cartItem, message: msg, type: issueType,
+            newPrice: newPrice, oldPrice: oldPrice));
+        }
+      }
+      if (issues.isEmpty) {
+        return state.items
+            .map((i) => (item: i, message: 'بعض المنتجات غير متاحة',
+                type: 'unavailable', newPrice: null, oldPrice: null))
+            .take(1)
+            .toList();
+      }
+      return issues;
+    } catch (_) {
+      return [];
+    }
+  }
 }
 
 final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) {

@@ -13,16 +13,25 @@ class ProductCard extends ConsumerWidget {
   final double? width;
   const ProductCard({required this.product, this.width, super.key});
 
-  static bool _isClothing(String ar, String en) =>
-      ar.contains('ملاب') || en.contains('cloth') || en.contains('clothing');
+  // IDs of clothing parent categories + all known children — use object-cover for these.
+  // Women Clothing(2)+subs(3-13), Men Clothing(26)+subs(27-34),
+  // Girls Clothing(48), Boys Clothing(51), Baby Fashion(53)+subs(54,55)
+  static const _clothingIds = {
+    2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13,
+    26, 27, 28, 29, 30, 31, 32, 33, 34,
+    48, 51,
+    53, 54, 55,
+  };
 
   static BoxFit _imageFit(Product p) {
     final cat = p.category;
     if (cat == null) return BoxFit.contain;
-    // Check the leaf category OR its parent — API now returns both.
-    if (_isClothing(cat.nameAr, cat.name.toLowerCase())) return BoxFit.cover;
-    final par = cat.parent;
-    if (par != null && _isClothing(par.nameAr, par.name.toLowerCase())) return BoxFit.cover;
+    if (_clothingIds.contains(cat.id)) return BoxFit.cover;
+    if (cat.parentId != null && _clothingIds.contains(cat.parentId)) return BoxFit.cover;
+    if (cat.parent != null && _clothingIds.contains(cat.parent!.id)) return BoxFit.cover;
+    // Name-based fallback: mirrors web logic — any Arabic clothing category name
+    if (cat.nameAr.contains('ملاب')) return BoxFit.cover;
+    if (cat.parent?.nameAr.contains('ملاب') == true) return BoxFit.cover;
     return BoxFit.contain;
   }
 
@@ -32,22 +41,23 @@ class ProductCard extends ConsumerWidget {
         ? CachedNetworkImage(
             imageUrl: p.firstImage!,
             fit: fit,
-            placeholder: (_, __) => Container(color: AppColors.surfaceSoft),
+            placeholder: (_, __) => Container(color: AppColors.cardImageBg),
             errorWidget: (_, __, ___) => Container(
-              color: AppColors.surfaceSoft,
+              color: AppColors.cardImageBg,
               child: const Icon(Icons.image_not_supported_outlined, color: AppColors.ink4, size: 28),
             ),
           )
         : Container(
-            color: AppColors.bg,
+            color: AppColors.cardImageBg,
             child: const Icon(Icons.image_outlined, color: AppColors.ink4),
           );
-    if (fit == BoxFit.contain) {
-      img = ColorFiltered(
-        colorFilter: const ColorFilter.mode(AppColors.bg, BlendMode.multiply),
-        child: img,
-      );
-    }
+    // Multiply blends white-background product images into the card's gray zone:
+    // white × cardImageBg = cardImageBg (seamless), dark/colored pixels barely affected.
+    // Applied to all images — covers both cut-out PNGs (contain) and studio-white JPEGs (cover).
+    img = ColorFiltered(
+      colorFilter: const ColorFilter.mode(AppColors.cardImageBg, BlendMode.multiply),
+      child: img,
+    );
     return img;
   }
 
@@ -76,18 +86,23 @@ class ProductCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: AppRadius.cardRadius,
+          border: Border.all(color: const Color(0xFFF3F4F6)),
           boxShadow: AppShadows.shadowCard,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Stack(
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
-                  child: AspectRatio(
-                    aspectRatio: 0.8,
-                    child: _buildProductImage(product),
+                  child: Container(
+                    color: AppColors.cardImageBg,
+                    child: AspectRatio(
+                      aspectRatio: 0.8,
+                      child: _buildProductImage(product),
+                    ),
                   ),
                 ),
                 Positioned(
@@ -141,119 +156,126 @@ class ProductCard extends ConsumerWidget {
                   ),
               ],
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 34,
+                    child: Text(
                       name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
                     ),
-                    const Spacer(),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (product.averageRating != null &&
-                            product.reviewsCount != null &&
-                            product.reviewsCount! > 0)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFAB500)),
-                                const SizedBox(width: 3),
-                                Text(
-                                  product.averageRating!.toStringAsFixed(1),
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.ink1),
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  '(${product.reviewsCount})',
-                                  style: const TextStyle(fontSize: 10, color: AppColors.ink3),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (product.inStock &&
-                            product.productType != 'variable' &&
-                            product.stockQuantity != null &&
-                            product.stockQuantity! > 0 &&
-                            product.stockQuantity! <= 5)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 3),
-                            child: Text(
-                              context.tr('تبقّى ${product.stockQuantity} فقط', 'Only ${product.stockQuantity} left'),
-                              style: const TextStyle(
-                                fontSize: 10.5, fontWeight: FontWeight.w700,
-                                color: Color(0xFFB85A3A)),
-                            ),
-                          ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '${product.displayPrice.toStringAsFixed(0)} د.ل',
-                              style: const TextStyle(
-                                fontFamily: 'PlusJakartaSans',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.ink0,
-                              ),
-                            ),
-                            if (product.hasDiscount) ...[
-                              const SizedBox(width: 4),
-                              Text(
-                                product.price.toStringAsFixed(0),
-                                style: const TextStyle(
-                                  fontFamily: 'PlusJakartaSans',
-                                  fontSize: 11,
-                                  color: AppColors.ink3,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                              ),
-                            ],
-                          ],
+                  ),
+                  const SizedBox(height: 5),
+                  _StarRating(
+                    rating: product.averageRating,
+                    count: product.reviewsCount ?? 0,
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${product.displayPrice.toStringAsFixed(0)} د.ل',
+                        style: const TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink0,
+                          height: 1.0,
                         ),
-                        if (product.fulfilledByBaahy)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFE849),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.bolt_rounded, size: 10, color: Color(0xFF1A1A1A)),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    context.tr('إكسبرس', 'Express'),
-                                    style: const TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFF1A1A1A),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                      ),
+                      if (product.hasDiscount) ...[
+                        const SizedBox(width: 5),
+                        Text(
+                          product.price.toStringAsFixed(0),
+                          style: const TextStyle(
+                            fontFamily: 'PlusJakartaSans',
+                            fontSize: 11,
+                            color: AppColors.danger,
+                            decoration: TextDecoration.lineThrough,
+                            decorationColor: AppColors.danger,
+                            height: 1.0,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (product.fulfilledByBaahy) ...[
+                    const SizedBox(height: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF500),
+                        border: Border.all(color: const Color(0xFFFFF500), width: 0.8),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.bolt_rounded, size: 9, color: Colors.black87),
+                          const SizedBox(width: 2),
+                          Text(
+                            context.tr('توصيل سريع', 'Express'),
+                            style: const TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black87,
+                              height: 1.1,
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ] else
+                    const SizedBox(height: 22),
+                ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _StarRating extends StatelessWidget {
+  final double? rating;
+  final int count;
+  const _StarRating({this.rating, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final filled = rating != null ? rating!.round().clamp(0, 5) : 0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (int i = 1; i <= 5; i++)
+          Icon(
+            Icons.star_rounded,
+            size: 13,
+            color: i <= filled ? const Color(0xFFFAB500) : const Color(0xFFE5E7EB),
+          ),
+        if (count > 0 && rating != null) ...[
+          const SizedBox(width: 3),
+          Text(
+            rating!.toStringAsFixed(1),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.ink1, height: 1.0),
+          ),
+          const SizedBox(width: 2),
+          Text(
+            '($count)',
+            style: const TextStyle(fontSize: 10, color: AppColors.ink3, height: 1.0),
+          ),
+        ],
+      ],
     );
   }
 }

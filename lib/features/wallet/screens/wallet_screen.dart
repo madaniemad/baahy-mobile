@@ -246,7 +246,7 @@ class _InfoTile extends StatelessWidget {
         border: Border.all(color: AppColors.border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, size: 20, color: AppColors.teal600),
+        Icon(icon, size: 20, color: AppColors.primary),
         const SizedBox(height: 8),
         Text(title,
           style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),

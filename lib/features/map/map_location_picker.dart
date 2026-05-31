@@ -423,7 +423,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                           decoration: BoxDecoration(
                             gradient: _city.isNotEmpty && !_geocoding
                                 ? const LinearGradient(
-                                    colors: [Color(0xFF0E9E96), Color(0xFF14B8AE)])
+                                    colors: [Color(0xFF1AC5CD), AppColors.primary])
                                 : null,
                             color: _city.isEmpty || _geocoding
                                 ? AppColors.border : null,

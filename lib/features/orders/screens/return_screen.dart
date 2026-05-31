@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
 import '../../../core/api/api_client.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
@@ -33,6 +36,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
   final Map<int, bool> _selected = {};
   String? _reason;
   final _notesCtrl = TextEditingController();
+  final List<XFile> _images = [];
   bool _loading = false;
 
   @override
@@ -49,11 +53,18 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
         .toList();
     setState(() => _loading = true);
     try {
-      await ApiClient.instance.dio.post('/orders/${widget.orderId}/returns', data: {
-        'items': items,
+      final formData = FormData.fromMap({
+        'items': items.map((i) => i['order_item_id'].toString()).join(','),
         'reason': _reason,
         'notes': _notesCtrl.text.trim(),
+        if (_images.isNotEmpty)
+          'images[]': await Future.wait(_images.map((f) async =>
+            MultipartFile.fromFile(f.path, filename: f.name))),
       });
+      await ApiClient.instance.dio.post(
+        '/orders/${widget.orderId}/returns',
+        data: formData,
+      );
       if (mounted) setState(() => _step = 2);
     } catch (_) {
       setState(() => _loading = false);
@@ -138,8 +149,13 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
         return _StepReason(
           reason: _reason,
           notesCtrl: _notesCtrl,
+          images: _images,
           loading: _loading,
           onReasonChanged: (r) => setState(() => _reason = r),
+          onImagesChanged: (imgs) => setState(() {
+            _images.clear();
+            _images.addAll(imgs);
+          }),
           onSubmit: _submit,
         );
       default:
@@ -209,11 +225,14 @@ class _StepItems extends ConsumerWidget {
 class _StepReason extends StatelessWidget {
   final String? reason;
   final TextEditingController notesCtrl;
+  final List<XFile> images;
   final bool loading;
   final ValueChanged<String> onReasonChanged;
+  final ValueChanged<List<XFile>> onImagesChanged;
   final VoidCallback onSubmit;
   const _StepReason({required this.reason, required this.notesCtrl,
-    required this.loading, required this.onReasonChanged, required this.onSubmit});
+    required this.images, required this.loading,
+    required this.onReasonChanged, required this.onImagesChanged, required this.onSubmit});
 
   @override
   Widget build(BuildContext context) {
@@ -274,6 +293,75 @@ class _StepReason extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              const Text('صور المنتج (اختياري)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 80,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    // Add photo button
+                    GestureDetector(
+                      onTap: () async {
+                        final picker = ImagePicker();
+                        final picked = await picker.pickMultiImage(imageQuality: 70);
+                        if (picked.isNotEmpty) {
+                          final merged = [...images, ...picked];
+                          onImagesChanged(merged.take(5).toList());
+                        }
+                      },
+                      child: Container(
+                        width: 80, height: 80,
+                        margin: const EdgeInsets.only(left: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.bg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.border, style: BorderStyle.solid),
+                        ),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_photo_alternate_outlined,
+                              size: 28, color: AppColors.ink3),
+                            SizedBox(height: 4),
+                            Text('إضافة', style: TextStyle(fontSize: 11, color: AppColors.ink3)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    ...images.asMap().entries.map((e) => Stack(
+                      children: [
+                        Container(
+                          width: 80, height: 80,
+                          margin: const EdgeInsets.only(left: 8),
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(File(e.value.path), fit: BoxFit.cover),
+                          ),
+                        ),
+                        Positioned(
+                          top: 2, right: 10,
+                          child: GestureDetector(
+                            onTap: () {
+                              final updated = List<XFile>.from(images)..removeAt(e.key);
+                              onImagesChanged(updated);
+                            },
+                            child: Container(
+                              width: 20, height: 20,
+                              decoration: const BoxDecoration(
+                                color: Colors.black54, shape: BoxShape.circle),
+                              child: const Icon(Icons.close, size: 12, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -310,7 +398,7 @@ class _StepDone extends StatelessWidget {
               color: const Color(0xFFF5F5F5),
               border: Border.all(color: AppColors.primary, width: 3)),
             child: const Icon(Icons.check_rounded,
-              size: 44, color: AppColors.teal600),
+              size: 44, color: AppColors.primary),
           ),
           const SizedBox(height: 16),
           const Text('تم تقديم طلب الإرجاع',

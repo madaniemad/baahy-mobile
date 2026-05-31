@@ -104,7 +104,7 @@ class AccountScreen extends ConsumerWidget {
                         child: Text(
                           user.name.isNotEmpty ? user.name[0] : 'U',
                           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800,
-                            color: AppColors.teal600),
+                            color: AppColors.primary),
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -137,6 +137,27 @@ class AccountScreen extends ConsumerWidget {
                               ),
                             ]),
                           ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.white,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+                          builder: (_) => _EditProfileSheet(
+                            currentName: user.name,
+                            onSaved: () => ref.read(authProvider.notifier).refreshProfile(),
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceSoft,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.edit_outlined, size: 18, color: AppColors.ink2),
                         ),
                       ),
                     ],
@@ -190,7 +211,7 @@ class AccountScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(Icons.account_balance_wallet_outlined,
-                            color: AppColors.teal600, size: 20),
+                            color: AppColors.primary, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -213,7 +234,7 @@ class AccountScreen extends ConsumerWidget {
                 _MenuGroup([
                   _MenuRow(Icons.shopping_bag_outlined, context.s.myOrders, () => safePush(context, '/orders')),
                   _MenuRow(Icons.location_on_outlined, context.s.myAddresses, () => safePush(context, '/addresses')),
-                  _MenuRow(Icons.assignment_return_outlined, context.tr('الإرجاعات والاسترداد', 'Returns & Refunds'), () => safePush(context, '/orders')),
+                  _MenuRow(Icons.assignment_return_outlined, context.tr('الإرجاعات والاسترداد', 'Returns & Refunds'), () => safePush(context, '/return-policy')),
                   _MenuRow(Icons.auto_awesome_outlined, context.s.inviteFriends, () => safePush(context, '/referral')),
                 ]),
 
@@ -277,11 +298,11 @@ class _StatTile extends StatelessWidget {
           Text(value, style: TextStyle(
             fontFamily: 'PlusJakartaSans',
             fontSize: 26, fontWeight: FontWeight.w800,
-            color: accent ? AppColors.teal600 : AppColors.ink0, height: 1)),
+            color: accent ? AppColors.primary : AppColors.ink0, height: 1)),
           const SizedBox(height: 4),
           Text(label, style: TextStyle(
             fontSize: 11.5,
-            color: accent ? AppColors.teal600 : AppColors.ink2)),
+            color: accent ? AppColors.primary : AppColors.ink2)),
         ]),
       ),
     ),
@@ -339,4 +360,123 @@ class _MenuRow extends StatelessWidget {
       ]),
     ),
   );
+}
+
+class _EditProfileSheet extends StatefulWidget {
+  final String currentName;
+  final VoidCallback onSaved;
+  const _EditProfileSheet({required this.currentName, required this.onSaved});
+
+  @override
+  State<_EditProfileSheet> createState() => _EditProfileSheetState();
+}
+
+class _EditProfileSheetState extends State<_EditProfileSheet> {
+  late final TextEditingController _nameCtrl;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController(text: widget.currentName);
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _loading = true);
+    try {
+      await ApiClient.instance.dio.patch('/auth/profile', data: {'name': name});
+      widget.onSaved();
+      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تحديث البيانات'),
+            backgroundColor: AppColors.success,
+          ));
+      }
+    } catch (_) {
+      setState(() => _loading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('حدث خطأ، حاول مجدداً')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20, right: 20, top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text('تعديل الملف الشخصي',
+            style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 16),
+          const Text('الاسم',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _nameCtrl,
+            textDirection: TextDirection.rtl,
+            decoration: InputDecoration(
+              hintText: 'اسمك الكامل',
+              hintStyle: const TextStyle(fontFamily: 'Cairo', color: AppColors.ink3),
+              filled: true,
+              fillColor: AppColors.bg,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.border)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _loading ? null : _save,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.ink0,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: _loading
+                ? const SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text('حفظ التغييرات',
+                    style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 15)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

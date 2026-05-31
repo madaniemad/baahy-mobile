@@ -53,7 +53,7 @@ class MainShell extends ConsumerWidget {
                 Widget icon = Icon(
                   tab.icon,
                   size: 24,
-                  color: isActive ? AppColors.ink0 : AppColors.ink3,
+                  color: isActive ? AppColors.primary : AppColors.ink3,
                 );
 
                 // Cart badge
@@ -101,7 +101,7 @@ class MainShell extends ConsumerWidget {
                             fontFamily: 'Cairo',
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: isActive ? AppColors.ink0 : AppColors.ink3,
+                            color: isActive ? AppColors.primary : AppColors.ink3,
                           ),
                         ),
                       ],

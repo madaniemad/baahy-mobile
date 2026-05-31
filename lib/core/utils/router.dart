@@ -1,8 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
+import 'l10n.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/city_screen.dart';
+import '../../features/auth/screens/onboarding_screen.dart';
 import '../../features/auth/screens/phone_signin_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
 import '../../features/home/screens/home_screen.dart';
@@ -25,6 +28,8 @@ import '../../features/product/screens/reviews_screen.dart';
 import '../../features/orders/screens/return_screen.dart';
 import '../../features/referral/screens/referral_screen.dart';
 import '../../features/account/screens/settings_screen.dart';
+import '../../features/account/screens/return_policy_screen.dart';
+import '../../features/vendor/screens/vendor_store_screen.dart';
 import '../shell/main_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -38,7 +43,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/splash',   builder: (_, __) => const SplashScreen()),
-      GoRoute(path: '/city',     builder: (_, __) => const CityScreen()),
+      GoRoute(path: '/city',       builder: (_, __) => const CityScreen()),
+      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
       GoRoute(path: '/signin',   builder: (_, __) => const PhoneSignInScreen()),
       GoRoute(path: '/otp',      builder: (_, state) => OtpScreen(phone: state.extra as String)),
 
@@ -62,6 +68,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             categoryId: state.uri.queryParameters['category'] != null
                 ? int.tryParse(state.uri.queryParameters['category']!)
                 : null,
+            onSale: state.uri.queryParameters['on_sale'] == '1',
+            maxPrice: state.uri.queryParameters['max_price'] != null
+                ? double.tryParse(state.uri.queryParameters['max_price']!)
+                : null,
+            initialSort: state.uri.queryParameters['sort'],
           )),
       GoRoute(path: '/product/:id', builder: (_, state) =>
           ProductDetailScreen(id: int.parse(state.pathParameters['id']!))),
@@ -80,8 +91,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/wallet',     builder: (_, __) => const WalletScreen()),
       GoRoute(path: '/orders/:id/return', builder: (_, state) =>
           ReturnScreen(orderId: int.parse(state.pathParameters['id']!))),
-      GoRoute(path: '/referral',   builder: (_, __) => const ReferralScreen()),
-      GoRoute(path: '/settings',   builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/referral',      builder: (_, __) => const ReferralScreen()),
+      GoRoute(path: '/settings',      builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/return-policy', builder: (_, __) => const ReturnPolicyScreen()),
+      GoRoute(path: '/faq',     builder: (_, __) => const _InfoScreen(title: 'الأسئلة الشائعة', titleEn: 'FAQ')),
+      GoRoute(path: '/contact', builder: (_, __) => const _InfoScreen(title: 'تواصل معنا', titleEn: 'Contact Us')),
+      GoRoute(path: '/vendors/:id', builder: (_, state) =>
+        VendorStoreScreen(vendorId: int.parse(state.pathParameters['id']!))),
     ],
   );
 
@@ -90,3 +106,27 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return router;
 });
+
+class _InfoScreen extends StatelessWidget {
+  final String title;
+  final String titleEn;
+  const _InfoScreen({required this.title, required this.titleEn});
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isAr ? title : titleEn,
+          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 18)),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: const Center(
+        child: Text('قريباً', style: TextStyle(fontFamily: 'Cairo', fontSize: 18, color: Colors.grey)),
+      ),
+    );
+  }
+}

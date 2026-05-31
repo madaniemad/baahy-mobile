@@ -149,7 +149,7 @@ class _FreeShippingBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.local_shipping_outlined, size: 18, color: AppColors.teal600),
+            const Icon(Icons.local_shipping_outlined, size: 18, color: AppColors.primary),
             const SizedBox(width: 8),
             Expanded(
               child: Text.rich(TextSpan(
@@ -172,7 +172,7 @@ class _FreeShippingBanner extends StatelessWidget {
               value: progress,
               minHeight: 4,
               backgroundColor: AppColors.teal100,
-              color: AppColors.teal600,
+              color: AppColors.primary,
             ),
           ),
         ],
@@ -429,12 +429,130 @@ class _QtyBtn extends StatelessWidget {
 
 // ── Cart summary ──────────────────────────────────────────────────────────────
 
-class _CartSummary extends ConsumerWidget {
+class _CartSummary extends ConsumerStatefulWidget {
   final CartState cart;
   const _CartSummary({required this.cart});
+  @override
+  ConsumerState<_CartSummary> createState() => _CartSummaryState();
+}
+
+class _CartSummaryState extends ConsumerState<_CartSummary> {
+  bool _checking = false;
+
+  Future<void> _handleCheckout() async {
+    if (!ref.read(authProvider).isLoggedIn) {
+      safePush(context, '/signin');
+      return;
+    }
+    setState(() => _checking = true);
+    final issues = await ref.read(cartProvider.notifier).validateAndGetIssues();
+    if (!mounted) return;
+    setState(() => _checking = false);
+
+    if (issues.isNotEmpty) {
+      final isAr = context.isAr;
+      final unavailable = issues.where((i) => i.type == 'unavailable').toList();
+      final priceChanged = issues.where((i) => i.type == 'price_changed').toList();
+
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('تحديث السلة',
+            style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (unavailable.isNotEmpty) ...[
+                const Text('المنتجات التالية غير متاحة حالياً:',
+                  style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                    fontWeight: FontWeight.w600, color: AppColors.danger)),
+                const SizedBox(height: 8),
+                ...unavailable.map((u) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(Icons.remove_circle_outline_rounded,
+                      size: 14, color: AppColors.danger),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(
+                      isAr ? u.item.product.nameAr : u.item.product.name,
+                      style: const TextStyle(fontFamily: 'Cairo', fontSize: 13))),
+                  ]),
+                )),
+              ],
+              if (priceChanged.isNotEmpty) ...[
+                if (unavailable.isNotEmpty) const SizedBox(height: 12),
+                const Text('تغير سعر المنتجات التالية:',
+                  style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                    fontWeight: FontWeight.w600, color: AppColors.warn)),
+                const SizedBox(height: 8),
+                ...priceChanged.map((u) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(Icons.price_change_outlined,
+                      size: 14, color: AppColors.warn),
+                    const SizedBox(width: 6),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isAr ? u.item.product.nameAr : u.item.product.name,
+                          style: const TextStyle(fontFamily: 'Cairo', fontSize: 13)),
+                        if (u.oldPrice != null && u.newPrice != null)
+                          Text(
+                            '${u.oldPrice!.toStringAsFixed(0)} ← ${u.newPrice!.toStringAsFixed(0)} د.ل',
+                            style: const TextStyle(
+                              fontFamily: 'PlusJakartaSans', fontSize: 11.5,
+                              color: AppColors.warn, fontWeight: FontWeight.w600),
+                          ),
+                      ],
+                    )),
+                  ]),
+                )),
+              ],
+              const SizedBox(height: 12),
+              Text(
+                unavailable.isNotEmpty
+                    ? 'سيتم إزالة المنتجات غير المتاحة والمتابعة.'
+                    : 'هل تريد المتابعة بالأسعار المحدّثة؟',
+                style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                  color: AppColors.ink2)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(context.s.cancel,
+                style: const TextStyle(fontFamily: 'Cairo', color: AppColors.ink2)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary, elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: Text(
+                unavailable.isNotEmpty ? 'إزالة والمتابعة' : 'متابعة',
+                style: const TextStyle(fontFamily: 'Cairo',
+                  fontWeight: FontWeight.w700, color: AppColors.ink0)),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+      // Remove only unavailable items; price-changed items stay
+      for (final u in unavailable) {
+        ref.read(cartProvider.notifier).remove(u.item.key);
+      }
+      if (ref.read(cartProvider).items.isEmpty) return;
+    }
+
+    if (mounted) safePush(context, '/checkout');
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final cart = widget.cart;
     return Container(
       padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 16),
       decoration: BoxDecoration(
@@ -462,9 +580,8 @@ class _CartSummary extends ConsumerWidget {
           const SizedBox(height: 14),
           AppButton(
             label: context.s.checkout,
-            onTap: () => ref.read(authProvider).isLoggedIn
-                ? safePush(context, '/checkout')
-                : safePush(context, '/signin'),
+            loading: _checking,
+            onTap: _checking ? null : _handleCheckout,
           ),
         ],
       ),

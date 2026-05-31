@@ -1,27 +1,25 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 import '../../../core/providers/address_provider.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
-// Ordered by population/relevance
-const _allCities = [
-  'طرابلس',   'جنزور',     'تاجوراء',
-  'عين زارة', 'سوق الجمعة','أبو سليم',
-  'بنغازي',   'صلاح الدين','مصراتة',
-  'الزاوية',  'الخمس',     'زليتن',
-  'سرت',      'سبها',      'أجدابيا',
-  'البيضاء',  'الأبيار',   'أوباري',
-  'الجغبوب',  'الزنتان',   'السياحية',
-  'ترهونة',   'بني وليد',  'صبراتة',
-  'صرمان',    'طبرق',      'درنة',
-  'غريان',    'يفرن',      'نالوت',
-  'مرزق',     'غدامس',     'الكفرة',
-  'قصر بن غشير',
+// ── Cities ─────────────────────────────────────────────────────────────────────
+const _citiesMain = [
+  'طرابلس', 'بنغازي', 'مصراتة', 'الزاوية', 'سبها', 'الخمس', 'زوارة',
 ];
+const _citiesMore = [
+  'البيضاء', 'درنة', 'طبرق', 'سرت', 'أجدابيا', 'غريان', 'صبراتة', 'زليتن',
+  'جنزور', 'تاجوراء', 'عين زارة', 'سوق الجمعة', 'أبو سليم', 'صلاح الدين',
+  'السياحية', 'الأبيار', 'أوباري', 'الجغبوب', 'الزنتان', 'ترهونة',
+  'بني وليد', 'صرمان', 'مرزق', 'غدامس', 'الكفرة', 'قصر بن غشير',
+];
+
+// ── Colors ──────────────────────────────────────────────────────────────────────
+const _navy     = Color(0xFF0E3C46);
+const _teal     = AppColors.primary; // #32DDE5
+const _cityBase = Color(0xFF38D1E2);
 
 class CityScreen extends ConsumerStatefulWidget {
   const CityScreen({super.key});
@@ -29,333 +27,390 @@ class CityScreen extends ConsumerStatefulWidget {
   ConsumerState<CityScreen> createState() => _CityScreenState();
 }
 
-class _CityScreenState extends ConsumerState<CityScreen> {
+class _CityScreenState extends ConsumerState<CityScreen>
+    with SingleTickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
-  String _query = '';
-  bool _detecting = false;
+  String _query    = '';
+  String _selected = 'طرابلس';
+  bool _showAll    = false;
+
+  // Entry animation
+  late AnimationController _entryCtrl;
+  late Animation<double> _slideY;
+  late Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryCtrl = AnimationController(vsync: this,
+        duration: const Duration(milliseconds: 600))
+      ..forward();
+    _fade   = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut);
+    _slideY = Tween<double>(begin: 14, end: 0).animate(
+        CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic));
+  }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _entryCtrl.dispose();
     super.dispose();
   }
 
   List<String> get _filtered {
-    if (_query.isEmpty) return _allCities;
-    return _allCities
-        .where((c) => c.contains(_query))
-        .toList();
+    final q = _query.trim();
+    final list = _showAll ? [..._citiesMain, ..._citiesMore] : _citiesMain;
+    if (q.isEmpty) return list;
+    return list.where((c) => c.contains(q)).toList();
   }
 
-  Future<void> _detectCity() async {
-    setState(() => _detecting = true);
-    try {
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
-      if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) {
-        _showSnack('يرجى السماح بالوصول للموقع في الإعدادات');
-        return;
-      }
-
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 15),
-      );
-
-      final city = await _reverseGeocodeCity(pos.latitude, pos.longitude);
-
-      if (city != null) {
-        await _selectCity(city);
-      } else {
-        _showSnack('الموقع خارج ليبيا أو تعذّر التحديد — اختر مدينتك يدوياً');
-      }
-    } catch (_) {
-      _showSnack('تعذّر تحديد الموقع، اختر مدينتك يدوياً');
-    } finally {
-      if (mounted) setState(() => _detecting = false);
-    }
+  Future<void> _proceed() async {
+    await ref.read(cityProvider.notifier).setCity(_selected);
+    if (mounted) context.go('/onboarding');
   }
 
-  // Libya rough bounding box — rejects simulator/fake GPS outside country
-  bool _isInLibya(double lat, double lng) =>
-      lat >= 19.5 && lat <= 33.5 && lng >= 9.3 && lng <= 25.3;
-
-  Future<String?> _reverseGeocodeCity(double lat, double lng) async {
-    if (!_isInLibya(lat, lng)) return null; // outside Libya → don't guess
-
-    try {
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse'
-        '?format=json&lat=$lat&lon=$lng&accept-language=ar&zoom=10',
-      );
-      final res = await http
-          .get(url, headers: {'User-Agent': 'baahy-app/1.0'})
-          .timeout(const Duration(seconds: 8));
-
-      if (res.statusCode != 200) return _nearestCity(lat, lng);
-
-      final data = jsonDecode(res.body) as Map<String, dynamic>;
-      final addr = data['address'] as Map<String, dynamic>? ?? {};
-      final display = data['display_name'] as String? ?? '';
-
-      // Try progressively broader fields
-      final candidates = [
-        addr['city'],
-        addr['town'],
-        addr['municipality'],
-        addr['county'],
-        addr['state_district'],
-        addr['suburb'],
-        addr['neighbourhood'],
-        addr['quarter'],
-        addr['village'],
-      ].whereType<String>().toList();
-
-      for (final raw in candidates) {
-        for (final city in _allCities) {
-          if (raw == city || raw.contains(city) || city.contains(raw)) {
-            return city;
-          }
-        }
-      }
-
-      // Try display_name
-      for (final city in _allCities) {
-        if (display.contains(city)) return city;
-      }
-
-      return _nearestCity(lat, lng);
-    } catch (_) {
-      return _nearestCity(lat, lng);
-    }
-  }
-
-  // Haversine distance fallback
-  String _nearestCity(double lat, double lng) {
-    const coords = <String, List<double>>{
-      'طرابلس':        [32.9045, 13.1808],
-      'بنغازي':        [32.1218, 20.0665],
-      'مصراتة':        [32.3754, 15.0925],
-      'الزاوية':       [32.7530, 12.7278],
-      'الخمس':         [32.6495, 14.2619],
-      'سرت':           [31.2089, 16.5887],
-      'زليتن':         [32.4674, 14.5686],
-      'ترهونة':        [32.4350, 13.6397],
-      'طبرق':          [32.0838, 23.9756],
-      'درنة':          [32.7664, 22.6388],
-      'البيضاء':       [32.7624, 21.7551],
-      'أجدابيا':       [30.7554, 20.2255],
-      'سبها':          [27.0377, 14.4284],
-      'غريان':         [32.1721, 13.0205],
-      'يفرن':          [32.0630, 12.5229],
-      'نالوت':         [31.8741, 10.9839],
-      'الكفرة':        [24.1877, 23.3099],
-      'مرزق':          [25.9180, 13.8962],
-      'غدامس':         [30.1327,  9.5006],
-      'بني وليد':      [31.7619, 13.9844],
-      'صبراتة':        [32.7938, 12.4882],
-      'صرمان':         [32.7554, 13.0057],
-      'جنزور':         [32.9019, 13.0219],
-      'تاجوراء':       [32.8859, 13.3549],
-      'قصر بن غشير':  [32.7897, 13.2718],
-      'عين زارة':      [32.8300, 13.2200],
-      'سوق الجمعة':    [32.8700, 13.1900],
-      'أبو سليم':      [32.8600, 13.2000],
-      'صلاح الدين':    [32.8200, 13.1700],
-      'السياحية':      [32.8400, 13.1500],
-      'الأبيار':       [32.1700, 21.5700],
-      'أوباري':        [26.5900, 12.7600],
-      'الجغبوب':       [29.7500, 24.5100],
-      'الزنتان':       [31.9300, 12.2800],
-    };
-
-    double minDist = double.infinity;
-    String best = 'طرابلس';
-    for (final e in coords.entries) {
-      final dlat = lat - e.value[0];
-      final dlng = lng - e.value[1];
-      final d = dlat * dlat + dlng * dlng;
-      if (d < minDist) { minDist = d; best = e.key; }
-    }
-    return best;
-  }
-
-  Future<void> _selectCity(String city) async {
-    await ref.read(cityProvider.notifier).setCity(city);
-    if (mounted) context.go('/home');
-  }
-
-  void _showSnack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: const TextStyle(color: Colors.white)),
-      backgroundColor: const Color(0xFF1A1A1A),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-    ));
-  }
-
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final top    = MediaQuery.of(context).padding.top;
     final bottom = MediaQuery.of(context).padding.bottom;
-    final canGoBack = context.canPop();
+    final top    = MediaQuery.of(context).padding.top;
+    final isAr   = ref.watch(localeProvider).languageCode == 'ar';
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Top area ────────────────────────────────────────────────────
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, top + 16, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (canGoBack) ...[
-                  GestureDetector(
-                    onTap: () => context.pop(),
-                    child: Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF2F2F2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded,
-                        size: 17, color: Color(0xFF1A1A1A)),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ] else
-                  const SizedBox(height: 8),
+      backgroundColor: _cityBase,
+      body: Stack(children: [
+        // Background gradient
+        Container(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(0, -0.86),
+              radius: 1.48,
+              colors: [Color(0xFF52D9E8), _cityBase],
+              stops: [0.0, 0.40],
+            ),
+          ),
+        ),
 
-                const Text('إلى أي مدينة نوصّل؟',
-                  style: TextStyle(
-                    fontFamily: 'Cairo', fontSize: 24,
-                    fontWeight: FontWeight.w800, letterSpacing: -0.3)),
-                const SizedBox(height: 4),
-                const Text('اختر مدينتك لنعرض لك الأسعار والشحن الصحيح',
-                  style: TextStyle(
-                    fontSize: 13.5, color: AppColors.ink2, height: 1.4)),
+        // Scrollable content
+        SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(22, top + 72, 22, 160 + bottom),
+          physics: const BouncingScrollPhysics(),
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_slideY, _fade]),
+            builder: (_, child) => Opacity(
+              opacity: _fade.value,
+              child: Transform.translate(
+                offset: Offset(0, _slideY.value), child: child)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Heading
+                Text(isAr ? 'اختار مدينتك' : 'Choose Your City',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 34,
+                    fontWeight: FontWeight.w900, color: Colors.white,
+                    shadows: [Shadow(color: Color(0x2E0E3C46), blurRadius: 14, offset: Offset(0, 3))])),
+                const SizedBox(height: 10),
+                Text(isAr
+                    ? 'لنتمكن من عرض المنتجات والعروض المناسبة لك'
+                    : 'To show you relevant products and offers',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 15,
+                    fontWeight: FontWeight.w700, color: _navy, height: 1.5)),
                 const SizedBox(height: 20),
 
-                // ── GPS button ─────────────────────────────────────────
-                GestureDetector(
-                  onTap: _detecting ? null : _detectCity,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14, horizontal: 18),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF0E9E96), Color(0xFF14B8AE)]),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.25),
-                        blurRadius: 14, offset: const Offset(0, 5))],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 38, height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: _detecting
-                              ? const Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white))
-                              : const Icon(Icons.my_location_rounded,
-                                  color: Colors.white, size: 20),
-                        ),
-                        const SizedBox(width: 14),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _detecting ? 'جاري تحديد موقعك…' : 'استخدم موقعي الحالي',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15)),
-                            const Text('ضغطة واحدة · تحديد تلقائي',
-                              style: TextStyle(
-                                color: Colors.white70, fontSize: 12)),
-                          ],
-                        ),
-                      ],
-                    ),
+                // Search bar
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.07),
+                      blurRadius: 12, offset: const Offset(0, 4))],
                   ),
+                  child: Row(children: [
+                    const SizedBox(width: 16),
+                    const Icon(Icons.search_rounded, size: 22, color: Color(0xFF0D6B75)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchCtrl,
+                        textAlign: TextAlign.right,
+                        textDirection: TextDirection.rtl,
+                        onChanged: (v) => setState(() => _query = v),
+                        style: const TextStyle(fontFamily: 'Cairo',
+                          fontSize: 16, fontWeight: FontWeight.w700, color: _navy),
+                        decoration: InputDecoration(
+                          hintText: isAr ? 'ابحث عن مدينتك' : 'Search cities',
+                          hintStyle: const TextStyle(fontFamily: 'Cairo',
+                            color: Color(0xFF2A6E78), fontSize: 15, fontWeight: FontWeight.w600),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ]),
                 ),
                 const SizedBox(height: 14),
 
-                // ── Search ─────────────────────────────────────────────
+                // City list card
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white.withValues(alpha: 0.20),
+                    borderRadius: BorderRadius.circular(24),
                   ),
-                  child: TextField(
-                    controller: _searchCtrl,
-                    textAlign: TextAlign.right,
-                    onChanged: (v) => setState(() => _query = v.trim()),
-                    decoration: const InputDecoration(
-                      hintText: 'ابحث عن مدينة...',
-                      hintStyle: TextStyle(
-                        color: AppColors.ink3, fontSize: 14),
-                      prefixIcon: Icon(Icons.search_rounded,
-                        color: AppColors.ink3, size: 20),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                        vertical: 13, horizontal: 4),
+                  padding: const EdgeInsets.all(12),
+                  child: Column(children: [
+                    ..._filtered.map((city) => _CityRow(
+                      city: city,
+                      selected: _selected == city,
+                      teal: _teal,
+                      onTap: () => setState(() => _selected = city),
+                    )),
+                    if (_filtered.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        child: Text('—', textAlign: TextAlign.center,
+                          style: TextStyle(color: _navy, fontWeight: FontWeight.w700)),
+                      ),
+
+                    // Show more / less
+                    GestureDetector(
+                      onTap: () => setState(() => _showAll = !_showAll),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4, bottom: 2),
+                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Text(_showAll
+                              ? (isAr ? 'عرض أقل' : 'Show less')
+                              : (isAr ? 'عرض كل المدن' : 'Show all cities'),
+                            style: const TextStyle(fontFamily: 'Cairo',
+                              color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
+                          const SizedBox(width: 6),
+                          AnimatedRotation(
+                            turns: _showAll ? 0.5 : 0,
+                            duration: const Duration(milliseconds: 200),
+                            child: const Icon(Icons.keyboard_arrow_down_rounded,
+                              color: Colors.white, size: 20)),
+                        ]),
+                      ),
                     ),
-                  ),
+                  ]),
                 ),
-                const SizedBox(height: 16),
+
+                const SizedBox(height: 10),
+
+                // 3D map pin (floating)
+                _FloatingMapPin(),
               ],
             ),
           ),
+        ),
 
-          // ── City grid ────────────────────────────────────────────────
-          Expanded(
-            child: GridView.builder(
-              padding: EdgeInsets.fromLTRB(20, 0, 20, bottom + 20),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 2.3,
+        // Language pill (top-right)
+        Positioned(
+          top: top + 12, right: 20,
+          child: GestureDetector(
+            onTap: () => ref.read(localeProvider.notifier).toggle(),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 16, offset: const Offset(0, 6))],
               ),
-              itemCount: _filtered.length,
-              itemBuilder: (_, i) {
-                final city = _filtered[i];
-                return GestureDetector(
-                  onTap: () => _selectCity(city),
-                  child: Container(
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(city,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A))),
-                  ),
-                );
-              },
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.language_rounded, size: 18, color: _teal),
+                const SizedBox(width: 6),
+                Text(isAr ? 'English' : 'العربية',
+                  style: const TextStyle(fontFamily: 'Cairo',
+                    fontSize: 15, fontWeight: FontWeight.w800, color: _navy)),
+              ]),
             ),
           ),
-        ],
+        ),
+
+        // Pagination dots
+        Positioned(
+          bottom: 88 + bottom, left: 0, right: 0,
+          child: _OnboardingDots(count: 3, active: 1),
+        ),
+
+        // Bottom action bar
+        Positioned(
+          bottom: 0, left: 0, right: 0,
+          child: _BottomBar(
+            label: isAr ? 'التالي' : 'Next',
+            onTap: _proceed,
+            isAr: isAr,
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── City row ───────────────────────────────────────────────────────────────────
+class _CityRow extends StatelessWidget {
+  final String city;
+  final bool selected;
+  final Color teal;
+  final VoidCallback onTap;
+  const _CityRow({required this.city, required this.selected,
+    required this.teal, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.white.withValues(alpha: 0.32),
+          border: Border.all(
+            color: selected ? teal : Colors.white.withValues(alpha: 0.55),
+            width: selected ? 2 : 1.5),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: selected
+              ? [const BoxShadow(color: Color(0x280E3C46), blurRadius: 20, offset: Offset(0, 8))]
+              : [],
+        ),
+        child: Row(children: [
+          // Radio dot
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 26, height: 26,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: selected ? teal : Colors.transparent,
+              border: selected ? null
+                  : Border.all(color: const Color(0x590E3C46), width: 2),
+            ),
+            child: selected
+                ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(city, textAlign: TextAlign.right,
+              style: TextStyle(fontFamily: 'Cairo', fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: selected ? _navy : const Color(0xFF13474F))),
+          ),
+          const SizedBox(width: 8),
+          Icon(Icons.location_on_outlined, size: 20,
+            color: selected ? teal : const Color(0xFF3A8E98)),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Floating map pin ────────────────────────────────────────────────────────────
+class _FloatingMapPin extends StatefulWidget {
+  @override
+  State<_FloatingMapPin> createState() => _FloatingMapPinState();
+}
+class _FloatingMapPinState extends State<_FloatingMapPin>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _c;
+  late Animation<double> _y;
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 5000))
+      ..repeat(reverse: true);
+    _y = Tween<double>(begin: 0, end: -9).animate(
+        CurvedAnimation(parent: _c, curve: Curves.easeInOut));
+  }
+  @override
+  void dispose() { _c.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _y,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(0, _y.value), child: child),
+      child: ShaderMask(
+        shaderCallback: (r) => const RadialGradient(
+          center: Alignment.center, radius: 0.5,
+          colors: [Colors.black, Colors.transparent],
+        ).createShader(r),
+        blendMode: BlendMode.dstIn,
+        child: Image.asset('assets/images/onb-mappin.png',
+          width: MediaQuery.of(context).size.width * 0.82,
+          alignment: Alignment.center),
+      ),
+    );
+  }
+}
+
+// ── Pagination dots ─────────────────────────────────────────────────────────────
+class _OnboardingDots extends StatelessWidget {
+  final int count;
+  final int active;
+  const _OnboardingDots({required this.count, required this.active});
+  @override
+  Widget build(BuildContext context) {
+    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      for (int i = 0; i < count; i++)
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          height: 8,
+          width: i == active ? 26 : 8,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            color: i == active
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.45),
+          ),
+        ),
+    ]);
+  }
+}
+
+// ── Bottom action bar ───────────────────────────────────────────────────────────
+class _BottomBar extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final bool isAr;
+  const _BottomBar({required this.label, required this.onTap, required this.isAr});
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).padding.bottom;
+    return Container(
+      padding: EdgeInsets.fromLTRB(18, 0, 18, 26 + bottom),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 22),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: const [BoxShadow(
+              color: Color(0x330E3C46), blurRadius: 30, offset: Offset(0, 14))],
+          ),
+          child: Stack(alignment: Alignment.center, children: [
+            Text(label, style: const TextStyle(fontFamily: 'Cairo',
+              fontSize: 19, fontWeight: FontWeight.w900, color: _navy)),
+            // Simple faint arrow — right side for Arabic (forward = right in RTL)
+            Positioned(
+              right: 0,
+              child: Opacity(
+                opacity: 0.45,
+                child: Icon(
+                  isAr ? Icons.arrow_forward_ios_rounded : Icons.arrow_back_ios_new_rounded,
+                  size: 18, color: _teal),
+              ),
+            ),
+          ]),
+        ),
       ),
     );
   }

@@ -93,7 +93,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.check_rounded, color: AppColors.teal600, size: 28),
+            child: const Icon(Icons.check_rounded, color: AppColors.primary, size: 28),
           ),
           const SizedBox(height: 24),
           Text(context.s.confirmNumber,
@@ -207,7 +207,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       _startTimer();
                     },
                     child: Text(context.s.resendCode,
-                      style: const TextStyle(color: AppColors.teal600,
+                      style: const TextStyle(color: AppColors.primary,
                         fontSize: 13.5, fontWeight: FontWeight.w700)),
                   ),
           ),

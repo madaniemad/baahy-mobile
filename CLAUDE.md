@@ -98,10 +98,10 @@ All from `lib/shared/theme/app_theme.dart`:
 - **New Arrivals** (`home.newArrivals`): `/products?sort=latest`
 - **Popular/Bestsellers** (`home.popular`): 1 random from each of 6 root categories (men/women/electronics/beauty/perfumes/home)
 - **Deals** (`home.deals`): preferred-category deals interleaved + generic fallback
-- **Budget** (`home.budget`): round-robin from 7 categories at max_price=100
-- **Category sections** (`home.categorySections`): 15 pinned categories, fetched in batches of 5, emits progressively
-- **Cache key**: `home_data_v3` — 5-minute TTL, stale-while-revalidate on cold start
+- **Ordered dynamic sections** (`home.orderedDynamicSections`): unified list of `HomeDynamicItem` subclasses (`DynGrid`, `DynCarousel`, `DynBannerDuo`, `DynBanner`) — preserves exact admin position order, rendered as a single block after New Arrivals
+- **Cache key**: `home_data_v5` — 5-minute TTL, stale-while-revalidate on cold start
 
+Admin controls sections at `/admin/home-section-resources`. Sections API: `GET /api/home/sections?platform=mobile`.
 `home_screen.dart` renders all sections with `if (data.isNotEmpty)` guards — empty sections just disappear, no layout breaks.
 
 ## Product Image Fit

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -7,6 +8,25 @@ import '../../../shared/theme/app_theme.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  void _launchUrl(BuildContext context, String page) {
+    // Show the URL for the user to open in browser (deep-link to web pages)
+    final urls = {
+      'privacy': 'https://baahy.com/privacy-policy-baahy',
+      'terms': 'https://baahy.com/terms',
+    };
+    final url = urls[page] ?? 'https://baahy.com';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(url, style: const TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 12)),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'نسخ',
+          onPressed: () => Clipboard.setData(ClipboardData(text: url)),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,7 +48,14 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Preferences
           _Section([
+            _SettingsRow(
+              icon: Icons.location_city_outlined,
+              label: isAr ? 'تغيير المدينة' : 'Change City',
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              onTap: () => context.push('/city'),
+            ),
             _SettingsRow(
               icon: Icons.language_outlined,
               label: isAr ? 'اللغة' : 'Language',
@@ -36,9 +63,6 @@ class SettingsScreen extends ConsumerWidget {
                 style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
               onTap: () => ref.read(localeProvider.notifier).toggle(),
             ),
-          ]),
-          const SizedBox(height: 8),
-          _Section([
             _SettingsRow(
               icon: Icons.notifications_outlined,
               label: isAr ? 'الإشعارات' : 'Notifications',
@@ -46,7 +70,49 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => context.push('/notifications'),
             ),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+
+          // Support
+          _Section([
+            _SettingsRow(
+              icon: Icons.help_outline_rounded,
+              label: isAr ? 'الأسئلة الشائعة' : 'FAQ',
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              onTap: () => context.push('/faq'),
+            ),
+            _SettingsRow(
+              icon: Icons.support_agent_outlined,
+              label: isAr ? 'تواصل مع الدعم' : 'Contact Support',
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              onTap: () => context.push('/contact'),
+            ),
+          ]),
+          const SizedBox(height: 12),
+
+          // Legal
+          _Section([
+            _SettingsRow(
+              icon: Icons.shield_outlined,
+              label: isAr ? 'سياسة الخصوصية' : 'Privacy Policy',
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              onTap: () => _launchUrl(context, 'privacy'),
+            ),
+            _SettingsRow(
+              icon: Icons.description_outlined,
+              label: isAr ? 'الشروط والأحكام' : 'Terms of Service',
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              onTap: () => _launchUrl(context, 'terms'),
+            ),
+            _SettingsRow(
+              icon: Icons.assignment_return_outlined,
+              label: isAr ? 'سياسة الإرجاع' : 'Return Policy',
+              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              onTap: () => context.push('/return-policy'),
+            ),
+          ]),
+          const SizedBox(height: 12),
+
+          // Danger zone
           _Section([
             _SettingsRow(
               icon: Icons.logout_rounded,
@@ -56,9 +122,10 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => ref.read(authProvider.notifier).logout(),
             ),
           ]),
+
           const SizedBox(height: 24),
-          Center(child: Text('baahy v1.0 · 2026',
-            style: const TextStyle(fontSize: 11, color: AppColors.ink4))),
+          Center(child: _AppVersionBadge()),
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -111,4 +178,22 @@ class _SettingsRow extends StatelessWidget {
       ]),
     ),
   );
+}
+
+class _AppVersionBadge extends StatelessWidget {
+  const _AppVersionBadge();
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Image.asset('assets/images/logo.png', height: 28, errorBuilder: (_, __, ___) =>
+        const Text('baahy', style: TextStyle(fontFamily: 'Cairo',
+          fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary))),
+      const SizedBox(height: 6),
+      const Text('الإصدار 1.0.0',
+        style: TextStyle(fontSize: 11, color: AppColors.ink4)),
+      const SizedBox(height: 2),
+      const Text('© 2026 Baahy. All rights reserved.',
+        style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 10, color: AppColors.ink4)),
+    ]);
+  }
 }

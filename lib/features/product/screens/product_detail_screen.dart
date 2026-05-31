@@ -8,6 +8,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/models/app_config.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/review.dart';
+import '../../../core/providers/address_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/utils/navigation.dart';
@@ -15,6 +16,7 @@ import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/providers/recently_viewed_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/product_card.dart';
 
 final _productDetailProvider = FutureProvider.autoDispose.family<Product, int>((ref, id) async {
   final res = await ApiClient.instance.dio.get('/products/$id');
@@ -107,11 +109,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isAr = context.isAr;
-    final config = ref.watch(appConfigProvider);
     final productAsync = ref.watch(_productDetailProvider(widget.id));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.bg,
       body: productAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) => Center(
@@ -134,7 +135,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           final name = isAr ? product.nameAr : product.name;
           final inWishlist = ref.watch(wishlistProvider).contains(product.id);
           // Use selected variation price, or cheapest in-stock variation, or product price
-          final _inStockVarsForPrice = product.variations.where((v) => v.stockQuantity > 0).toList();
+          final _inStockVarsForPrice = product.variations.where((v) => v.inStock || v.stockQuantity > 0).toList();
           final _cheapestInStock = _inStockVarsForPrice.isNotEmpty
               ? _inStockVarsForPrice.map((v) => v.salePrice ?? v.price).reduce((a, b) => a < b ? a : b)
               : null;
@@ -144,7 +145,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               ?? product.displayPrice;
 
           // For variable products: compute min/max across IN-STOCK variations only
-          final inStockVars = product.variations.where((v) => v.stockQuantity > 0).toList();
+          final inStockVars = product.variations.where((v) => v.inStock || v.stockQuantity > 0).toList();
           final varPrices = inStockVars.map((v) => v.salePrice ?? v.price).toList();
           final varMinPrice = varPrices.isNotEmpty
               ? varPrices.reduce((a, b) => a < b ? a : b) : null;
@@ -155,13 +156,19 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               varMinPrice != null && varMaxPrice != null &&
               varMinPrice != varMaxPrice;
 
+          final lowStock = product.inStock &&
+              product.productType != 'variable' &&
+              product.stockQuantity != null &&
+              product.stockQuantity! > 0 &&
+              product.stockQuantity! <= 5;
+
           return Stack(
             children: [
               CustomScrollView(
                 slivers: [
                   // ── Image gallery ────────────────────────────────
                   SliverAppBar(
-                    expandedHeight: 340,
+                    expandedHeight: 340 + MediaQuery.of(context).padding.top,
                     pinned: true,
                     backgroundColor: Colors.white,
                     elevation: 0,
@@ -182,7 +189,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     flexibleSpace: FlexibleSpaceBar(
                       background: Stack(
                         children: [
-                          PageView.builder(
+                          Padding(
+                            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+                            child: PageView.builder(
                             itemCount: product.images.isEmpty ? 1 : product.images.length,
                             onPageChanged: (i) => setState(() => _imageIndex = i),
                             itemBuilder: (_, i) {
@@ -196,7 +205,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 child: CachedNetworkImage(
                                   imageUrl: product.images[i], fit: BoxFit.contain));
                             },
-                          ),
+                          )),
                           if (product.images.length > 1)
                             Positioned(
                               bottom: 12, left: 0, right: 0,
@@ -228,6 +237,27 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                     fontFamily: 'PlusJakartaSans', fontSize: 11)),
                               ),
                             ),
+                          if (displayPrice < product.price)
+                            Positioned(
+                              bottom: 20,
+                              left: 12,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: AppColors.danger,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '-${((product.price - displayPrice) / product.price * 100).round()}%',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'PlusJakartaSans',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -237,34 +267,49 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── Title, price, rating ────────────────────
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        const SizedBox(height: 10),
+
+                        // ── Card 1: Title, price, rating ─────────────
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: AppShadows.shadowCard,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Brand name — no prefix, bigger
                               if (product.brand != null && product.brand!.isNotEmpty)
-                                Text(
-                                  'الماركة: ${product.brand!}',
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                                    color: AppColors.ink3, letterSpacing: 0.5))
+                                Text(product.brand!,
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+                                    color: AppColors.primary))
                               else if (product.vendor != null)
                                 Text(
                                   isAr
-                                    ? 'الماركة: ${product.vendor!.storeNameAr.isNotEmpty ? product.vendor!.storeNameAr : product.vendor!.storeName}'
-                                    : 'Brand: ${product.vendor!.storeName}',
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                                    color: AppColors.ink3, letterSpacing: 0.5)),
-                              const SizedBox(height: 4),
+                                    ? (product.vendor!.storeNameAr.isNotEmpty
+                                        ? product.vendor!.storeNameAr : product.vendor!.storeName)
+                                    : product.vendor!.storeName,
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+                                    color: AppColors.primary)),
+                              const SizedBox(height: 6),
                               Text(name, style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.w800, height: 1.3)),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 10),
+                              // Full 5-star rating
                               if (product.averageRating != null && product.reviewsCount != null)
                                 GestureDetector(
                                   onTap: () => safePush(context, '/product/${product.id}/reviews'),
                                   child: Row(children: [
-                                    const Icon(Icons.star_rounded, size: 14, color: AppColors.gold),
-                                    const SizedBox(width: 4),
+                                    RatingBarIndicator(
+                                      rating: product.averageRating!,
+                                      itemSize: 16,
+                                      itemCount: 5,
+                                      itemBuilder: (_, __) => const Icon(Icons.star_rounded, color: AppColors.gold),
+                                    ),
+                                    const SizedBox(width: 8),
                                     Text(product.averageRating!.toStringAsFixed(1),
                                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                         fontSize: 13, fontWeight: FontWeight.w700)),
@@ -281,48 +326,99 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                     ],
                                   ]),
                                 ),
-                              const SizedBox(height: 12),
-                              Row(children: [
-                                if (showRange) ...[
-                                  Text('${varMinPrice!.toStringAsFixed(0)} - ${varMaxPrice!.toStringAsFixed(0)} د.ل',
-                                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                      fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.ink0)),
-                                ] else ...[
-                                  Text('${displayPrice.toStringAsFixed(0)} د.ل',
-                                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                      fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.ink0)),
-                                  if (displayPrice < product.price) ...[
-                                    const SizedBox(width: 8),
-                                    Text('${product.price.toStringAsFixed(0)} د.ل',
+                              const SizedBox(height: 14),
+                              // Price — baseline aligned
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (showRange) ...[
+                                    Text('${varMinPrice!.toStringAsFixed(0)} - ${varMaxPrice!.toStringAsFixed(0)} د.ل',
                                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                        fontSize: 15, color: AppColors.ink3,
-                                        decoration: TextDecoration.lineThrough)),
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.success.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(6)),
-                                      child: Text('−${((1 - displayPrice / product.price) * 100).round()}%',
-                                        style: const TextStyle(color: AppColors.success,
-                                          fontSize: 11, fontWeight: FontWeight.w700)),
-                                    ),
+                                        fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.ink0)),
+                                  ] else ...[
+                                    Text('${displayPrice.toStringAsFixed(0)} د.ل',
+                                      style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                                        fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.ink0)),
+                                    if (displayPrice < product.price) ...[
+                                      const SizedBox(width: 8),
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 3),
+                                        child: Text('${product.price.toStringAsFixed(0)} د.ل',
+                                          style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                                            fontSize: 15, color: AppColors.ink3,
+                                            decoration: TextDecoration.lineThrough,
+                                            decorationColor: AppColors.ink3)),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 3),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.danger.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(6)),
+                                          child: Text(
+                                            'وفّر ${(product.price - displayPrice).toStringAsFixed(0)} د.ل',
+                                            style: const TextStyle(color: AppColors.danger,
+                                              fontFamily: 'Cairo',
+                                              fontSize: 11, fontWeight: FontWeight.w700)),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ],
+                              ),
+                              // Stock indicator
+                              const SizedBox(height: 10),
+                              Row(children: [
+                                Container(
+                                  width: 8, height: 8,
+                                  decoration: BoxDecoration(
+                                    color: product.inStock
+                                        ? (lowStock ? AppColors.warn : AppColors.success)
+                                        : AppColors.danger,
+                                    shape: BoxShape.circle),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  product.inStock
+                                      ? (lowStock ? 'تبقّى ${product.stockQuantity} فقط' : 'متوفر')
+                                      : 'نفدت الكمية',
+                                  style: TextStyle(
+                                    fontSize: 13, fontWeight: FontWeight.w600,
+                                    color: product.inStock
+                                        ? (lowStock ? AppColors.warn : AppColors.success)
+                                        : AppColors.danger),
+                                ),
                               ]),
-
-                              // Stock + ETA strip
-                              const SizedBox(height: 14),
-                              _StockEtaStrip(product: product, deliveryPromise: config.deliveryPromiseAr),
                             ],
                           ),
                         ),
 
-                        // ── Variations ──────────────────────────────
+                        // ── Card 2: Attributes / Variations ──────────
+                        if (product.variations.isEmpty && product.productAttributes.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: AppShadows.shadowCard,
+                            ),
+                            child: _ProductAttributesDisplay(product: product),
+                          ),
+                        ],
                         if (product.variations.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                          const SizedBox(height: 10),
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: AppShadows.shadowCard,
+                            ),
                             child: _VariationPicker(
                               product: product,
                               selections: _selections,
@@ -334,36 +430,92 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           ),
                         ],
 
-                        // ── Qty selector ────────────────────────────
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                          child: _QtySelector(
-                            qty: _qty,
-                            onChanged: (v) => setState(() => _qty = v),
-                            enabled: product.inStock,
+                        // ── Card 3: Qty + Trust + Delivery ───────────
+                        const SizedBox(height: 10),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: AppShadows.shadowCard,
                           ),
+                          child: Column(children: [
+                            _QtySelector(
+                              qty: _qty,
+                              onChanged: (v) => setState(() => _qty = v),
+                              enabled: product.inStock,
+                            ),
+                            const SizedBox(height: 16),
+                            const Divider(height: 1, color: AppColors.border),
+                            const SizedBox(height: 16),
+                            const _TrustPills(),
+                            const SizedBox(height: 12),
+                            const _DeliveryCard(),
+                            const SizedBox(height: 14),
+                            const Divider(height: 1, color: AppColors.border),
+                            const SizedBox(height: 12),
+                            Row(children: [
+                              const Icon(Icons.shield_outlined, size: 15, color: AppColors.ink3),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text('منتجات موثوقة من بائعين معتمدين • الدفع آمن ومضمون',
+                                  style: const TextStyle(fontSize: 12, color: AppColors.ink2, height: 1.4)),
+                              ),
+                            ]),
+                          ]),
                         ),
 
-                        // ── Trust block ─────────────────────────────
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                          child: _TrustBlock(config: config),
+                        // ── Card 4: Vendor ────────────────────────────
+                        if (product.vendor != null) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: AppShadows.shadowCard,
+                            ),
+                            child: _VendorRow(vendor: product.vendor!),
+                          ),
+                        ],
+
+                        // ── Card 5: Coupon ────────────────────────────
+                        const SizedBox(height: 10),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: AppShadows.shadowCard,
+                          ),
+                          child: const _CouponSection(),
                         ),
 
-                        // ── Description ─────────────────────────────
+                        // ── Card 6: Description ───────────────────────
                         if (product.description != null && product.description!.isNotEmpty) ...[
-                          const SizedBox(height: 20),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                          const SizedBox(height: 10),
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: AppShadows.shadowCard,
+                            ),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 const Text('الوصف',
+                                  textAlign: TextAlign.start,
                                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                                 const SizedBox(height: 8),
                                 Text(isAr
                                     ? (product.descriptionAr ?? product.description!)
                                     : product.description!,
+                                  textAlign: TextAlign.start,
                                   style: const TextStyle(
                                     fontSize: 14, color: AppColors.ink2, height: 1.6)),
                               ],
@@ -377,6 +529,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             mainProduct: product,
                             categoryId: product.category!.id,
                           ),
+
+                        // ── You may also like ────────────────────────
+                        _YouMayAlsoLike(
+                          productId: product.id,
+                          categoryId: product.category?.id,
+                        ),
 
                         // ── Reviews snippet ─────────────────────────
                         _ReviewsSnippet(productId: product.id,
@@ -442,7 +600,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               Positioned(
                 bottom: 0, left: 0, right: 0,
                 child: Container(
-                  padding: EdgeInsets.fromLTRB(12, 10, 12,
+                  padding: EdgeInsets.fromLTRB(16, 10, 16,
                     MediaQuery.of(context).padding.bottom + 10),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.97),
@@ -450,24 +608,26 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   ),
                   child: product.inStock
                       ? Row(children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => _addToCart(product),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                side: const BorderSide(color: AppColors.border),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                              ),
-                              child: const Text('أضف للسلة',
-                                style: TextStyle(fontFamily: 'Cairo',
-                                  fontWeight: FontWeight.w700, color: AppColors.ink0)),
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('السعر',
+                                style: TextStyle(fontSize: 10, color: AppColors.ink3)),
+                              Text('${displayPrice.toStringAsFixed(0)} د.ل',
+                                style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                                  fontSize: 16, fontWeight: FontWeight.w800)),
+                            ],
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => _addToCart(product, goToCart: true),
+                            child: ElevatedButton.icon(
+                              onPressed: () => _addToCart(product),
+                              icon: const Icon(Icons.shopping_cart_outlined,
+                                size: 18, color: AppColors.ink0),
+                              label: const Text('أضف إلى السلة',
+                                style: TextStyle(fontFamily: 'Cairo',
+                                  fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.ink0)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -475,15 +635,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                   borderRadius: BorderRadius.circular(10)),
                                 elevation: 0,
                               ),
-                              child: const Text('اشترِ الآن',
-                                style: TextStyle(fontFamily: 'Cairo',
-                                  fontWeight: FontWeight.w700, color: AppColors.ink0)),
                             ),
                           ),
                         ])
                       : SizedBox(
                           width: double.infinity,
-                          height: 50,
                           child: ElevatedButton.icon(
                             onPressed: () => _notifyMe(product.id),
                             icon: const Icon(Icons.notifications_outlined, size: 18),
@@ -492,6 +648,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.surfaceSoft,
                               foregroundColor: AppColors.ink1,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10)),
                               elevation: 0,
@@ -582,7 +739,7 @@ class _StockEtaStrip extends StatelessWidget {
                 ]),
               ),
             Row(children: [
-              const Icon(Icons.local_shipping_outlined, size: 18, color: AppColors.teal600),
+              const Icon(Icons.local_shipping_outlined, size: 18, color: AppColors.primary),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(deliveryPromise,
@@ -633,7 +790,7 @@ class _TrustBlock extends StatelessWidget {
                 decoration: const BoxDecoration(
                   color: AppColors.primary, shape: BoxShape.circle),
                 child: const Icon(Icons.inventory_2_outlined,
-                  size: 18, color: AppColors.ink0),
+                  size: 18, color: Colors.white),
               ),
               const SizedBox(width: 12),
               const Expanded(child: Column(
@@ -921,7 +1078,7 @@ class _ReviewCard extends StatelessWidget {
               radius: 16,
               backgroundColor: AppColors.primary.withValues(alpha: 0.2),
               child: Text(review.reviewerName.isNotEmpty ? review.reviewerName[0] : '?',
-                style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.teal600)),
+                style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
             ),
             const SizedBox(width: 10),
             Expanded(child: Column(
@@ -945,6 +1102,47 @@ class _ReviewCard extends StatelessWidget {
   }
 }
 
+// ── Simple-product attribute display (no variations) ─────────────────────────
+
+class _ProductAttributesDisplay extends StatelessWidget {
+  final Product product;
+  const _ProductAttributesDisplay({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = context.isAr;
+    const arNameMap = {'الحجم': 'المقاس'};
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: product.productAttributes.where((a) => a.values.isNotEmpty).map((attr) {
+        final rawLabel = isAr ? attr.nameAr : attr.name;
+        final label = arNameMap[rawLabel.trim()] ?? rawLabel;
+        final isColor = attr.displayType == 'color' ||
+            attr.name.toLowerCase() == 'color' ||
+            attr.nameAr.contains('لون');
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              Text('$label: ', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+              Wrap(
+                spacing: 6,
+                children: attr.values.map((v) {
+                  final val = isAr ? v.valueAr : v.value;
+                  if (isColor && v.colorHex != null) {
+                    return _ColorSwatch(hex: v.colorHex!, selected: false, available: true, size: 22);
+                  }
+                  return Text(val, style: const TextStyle(fontSize: 13, color: AppColors.ink2));
+                }).toList(),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
 // ── Variation picker ──────────────────────────────────────────────────────────
 
 class _VariationPicker extends StatelessWidget {
@@ -955,6 +1153,10 @@ class _VariationPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isAr = context.isAr;
+    const arNameMap = {'الحجم': 'المقاس'};
+
+    // Group options by typeName from variation_attributes
     final grouped = <String, List<VariationAttribute>>{};
     for (final v in product.variations) {
       for (final a in v.attributes) {
@@ -970,18 +1172,42 @@ class _VariationPicker extends StatelessWidget {
       children: grouped.entries.map((entry) {
         final typeName = entry.key;
         final options = entry.value;
+        final rawAr = options.first.typeNameAr.isNotEmpty ? options.first.typeNameAr : typeName;
+        final label = isAr ? (arNameMap[rawAr.trim()] ?? rawAr) : typeName;
+        final isColor = options.any((o) => o.colorHex != null) ||
+            typeName.toLowerCase() == 'color' ||
+            rawAr.contains('لون');
+
+        // Single value → display label (not interactive)
+        if (options.length == 1) {
+          final opt = options.first;
+          final val = isAr && opt.valueAr.isNotEmpty ? opt.valueAr : opt.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Text('$label: ', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                if (isColor && opt.colorHex != null) ...[
+                  _ColorSwatch(hex: opt.colorHex!, selected: false, available: true, size: 22),
+                  const SizedBox(width: 6),
+                ],
+                Text(val, style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+              ],
+            ),
+          );
+        }
+
+        // Multiple values → interactive picker
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
-                Text(typeName,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                 const SizedBox(width: 6),
                 if (selections[typeName] != null)
-                  Text(selections[typeName]!,
-                    style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+                  Text(selections[typeName]!, style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
               ]),
               const SizedBox(height: 10),
               Wrap(
@@ -990,7 +1216,16 @@ class _VariationPicker extends StatelessWidget {
                   final isSelected = selections[typeName] == opt.value;
                   final isOutOfStock = !product.variations.any((v) =>
                       v.attributes.any((a) => a.typeName == typeName && a.value == opt.value) &&
-                      v.stockQuantity > 0);
+                      (v.inStock || v.stockQuantity > 0));
+                  if (isColor && opt.colorHex != null) {
+                    return GestureDetector(
+                      onTap: isOutOfStock ? null : () => onChanged(typeName, opt.value),
+                      child: Tooltip(
+                        message: isAr && opt.valueAr.isNotEmpty ? opt.valueAr : opt.value,
+                        child: _ColorSwatch(hex: opt.colorHex!, selected: isSelected, available: !isOutOfStock, size: 36),
+                      ),
+                    );
+                  }
                   return GestureDetector(
                     onTap: isOutOfStock ? null : () => onChanged(typeName, opt.value),
                     child: Stack(
@@ -1033,6 +1268,48 @@ class _VariationPicker extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+// ── Color swatch circle ───────────────────────────────────────────────────────
+
+class _ColorSwatch extends StatelessWidget {
+  final String hex;
+  final bool selected;
+  final bool available;
+  final double size;
+  const _ColorSwatch({required this.hex, required this.selected, required this.available, required this.size});
+
+  static Color _parse(String hex) {
+    try {
+      final h = hex.replaceAll('#', '').padLeft(6, '0');
+      return Color(int.parse('0xFF$h'));
+    } catch (_) {
+      return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _parse(hex);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        border: Border.all(
+          color: selected ? AppColors.primary : const Color(0xFFD1D5DB),
+          width: selected ? 2.5 : 1.5,
+        ),
+        boxShadow: selected
+            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 4, spreadRadius: 1)]
+            : null,
+      ),
+      child: available
+          ? null
+          : ClipOval(child: CustomPaint(painter: _OutOfStockPainter())),
     );
   }
 }
@@ -1083,6 +1360,371 @@ class _QtyBtn extends StatelessWidget {
         color: onTap != null ? AppColors.ink0 : AppColors.border),
     ),
   );
+}
+
+// ── Trust pills ───────────────────────────────────────────────────────────────
+
+class _TrustPills extends StatelessWidget {
+  const _TrustPills();
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <(IconData, String)>[
+      (Icons.refresh_rounded,                 'إرجاع واستبدال'),
+      (Icons.account_balance_wallet_outlined, 'الدفع عند الاستلام'),
+      (Icons.local_shipping_outlined,         'توصيل سريع'),
+    ];
+    return Row(
+      children: [
+        for (int i = 0; i < items.length; i++) ...[
+          if (i > 0) const SizedBox(width: 6),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(items[i].$1, size: 13,
+                    color: AppColors.primary),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(items[i].$2,
+                      style: TextStyle(fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink1),
+                      overflow: TextOverflow.ellipsis),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ── Delivery card ─────────────────────────────────────────────────────────────
+
+class _DeliveryCard extends ConsumerWidget {
+  const _DeliveryCard();
+
+  static const _arabicDays = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  static const _arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+  static String _fmtDate(DateTime d) =>
+      '${_arabicDays[d.weekday % 7]} ${d.day} ${_arabicMonths[d.month - 1]}';
+
+  static (int, int) _daysForCity(String city) {
+    if (city.contains('طرابلس') || city.contains('مصراتة') || city.contains('الزاوية') ||
+        city.contains('زليتن') || city.contains('الخمس') || city.contains('تاجوراء') ||
+        city.contains('جنزور') || city.contains('قرجي')) return (1, 2);
+    if (city.contains('بنغازي') || city.contains('البيضاء') || city.contains('سرت') ||
+        city.contains('درنة') || city.contains('أجدابيا') || city.contains('الزنتان') ||
+        city.contains('ترهونة') || city.contains('غريان')) return (2, 4);
+    if (city == 'ليبيا' || city.isEmpty || city == 'كل ليبيا') return (1, 4);
+    return (3, 6);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final city = ref.watch(cityProvider);
+    final (minDays, maxDays) = _daysForCity(city);
+    final now = DateTime.now();
+    final minDate = _fmtDate(now.add(Duration(days: minDays)));
+    final maxDate = _fmtDate(now.add(Duration(days: maxDays)));
+    final estimate = minDays == maxDays
+        ? 'يصل يوم $minDate'
+        : 'يصل بين $minDate و$maxDate';
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text('التوصيل إلى $city',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+              const SizedBox(width: 6),
+              const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.primary),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSoft,
+              borderRadius: BorderRadius.circular(8)),
+            child: Text(estimate,
+              style: const TextStyle(fontSize: 12.5,
+                fontWeight: FontWeight.w600, color: AppColors.ink1),
+              textAlign: TextAlign.end),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Vendor row ────────────────────────────────────────────────────────────────
+
+class _VendorRow extends StatelessWidget {
+  final Vendor vendor;
+  const _VendorRow({required this.vendor});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = vendor.storeNameAr.isNotEmpty
+        ? vendor.storeNameAr : vendor.storeName;
+    return Row(children: [
+      Container(
+        width: 44, height: 44,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceSoft,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border)),
+        child: vendor.logo != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: CachedNetworkImage(
+                  imageUrl: vendor.logo!, fit: BoxFit.cover))
+            : const Icon(Icons.store_outlined, size: 22, color: AppColors.ink2),
+      ),
+      const SizedBox(width: 12),
+      Expanded(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(name,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+          if (vendor.city != null && vendor.city!.isNotEmpty)
+            Text(vendor.city!,
+              style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
+        ],
+      )),
+      OutlinedButton(
+        onPressed: () => context.push('/vendors/${vendor.id}'),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          side: BorderSide(color: AppColors.success.withValues(alpha: 0.8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: const Text('زيارة المتجر',
+          style: TextStyle(fontFamily: 'Cairo',
+            fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.success)),
+      ),
+    ]);
+  }
+}
+
+// ── Coupon section ────────────────────────────────────────────────────────────
+
+class _CouponSection extends StatefulWidget {
+  const _CouponSection();
+  @override
+  State<_CouponSection> createState() => _CouponSectionState();
+}
+
+class _CouponSectionState extends State<_CouponSection> {
+  bool _expanded = false;
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        const Divider(height: 1, color: AppColors.border),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Row(children: [
+            const Spacer(),
+            const Text('هل لديك كوبون خصم؟',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 6),
+            const Icon(Icons.local_offer_outlined, size: 15, color: AppColors.ink3),
+            const SizedBox(width: 8),
+            AnimatedRotation(
+              turns: _expanded ? 0.5 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: const Icon(Icons.expand_more_rounded, size: 20, color: AppColors.ink3),
+            ),
+          ]),
+        ),
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Row(children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.border),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: TextField(
+                    controller: _ctrl,
+                    textDirection: TextDirection.ltr,
+                    textAlign: TextAlign.start,
+                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                    decoration: const InputDecoration(
+                      hintText: 'أدخل كود الخصم',
+                      hintTextDirection: TextDirection.rtl,
+                      hintStyle: TextStyle(
+                        color: AppColors.ink3,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 13,
+                        letterSpacing: 0,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('تطبيق',
+                  style: TextStyle(fontFamily: 'Cairo',
+                    fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.ink0)),
+              ),
+            ]),
+          ),
+          crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 200),
+        ),
+      ],
+    );
+  }
+}
+
+// ── You may also like ─────────────────────────────────────────────────────────
+
+class _YouMayAlsoLike extends ConsumerStatefulWidget {
+  final int productId;
+  final int? categoryId;
+  const _YouMayAlsoLike({required this.productId, this.categoryId});
+  @override
+  ConsumerState<_YouMayAlsoLike> createState() => _YouMayAlsoLikeState();
+}
+
+class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
+  final List<Product> _products = [];
+  int _page = 1;
+  bool _loading = false;
+  bool _hasMore = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMore();
+  }
+
+  Future<void> _loadMore() async {
+    if (_loading || !_hasMore) return;
+    setState(() => _loading = true);
+    try {
+      final params = <String, dynamic>{'per_page': 10, 'page': _page, 'sort': 'popular'};
+      if (widget.categoryId != null) params['category_id'] = widget.categoryId;
+      final res = await ApiClient.instance.dio.get('/products', queryParameters: params);
+      final data = res.data['data']['data'] as List? ?? [];
+      final fetched = data.map((p) => Product.fromJson(p))
+          .where((p) => p.id != widget.productId).toList();
+      if (mounted) {
+        setState(() {
+          _products.addAll(fetched);
+          _page++;
+          _hasMore = data.length == 10 && _products.length < 50;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_products.isEmpty && !_loading) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('قد يعجبك أيضاً',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 12),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              mainAxisExtent: 336,
+            ),
+            itemCount: _products.length % 2 == 0 ? _products.length : _products.length - 1,
+            itemBuilder: (_, i) => Align(
+              alignment: Alignment.topCenter,
+              child: ProductCard(product: _products[i]),
+            ),
+          ),
+          if (_loading) ...[
+            const SizedBox(height: 16),
+            const Center(
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
+          ],
+          if (_hasMore && !_loading) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: OutlinedButton(
+                onPressed: _loadMore,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+                  side: const BorderSide(color: Colors.black54, width: 1.2),
+                  shape: const StadiumBorder(),
+                  foregroundColor: Colors.black87,
+                ),
+                child: const Text('عرض المزيد',
+                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, fontSize: 13)),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 // ── Out-of-stock diagonal line painter ───────────────────────────────────────

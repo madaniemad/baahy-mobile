@@ -229,7 +229,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                     margin: const EdgeInsets.only(left: 8),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF0E9E96), Color(0xFF14B8AE)]),
+                        colors: [Color(0xFF1AC5CD), AppColors.primary]),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.my_location_rounded,

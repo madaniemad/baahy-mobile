@@ -124,7 +124,7 @@ class AddressesScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Icon(Icons.info_outline_rounded, size: 18, color: AppColors.teal600),
+                Icon(Icons.info_outline_rounded, size: 18, color: AppColors.primary),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -173,7 +173,7 @@ class _AddressCard extends StatelessWidget {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Icon(icon, size: 18, color: AppColors.teal600),
+          Icon(icon, size: 18, color: AppColors.primary),
           const SizedBox(width: 8),
           Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
           if (isDefault) ...[

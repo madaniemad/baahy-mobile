@@ -97,19 +97,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   child: Container(
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceSoft,
-                      borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: AppColors.border),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.border, width: 1.2),
                     ),
                     child: Row(children: [
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                       const Icon(Icons.search, size: 18, color: AppColors.ink3),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
                           controller: _ctrl,
                           focusNode: _focus,
-                          style: const TextStyle(fontSize: 14),
+                          style: const TextStyle(fontSize: 14, color: AppColors.ink0),
                           decoration: const InputDecoration(
                             hintText: 'ابحث عن منتجات، ماركات، متاجر…',
                             hintStyle: TextStyle(color: AppColors.ink3, fontSize: 14),
@@ -187,7 +187,7 @@ class _LiveResults extends StatelessWidget {
                   TextButton(
                     onPressed: () => onSearch(query),
                     child: const Text('ابحث على أي حال',
-                      style: TextStyle(color: AppColors.teal600, fontWeight: FontWeight.w600)),
+                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
@@ -243,7 +243,7 @@ class _LiveResults extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Text('عرض كل النتائج لـ "$query" ←',
                   style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.teal600),
+                    fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
                   textAlign: TextAlign.center),
               ),
             ),

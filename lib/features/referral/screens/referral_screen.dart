@@ -120,7 +120,7 @@ class ReferralScreen extends ConsumerWidget {
                     child: Center(child: Text('${s.$1}',
                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
                         fontSize: 13, fontWeight: FontWeight.w800,
-                        color: AppColors.teal600))),
+                        color: AppColors.primary))),
                   ),
                   const SizedBox(width: 12),
                   Text(s.$2, style: const TextStyle(fontSize: 13.5)),
