@@ -34,7 +34,7 @@ lib/
   core/
     api/api_client.dart              — Dio singleton, auth header, 401 handler
     models/product.dart              — Product, Category, Vendor, ProductVariation
-    models/banner.dart               — AppBanner (hero/promo/mid/fashion/tile slots)
+    models/banner.dart               — AppBanner + BannersData (slots: hero, sub_hero, promo_*, fashion_banner, tile_*, mid_banner)
     models/order.dart                — Order, OrderItem, OrderStatus
     models/cart.dart                 — CartItem
     providers/home_provider.dart     — HomeNotifier: all home screen data + disk cache
@@ -98,11 +98,41 @@ All from `lib/shared/theme/app_theme.dart`:
 - **New Arrivals** (`home.newArrivals`): `/products?sort=latest`
 - **Popular/Bestsellers** (`home.popular`): 1 random from each of 6 root categories (men/women/electronics/beauty/perfumes/home)
 - **Deals** (`home.deals`): preferred-category deals interleaved + generic fallback
-- **Ordered dynamic sections** (`home.orderedDynamicSections`): unified list of `HomeDynamicItem` subclasses (`DynGrid`, `DynCarousel`, `DynBannerDuo`, `DynBanner`) — preserves exact admin position order, rendered as a single block after New Arrivals
+- **Ordered dynamic sections** (`home.orderedDynamicSections`): unified list of `HomeDynamicItem` subclasses — preserves exact admin position order, rendered as a single block after New Arrivals:
+  - `DynGrid` — price-capped product grid (type: `grid`)
+  - `DynCarousel` — category product carousel (type: `carousel`)
+  - `DynBannerDuo` — 2 square banners side-by-side (type: `banner_duo`)
+  - `DynBanner` — single full-width banner 1920/700 (type: `banner`)
+  - `DynStripBanner` — half-height wide banner 1920/350 (type: `strip_banner`)
+  - `DynCategoryCarousel` — 1-row horizontal category image carousel (type: `category_carousel`)
 - **Cache key**: `home_data_v5` — 5-minute TTL, stale-while-revalidate on cold start
 
 Admin controls sections at `/admin/home-section-resources`. Sections API: `GET /api/home/sections?platform=mobile`.
 `home_screen.dart` renders all sections with `if (data.isNotEmpty)` guards — empty sections just disappear, no layout breaks.
+
+## Home Screen Header
+- `SliverAppBar` (pinned) with tiffany (`#32DDE5`) background + `onb-pattern.png` at 0.28 opacity
+- `toolbarHeight: 28` + `bottom: PreferredSize(height: 50)` — location row in title, outlined white search bar in bottom
+- Location tap → `/city`; notification icon top-right with red dot badge
+
+## Banner Slots (BannersData model)
+| Slot | Widget | Aspect ratio | Notes |
+|---|---|---|---|
+| `hero` | `_HeroBannerSlider` | 1400/480 | PageView, viewportFraction 0.9, infinite loop, 4s auto-advance |
+| `sub_hero` | `_SubHeroBanner` | 1920/350 | `AnimatedSwitcher` fade, 4s auto-advance, 16px side padding |
+| `promo_left` + `promo_right` | `_BannerStack` | 1920/700 | stacked vertically, 16px side padding |
+| `fashion_banner` | `_FashionBannerTiles` | portrait 1:1.7 | horizontal scroll, 2.5 cards visible |
+| `promo_strip` | `_BrandCarousel` | square | brand logos, 78×64 tiles |
+| `tile_1/2/3` | `_TileCarousel` | 1920/700 | auto-advance PageView |
+| `mid_banner` | `_BannerStack` | 1920/700 | |
+
+Hero images should be uploaded at **1400×480 px**. Sub-hero at any wide landscape ratio.
+
+## Product Card Details
+- "توصيل سريع" (fast delivery) badge: solid yellow `#FFF500`, black text, `fontSize: 8`, `icon size: 9`
+- Vendor button on product detail: `AppColors.success` green border + text (not primary blue)
+- Load-more button: outlined `StadiumBorder`, compact width, black border
+- Search bar (search screen): white fill, `border: Border.all(color: AppColors.border, width: 1.2)`, radius 10
 
 ## Product Image Fit
 - **`BoxFit.cover`** for clothing categories (checks `category.nameAr.contains('ملاب')` AND parent)
