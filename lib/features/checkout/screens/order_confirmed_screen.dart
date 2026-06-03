@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/utils/format.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
 class OrderConfirmedScreen extends StatelessWidget {
   final Map<String, dynamic> data;
   const OrderConfirmedScreen({required this.data, super.key});
 
-  String _deliveryLabel() {
+  String _deliveryLabel(BuildContext context) {
+    final s = context.s;
     // Derive from shipping_rate if present, otherwise fall back to city-based estimate.
     final rate = data['shipping_rate'];
     if (rate is Map) {
       final days = rate['estimated_days'];
       final city = rate['city_name'] ?? rate['city'] ?? '';
-      if (days != null && city.isNotEmpty) return '$days يوم · $city';
-      if (days != null) return '$days يوم';
+      if (days != null && city.isNotEmpty) return '${s.daysUnit(days.toString())} · $city';
+      if (days != null) return s.daysUnit(days.toString());
     }
     final city = (data['city'] ?? data['shipping_city'] ?? '').toString();
     final isTripoli = city.toLowerCase().contains('طرابلس') || city.toLowerCase().contains('tripoli');
     final days = isTripoli ? '1-2' : '2-5';
-    return '$days يوم${city.isNotEmpty ? ' · $city' : ''}';
+    return '${s.daysUnit(days)}${city.isNotEmpty ? ' · $city' : ''}';
   }
 
   @override
@@ -50,12 +53,12 @@ class OrderConfirmedScreen extends StatelessWidget {
                         color: AppColors.primary, size: 48),
                     ),
                     const SizedBox(height: 16),
-                    const Text('تم الطلب!',
-                      style: TextStyle(fontFamily: 'Cairo',
+                    Text(context.s.orderDone,
+                      style: const TextStyle(fontFamily: 'Cairo',
                         fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
                     const SizedBox(height: 8),
                     Text(
-                      'أرسلنا رسالة تأكيد · رقم الطلب $orderNumber',
+                      context.s.confirmSent(orderNumber.toString()),
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 14, color: AppColors.ink2, height: 1.5),
                     ),
@@ -74,9 +77,9 @@ class OrderConfirmedScreen extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('التسليم',
-                                  style: TextStyle(fontSize: 13, color: AppColors.ink2)),
-                                Text(_deliveryLabel(),
+                                Text(context.s.deliveryLabel,
+                                  style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+                                Text(_deliveryLabel(context),
                                   style: const TextStyle(fontSize: 13.5,
                                     fontWeight: FontWeight.w600)),
                               ],
@@ -85,9 +88,9 @@ class OrderConfirmedScreen extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('المدفوع',
-                                  style: TextStyle(fontSize: 13, color: AppColors.ink2)),
-                                Text('${total.toStringAsFixed(0)} د.ل',
+                                Text(context.s.paidLabel,
+                                  style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+                                Text('${fmtPrice(total)} ${context.s.lydUnit}',
                                   style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                     fontSize: 15, fontWeight: FontWeight.w800,
                                     color: AppColors.primary)),
@@ -113,8 +116,8 @@ class OrderConfirmedScreen extends StatelessWidget {
                       side: const BorderSide(color: AppColors.border),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: const Text('مواصلة التسوّق',
-                      style: TextStyle(fontFamily: 'Cairo',
+                    child: Text(context.s.continueShopping,
+                      style: const TextStyle(fontFamily: 'Cairo',
                         fontWeight: FontWeight.w700, color: AppColors.ink0)),
                   ),
                 ),
@@ -135,8 +138,8 @@ class OrderConfirmedScreen extends StatelessWidget {
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: const Text('تتبّع الطلب',
-                      style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+                    child: Text(context.s.trackOrder,
+                      style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
                   ),
                 ),
               ]),

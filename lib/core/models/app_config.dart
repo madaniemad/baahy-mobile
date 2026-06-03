@@ -4,6 +4,7 @@ class PaymentMethod {
   final String labelEn;
   final double fee;
   final String descriptionAr;
+  final String descriptionEn;
   final bool enabled;
 
   const PaymentMethod({
@@ -12,6 +13,7 @@ class PaymentMethod {
     required this.labelEn,
     this.fee = 0,
     required this.descriptionAr,
+    this.descriptionEn = '',
     this.enabled = true,
   });
 
@@ -21,6 +23,7 @@ class PaymentMethod {
     labelEn: j['label_en'] as String? ?? '',
     fee: _d(j['fee'] ?? 0),
     descriptionAr: j['description_ar'] as String? ?? '',
+    descriptionEn: j['description_en'] as String? ?? '',
     enabled: j['enabled'] as bool? ?? true,
   );
 
@@ -39,11 +42,13 @@ class AppConfig {
   final int deliveryCitiesCount;
   final List<PaymentMethod> paymentMethods;
   final String deliveryPromiseAr;
+  final String deliveryPromiseEn;
   final List<String> trendingSearches;
   final double minWalletTopup;
   final int referralGiverAmount;
   final int referralReceiverAmount;
   final String referralTextAr;
+  final String referralTextEn;
 
   const AppConfig({
     required this.shippingFee,
@@ -53,11 +58,13 @@ class AppConfig {
     this.deliveryCitiesCount = 12,
     required this.paymentMethods,
     required this.deliveryPromiseAr,
+    this.deliveryPromiseEn = 'Most orders arrive within 1-2 days',
     required this.trendingSearches,
     required this.minWalletTopup,
     required this.referralGiverAmount,
     required this.referralReceiverAmount,
     required this.referralTextAr,
+    this.referralTextEn = 'Give 10, Get 10',
   });
 
   static const AppConfig defaults = AppConfig(
@@ -71,6 +78,7 @@ class AppConfig {
         labelEn: 'Cash on Delivery',
         fee: 5,
         descriptionAr: 'رسوم خدمة 5 د.ل',
+        descriptionEn: 'Service fee 5 LYD',
       ),
       PaymentMethod(
         id: 'wallet',
@@ -78,6 +86,7 @@ class AppConfig {
         labelEn: 'Baahy Wallet',
         fee: 0,
         descriptionAr: 'فوري · بدون رسوم',
+        descriptionEn: 'Instant · No fees',
       ),
     ],
     deliveryPromiseAr: 'معظم الطلبات تصل خلال 1-2 يوم',
@@ -102,11 +111,13 @@ class AppConfig {
       deliveryCitiesCount: (j['delivery_cities_count'] as num?)?.toInt() ?? defaults.deliveryCitiesCount,
       paymentMethods: (methods?.isNotEmpty == true) ? methods! : defaults.paymentMethods,
       deliveryPromiseAr: delivery?['text_ar'] as String? ?? defaults.deliveryPromiseAr,
+      deliveryPromiseEn: delivery?['text_en'] as String? ?? defaults.deliveryPromiseEn,
       trendingSearches: (j['trending_searches'] as List?)?.cast<String>() ?? defaults.trendingSearches,
       minWalletTopup: _d(j['min_wallet_topup'] ?? defaults.minWalletTopup),
       referralGiverAmount: (referral?['giver_discount'] as num?)?.toInt() ?? defaults.referralGiverAmount,
       referralReceiverAmount: (referral?['receiver_discount'] as num?)?.toInt() ?? defaults.referralReceiverAmount,
       referralTextAr: referral?['text_ar'] as String? ?? defaults.referralTextAr,
+      referralTextEn: referral?['text_en'] as String? ?? defaults.referralTextEn,
     );
   }
 

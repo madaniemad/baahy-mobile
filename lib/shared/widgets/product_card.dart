@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/models/product.dart';
 import '../../core/providers/wishlist_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/utils/format.dart';
 import '../../core/utils/l10n.dart';
 import '../../core/utils/navigation.dart';
 import '../theme/app_theme.dart';
@@ -182,7 +183,7 @@ class ProductCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        '${product.displayPrice.toStringAsFixed(0)} د.ل',
+                        '${fmtPrice(product.displayPrice)} ${context.s.lydUnit}',
                         style: const TextStyle(
                           fontFamily: 'PlusJakartaSans',
                           fontSize: 14,
@@ -194,7 +195,7 @@ class ProductCard extends ConsumerWidget {
                       if (product.hasDiscount) ...[
                         const SizedBox(width: 5),
                         Text(
-                          product.price.toStringAsFixed(0),
+                          fmtPrice(product.price),
                           style: const TextStyle(
                             fontFamily: 'PlusJakartaSans',
                             fontSize: 11,
@@ -223,7 +224,7 @@ class ProductCard extends ConsumerWidget {
                           const Icon(Icons.bolt_rounded, size: 9, color: Colors.black87),
                           const SizedBox(width: 2),
                           Text(
-                            context.tr('توصيل سريع', 'Express'),
+                            context.tr('اكسبرس', 'Express'),
                             style: const TextStyle(
                               fontSize: 8,
                               fontWeight: FontWeight.w800,

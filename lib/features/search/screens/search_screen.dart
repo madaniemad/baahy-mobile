@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/format.dart';
+import '../../../core/utils/l10n.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
@@ -110,8 +112,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           controller: _ctrl,
                           focusNode: _focus,
                           style: const TextStyle(fontSize: 14, color: AppColors.ink0),
-                          decoration: const InputDecoration(
-                            hintText: 'ابحث عن منتجات، ماركات، متاجر…',
+                          decoration: InputDecoration(
+                            hintText: context.s.searchHint,
                             hintStyle: TextStyle(color: AppColors.ink3, fontSize: 14),
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(vertical: 12),
@@ -147,7 +149,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     )
                   : _EmptyState(
                       trending: config.trendingSearches,
-                      categories: categories.map((c) => c.nameAr).take(8).toList(),
+                      categories: categories.map((c) => context.isAr ? c.nameAr : c.name).take(8).toList(),
                       onSearch: _search,
                     ),
             ),
@@ -180,14 +182,14 @@ class _LiveResults extends StatelessWidget {
                 children: [
                   const Icon(Icons.search, size: 48, color: AppColors.ink4),
                   const SizedBox(height: 12),
-                  Text('لا نتائج لـ "$query"',
+                  Text('${context.s.noResults} "$query"',
                     style: const TextStyle(fontSize: 14, color: AppColors.ink2),
                     textAlign: TextAlign.center),
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: () => onSearch(query),
-                    child: const Text('ابحث على أي حال',
-                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                    child: Text(context.s.searchAnyway,
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
@@ -230,7 +232,7 @@ class _LiveResults extends StatelessWidget {
                             style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
                       ]),
                     ),
-                    Text('${p.displayPrice.toStringAsFixed(0)} د.ل',
+                    Text('${fmtPrice(p.displayPrice)} ${context.s.lydUnit}',
                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
                         fontWeight: FontWeight.w700, fontSize: 13)),
                   ]),
@@ -241,7 +243,7 @@ class _LiveResults extends StatelessWidget {
               onTap: () => onSearch(query),
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text('عرض كل النتائج لـ "$query" ←',
+                child: Text('${context.s.seeAllResultsFor} "$query" ${context.isAr ? "←" : "→"}',
                   style: const TextStyle(
                     fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
                   textAlign: TextAlign.center),
@@ -268,8 +270,8 @@ class _EmptyState extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Trending
-          const Text('رائج الآن',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+          Text(context.s.trendingNow,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
               color: AppColors.ink2, letterSpacing: 0.5)),
           const SizedBox(height: 8),
           ...List.generate(trending.length, (i) => InkWell(
@@ -295,8 +297,8 @@ class _EmptyState extends StatelessWidget {
 
           if (categories.isNotEmpty) ...[
             const SizedBox(height: 20),
-            const Text('الأقسام',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+            Text(context.s.categories,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
                 color: AppColors.ink2, letterSpacing: 0.5)),
             const SizedBox(height: 10),
             Wrap(

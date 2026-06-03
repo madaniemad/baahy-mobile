@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/product.dart';
 import '../../../core/providers/home_provider.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
@@ -367,8 +368,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                           children: [
                             const Icon(Icons.search_off, size: 64, color: AppColors.ink4),
                             const SizedBox(height: 12),
-                            const Text('لا توجد نتائج',
-                              style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
+                            Text(context.s.noResultsFound,
+                              style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
                             if (_filters.isActive) ...[
                               const SizedBox(height: 12),
                               TextButton.icon(
@@ -377,7 +378,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                                   _fetch(reset: true);
                                 },
                                 icon: const Icon(Icons.clear_rounded, size: 16),
-                                label: const Text('إزالة الفلاتر'),
+                                label: Text(context.s.removeFilters),
                               ),
                             ],
                           ],
@@ -752,12 +753,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text('الفلاتر',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                Text(context.s.filters,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                 const Spacer(),
                 TextButton(onPressed: _reset,
-                  child: const Text('إعادة تعيين',
-                    style: TextStyle(color: AppColors.ink2))),
+                  child: Text(context.s.resetFilters,
+                    style: const TextStyle(color: AppColors.ink2))),
               ]),
               const Divider(height: 1),
             ]),
@@ -950,8 +951,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Row(children: [
-                      const Text('عروض فقط',
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
+                      Text(context.s.dealsOnly,
+                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
                           color: AppColors.ink1)),
                       const Spacer(),
                       Switch(
@@ -971,8 +972,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Row(children: [
-                      const Text('متوفّر فقط',
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
+                      Text(context.s.inStockOnly,
+                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
                           color: AppColors.ink1)),
                       const Spacer(),
                       Switch(
@@ -1079,8 +1080,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text('تطبيق الفلاتر',
-                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
+                child: Text(context.s.applyFilters,
+                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
                     fontSize: 15, color: AppColors.ink0)),
               ),
             ),

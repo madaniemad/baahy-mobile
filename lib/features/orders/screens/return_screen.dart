@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 
@@ -14,13 +15,21 @@ final _orderItemsProvider = FutureProvider.family<List<Map<String, dynamic>>, in
     return items.map((i) => Map<String, dynamic>.from(i)).toList();
   });
 
-const _kReasons = [
+const _kReasonsAr = [
   'المنتج وصل تالفاً',
   'المنتج لا يطابق الوصف',
   'استلمت منتجاً خاطئاً',
   'لم يعجبني المنتج',
   'مشكلة في الجودة',
   'أخرى',
+];
+const _kReasonsEn = [
+  'Product arrived damaged',
+  'Product does not match description',
+  'Received wrong item',
+  'Not satisfied with the product',
+  'Quality issue',
+  'Other',
 ];
 
 class ReturnScreen extends ConsumerStatefulWidget {
@@ -70,7 +79,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
       setState(() => _loading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('حدث خطأ، حاول مجدداً')));
+          SnackBar(content: Text(context.s.errorTryAgain)));
       }
     }
   }
@@ -89,7 +98,9 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
                   : setState(() => _step--))
           : const SizedBox.shrink(),
         title: Text(
-          ['اختر المنتجات', 'سبب الإرجاع', 'تم الإرسال'][_step],
+          context.isAr
+            ? ['اختر المنتجات', 'سبب الإرجاع', 'تم الإرسال'][_step]
+            : ['Select Items', 'Return Reason', 'Done'][_step],
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
       ),
       body: Column(
@@ -180,7 +191,7 @@ class _StepItems extends ConsumerWidget {
 
     return itemsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-      error: (_, __) => const Center(child: Text('تعذر تحميل المنتجات')),
+      error: (_, __) => Center(child: Text(context.s.loadReturnFailed)),
       data: (items) => Column(
         children: [
           Expanded(
@@ -200,7 +211,7 @@ class _StepItems extends ConsumerWidget {
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   title: Text(item['product_name'] ?? item['name'] ?? '',
                     style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
-                  subtitle: Text('الكمية: ${item['quantity'] ?? 1}',
+                  subtitle: Text(context.s.quantityN(item['quantity'] as int? ?? 1),
                     style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.ink3)),
                 );
               },
@@ -210,7 +221,7 @@ class _StepItems extends ConsumerWidget {
             padding: EdgeInsets.fromLTRB(16, 8, 16,
               MediaQuery.of(context).padding.bottom + 16),
             child: AppButton(
-              label: 'التالي',
+              label: context.s.next,
               onTap: onNext,
             ),
           ),
@@ -242,10 +253,10 @@ class _StepReason extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
-              const Text('ما سبب الإرجاع؟',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              Text(context.s.returnReason,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
               const SizedBox(height: 12),
-              ..._kReasons.map((r) => GestureDetector(
+              ...(context.isAr ? _kReasonsAr : _kReasonsEn).map((r) => GestureDetector(
                 onTap: () => onReasonChanged(r),
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -270,14 +281,14 @@ class _StepReason extends StatelessWidget {
                 ),
               )),
               const SizedBox(height: 8),
-              const Text('ملاحظات إضافية (اختياري)',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
+              Text(context.s.additionalNotes,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
               const SizedBox(height: 8),
               TextField(
                 controller: notesCtrl,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: 'صف المشكلة بمزيد من التفصيل...',
+                  hintText: context.isAr ? 'صف المشكلة بمزيد من التفصيل...' : 'Describe the issue in more detail...',
                   hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink3),
                   filled: true, fillColor: AppColors.bg,
                   border: OutlineInputBorder(
@@ -293,8 +304,8 @@ class _StepReason extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('صور المنتج (اختياري)',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
+              Text(context.s.productPhotos,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
               const SizedBox(height: 8),
               SizedBox(
                 height: 80,
@@ -319,13 +330,13 @@ class _StepReason extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: AppColors.border, style: BorderStyle.solid),
                         ),
-                        child: const Column(
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add_photo_alternate_outlined,
+                            const Icon(Icons.add_photo_alternate_outlined,
                               size: 28, color: AppColors.ink3),
-                            SizedBox(height: 4),
-                            Text('إضافة', style: TextStyle(fontSize: 11, color: AppColors.ink3)),
+                            const SizedBox(height: 4),
+                            Text(context.s.addPhoto, style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
                           ],
                         ),
                       ),
@@ -368,7 +379,7 @@ class _StepReason extends StatelessWidget {
         Padding(
           padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 16),
           child: AppButton(
-            label: 'إرسال طلب الإرجاع',
+            label: context.isAr ? 'إرسال طلب الإرجاع' : 'Submit Return Request',
             loading: loading,
             onTap: reason != null ? onSubmit : null,
           ),
@@ -401,14 +412,16 @@ class _StepDone extends StatelessWidget {
               size: 44, color: AppColors.primary),
           ),
           const SizedBox(height: 16),
-          const Text('تم تقديم طلب الإرجاع',
-            style: TextStyle(fontFamily: 'Cairo',
+          Text(context.s.returnSubmitted,
+            style: const TextStyle(fontFamily: 'Cairo',
               fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 10),
-          const Text(
-            'سنراجع ونردّ خلال 24 ساعة. عند الموافقة، سيمرّ سائقنا لاستلام المنتجات من باب منزلك.',
+          Text(
+            context.isAr
+              ? 'سنراجع ونردّ خلال 24 ساعة. عند الموافقة، سيمرّ سائقنا لاستلام المنتجات من باب منزلك.'
+              : 'We\'ll review and respond within 24 hours. Upon approval, our driver will pick up the items from your door.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: AppColors.ink2, height: 1.5, ),
+            style: const TextStyle(fontSize: 14, color: AppColors.ink2, height: 1.5),
           ),
           const SizedBox(height: 20),
           Container(
@@ -420,16 +433,16 @@ class _StepDone extends StatelessWidget {
             ),
             child: Column(children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Text('سيعاد الاسترداد إلى',
-                  style: TextStyle(fontSize: 12.5, color: AppColors.ink2)),
-                const Text('محفظة باهي (فوري)',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                Text(context.s.refundTo,
+                  style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
+                Text(context.s.baahyWalletInstant,
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
               ]),
             ]),
           ),
           const SizedBox(height: 32),
           AppButton(
-            label: 'تم',
+            label: context.s.done,
             onTap: () => Navigator.of(context).pop(),
           ),
         ],

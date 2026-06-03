@@ -6,6 +6,8 @@ import '../../../core/api/api_client.dart';
 import '../../../core/models/app_config.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
+import '../../../core/utils/format.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/widgets/app_button.dart';
@@ -61,7 +63,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Future<void> _placeOrder() async {
     if (_selectedAddress == null || _selectedAddress!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('يرجى اختيار عنوان التوصيل')));
+          SnackBar(content: Text(context.s.pleaseSelectAddr)));
       return;
     }
     setState(() => _loading = true);
@@ -108,8 +110,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('حدث خطأ، حاول مجدداً'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(context.s.orderError),
             backgroundColor: AppColors.danger));
       }
     }
@@ -174,9 +176,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       IconButton(
                         onPressed: _back,
                         icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
-                      const Expanded(
-                        child: Text('إتمام الطلب',
-                          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
+                      Expanded(
+                        child: Text(context.s.checkout,
+                          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
                             fontSize: 17)),
                       ),
                       Text('$_step/3',
@@ -207,13 +209,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('العنوان',
+                        Text(context.s.address,
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                             color: _step == 1 ? AppColors.ink0 : AppColors.ink3)),
-                        Text('الدفع',
+                        Text(context.s.payment,
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                             color: _step == 2 ? AppColors.ink0 : AppColors.ink3)),
-                        Text('مراجعة',
+                        Text(context.s.review,
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
                             color: _step == 3 ? AppColors.ink0 : AppColors.ink3)),
                       ],
@@ -241,7 +243,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               await safePush(context, '/addresses/edit');
                               await _loadAddresses();
                             },
-                            deliveryPromise: config.deliveryPromiseAr,
+                            deliveryPromise: context.isAr ? config.deliveryPromiseAr : config.deliveryPromiseEn,
                           )
                         : _step == 2
                             ? _StepPayment(
@@ -286,18 +288,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('الإجمالي',
-                        style: TextStyle(fontSize: 13, color: AppColors.ink2)),
-                      Text('${cart.total.toStringAsFixed(0)} د.ل',
+                      Text(context.s.total,
+                        style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+                      Text('${fmtPrice(cart.total)} ${context.s.lydUnit}',
                         style: const TextStyle(fontFamily: 'PlusJakartaSans',
                           fontSize: 18, fontWeight: FontWeight.w800)),
                     ],
                   ),
                   const SizedBox(height: 10),
                   AppButton(
-                    label: _step < 3 ? 'متابعة' : 'تأكيد الطلب',
+                    label: _step < 3 ? context.s.continueBtn : context.s.placeOrder,
                     icon: _step < 3
-                        ? const Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: AppColors.ink0)
+                        ? Icon(context.isAr ? Icons.arrow_back_ios_new_rounded : Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.ink0)
                         : const Icon(Icons.check_rounded, size: 16, color: AppColors.ink0),
                     onTap: _next,
                     loading: _loading,
@@ -354,11 +356,11 @@ class _StepAddress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('عنوان التسليم',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      Text(context.s.shippingAddr,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 4),
-      const Text('أين نوصل الطلب؟',
-        style: TextStyle(fontSize: 13, color: AppColors.ink2)),
+      Text(context.s.whereToDeliver,
+        style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
       const SizedBox(height: 16),
 
       ...addresses.map((addr) => GestureDetector(
@@ -391,11 +393,11 @@ class _StepAddress extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${addr['label'] ?? 'عنوان'} · ',
+              Text('${context.s.translateAddrLabel(addr['label'] as String? ?? '')} · ',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
               Text(
-                [addr['city'], addr['address']]
-                  .where((v) => v != null && v.toString().isNotEmpty)
+                [context.s.translateCity(addr['city']?.toString() ?? ''), addr['address']]
+                  .where((v) => v.isNotEmpty)
                   .join('، '),
                 style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
             ])),
@@ -413,11 +415,11 @@ class _StepAddress extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.primary, width: 1.5),
             ),
-            child: const Row(children: [
-              Icon(Icons.add, color: AppColors.primary, size: 18),
-              SizedBox(width: 8),
-              Text('إضافة عنوان جديد',
-                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+            child: Row(children: [
+              const Icon(Icons.add, color: AppColors.primary, size: 18),
+              const SizedBox(width: 8),
+              Text(context.s.addNewAddress,
+                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
             ]),
           ),
         ),
@@ -426,7 +428,7 @@ class _StepAddress extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onAddNew,
           icon: const Icon(Icons.add, size: 16),
-          label: const Text('إضافة عنوان جديد'),
+          label: Text(context.s.addNewAddress),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(double.infinity, 44),
             side: const BorderSide(color: AppColors.border),
@@ -499,8 +501,8 @@ class _StepPayment extends StatelessWidget {
     final amountDue = walletActive ? (total - walletDeduct).clamp(0.0, total) : total;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('طريقة الدفع',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      Text(context.s.paymentMethod,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 16),
 
       // COD warning for non-Tripoli addresses
@@ -516,16 +518,16 @@ class _StepPayment extends StatelessWidget {
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Icon(Icons.payments_outlined, size: 16, color: AppColors.warn),
             const SizedBox(width: 10),
-            const Expanded(
+            Expanded(
               child: Text(
-                'الدفع عند الاستلام متاح فقط لمناطق طرابلس. يرجى اختيار طريقة دفع إلكترونية.',
-                style: TextStyle(fontSize: 12.5, color: AppColors.warn, height: 1.5)),
+                context.s.codTripiliOnly,
+                style: const TextStyle(fontSize: 12.5, color: AppColors.warn, height: 1.5)),
             ),
           ]),
         ),
       ],
 
-      // ── Wallet toggle ──────────────────────────────────────────────────────
+      // ── Wallet card ───────────────────────────────────────────────────────
       GestureDetector(
         onTap: walletBalance > 0 ? onWalletToggle : null,
         child: Container(
@@ -550,21 +552,20 @@ class _StepPayment extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('المحفظة',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              Text(context.s.walletTitle,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
               walletLoading
-                  ? const Text('جاري التحميل...',
-                      style: TextStyle(fontSize: 11.5, color: AppColors.ink3))
+                  ? Text(context.s.loading,
+                      style: const TextStyle(fontSize: 11.5, color: AppColors.ink3))
                   : Row(children: [
                       Text(
                         walletBalance > 0
-                            ? 'رصيدك: ${walletBalance.toStringAsFixed(0)} د.ل'
-                            : 'رصيدك فارغ',
+                            ? context.s.walletBalanceLabel(fmtPrice(walletBalance))
+                            : context.s.walletEmpty,
                         style: TextStyle(
                           fontSize: 11.5,
                           color: walletBalance > 0 ? AppColors.success : AppColors.ink3)),
                       const SizedBox(width: 8),
-                      // Charge button
                       GestureDetector(
                         onTap: onChargeWallet,
                         child: Container(
@@ -574,10 +575,10 @@ class _StepPayment extends StatelessWidget {
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: AppColors.teal100),
                           ),
-                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.add, size: 10, color: AppColors.primary),
-                            SizedBox(width: 2),
-                            Text('شحن', style: TextStyle(
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.add, size: 10, color: AppColors.primary),
+                            const SizedBox(width: 2),
+                            Text(context.s.topUpShort, style: const TextStyle(
                               fontSize: 10.5, fontWeight: FontWeight.w700,
                               color: AppColors.primary)),
                           ]),
@@ -585,24 +586,25 @@ class _StepPayment extends StatelessWidget {
                       ),
                     ]),
             ])),
-            // Toggle switch
-            Container(
-              width: 44, height: 24,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                color: walletActive ? AppColors.primary : AppColors.ink4,
-              ),
-              child: AnimatedAlign(
-                duration: const Duration(milliseconds: 150),
-                alignment: walletActive ? Alignment.centerLeft : Alignment.centerRight,
-                child: Container(
-                  width: 18, height: 18,
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle, color: Colors.white),
+            // Toggle only shown when there's a balance to use
+            if (walletBalance > 0)
+              Container(
+                width: 44, height: 24,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  color: walletActive ? AppColors.primary : AppColors.ink4,
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 150),
+                  alignment: walletActive ? Alignment.centerLeft : Alignment.centerRight,
+                  child: Container(
+                    width: 18, height: 18,
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle, color: Colors.white),
+                  ),
                 ),
               ),
-            ),
           ]),
         ),
       ),
@@ -621,8 +623,8 @@ class _StepPayment extends StatelessWidget {
           ),
           child: Text(
             walletCoversAll
-                ? 'محفظتك تغطي كامل الطلب (${walletDeduct.toStringAsFixed(0)} د.ل)'
-                : 'محفظة: ${walletDeduct.toStringAsFixed(0)} د.ل  +  ${amountDue.toStringAsFixed(0)} د.ل عبر:',
+                ? context.s.walletCoversAll(fmtPrice(walletDeduct))
+                : context.s.walletPartial(fmtPrice(walletDeduct), fmtPrice(amountDue)),
             style: TextStyle(
               fontSize: 12.5, fontWeight: FontWeight.w600,
               color: walletCoversAll ? AppColors.success : AppColors.primary),
@@ -660,10 +662,14 @@ class _StepPayment extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(m.labelAr, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                Text(context.isAr ? m.labelAr : (m.labelEn.isNotEmpty ? m.labelEn : m.labelAr),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 Text(
-                  m.descriptionAr.isNotEmpty ? m.descriptionAr
-                      : (m.fee > 0 ? 'رسوم خدمة ${m.fee.toStringAsFixed(0)} د.ل' : 'بدون رسوم'),
+                  context.isAr
+                      ? (m.descriptionAr.isNotEmpty ? m.descriptionAr
+                          : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees))
+                      : (m.descriptionEn.isNotEmpty ? m.descriptionEn
+                          : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees)),
                   style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
               ])),
             ]),
@@ -672,8 +678,8 @@ class _StepPayment extends StatelessWidget {
       ],
 
       const SizedBox(height: 16),
-      const Text('ملاحظات (اختياري)',
-        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+      Text(context.s.notesOptional,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
       const SizedBox(height: 8),
       Container(
         decoration: BoxDecoration(
@@ -684,8 +690,8 @@ class _StepPayment extends StatelessWidget {
         child: TextField(
           controller: notesCtrl,
           maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'أي تعليمات خاصة بطلبك...',
+          decoration: InputDecoration(
+            hintText: context.s.notesHint,
             hintStyle: TextStyle(color: AppColors.ink3, fontSize: 14),
             border: InputBorder.none,
             contentPadding: EdgeInsets.all(14),
@@ -709,11 +715,12 @@ class _StepReview extends StatelessWidget {
     required this.paymentMethod, required this.onChangeAddress,
     required this.onChangePayment, required this.config});
 
-  String get _paymentLabel {
+  String _paymentLabel(BuildContext context) {
     final match = (config.paymentMethods as List<PaymentMethod>)
         .where((m) => m.id == paymentMethod)
         .firstOrNull;
-    return match?.labelAr ?? paymentMethod;
+    if (match == null) return paymentMethod;
+    return context.isAr ? match.labelAr : (match.labelEn.isNotEmpty ? match.labelEn : match.labelAr);
   }
 
   @override
@@ -722,8 +729,8 @@ class _StepReview extends StatelessWidget {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('مراجعة الطلب',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      Text(context.s.reviewOrderTitle,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 16),
 
       // Address card
@@ -743,13 +750,13 @@ class _StepReview extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              const Text('التسليم إلى',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
+              Text(context.s.deliverTo,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
                   color: AppColors.ink2, letterSpacing: 0.3)),
               GestureDetector(
                 onTap: onChangeAddress,
-                child: const Text('تغيير',
-                  style: TextStyle(fontSize: 12, color: AppColors.primary,
+                child: Text(context.s.change,
+                  style: const TextStyle(fontSize: 12, color: AppColors.primary,
                     fontWeight: FontWeight.w600)),
               ),
             ]),
@@ -767,7 +774,7 @@ class _StepReview extends StatelessWidget {
                 ),
               const SizedBox(height: 3),
               Text(
-                [addr['label'], addr['city'], addr['address']]
+                [context.s.translateAddrLabel((addr['label'] as String?) ?? ''), context.s.translateCity(addr['city']?.toString() ?? ''), addr['address']]
                   .where((v) => v != null && v.toString().isNotEmpty)
                   .join(' · '),
                 style: const TextStyle(fontSize: 12.5, color: AppColors.ink1)),
@@ -790,18 +797,18 @@ class _StepReview extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              const Text('الدفع',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
+              Text(context.s.payment,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
                   color: AppColors.ink2, letterSpacing: 0.3)),
               GestureDetector(
                 onTap: onChangePayment,
-                child: const Text('تغيير',
-                  style: TextStyle(fontSize: 12, color: AppColors.primary,
+                child: Text(context.s.change,
+                  style: const TextStyle(fontSize: 12, color: AppColors.primary,
                     fontWeight: FontWeight.w600)),
               ),
             ]),
             const SizedBox(height: 4),
-            Text(_paymentLabel, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+            Text(_paymentLabel(context), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
           ])),
         ]),
       ),
@@ -816,7 +823,7 @@ class _StepReview extends StatelessWidget {
           border: Border.all(color: AppColors.border),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('المنتجات (${cart.items.length})',
+          Text(context.s.productsCountN(cart.items.length),
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
               color: AppColors.ink2, letterSpacing: 0.3)),
           const SizedBox(height: 10),
@@ -865,7 +872,7 @@ class _StepReview extends StatelessWidget {
                     Text('× ${item.quantity}',
                       style: const TextStyle(fontSize: 12, color: AppColors.ink2,
                         fontFamily: 'PlusJakartaSans')),
-                    Text('${item.total.toStringAsFixed(0)} د.ل',
+                    Text('${fmtPrice(item.total)} ${context.s.lydUnit}',
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
                         fontFamily: 'PlusJakartaSans')),
                   ]),
@@ -885,17 +892,17 @@ class _StepReview extends StatelessWidget {
           boxShadow: AppShadows.shadowCard,
         ),
         child: Column(children: [
-          _SummaryRow('المجموع الفرعي', '${cart.subtotal.toStringAsFixed(0)} د.ل'),
+          _SummaryRow(context.s.subtotalLabel, '${fmtPrice(cart.subtotal)} ${context.s.lydUnit}'),
           if (cart.discountAmount > 0)
-            _SummaryRow('خصم الكوبون', '− ${cart.discountAmount.toStringAsFixed(0)} د.ل',
+            _SummaryRow(context.s.couponDiscount, '− ${fmtPrice(cart.discountAmount)} ${context.s.lydUnit}',
               color: AppColors.success),
           _SummaryRow(
-            'الشحن',
-            cart.deliveryFee == 0 ? 'مجاني' : '${cart.deliveryFee.toStringAsFixed(0)} د.ل',
+            context.s.shippingCost,
+            cart.deliveryFee == 0 ? context.s.freeText : '${fmtPrice(cart.deliveryFee)} ${context.s.lydUnit}',
             color: cart.deliveryFee == 0 ? AppColors.success : null,
           ),
           const Divider(height: 20, color: AppColors.border),
-          _SummaryRow('الإجمالي', '${cart.total.toStringAsFixed(0)} د.ل', bold: true),
+          _SummaryRow(context.s.orderTotal, '${fmtPrice(cart.total)} ${context.s.lydUnit}', bold: true),
         ]),
       ),
     ]);

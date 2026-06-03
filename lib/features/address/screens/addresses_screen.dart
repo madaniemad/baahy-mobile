@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -48,15 +49,15 @@ class AddressesScreen extends ConsumerWidget {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: Colors.white, elevation: 0,
-        title: const Text('العناوين',
-          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+        title: Text(context.s.addressesTitle,
+          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
       ),
       body: addressesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (_, __) => const Center(child: Text('تعذر تحميل العناوين')),
+        error: (_, __) => Center(child: Text(context.s.loadAddressesFailed)),
         data: (addresses) => SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -73,13 +74,13 @@ class AddressesScreen extends ConsumerWidget {
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
-                    title: const Text('حذف العنوان', style: TextStyle(fontFamily: 'Cairo')),
-                    content: const Text('هل تريد حذف هذا العنوان؟'),
+                    title: Text(context.s.deleteAddrTitle, style: const TextStyle(fontFamily: 'Cairo')),
+                    content: Text(context.s.deleteAddrConf),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(context, false),
-                        child: const Text('إلغاء')),
+                        child: Text(context.s.cancel)),
                       TextButton(onPressed: () => Navigator.pop(context, true),
-                        child: const Text('حذف', style: TextStyle(color: AppColors.danger))),
+                        child: Text(context.s.deleteAddress, style: const TextStyle(color: AppColors.danger))),
                     ],
                   ),
                 );
@@ -107,11 +108,11 @@ class AddressesScreen extends ConsumerWidget {
                     strokeAlign: BorderSide.strokeAlignInside,
                   ),
                 ),
-                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.add_rounded, size: 18, color: AppColors.ink2),
-                  SizedBox(width: 8),
-                  Text('إضافة عنوان جديد',
-                    style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink1)),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  const Icon(Icons.add_rounded, size: 18, color: AppColors.ink2),
+                  const SizedBox(width: 8),
+                  Text(context.s.addNewAddress,
+                    style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink1)),
                 ]),
               ),
             ),
@@ -123,13 +124,13 @@ class AddressesScreen extends ConsumerWidget {
                 color: const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Icon(Icons.info_outline_rounded, size: 18, color: AppColors.primary),
-                SizedBox(width: 10),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Icon(Icons.info_outline_rounded, size: 18, color: AppColors.primary),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'في ليبيا، المعالم تساعد سائقينا في الوصول إليك بسرعة. أضف مسجداً قريباً أو مخبزاً أو متجراً.',
-                    style: TextStyle(fontSize: 12.5, height: 1.5, color: AppColors.ink1)),
+                    context.s.libyaLandmarkTip,
+                    style: const TextStyle(fontSize: 12.5, height: 1.5, color: AppColors.ink1)),
                 ),
               ]),
             ),
@@ -152,10 +153,11 @@ class _AddressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDefault = addr['is_default'] == true;
-    final label = addr['label'] ?? 'عنوان';
-    final icon = label == 'Home' || label == 'المنزل'
+    final rawLabel = (addr['label'] as String?) ?? '';
+    final label = context.s.translateAddrLabel(rawLabel.isNotEmpty ? rawLabel : context.s.addrLabel);
+    final icon = (rawLabel == 'Home' || rawLabel == 'المنزل')
         ? Icons.home_outlined
-        : label == 'Office' || label == 'المكتب'
+        : (rawLabel == 'Office' || rawLabel == 'المكتب')
             ? Icons.business_outlined
             : Icons.location_on_outlined;
     final address = [addr['city'], addr['district'], addr['street']]
@@ -183,8 +185,8 @@ class _AddressCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(6)),
-              child: const Text('افتراضي',
-                style: TextStyle(color: AppColors.ink0,
+              child: Text(context.s.defaultAddr,
+                style: const TextStyle(color: AppColors.ink0,
                   fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.4)),
             ),
           ],
@@ -213,10 +215,10 @@ class _AddressCard extends StatelessWidget {
         const SizedBox(height: 12),
         Row(children: [
           _ActionBtn(
-            icon: Icons.edit_outlined, label: 'تعديل', onTap: onEdit),
+            icon: Icons.edit_outlined, label: context.s.editLabel, onTap: onEdit),
           if (onSetDefault != null) ...[
             const SizedBox(width: 8),
-            _ActionBtn(label: 'اجعله افتراضياً', onTap: onSetDefault!),
+            _ActionBtn(label: context.s.makeDefaultLabel, onTap: onSetDefault!),
           ],
           if (onDelete != null) ...[
             const Spacer(),

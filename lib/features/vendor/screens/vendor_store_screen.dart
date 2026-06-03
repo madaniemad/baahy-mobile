@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/product.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 
@@ -41,9 +42,9 @@ class VendorStoreScreen extends ConsumerWidget {
             ),
             title: vendorAsync.when(
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const Text('المتجر', style: TextStyle(color: Colors.white)),
+              error: (_, __) => Text(context.s.storeLabel, style: const TextStyle(color: Colors.white)),
               data: (v) => Text(
-                v.storeNameAr.isNotEmpty ? v.storeNameAr : v.storeName,
+                context.isAr && v.storeNameAr.isNotEmpty ? v.storeNameAr : v.storeName,
                 style: const TextStyle(color: Colors.white, fontFamily: 'Cairo',
                   fontSize: 17, fontWeight: FontWeight.w700),
               ),
@@ -91,11 +92,11 @@ class VendorStoreScreen extends ConsumerWidget {
           ),
 
           // Section header
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text('منتجات المتجر',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(context.s.storeProducts,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             ),
           ),
 
@@ -104,15 +105,15 @@ class VendorStoreScreen extends ConsumerWidget {
             loading: () => const SliverToBoxAdapter(
               child: SizedBox(height: 200,
                 child: Center(child: CircularProgressIndicator(color: AppColors.primary)))),
-            error: (_, __) => const SliverToBoxAdapter(
+            error: (_, __) => SliverToBoxAdapter(
               child: Center(child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Text('تعذّر تحميل المنتجات', style: TextStyle(color: AppColors.ink3))))),
+                padding: const EdgeInsets.all(32),
+                child: Text(context.s.loadProductsFailed, style: const TextStyle(color: AppColors.ink3))))),
             data: (products) => products.isEmpty
-                ? const SliverToBoxAdapter(
+                ? SliverToBoxAdapter(
                     child: Center(child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Text('لا توجد منتجات حالياً', style: TextStyle(color: AppColors.ink3)))))
+                      padding: const EdgeInsets.all(32),
+                      child: Text(context.s.noProductsNow, style: const TextStyle(color: AppColors.ink3)))))
                 : SliverPadding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 100),
                     sliver: SliverGrid(

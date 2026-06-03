@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import '../../core/utils/l10n.dart';
 import '../../shared/theme/app_theme.dart';
 
 class MapPickResult {
@@ -119,7 +120,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
       if (mounted && !init) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('تعذّر تحديد الموقع'),
+            content: Text(context.s.locationFailed),
             backgroundColor: AppColors.ink1,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(

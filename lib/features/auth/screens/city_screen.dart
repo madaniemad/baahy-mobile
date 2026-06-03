@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/address_provider.dart';
+import '../../../core/providers/app_pages_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
-// ── Cities ─────────────────────────────────────────────────────────────────────
-const _citiesMain = [
-  'طرابلس', 'بنغازي', 'مصراتة', 'الزاوية', 'سبها', 'الخمس', 'زوارة',
-];
-const _citiesMore = [
-  'البيضاء', 'درنة', 'طبرق', 'سرت', 'أجدابيا', 'غريان', 'صبراتة', 'زليتن',
-  'جنزور', 'تاجوراء', 'عين زارة', 'سوق الجمعة', 'أبو سليم', 'صلاح الدين',
-  'السياحية', 'الأبيار', 'أوباري', 'الجغبوب', 'الزنتان', 'ترهونة',
-  'بني وليد', 'صرمان', 'مرزق', 'غدامس', 'الكفرة', 'قصر بن غشير',
+// Fallback cities shown before backend data loads
+const _fallbackCities = [
+  CityEntry(ar: 'طرابلس', en: 'Tripoli'),
+  CityEntry(ar: 'بنغازي', en: 'Benghazi'),
+  CityEntry(ar: 'مصراتة', en: 'Misrata'),
+  CityEntry(ar: 'الزاوية', en: 'Zawiya'),
+  CityEntry(ar: 'سبها', en: 'Sabha'),
+  CityEntry(ar: 'الخمس', en: 'Al Khums'),
+  CityEntry(ar: 'زوارة', en: 'Zuwara'),
 ];
 
 // ── Colors ──────────────────────────────────────────────────────────────────────
@@ -30,9 +32,9 @@ class CityScreen extends ConsumerStatefulWidget {
 class _CityScreenState extends ConsumerState<CityScreen>
     with SingleTickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
-  String _query    = '';
-  String _selected = 'طرابلس';
-  bool _showAll    = false;
+  String _query      = '';
+  String _selected   = 'طرابلس';
+  bool _isReturning  = false; // true when existing user is changing city
 
   // Entry animation
   late AnimationController _entryCtrl;
@@ -48,6 +50,15 @@ class _CityScreenState extends ConsumerState<CityScreen>
     _fade   = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut);
     _slideY = Tween<double>(begin: 14, end: 0).animate(
         CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic));
+    _checkReturning();
+  }
+
+  Future<void> _checkReturning() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _isReturning = prefs.getBool('onboarding_done') ?? false;
+    });
   }
 
   @override
@@ -57,16 +68,17 @@ class _CityScreenState extends ConsumerState<CityScreen>
     super.dispose();
   }
 
-  List<String> get _filtered {
-    final q = _query.trim();
-    final list = _showAll ? [..._citiesMain, ..._citiesMore] : _citiesMain;
-    if (q.isEmpty) return list;
-    return list.where((c) => c.contains(q)).toList();
+  List<CityEntry> _filterCities(List<CityEntry> all) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return all;
+    return all.where((c) =>
+      c.ar.contains(q) || c.en.toLowerCase().contains(q)).toList();
   }
 
   Future<void> _proceed() async {
     await ref.read(cityProvider.notifier).setCity(_selected);
-    if (mounted) context.go('/onboarding');
+    if (!mounted) return;
+    context.go(_isReturning ? '/home' : '/onboarding');
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -75,6 +87,9 @@ class _CityScreenState extends ConsumerState<CityScreen>
     final bottom = MediaQuery.of(context).padding.bottom;
     final top    = MediaQuery.of(context).padding.top;
     final isAr   = ref.watch(localeProvider).languageCode == 'ar';
+    final pages  = ref.watch(appPagesProvider);
+    final allCities = pages.cities.isNotEmpty ? pages.cities : _fallbackCities;
+    final filtered = _filterCities(allCities);
 
     return Scaffold(
       backgroundColor: _cityBase,
@@ -92,6 +107,11 @@ class _CityScreenState extends ConsumerState<CityScreen>
         ),
 
         // Scrollable content
+        GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: const SizedBox.expand(),
+        ),
         SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(22, top + 72, 22, 160 + bottom),
           physics: const BouncingScrollPhysics(),
@@ -135,17 +155,20 @@ class _CityScreenState extends ConsumerState<CityScreen>
                     Expanded(
                       child: TextField(
                         controller: _searchCtrl,
-                        textAlign: TextAlign.right,
-                        textDirection: TextDirection.rtl,
+                        autofocus: false,
+                        textAlign: isAr ? TextAlign.right : TextAlign.left,
+                        textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
                         onChanged: (v) => setState(() => _query = v),
                         style: const TextStyle(fontFamily: 'Cairo',
-                          fontSize: 16, fontWeight: FontWeight.w700, color: _navy),
+                          fontSize: 14, fontWeight: FontWeight.w600, color: _navy),
                         decoration: InputDecoration(
                           hintText: isAr ? 'ابحث عن مدينتك' : 'Search cities',
                           hintStyle: const TextStyle(fontFamily: 'Cairo',
-                            color: Color(0xFF2A6E78), fontSize: 15, fontWeight: FontWeight.w600),
+                            color: Color(0xFF2A6E78), fontSize: 14, fontWeight: FontWeight.w500),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                          filled: true,
+                          fillColor: Colors.transparent,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
@@ -160,41 +183,23 @@ class _CityScreenState extends ConsumerState<CityScreen>
                     color: Colors.white.withValues(alpha: 0.20),
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(8),
                   child: Column(children: [
-                    ..._filtered.map((city) => _CityRow(
-                      city: city,
-                      selected: _selected == city,
+                    ...filtered.map((city) => _CityRow(
+                      cityAr: city.ar,
+                      cityEn: city.en,
+                      selected: _selected == city.ar,
+                      isAr: isAr,
                       teal: _teal,
-                      onTap: () => setState(() => _selected = city),
+                      onTap: () => setState(() => _selected = city.ar),
                     )),
-                    if (_filtered.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text('—', textAlign: TextAlign.center,
-                          style: TextStyle(color: _navy, fontWeight: FontWeight.w700)),
+                    if (filtered.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: Text(isAr ? 'لا توجد نتائج' : 'No results',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: _navy, fontWeight: FontWeight.w700)),
                       ),
-
-                    // Show more / less
-                    GestureDetector(
-                      onTap: () => setState(() => _showAll = !_showAll),
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 4, bottom: 2),
-                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Text(_showAll
-                              ? (isAr ? 'عرض أقل' : 'Show less')
-                              : (isAr ? 'عرض كل المدن' : 'Show all cities'),
-                            style: const TextStyle(fontFamily: 'Cairo',
-                              color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
-                          const SizedBox(width: 6),
-                          AnimatedRotation(
-                            turns: _showAll ? 0.5 : 0,
-                            duration: const Duration(milliseconds: 200),
-                            child: const Icon(Icons.keyboard_arrow_down_rounded,
-                              color: Colors.white, size: 20)),
-                        ]),
-                      ),
-                    ),
                   ]),
                 ),
 
@@ -231,17 +236,20 @@ class _CityScreenState extends ConsumerState<CityScreen>
           ),
         ),
 
-        // Pagination dots
-        Positioned(
-          bottom: 88 + bottom, left: 0, right: 0,
-          child: _OnboardingDots(count: 3, active: 1),
-        ),
+        // Pagination dots (only during onboarding)
+        if (!_isReturning)
+          Positioned(
+            bottom: 88 + bottom, left: 0, right: 0,
+            child: _OnboardingDots(count: 3, active: 1),
+          ),
 
         // Bottom action bar
         Positioned(
           bottom: 0, left: 0, right: 0,
           child: _BottomBar(
-            label: isAr ? 'التالي' : 'Next',
+            label: _isReturning
+                ? (isAr ? 'تأكيد' : 'Confirm')
+                : (isAr ? 'التالي' : 'Next'),
             onTap: _proceed,
             isAr: isAr,
           ),
@@ -253,11 +261,14 @@ class _CityScreenState extends ConsumerState<CityScreen>
 
 // ── City row ───────────────────────────────────────────────────────────────────
 class _CityRow extends StatelessWidget {
-  final String city;
+  final String cityAr;
+  final String cityEn;
   final bool selected;
+  final bool isAr;
   final Color teal;
   final VoidCallback onTap;
-  const _CityRow({required this.city, required this.selected,
+  const _CityRow({required this.cityAr, required this.cityEn,
+    required this.selected, required this.isAr,
     required this.teal, required this.onTap});
 
   @override
@@ -266,8 +277,8 @@ class _CityRow extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
           color: selected ? Colors.white : Colors.white.withValues(alpha: 0.32),
           border: Border.all(
@@ -282,7 +293,7 @@ class _CityRow extends StatelessWidget {
           // Radio dot
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            width: 26, height: 26,
+            width: 22, height: 22,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: selected ? teal : Colors.transparent,
@@ -295,8 +306,9 @@ class _CityRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(city, textAlign: TextAlign.right,
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 18,
+            child: Text(isAr ? cityAr : cityEn,
+              textAlign: isAr ? TextAlign.right : TextAlign.left,
+              style: TextStyle(fontFamily: 'Cairo', fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: selected ? _navy : const Color(0xFF13474F))),
           ),

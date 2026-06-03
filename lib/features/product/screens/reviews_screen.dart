@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/review.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
 final _reviewsProvider = FutureProvider.family<List<Review>, int>((ref, productId) async {
@@ -47,8 +48,8 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
         onPressed: _showWriteReview,
         backgroundColor: AppColors.ink0,
         icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 18),
-        label: const Text('اكتب تقييماً',
-          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: Colors.white)),
+        label: Text(context.s.writeYourReview,
+          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: Colors.white)),
       ),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -58,8 +59,8 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('التقييمات',
-          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
+        title: Text(context.s.reviews,
+          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
       ),
       body: reviewsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -67,21 +68,21 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.ink3),
             const SizedBox(height: 12),
-            const Text('تعذر تحميل التقييمات', style: TextStyle(color: AppColors.ink2)),
+            Text(context.s.loadReviewsFailed, style: const TextStyle(color: AppColors.ink2)),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => ref.refresh(_reviewsProvider(widget.productId)),
-              child: const Text('إعادة المحاولة')),
+              child: Text(context.s.retry)),
           ]),
         ),
         data: (reviews) {
           if (reviews.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.star_border_rounded, size: 56, color: AppColors.border),
-                SizedBox(height: 12),
-                Text('لا توجد تقييمات بعد',
-                  style: TextStyle(color: AppColors.ink3, fontSize: 15)),
+                const Icon(Icons.star_border_rounded, size: 56, color: AppColors.border),
+                const SizedBox(height: 12),
+                Text(context.s.noReviews,
+                  style: const TextStyle(color: AppColors.ink3, fontSize: 15)),
               ]),
             );
           }
@@ -121,7 +122,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                           const Icon(Icons.star_rounded, color: AppColors.gold),
                       ),
                       const SizedBox(height: 4),
-                      Text('${reviews.length} تقييم',
+                      Text(context.s.reviewCountN(reviews.length),
                         style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
                     ]),
                     const SizedBox(width: 20),
@@ -174,7 +175,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    _filterChip('الكل', null),
+                    _filterChip(context.s.all, null),
                     const SizedBox(width: 8),
                     ...List.generate(5, (i) {
                       final star = 5 - i;
@@ -194,7 +195,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 32),
                   child: Center(
-                    child: Text('لا توجد تقييمات لـ $_filterRating نجوم',
+                    child: Text(context.s.noReviewsForN(_filterRating ?? 0),
                       style: const TextStyle(color: AppColors.ink3)),
                   ),
                 )
@@ -331,8 +332,8 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
       if (mounted) Navigator.of(context).pop();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('شكراً! تم إرسال تقييمك'),
+          SnackBar(
+            content: Text(context.s.reviewSent),
             backgroundColor: AppColors.success,
           ));
       }
@@ -340,7 +341,7 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
       setState(() => _loading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('حدث خطأ، حاول مجدداً')));
+          SnackBar(content: Text(context.s.requestFailed)));
       }
     }
   }
@@ -365,8 +366,8 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('اكتب تقييمك',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
+          Text(context.s.writeYourReview,
+            style: const TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
           Center(
             child: RatingBar.builder(
@@ -383,7 +384,7 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
             maxLines: 4,
             textDirection: TextDirection.rtl,
             decoration: InputDecoration(
-              hintText: 'شارك رأيك في هذا المنتج...',
+              hintText: context.s.shareThoughtsHint,
               hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink3),
               filled: true,
               fillColor: AppColors.bg,
@@ -414,8 +415,8 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
               child: _loading
                 ? const SizedBox(width: 20, height: 20,
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Text('نشر التقييم',
-                    style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 15)),
+                : Text(context.s.publishReview,
+                    style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 15)),
             ),
           ),
         ],

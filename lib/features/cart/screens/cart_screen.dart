@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/models/cart.dart';
+import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../core/utils/navigation.dart';
@@ -156,7 +157,7 @@ class _FreeShippingBanner extends StatelessWidget {
                 style: const TextStyle(fontSize: 12.5),
                 children: [
                   TextSpan(
-                    text: '${remaining.toStringAsFixed(0)} د.ل',
+                    text: '${fmtPrice(remaining)} ${context.s.lydUnit}',
                     style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink0,
                       fontFamily: 'PlusJakartaSans')),
                   TextSpan(text: ' ${context.tr('حتى الشحن المجاني', 'for free shipping')}',
@@ -262,7 +263,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                     style: const TextStyle(fontFamily: 'PlusJakartaSans',
                       fontWeight: FontWeight.w700, color: AppColors.success)),
                   const SizedBox(width: 4),
-                  Text('− ${widget.cart.discountAmount.toStringAsFixed(0)} د.ل',
+                  Text('− ${fmtPrice(widget.cart.discountAmount)} ${context.s.lydUnit}',
                     style: const TextStyle(fontFamily: 'PlusJakartaSans',
                       fontSize: 12, color: AppColors.success)),
                 ]),
@@ -371,9 +372,9 @@ class _CartItemCard extends ConsumerWidget {
                 ],
                 const SizedBox(height: 4),
                 Text(
-                  '${item.unitPrice.toStringAsFixed(0)} د.ل',
+                  '${fmtPrice(item.unitPrice)} ${context.s.lydUnit}',
                   style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.primary),
+                    fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.ink0),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -457,15 +458,15 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
       final ok = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('تحديث السلة',
-            style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+          title: Text(context.s.cartUpdateTitle,
+            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (unavailable.isNotEmpty) ...[
-                const Text('المنتجات التالية غير متاحة حالياً:',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                Text(context.s.itemsUnavailable,
+                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
                     fontWeight: FontWeight.w600, color: AppColors.danger)),
                 const SizedBox(height: 8),
                 ...unavailable.map((u) => Padding(
@@ -482,8 +483,8 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
               ],
               if (priceChanged.isNotEmpty) ...[
                 if (unavailable.isNotEmpty) const SizedBox(height: 12),
-                const Text('تغير سعر المنتجات التالية:',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                Text(context.s.priceChangedItems,
+                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
                     fontWeight: FontWeight.w600, color: AppColors.warn)),
                 const SizedBox(height: 8),
                 ...priceChanged.map((u) => Padding(
@@ -500,7 +501,7 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
                           style: const TextStyle(fontFamily: 'Cairo', fontSize: 13)),
                         if (u.oldPrice != null && u.newPrice != null)
                           Text(
-                            '${u.oldPrice!.toStringAsFixed(0)} ← ${u.newPrice!.toStringAsFixed(0)} د.ل',
+                            '${fmtPrice(u.oldPrice!)} ← ${fmtPrice(u.newPrice!)} ${context.s.lydUnit}',
                             style: const TextStyle(
                               fontFamily: 'PlusJakartaSans', fontSize: 11.5,
                               color: AppColors.warn, fontWeight: FontWeight.w600),
@@ -513,8 +514,8 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
               const SizedBox(height: 12),
               Text(
                 unavailable.isNotEmpty
-                    ? 'سيتم إزالة المنتجات غير المتاحة والمتابعة.'
-                    : 'هل تريد المتابعة بالأسعار المحدّثة؟',
+                    ? context.s.willRemoveUnavailable
+                    : context.s.continueUpdatedPrices,
                 style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
                   color: AppColors.ink2)),
             ],
@@ -532,7 +533,7 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               child: Text(
-                unavailable.isNotEmpty ? 'إزالة والمتابعة' : 'متابعة',
+                unavailable.isNotEmpty ? context.s.removeAndContinue : context.s.continueBtn,
                 style: const TextStyle(fontFamily: 'Cairo',
                   fontWeight: FontWeight.w700, color: AppColors.ink0)),
             ),
@@ -562,20 +563,20 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
       ),
       child: Column(
         children: [
-          _SummaryRow(context.s.subtotal, '${cart.subtotal.toStringAsFixed(0)} ${context.s.lyd}'),
+          _SummaryRow(context.s.subtotal, '${fmtPrice(cart.subtotal)} ${context.s.lyd}'),
           if (cart.discountAmount > 0)
             _SummaryRow(
               context.s.discount,
-              '− ${cart.discountAmount.toStringAsFixed(0)} ${context.s.lyd}',
+              '− ${fmtPrice(cart.discountAmount)} ${context.s.lyd}',
               color: AppColors.success,
             ),
           _SummaryRow(
             context.s.shipping,
-            cart.deliveryFee == 0 ? context.s.free : '${cart.deliveryFee.toStringAsFixed(0)} ${context.s.lyd}',
+            cart.deliveryFee == 0 ? context.s.free : '${fmtPrice(cart.deliveryFee)} ${context.s.lyd}',
             color: cart.deliveryFee == 0 ? AppColors.success : null,
           ),
           const Divider(height: 20, color: AppColors.border),
-          _SummaryRow(context.s.total, '${cart.total.toStringAsFixed(0)} ${context.s.lyd}',
+          _SummaryRow(context.s.total, '${fmtPrice(cart.total)} ${context.s.lyd}',
             bold: true, fontSize: 17),
           const SizedBox(height: 14),
           AppButton(

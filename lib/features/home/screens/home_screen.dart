@@ -12,6 +12,7 @@ import '../../../core/providers/recently_viewed_provider.dart';
 import '../../../core/providers/banner_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/address_provider.dart';
+import '../../../core/providers/app_pages_provider.dart';
 import '../../../core/models/app_config.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/banner.dart';
@@ -20,6 +21,7 @@ import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
+import '../../../core/utils/format.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -30,7 +32,12 @@ class HomeScreen extends ConsumerWidget {
     final unread = ref.watch(unreadNotificationCountProvider);
     final banners = ref.watch(bannersProvider);
     final config = ref.watch(appConfigProvider);
-    final city = ref.watch(cityProvider);
+    final cityAr = ref.watch(cityProvider);
+    final isAr = ref.watch(localeProvider).languageCode == 'ar';
+    final cities = ref.watch(appPagesProvider).cities;
+    final city = isAr
+        ? cityAr
+        : (cities.firstWhere((c) => c.ar == cityAr, orElse: () => CityEntry(ar: cityAr, en: cityAr)).en);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -387,8 +394,8 @@ class _ActiveOrderStrip extends ConsumerWidget {
                 child: Text.rich(TextSpan(
                   style: const TextStyle(fontSize: 12.5),
                   children: [
-                    const TextSpan(text: 'في الطريق',
-                      style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink0)),
+                    TextSpan(text: context.s.onTheWay,
+                      style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink0)),
                     TextSpan(text: ' · $orderNum',
                       style: const TextStyle(color: AppColors.ink3)),
                   ],
@@ -616,11 +623,11 @@ class _HeroBannerFallback extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          const Text('أهلاً بك في باهي',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
+          Text(context.s.welcomeBaahy,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
               color: Colors.white)),
           const SizedBox(height: 4),
-          Text('اكتشف آلاف المنتجات من متاجر ليبيا',
+          Text(context.s.discoverProducts,
             style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.75))),
         ],
       ),
@@ -980,49 +987,15 @@ class _SectionHead extends StatelessWidget {
   }
 }
 
-// ── Deals section header with live countdown to midnight ─────────────────────
+// ── Deals section header ──────────────────────────────────────────────────────
 
-class _DealsHead extends StatefulWidget {
+class _DealsHead extends StatelessWidget {
   final VoidCallback? onAll;
   const _DealsHead({this.onAll});
-  @override
-  State<_DealsHead> createState() => _DealsHeadState();
-}
-
-class _DealsHeadState extends State<_DealsHead> {
-  late Duration _remaining;
-  Timer? _timer;
-
-  Duration _calcRemaining() {
-    final now = DateTime.now();
-    final midnight = DateTime(now.year, now.month, now.day + 1);
-    return midnight.difference(now);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _remaining = _calcRemaining();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() => _remaining = _calcRemaining());
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  String _fmt(int n) => n.toString().padLeft(2, '0');
 
   @override
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    final h = _fmt(_remaining.inHours);
-    final m = _fmt(_remaining.inMinutes.remainder(60));
-    final s = _fmt(_remaining.inSeconds.remainder(60));
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
       child: Row(children: [
@@ -1037,24 +1010,10 @@ class _DealsHeadState extends State<_DealsHead> {
         const SizedBox(width: 8),
         Text(isAr ? 'عروض اليوم' : "Today's Deals",
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-        const SizedBox(width: 10),
-        // Countdown badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF3E0),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text('$h:$m:$s',
-            style: const TextStyle(
-              fontFamily: 'PlusJakartaSans',
-              fontSize: 11, fontWeight: FontWeight.w800,
-              color: Color(0xFFE65100), letterSpacing: 0.3)),
-        ),
         const Spacer(),
-        if (widget.onAll != null)
+        if (onAll != null)
           GestureDetector(
-            onTap: widget.onAll,
+            onTap: onAll,
             child: Text(isAr ? '← الكل' : 'See all →',
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                 color: AppColors.primary)),
@@ -1218,28 +1177,56 @@ class _CategoriesGridState extends State<_CategoriesGrid> {
 
 // ── Fashion banner portrait tiles ─────────────────────────────────────────────
 
-class _FashionBannerTiles extends StatelessWidget {
+class _FashionBannerTiles extends StatefulWidget {
   final List<AppBanner> banners;
   const _FashionBannerTiles({required this.banners});
+  @override
+  State<_FashionBannerTiles> createState() => _FashionBannerTilesState();
+}
+
+class _FashionBannerTilesState extends State<_FashionBannerTiles> {
+  late final ScrollController _ctrl = ScrollController();
+  static const _midIndex = 5000; // jump here so user can scroll both ways
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_ctrl.hasClients) return;
+      final sw = MediaQuery.of(context).size.width;
+      final cardW = (sw - 16) / 3.3;
+      _ctrl.jumpTo(_midIndex * (cardW + 8));
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final visible = banners.where((b) => b.hasImage).toList();
+    final visible = widget.banners.where((b) => b.hasImage).toList();
     if (visible.isEmpty) return const SizedBox.shrink();
 
     final sw = MediaQuery.of(context).size.width;
-    // 2.5 cards visible: 16px right gap aligns with content, 8px between cards
-    final cardW = (sw - 16 - 8 * 2) / 2.5;
-    final cardH = cardW * 1.7; // portrait aspect ratio
+    // 3 cards + ~0.3 peek; 16px left padding, 8px gap between cards
+    final cardW = (sw - 16) / 3.3;
+    final cardH = cardW * 1.7;
 
     return SizedBox(
       height: cardH,
       child: ListView.separated(
+        controller: _ctrl,
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(right: 16),
-        itemCount: visible.length,
+        padding: const EdgeInsets.only(left: 16),
+        itemCount: visible.length * 10000,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, i) => _FashionTile(banner: visible[i], width: cardW, height: cardH),
+        itemBuilder: (_, i) {
+          final banner = visible[i % visible.length];
+          return _FashionTile(banner: banner, width: cardW, height: cardH);
+        },
       ),
     );
   }
@@ -1327,10 +1314,10 @@ class _BrandCarousel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Text('تسوق حسب البراند',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Text(context.s.shopByBrand,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             textAlign: TextAlign.center),
         ),
         SizedBox(
@@ -1600,7 +1587,7 @@ class _BudgetCarousel extends StatelessWidget {
                       color: const Color(0xFFD32F2F).withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text('${p.displayPrice.toStringAsFixed(0)} د.ل',
+                    child: Text('${fmtPrice(p.displayPrice)} ${context.s.lydUnit}',
                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
                         fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
                   ),
@@ -1649,16 +1636,16 @@ class _BaahyPromiseCard extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('وعد باهي',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+            Text(context.s.baahyPromise,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                 letterSpacing: 1, color: AppColors.primary)),
             const SizedBox(height: 6),
-            const Text('نختار ونخزّن ونوصّل كل طلب بأنفسنا.',
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800,
+            Text(context.s.baahyPromiseSub,
+              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800,
                 color: Colors.white, height: 1.25)),
             const SizedBox(height: 8),
             Text(
-              'منتجات مفحوصة. مستودعات حقيقية. سائقو باهي في ${config.deliveryCitiesCount} مدينة. إذا حدث خطأ، نحن من يحلّه.',
+              context.s.baahyPromiseDetail(config.deliveryCitiesCount),
               style: const TextStyle(fontSize: 12.5, color: Colors.white60, height: 1.5)),
           ],
         ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/wishlist_provider.dart';
@@ -41,7 +40,8 @@ class AccountScreen extends ConsumerWidget {
       return Scaffold(
         backgroundColor: AppColors.bg,
         appBar: AppBar(
-          title: Text(context.s.myAccount, style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          title: Text(context.s.myAccount,
+            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
           backgroundColor: Colors.white, elevation: 0,
         ),
         body: Center(
@@ -81,148 +81,109 @@ class AccountScreen extends ConsumerWidget {
       backgroundColor: AppColors.bg,
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            pinned: true,
-            title: Text(context.s.myAccount,
-              style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
-            centerTitle: true,
+          // ── Dark gradient header ────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: _ProfileHeader(
+              user: user,
+              onEdit: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.white,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+                builder: (_) => _EditProfileSheet(
+                  currentName: user.name,
+                  onSaved: () => ref.read(authProvider.notifier).refreshProfile(),
+                ),
+              ),
+            ),
           ),
+
           SliverToBoxAdapter(
             child: Column(
               children: [
-                // Profile header
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 30,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                        child: Text(
-                          user.name.isNotEmpty ? user.name[0] : 'U',
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800,
-                            color: AppColors.primary),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(context.s.hello,
-                              style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
-                            Text(user.name,
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, height: 1.1)),
-                            Row(children: [
-                              Text(user.phone,
-                                style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                  fontSize: 12, color: AppColors.ink3)),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: AppColors.success.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                  const Icon(Icons.check, size: 8, color: AppColors.success),
-                                  const SizedBox(width: 2),
-                                  Text(context.s.verified,
-                                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
-                                      color: AppColors.success, letterSpacing: 0.3)),
-                                ]),
-                              ),
-                            ]),
-                          ],
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.white,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-                          builder: (_) => _EditProfileSheet(
-                            currentName: user.name,
-                            onSaved: () => ref.read(authProvider.notifier).refreshProfile(),
-                          ),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceSoft,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.edit_outlined, size: 18, color: AppColors.ink2),
-                        ),
-                      ),
-                    ],
-                  ),
+                // ── Stats row ───────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  child: Row(children: [
+                    _StatTile(
+                      icon: Icons.local_shipping_outlined,
+                      iconColor: const Color(0xFF2563EB),
+                      iconBg: const Color(0xFFEFF6FF),
+                      value: activeOrders > 0 ? '$activeOrders' : '—',
+                      label: context.s.activeOrdersLbl,
+                      onTap: () => safePush(context, '/orders'),
+                    ),
+                    const SizedBox(width: 8),
+                    _StatTile(
+                      icon: Icons.receipt_long_outlined,
+                      iconColor: const Color(0xFF7C3AED),
+                      iconBg: const Color(0xFFF5F3FF),
+                      value: totalOrders > 0 ? '$totalOrders' : '—',
+                      label: context.s.totalOrdersLbl,
+                      onTap: () => safePush(context, '/orders'),
+                    ),
+                    const SizedBox(width: 8),
+                    _StatTile(
+                      icon: Icons.favorite_outline_rounded,
+                      iconColor: const Color(0xFFE11D48),
+                      iconBg: const Color(0xFFFFF1F2),
+                      value: wishlistCount > 0 ? '$wishlistCount' : '—',
+                      label: context.s.savedItems,
+                      onTap: () => safePush(context, '/wishlist'),
+                    ),
+                  ]),
                 ),
 
-                // 3-column stat grid
+                // ── Wallet card ─────────────────────────────────────────────
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                  child: Row(
-                    children: [
-                      _StatTile(
-                        value: activeOrders > 0 ? '$activeOrders' : '—',
-                        label: context.s.activeOrdersLbl,
-                        accent: activeOrders > 0,
-                        onTap: () => safePush(context, '/orders'),
-                      ),
-                      const SizedBox(width: 8),
-                      _StatTile(
-                        value: totalOrders > 0 ? '$totalOrders' : '—',
-                        label: context.s.totalOrdersLbl,
-                        onTap: () => safePush(context, '/orders'),
-                      ),
-                      const SizedBox(width: 8),
-                      _StatTile(
-                        value: wishlistCount > 0 ? '$wishlistCount' : '—',
-                        label: context.s.savedItems,
-                        onTap: () => safePush(context, '/wishlist'),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Wallet row
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
                   child: GestureDetector(
                     onTap: () => safePush(context, '/wallet'),
                     child: Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: AppShadows.shadowCard,
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Row(children: [
                         Container(
-                          width: 36, height: 36,
+                          width: 40, height: 40,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.12),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(Icons.account_balance_wallet_outlined,
                             color: AppColors.primary, size: 20),
                         ),
                         const SizedBox(width: 12),
-                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(context.s.myWallet,
-                            style: const TextStyle(fontSize: 12, color: AppColors.ink2)),
-                          Text('${user.walletBalance.toStringAsFixed(0)} ${context.s.lyd}',
-                            style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                              fontSize: 18, fontWeight: FontWeight.w800)),
-                        ]),
-                        const Spacer(),
-                        const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+                        Expanded(child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(context.s.myWallet,
+                              style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
+                            Text(
+                              '${user.walletBalance.toStringAsFixed(0)} ${context.s.lyd}',
+                              style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                                fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.ink0, height: 1.1)),
+                          ],
+                        )),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.ink2, width: 1.0),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text(context.s.chargeWallet, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                              color: AppColors.ink2, fontFamily: 'Cairo')),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.add, size: 12, color: AppColors.ink2),
+                          ]),
+                        ),
                       ]),
                     ),
                   ),
@@ -230,37 +191,79 @@ class AccountScreen extends ConsumerWidget {
 
                 const SizedBox(height: 12),
 
-                // Menu group 1
+                // ── Menu group 1 ────────────────────────────────────────────
                 _MenuGroup([
-                  _MenuRow(Icons.shopping_bag_outlined, context.s.myOrders, () => safePush(context, '/orders')),
-                  _MenuRow(Icons.location_on_outlined, context.s.myAddresses, () => safePush(context, '/addresses')),
-                  _MenuRow(Icons.assignment_return_outlined, context.tr('الإرجاعات والاسترداد', 'Returns & Refunds'), () => safePush(context, '/return-policy')),
-                  _MenuRow(Icons.auto_awesome_outlined, context.s.inviteFriends, () => safePush(context, '/referral')),
+                  _MenuRow(
+                    icon: Icons.shopping_bag_outlined,
+                    label: context.s.myOrders,
+                    onTap: () => safePush(context, '/orders'),
+                  ),
+                  _MenuRow(
+                    icon: Icons.location_on_outlined,
+                    label: context.s.myAddresses,
+                    onTap: () => safePush(context, '/addresses'),
+                  ),
+                  _MenuRow(
+                    icon: Icons.assignment_return_outlined,
+                    label: context.tr('الإرجاعات والاسترداد', 'Returns & Refunds'),
+                    onTap: () => safePush(context, '/return-policy'),
+                  ),
+                  _MenuRow(
+                    icon: Icons.auto_awesome_outlined,
+                    label: context.s.inviteFriends,
+                    onTap: () => safePush(context, '/referral'),
+                    badge: context.s.inviteEarnBadge,
+                  ),
                 ]),
 
                 const SizedBox(height: 8),
 
-                // Menu group 2
+                // ── Menu group 2 ────────────────────────────────────────────
                 _MenuGroup([
-                  _MenuRow(Icons.notifications_outlined, context.s.notifications, () => safePush(context, '/notifications')),
-                  _MenuRow(Icons.language_outlined, context.s.switchLang, () {
-                    ref.read(localeProvider.notifier).toggle();
-                  }),
-                  _MenuRow(Icons.settings_outlined, context.tr('الإعدادات', 'Settings'), () => safePush(context, '/settings')),
+                  _MenuRow(
+                    icon: Icons.notifications_outlined,
+                    label: context.s.notifications,
+                    onTap: () => safePush(context, '/notifications'),
+                  ),
+                  _MenuRow(
+                    icon: Icons.language_outlined,
+                    label: context.s.switchLang,
+                    onTap: () => ref.read(localeProvider.notifier).toggle(),
+                  ),
+                  _MenuRow(
+                    icon: Icons.settings_outlined,
+                    label: context.tr('الإعدادات', 'Settings'),
+                    onTap: () => safePush(context, '/settings'),
+                  ),
                 ]),
 
                 const SizedBox(height: 16),
 
+                // ── Sign out ────────────────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: AppButton(
-                    label: context.s.signOut,
-                    variant: AppButtonVariant.outline,
+                  child: GestureDetector(
                     onTap: () => ref.read(authProvider.notifier).logout(),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.danger.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.danger.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        const Icon(Icons.logout_rounded, size: 17, color: AppColors.danger),
+                        const SizedBox(width: 8),
+                        Text(context.s.signOut,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+                            color: AppColors.danger, fontFamily: 'Cairo')),
+                      ]),
+                    ),
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
                 const Text('baahy v1.0 · 2026',
                   style: TextStyle(fontSize: 11, color: AppColors.ink4)),
                 const SizedBox(height: 32),
@@ -273,13 +276,102 @@ class AccountScreen extends ConsumerWidget {
   }
 }
 
+// ── Profile header ────────────────────────────────────────────────────────────
+
+class _ProfileHeader extends StatelessWidget {
+  final dynamic user;
+  final VoidCallback onEdit;
+  const _ProfileHeader({required this.user, required this.onEdit});
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = (user.name as String).isNotEmpty ? (user.name as String)[0] : 'U';
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(color: Colors.white),
+      child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+              // Avatar
+              Container(
+                width: 52, height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                ),
+                child: Center(
+                  child: Text(initial,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
+                      color: AppColors.primary, fontFamily: 'Cairo')),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Name + phone
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(user.name as String,
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800,
+                      color: AppColors.ink0, fontFamily: 'Cairo', height: 1.2)),
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    Text(user.phone as String,
+                      textDirection: TextDirection.ltr,
+                      style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                        fontSize: 12, color: AppColors.ink3)),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.check_circle_outline, size: 8, color: AppColors.success),
+                        const SizedBox(width: 3),
+                        Text(context.s.verified, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
+                          color: AppColors.success, fontFamily: 'Cairo')),
+                      ]),
+                    ),
+                  ]),
+                ]),
+              ),
+
+              // Edit button
+              GestureDetector(
+                onTap: onEdit,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSoft,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.edit_outlined, size: 17, color: AppColors.ink2),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      );
+  }
+}
+
+// ── Stat tile ─────────────────────────────────────────────────────────────────
+
 class _StatTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
   final String value;
   final String label;
-  final bool accent;
   final VoidCallback onTap;
-  const _StatTile({required this.value, required this.label,
-    this.accent = false, required this.onTap});
+  const _StatTile({
+    required this.icon, required this.iconColor, required this.iconBg,
+    required this.value, required this.label, required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) => Expanded(
@@ -288,26 +380,31 @@ class _StatTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: accent ? const Color(0xFFE8F8F8) : Colors.white,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: accent ? const Color(0xFFE0E0E0) : AppColors.border),
-          boxShadow: accent ? null : AppShadows.shadowCard,
+          boxShadow: AppShadows.shadowCard,
         ),
         child: Column(children: [
-          Text(value, style: TextStyle(
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, size: 16, color: iconColor),
+          ),
+          const SizedBox(height: 6),
+          Text(value, style: const TextStyle(
             fontFamily: 'PlusJakartaSans',
-            fontSize: 26, fontWeight: FontWeight.w800,
-            color: accent ? AppColors.primary : AppColors.ink0, height: 1)),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(
-            fontSize: 11.5,
-            color: accent ? AppColors.primary : AppColors.ink2)),
+            fontSize: 22, fontWeight: FontWeight.w800,
+            color: AppColors.ink0, height: 1)),
+          const SizedBox(height: 3),
+          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.ink2),
+            textAlign: TextAlign.center),
         ]),
       ),
     ),
   );
 }
+
+// ── Menu group ────────────────────────────────────────────────────────────────
 
 class _MenuGroup extends StatelessWidget {
   final List<_MenuRow> rows;
@@ -319,48 +416,68 @@ class _MenuGroup extends StatelessWidget {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: AppColors.border),
+      boxShadow: AppShadows.shadowCard,
     ),
     child: Column(
       children: [
         for (int i = 0; i < rows.length; i++) ...[
           rows[i],
           if (i < rows.length - 1)
-            const Divider(height: 1, color: AppColors.border),
+            const Divider(height: 1, color: AppColors.border, indent: 58, endIndent: 0),
         ],
       ],
     ),
   );
 }
 
+// ── Menu row ──────────────────────────────────────────────────────────────────
+
 class _MenuRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _MenuRow(this.icon, this.label, this.onTap);
+  final String? badge;
+  const _MenuRow({
+    required this.icon, required this.label, required this.onTap, this.badge,
+  });
 
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
     child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(children: [
         Container(
-          width: 32, height: 32,
+          width: 34, height: 34,
           decoration: BoxDecoration(
             color: AppColors.surfaceSoft,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(9),
           ),
-          child: Icon(icon, size: 18, color: AppColors.ink2),
+          child: Icon(icon, size: 17, color: AppColors.ink0),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 13),
         Expanded(child: Text(label,
           style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w500))),
-        const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+        if (badge != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F3FF),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(badge!,
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                color: Color(0xFF7C3AED), fontFamily: 'Cairo')),
+          ),
+          const SizedBox(width: 6),
+        ],
+        const Icon(Icons.arrow_forward_ios, size: 13, color: AppColors.ink4),
       ]),
     ),
   );
 }
+
+// ── Edit profile sheet ────────────────────────────────────────────────────────
 
 class _EditProfileSheet extends StatefulWidget {
   final String currentName;
@@ -397,16 +514,13 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
       if (mounted) Navigator.of(context).pop();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم تحديث البيانات'),
-            backgroundColor: AppColors.success,
-          ));
+          SnackBar(content: Text(context.s.profileUpdated), backgroundColor: AppColors.success));
       }
     } catch (_) {
       setState(() => _loading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('حدث خطأ، حاول مجدداً')));
+          SnackBar(content: Text(context.s.errorTryAgain)));
       }
     }
   }
@@ -423,24 +537,22 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
-            child: Container(
-              width: 40, height: 4,
+            child: Container(width: 40, height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border, borderRadius: BorderRadius.circular(2)),
-            ),
+                color: AppColors.border, borderRadius: BorderRadius.circular(2))),
           ),
           const SizedBox(height: 16),
-          const Text('تعديل الملف الشخصي',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
+          Text(context.s.editProfileTitle,
+            style: const TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
-          const Text('الاسم',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
+          Text(context.s.nameLabel,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
           const SizedBox(height: 8),
           TextField(
             controller: _nameCtrl,
             textDirection: TextDirection.rtl,
             decoration: InputDecoration(
-              hintText: 'اسمك الكامل',
+              hintText: context.s.fullNameHint,
               hintStyle: const TextStyle(fontFamily: 'Cairo', color: AppColors.ink3),
               filled: true,
               fillColor: AppColors.bg,
@@ -471,8 +583,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               child: _loading
                 ? const SizedBox(width: 20, height: 20,
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Text('حفظ التغييرات',
-                    style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 15)),
+                : Text(context.s.saveChanges,
+                    style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 15)),
             ),
           ),
         ],

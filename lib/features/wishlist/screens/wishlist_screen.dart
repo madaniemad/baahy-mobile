@@ -6,6 +6,7 @@ import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/models/product.dart';
+import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -82,7 +83,7 @@ class WishlistScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => ref.read(wishlistProductsProvider.notifier).fetch(),
-              child: const Text('إعادة المحاولة'),
+              child: Text(context.s.retry),
             ),
           ]),
         ),
@@ -233,14 +234,14 @@ class _WishlistCard extends ConsumerWidget {
                         fontSize: 13, fontWeight: FontWeight.w600, height: 1.3)),
                 const SizedBox(height: 6),
                 Row(children: [
-                  Text('${salePrice.toStringAsFixed(0)} د.ل',
+                  Text('${fmtPrice(salePrice)} ${context.s.lydUnit}',
                       style: const TextStyle(
                           fontFamily: 'PlusJakartaSans',
                           fontSize: 15,
                           fontWeight: FontWeight.w800)),
                   if (hasDiscount) ...[
                     const SizedBox(width: 6),
-                    Text('${product.price.toStringAsFixed(0)} د.ل',
+                    Text('${fmtPrice(product.price)} ${context.s.lydUnit}',
                         style: const TextStyle(
                             fontFamily: 'PlusJakartaSans',
                             fontSize: 11,
@@ -316,20 +317,19 @@ class _ActionChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: filled ? AppColors.primary : Colors.transparent,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-              color: filled ? AppColors.primary : AppColors.border, width: 1.5),
+          border: Border.all(color: AppColors.ink2, width: 1.0),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 14, color: filled ? Colors.white : AppColors.ink2),
+          Icon(icon, size: 14, color: AppColors.ink2),
           const SizedBox(width: 4),
           Text(label,
-              style: TextStyle(
+              style: const TextStyle(
                   fontFamily: 'Cairo',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: filled ? Colors.white : AppColors.ink1)),
+                  color: AppColors.ink2)),
         ]),
       ),
     );

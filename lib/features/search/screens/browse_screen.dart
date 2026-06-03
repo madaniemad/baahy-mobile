@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -9,11 +10,31 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 
-final _categoryProductsProvider = FutureProvider.family<List<Product>, int>((ref, catId) async {
-  final res = await ApiClient.instance.dio.get('/products',
-    queryParameters: {'category_id': catId, 'per_page': 20, 'sort': 'popular'});
-  return (res.data['data']['data'] as List?)
-      ?.map((p) => Product.fromJson(p)).toList() ?? [];
+// Key: "parentId" or "parentId,sub1,sub2,..."
+final _categoryProductsProvider = FutureProvider.family<List<Product>, String>((ref, key) async {
+  final ids = key.split(',').map(int.parse).toList();
+  if (ids.length <= 1) {
+    final res = await ApiClient.instance.dio.get('/products',
+      queryParameters: {'category_id': ids[0], 'per_page': 50, 'sort': 'popular'});
+    final list = (res.data['data']['data'] as List?)
+        ?.map((p) => Product.fromJson(p)).toList() ?? [];
+    list.shuffle(Random());
+    return list;
+  }
+  // Fetch from each subcategory in parallel for a true cross-category mix
+  final subcatIds = ids.skip(1).toList();
+  final perCat = (48 / subcatIds.length).ceil().clamp(4, 12);
+  final futures = subcatIds.map((id) =>
+    ApiClient.instance.dio.get('/products',
+      queryParameters: {'category_id': id, 'per_page': perCat, 'sort': 'popular'})
+    .then((res) => (res.data['data']['data'] as List?)
+        ?.map((p) => Product.fromJson(p)).toList() ?? <Product>[])
+    .catchError((_) => <Product>[])
+  ).toList();
+  final results = await Future.wait(futures);
+  final combined = results.expand((l) => l).toList();
+  combined.shuffle(Random());
+  return combined;
 });
 
 class BrowseScreen extends ConsumerStatefulWidget {
@@ -72,11 +93,13 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 5),
                           decoration: BoxDecoration(
                             color: isActive ? Colors.white : Colors.transparent,
-                            border: Border(
-                              left: BorderSide(
-                                color: isActive ? AppColors.primary : Colors.transparent,
-                                width: 3),
-                            ),
+                            border: isAr
+                              ? Border(left: BorderSide(
+                                  color: isActive ? AppColors.primary : Colors.transparent,
+                                  width: 3))
+                              : Border(right: BorderSide(
+                                  color: isActive ? AppColors.primary : Colors.transparent,
+                                  width: 3)),
                           ),
                           child: Column(
                             children: [
@@ -148,8 +171,11 @@ class _RightContentState extends ConsumerState<_RightContent> {
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final subcats = widget.category.children;
-    // Always show main category's popular products — subcats navigate away
-    final productsAsync = ref.watch(_categoryProductsProvider(widget.categoryId));
+    // Fetch from all subcategories for a true cross-category mix
+    final key = subcats.isNotEmpty
+        ? '${widget.categoryId},${subcats.map((s) => s.id).join(',')}'
+        : '${widget.categoryId}';
+    final productsAsync = ref.watch(_categoryProductsProvider(key));
 
     return productsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -164,10 +190,10 @@ class _RightContentState extends ConsumerState<_RightContent> {
               padding: EdgeInsets.zero,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 0.78,
+                crossAxisCount: 2,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.82,
               ),
               itemCount: subcats.length,
               itemBuilder: (_, i) {
@@ -179,7 +205,16 @@ class _RightContentState extends ConsumerState<_RightContent> {
                 );
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
+            Row(children: [
+              Container(width: 3, height: 16, decoration: BoxDecoration(
+                color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 8),
+              Text(context.s.sneakPeek,
+                style: const TextStyle(fontFamily: 'Cairo',
+                  fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.ink0)),
+            ]),
+            const SizedBox(height: 10),
           ],
 
           if (products.isEmpty)

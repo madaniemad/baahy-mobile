@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
 final _referralProvider = FutureProvider<Map<String, dynamic>>((ref) async {
@@ -40,8 +41,8 @@ class ReferralScreen extends ConsumerWidget {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         backgroundColor: Colors.white, elevation: 0,
-        title: const Text('ادعُ أصدقاءك',
-          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+        title: Text(context.s.inviteTitle,
+          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
@@ -62,13 +63,13 @@ class ReferralScreen extends ConsumerWidget {
             child: Column(children: [
               const Text('🎁', style: TextStyle(fontSize: 56)),
               const SizedBox(height: 8),
-              Text(config.referralTextAr,
+              Text(context.isAr ? config.referralTextAr : config.referralTextEn,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontFamily: 'Cairo',
                   fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
               const SizedBox(height: 6),
               Text(
-                'شارك رمزك. صديقك يحصل على خصم $receiver د.ل في طلبه الأول، وأنت تحصل على $giver د.ل عند شرائه.',
+                context.s.referralSubtitle(receiver, giver),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 14, color: AppColors.ink2,
                   height: 1.5)),
@@ -100,16 +101,16 @@ class ReferralScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Padding(
-                padding: EdgeInsets.only(bottom: 10),
-                child: Text('كيف يعمل',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(context.s.howItWorks,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
                     letterSpacing: 0.4, color: AppColors.ink1)),
               ),
               ...[
-                (1, 'شارك رمزك مع صديق'),
-                (2, 'يسجّل ويقوم بطلبه الأول'),
-                (3, 'تحصلان معاً على $giver د.ل في المحفظة'),
+                (1, context.s.referralStep1),
+                (2, context.s.referralStep2),
+                (3, context.s.referralStep3(giver)),
               ].map((s) => Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Row(children: [
@@ -170,8 +171,8 @@ class _CodeCardState extends State<_CodeCard> {
         boxShadow: AppShadows.shadowCard,
       ),
       child: Column(children: [
-        const Text('رمزك',
-          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
+        Text(context.s.yourCode,
+          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
             letterSpacing: 0.5, color: AppColors.ink2)),
         const SizedBox(height: 6),
 
@@ -207,7 +208,7 @@ class _CodeCardState extends State<_CodeCard> {
                 Icon(_copied ? Icons.check_rounded : Icons.upload_outlined,
                   size: 16, color: _copied ? AppColors.success : AppColors.ink1),
                 const SizedBox(width: 6),
-                Text(_copied ? 'نُسخ' : 'نسخ',
+                Text(_copied ? context.s.copied : context.s.copyBtn,
                   style: TextStyle(fontWeight: FontWeight.w700,
                     color: _copied ? AppColors.success : AppColors.ink0)),
               ]),
@@ -218,22 +219,23 @@ class _CodeCardState extends State<_CodeCard> {
         const SizedBox(height: 14),
 
         // Share options
-        const Text('أو شارك عبر',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+        Text(context.s.orShareVia,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
             color: AppColors.ink3, letterSpacing: 0.4)),
         const SizedBox(height: 10),
         Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-          _ShareBtn(label: 'واتساب', color: const Color(0xFF25D366),
+          _ShareBtn(label: context.s.whatsapp, color: const Color(0xFF25D366),
             icon: Icons.chat_rounded,
             onTap: () => Share.share(
-              'جرّب تطبيق باهي للتسوق! استخدم رمزي ${widget.code} واحصل على ${widget.receiverAmount} د.ل خصم على أول طلب 🛍️')),
-          _ShareBtn(label: 'رسالة', color: const Color(0xFF1f8a5b),
+              context.s.referralShareWhatsApp(widget.code, widget.receiverAmount))),
+          _ShareBtn(label: context.s.viaSMS, color: const Color(0xFF1f8a5b),
             icon: Icons.sms_outlined,
-            onTap: () => Share.share('رمز باهي: ${widget.code} · خصم ${widget.receiverAmount} د.ل')),
-          _ShareBtn(label: 'المزيد', color: AppColors.ink2,
+            onTap: () => Share.share(
+              context.s.referralShareSMS(widget.code, widget.receiverAmount))),
+          _ShareBtn(label: context.s.moreOptions, color: AppColors.ink2,
             icon: Icons.share_outlined,
             onTap: () => Share.share(
-              'جرّب تطبيق باهي للتسوق! استخدم رمزي ${widget.code} واحصل على ${widget.receiverAmount} د.ل خصم على أول طلب')),
+              context.s.referralShareGeneral(widget.code, widget.receiverAmount))),
         ]),
 
         // Stats
@@ -247,11 +249,11 @@ class _CodeCardState extends State<_CodeCard> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(children: [
-              _StatCell('${widget.invited}', 'دعوة'),
+              _StatCell('${widget.invited}', context.s.statInvited),
               Container(width: 1, height: 40, color: AppColors.border),
-              _StatCell('${widget.joined}', 'انضموا'),
+              _StatCell('${widget.joined}', context.s.statJoined),
               Container(width: 1, height: 40, color: AppColors.border),
-              _StatCell('${widget.earned.toStringAsFixed(0)}', 'ربحت', isMoney: true),
+              _StatCell('${widget.earned.toStringAsFixed(0)}', context.s.statEarned, isMoney: true),
             ]),
           ),
         ],
@@ -299,8 +301,8 @@ class _StatCell extends StatelessWidget {
             style: const TextStyle(fontFamily: 'PlusJakartaSans',
               fontSize: 22, fontWeight: FontWeight.w800, height: 1)),
           if (isMoney)
-            const Text(' د.ل',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+            Text(' ${context.s.lydUnit}',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
                 color: AppColors.ink2)),
         ]),
         const SizedBox(height: 4),

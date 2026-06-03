@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/order.dart';
+import '../../../core/utils/format.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -29,15 +31,15 @@ class OrderTrackingScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
         titleSpacing: 0,
         title: orderAsync.maybeWhen(
-          data: (o) => Text('الطلب ${o.orderNumber}',
+          data: (o) => Text(context.s.orderNumber(o.orderNumber),
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
-          orElse: () => const Text('تفاصيل الطلب',
-            style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          orElse: () => Text(context.s.orderDetails,
+            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         ),
       ),
       body: orderAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (_, __) => const Center(child: Text('تعذر تحميل الطلب')),
+        error: (_, __) => Center(child: Text(context.s.loadOrderFailed)),
         data: (order) => _OrderBody(order: order),
       ),
     );
@@ -70,8 +72,8 @@ class _OrderBody extends StatelessWidget {
             border: Border.all(color: AppColors.border),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('حالة الطلب',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            Text(context.s.orderStatus,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
             _Timeline(status: order.status),
           ]),
@@ -117,14 +119,14 @@ class _OrderBody extends StatelessWidget {
             border: Border.all(color: AppColors.border),
           ),
           child: Column(children: [
-            _SumRow('المجموع الفرعي', '${order.subtotal.toStringAsFixed(0)} د.ل'),
+            _SumRow(context.s.subtotalOrder, '${fmtPrice(order.subtotal)} ${context.s.lydUnit}'),
             if (order.shippingCost > 0)
-              _SumRow('الشحن', '${order.shippingCost.toStringAsFixed(0)} د.ل'),
+              _SumRow(context.s.shippingLabel, '${fmtPrice(order.shippingCost)} ${context.s.lydUnit}'),
             if (order.discount > 0)
-              _SumRow('الخصم', '-${order.discount.toStringAsFixed(0)} د.ل',
+              _SumRow(context.s.discountLabel, '-${fmtPrice(order.discount)} ${context.s.lydUnit}',
                 color: AppColors.success),
             const Divider(height: 20, color: AppColors.border),
-            _SumRow('الإجمالي', '${order.total.toStringAsFixed(0)} د.ل', bold: true),
+            _SumRow(context.s.totalLabel, '${fmtPrice(order.total)} ${context.s.lydUnit}', bold: true),
           ]),
         ),
 
@@ -136,8 +138,8 @@ class _OrderBody extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: () => safePush(context, '/orders/${order.id}/return'),
               icon: const Icon(Icons.assignment_return_outlined, size: 16),
-              label: const Text('إرجاع منتجات',
-                style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+              label: Text(context.s.returnItems,
+                style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -152,8 +154,8 @@ class _OrderBody extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: () {},
             icon: const Icon(Icons.help_outline_rounded, size: 16),
-            label: const Text('مساعدة بخصوص هذا الطلب',
-              style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+            label: Text(context.s.orderHelp,
+              style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 13),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -191,17 +193,17 @@ class _HeroCard extends StatelessWidget {
           Row(children: [
             const Icon(Icons.local_shipping_outlined, color: AppColors.primary, size: 14),
             const SizedBox(width: 5),
-            const Text('في الطريق',
-              style: TextStyle(fontFamily: 'Cairo', color: AppColors.primary,
+            Text(context.s.onTheWay,
+              style: const TextStyle(fontFamily: 'Cairo', color: AppColors.primary,
                 fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1)),
           ]),
           const SizedBox(height: 8),
-          const Text('قيد التوصيل',
-            style: TextStyle(color: Colors.white,
+          Text(context.s.inDelivery,
+            style: const TextStyle(color: Colors.white,
               fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
-          const Text('1-2 يوم · طرابلس',
-            style: TextStyle(color: Colors.white70, fontSize: 13)),
+          Text(context.s.deliveryPromise,
+            style: const TextStyle(color: Colors.white70, fontSize: 13)),
         ]),
       ]),
     );
@@ -212,29 +214,28 @@ class _Timeline extends StatelessWidget {
   final String status;
   const _Timeline({required this.status});
 
-  static const _steps = [
-    ('pending',     'تم استلام الطلب'),
-    ('confirmed',   'مؤكد'),
-    ('processing',  'قيد التجهيز'),
-    ('shipped',     'في الطريق'),
-    ('delivered',   'تم التسليم'),
-  ];
-
-  int get _currentIdx {
-    for (int i = 0; i < _steps.length; i++) {
-      if (_steps[i].$1 == status) return i;
+  int _currentIdx(List<(String, String)> steps) {
+    for (int i = 0; i < steps.length; i++) {
+      if (steps[i].$1 == status) return i;
     }
     return 0;
   }
 
   @override
   Widget build(BuildContext context) {
-    final current = _currentIdx;
+    final steps = [
+      ('pending',     context.s.stepPending),
+      ('confirmed',   context.s.stepConfirmed),
+      ('processing',  context.s.stepProcessing),
+      ('shipped',     context.s.stepShipped),
+      ('delivered',   context.s.stepDelivered),
+    ];
+    final current = _currentIdx(steps);
     return Column(
-      children: List.generate(_steps.length, (i) {
+      children: List.generate(steps.length, (i) {
         final isDone = i <= current;
         final isActive = i == current;
-        final isLast = i == _steps.length - 1;
+        final isLast = i == steps.length - 1;
         return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SizedBox(
             width: 22,
@@ -264,7 +265,7 @@ class _Timeline extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: EdgeInsets.only(top: 1, bottom: isLast ? 0 : 20),
-              child: Text(_steps[i].$2,
+              child: Text(steps[i].$2,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
@@ -320,7 +321,7 @@ class _OrderItemRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(item.productNameAr, maxLines: 1, overflow: TextOverflow.ellipsis,
+            Text(context.isAr ? item.productNameAr : item.productName, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, height: 1.3)),
             if (item.variationLabel != null)
               Text(item.variationLabel!,
@@ -330,7 +331,7 @@ class _OrderItemRow extends StatelessWidget {
                 fontSize: 11, color: AppColors.ink2)),
           ]),
         ),
-        Text('${item.total.toStringAsFixed(0)} د.ل',
+        Text('${fmtPrice(item.total)} ${context.s.lydUnit}',
           style: const TextStyle(fontFamily: 'PlusJakartaSans',
             fontWeight: FontWeight.w700, fontSize: 13)),
       ]),

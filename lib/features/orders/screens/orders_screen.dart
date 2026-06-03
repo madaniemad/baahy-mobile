@@ -54,9 +54,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 
   Future<void> _reorder(BuildContext context, Order order) async {
     final snack = ScaffoldMessenger.of(context);
-    snack.showSnackBar(const SnackBar(
-      content: Text('جارٍ إضافة المنتجات إلى السلة...'),
-      duration: Duration(seconds: 2),
+    snack.showSnackBar(SnackBar(
+      content: Text(context.s.addingToCart),
+      duration: const Duration(seconds: 2),
     ));
     for (final item in order.allItems) {
       try {
@@ -122,7 +122,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           const SizedBox(height: 12),
           TextButton(
             onPressed: () => ref.invalidate(_ordersProvider),
-            child: const Text('إعادة المحاولة'),
+            child: Text(context.s.retry),
           ),
         ])),
         data: (orders) {
@@ -269,8 +269,8 @@ class _OrderCard extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onReorder,
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('إعادة الطلب',
-                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 13)),
+                label: Text(context.s.reorder,
+                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 13)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.ink0,
                   side: const BorderSide(color: AppColors.border),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/address_provider.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../features/map/map_location_picker.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
@@ -85,7 +86,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
   Future<void> _save() async {
     if (_city == null || _streetCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى اختيار المدينة وإدخال الشارع')));
+        SnackBar(content: Text(context.s.selectCityAndStreet)));
       return;
     }
     setState(() => _loading = true);
@@ -273,8 +274,8 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                 const SizedBox(width: 54),
                 const Icon(Icons.map_outlined, size: 11, color: AppColors.ink3),
                 const SizedBox(width: 4),
-                const Text('اضغط لفتح الخريطة وتحديد مدينتك',
-                  style: TextStyle(fontSize: 11, color: AppColors.ink3)),
+                Text(context.s.tapToOpenMap,
+                  style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
               ]),
               const SizedBox(height: 14),
 
@@ -325,8 +326,8 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                         : null,
                   ),
                   const SizedBox(width: 10),
-                  const Text('تعيين كعنوان افتراضي',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text(context.s.setAsDefault,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                 ]),
               ),
               const SizedBox(height: 80),
@@ -384,8 +385,8 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
             borderRadius: BorderRadius.circular(99)),
         ),
         const SizedBox(height: 16),
-        const Text('اختر مدينة',
-          style: TextStyle(fontFamily: 'Cairo',
+        Text(context.s.selectCity,
+          style: const TextStyle(fontFamily: 'Cairo',
             fontSize: 17, fontWeight: FontWeight.w800)),
         const SizedBox(height: 12),
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
 // Reuse _OnboardingDots and _BottomBar from city_screen — so we copy the
@@ -103,9 +104,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 ),
               ),
               const SizedBox(height: 14),
-              const Text('تسوّق أحدث المنتجات من مختلف الفئات',
+              Text(context.s.discoverCategories,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 16,
+                style: const TextStyle(fontFamily: 'Cairo', fontSize: 16,
                   fontWeight: FontWeight.w700, color: _navy, height: 1.5)),
 
               // Floating products image
@@ -193,7 +194,7 @@ class _ActionBar extends StatelessWidget {
                 child: Icon(Icons.arrow_forward_ios_rounded,
                   size: 18, color: _teal)),
             ),
-            const Text('ابدأ التسوق', style: TextStyle(fontFamily: 'Cairo',
+            Text(context.s.startShopping, style: const TextStyle(fontFamily: 'Cairo',
               fontSize: 19, fontWeight: FontWeight.w900, color: _navy)),
           ]),
         ),

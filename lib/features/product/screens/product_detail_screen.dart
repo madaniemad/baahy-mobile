@@ -14,6 +14,7 @@ import '../../../core/providers/cart_provider.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/providers/recently_viewed_provider.dart';
+import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
@@ -67,21 +68,21 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       await ApiClient.instance.dio.post('/products/$productId/notify-me');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('سنعلمك عند توفر المنتج'),
+        SnackBar(
+          content: Text(context.s.notifyAvailability),
           backgroundColor: AppColors.success,
         ));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذّر تسجيل الطلب، حاول مجدداً')));
+        SnackBar(content: Text(context.s.requestFailed)));
     }
   }
 
   Future<void> _addToCart(Product product, {bool goToCart = false}) async {
     if (product.productType == 'variable' && _selectedVariation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('اختر المواصفات أولاً')));
+        SnackBar(content: Text(context.s.selectOptions)));
       return;
     }
     await ref.read(cartProvider.notifier).add(
@@ -119,11 +120,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.ink3),
             const SizedBox(height: 12),
-            const Text('تعذر تحميل المنتج', style: TextStyle(color: AppColors.ink2)),
+            Text(context.s.loadProductFailed, style: const TextStyle(color: AppColors.ink2)),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => ref.refresh(_productDetailProvider(widget.id)),
-              child: const Text('إعادة المحاولة')),
+              child: Text(context.s.retry)),
           ]),
         ),
         data: (product) {
@@ -321,7 +322,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                         padding: EdgeInsets.symmetric(horizontal: 6),
                                         child: Text('·', style: TextStyle(color: AppColors.ink3)),
                                       ),
-                                      Text('${product.soldCount} مُباع',
+                                      Text(context.s.nSold(product.soldCount!),
                                         style: const TextStyle(fontSize: 12, color: AppColors.ink2)),
                                     ],
                                   ]),
@@ -332,18 +333,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   if (showRange) ...[
-                                    Text('${varMinPrice!.toStringAsFixed(0)} - ${varMaxPrice!.toStringAsFixed(0)} د.ل',
+                                    Text('${fmtPrice(varMinPrice!)} - ${fmtPrice(varMaxPrice!)} ${context.s.lydUnit}',
                                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                         fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.ink0)),
                                   ] else ...[
-                                    Text('${displayPrice.toStringAsFixed(0)} د.ل',
+                                    Text('${fmtPrice(displayPrice)} ${context.s.lydUnit}',
                                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                         fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.ink0)),
                                     if (displayPrice < product.price) ...[
                                       const SizedBox(width: 8),
                                       Padding(
                                         padding: const EdgeInsets.only(bottom: 3),
-                                        child: Text('${product.price.toStringAsFixed(0)} د.ل',
+                                        child: Text('${fmtPrice(product.price)} ${context.s.lydUnit}',
                                           style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                             fontSize: 15, color: AppColors.ink3,
                                             decoration: TextDecoration.lineThrough,
@@ -358,7 +359,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                             color: AppColors.danger.withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(6)),
                                           child: Text(
-                                            'وفّر ${(product.price - displayPrice).toStringAsFixed(0)} د.ل',
+                                            '${context.s.saveAmountPrefix} ${fmtPrice(product.price - displayPrice)} ${context.s.lydUnit}',
                                             style: const TextStyle(color: AppColors.danger,
                                               fontFamily: 'Cairo',
                                               fontSize: 11, fontWeight: FontWeight.w700)),
@@ -382,8 +383,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 const SizedBox(width: 6),
                                 Text(
                                   product.inStock
-                                      ? (lowStock ? 'تبقّى ${product.stockQuantity} فقط' : 'متوفر')
-                                      : 'نفدت الكمية',
+                                      ? (lowStock ? context.s.lowStockN(product.stockQuantity!) : context.s.inStock)
+                                      : context.s.outOfStock,
                                   style: TextStyle(
                                     fontSize: 13, fontWeight: FontWeight.w600,
                                     color: product.inStock
@@ -459,7 +460,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               const Icon(Icons.shield_outlined, size: 15, color: AppColors.ink3),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Text('منتجات موثوقة من بائعين معتمدين • الدفع آمن ومضمون',
+                                child: Text(context.s.trustedSellers,
                                   style: const TextStyle(fontSize: 12, color: AppColors.ink2, height: 1.4)),
                               ),
                             ]),
@@ -508,9 +509,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                const Text('الوصف',
+                                Text(context.s.description,
                                   textAlign: TextAlign.start,
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                                 const SizedBox(height: 8),
                                 Text(isAr
                                     ? (product.descriptionAr ?? product.description!)
@@ -612,9 +613,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text('السعر',
-                                style: TextStyle(fontSize: 10, color: AppColors.ink3)),
-                              Text('${displayPrice.toStringAsFixed(0)} د.ل',
+                              Text(context.s.priceLabel,
+                                style: const TextStyle(fontSize: 10, color: AppColors.ink3)),
+                              Text('${displayPrice.toStringAsFixed(0)} ${context.s.lydUnit}',
                                 style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                   fontSize: 16, fontWeight: FontWeight.w800)),
                             ],
@@ -625,8 +626,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               onPressed: () => _addToCart(product),
                               icon: const Icon(Icons.shopping_cart_outlined,
                                 size: 18, color: AppColors.ink0),
-                              label: const Text('أضف إلى السلة',
-                                style: TextStyle(fontFamily: 'Cairo',
+                              label: Text(context.s.addToCart,
+                                style: const TextStyle(fontFamily: 'Cairo',
                                   fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.ink0)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
@@ -643,8 +644,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           child: ElevatedButton.icon(
                             onPressed: () => _notifyMe(product.id),
                             icon: const Icon(Icons.notifications_outlined, size: 18),
-                            label: const Text('أعلمني عند التوفر',
-                              style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+                            label: Text(context.s.notifyMe,
+                              style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.surfaceSoft,
                               foregroundColor: AppColors.ink1,
@@ -702,9 +703,9 @@ class _StockEtaStrip extends StatelessWidget {
             Text(
               product.inStock
                   ? (lowStock
-                      ? 'تبقّى ${product.stockQuantity} فقط'
-                      : 'متوفّر')
-                  : 'نفدت الكمية',
+                      ? context.s.lowStockN(product.stockQuantity!)
+                      : context.s.inStock)
+                  : context.s.outOfStock,
               style: TextStyle(
                 fontSize: 13, fontWeight: FontWeight.w700,
                 color: product.inStock
@@ -731,8 +732,8 @@ class _StockEtaStrip extends StatelessWidget {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       const Icon(Icons.bolt_rounded, size: 13, color: AppColors.primary),
                       const SizedBox(width: 4),
-                      const Text('يُوصَّل مباشرةً من مستودعات باهي',
-                        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
+                      Text(context.s.deliveredDirect,
+                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
                           color: AppColors.primary)),
                     ]),
                   ),
@@ -762,15 +763,18 @@ class _TrustBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isAr = context.isAr;
     final paymentLabels = config.paymentMethods
         .where((m) => m.enabled)
-        .map((m) => m.labelAr)
+        .map((m) => isAr ? m.labelAr : (m.labelEn.isNotEmpty ? m.labelEn : m.labelAr))
         .join(' · ');
     final rows = [
-      (Icons.local_shipping_outlined, config.deliveryPromiseAr),
-      (Icons.refresh_rounded, 'إرجاع خلال ${config.returnDays} أيام · من باب منزلك'),
+      (Icons.local_shipping_outlined, isAr ? config.deliveryPromiseAr : config.deliveryPromiseEn),
+      (Icons.refresh_rounded, isAr
+          ? 'إرجاع خلال ${config.returnDays} أيام · من باب منزلك'
+          : 'Returns within ${config.returnDays} days · From your door'),
       (Icons.credit_card_outlined, paymentLabels.isNotEmpty
-          ? paymentLabels : 'الدفع عند الاستلام'),
+          ? paymentLabels : (isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery')),
     ];
 
     return Container(
@@ -793,13 +797,13 @@ class _TrustBlock extends StatelessWidget {
                   size: 18, color: Colors.white),
               ),
               const SizedBox(width: 12),
-              const Expanded(child: Column(
+              Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('يُباع ويُسلَّم عبر باهي',
-                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
-                  Text('مفحوص الجودة · مخزَّن في مستودعنا بطرابلس',
-                    style: TextStyle(fontSize: 11.5, color: AppColors.ink3)),
+                  Text(context.s.soldByBaahy,
+                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+                  Text(context.s.qualityChecked,
+                    style: const TextStyle(fontSize: 11.5, color: AppColors.ink3)),
                 ],
               )),
             ]),
@@ -870,8 +874,8 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('تُشترى عادةً معاً',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              Text(context.s.frequentlyBought,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
               const SizedBox(height: 12),
 
               // Image stack with + signs
@@ -940,11 +944,11 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  (i == 0 ? 'هذا المنتج: ' : '') +
+                                  (i == 0 ? (context.isAr ? 'هذا المنتج: ' : 'This product: ') : '') +
                                   (context.isAr ? all[i].nameAr : all[i].name),
                                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                                   maxLines: 2, overflow: TextOverflow.ellipsis),
-                                Text('${all[i].displayPrice.toStringAsFixed(0)} د.ل',
+                                Text('${fmtPrice(all[i].displayPrice)} ${context.s.lydUnit}',
                                   style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                     fontSize: 13, fontWeight: FontWeight.w700)),
                               ],
@@ -962,9 +966,9 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('الإجمالي لـ ${selected.length} منتج',
+                  Text(context.s.totalForN(selected.length),
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                  Text('${total.toStringAsFixed(0)} د.ل',
+                  Text('${fmtPrice(total)} ${context.s.lydUnit}',
                     style: const TextStyle(fontFamily: 'PlusJakartaSans',
                       fontSize: 18, fontWeight: FontWeight.w800)),
                 ],
@@ -980,7 +984,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                     safePush(context, '/cart');
                   },
                   icon: const Icon(Icons.shopping_cart_outlined, size: 16),
-                  label: Text('أضف ${selected.length} للسلة',
+                  label: Text(context.s.addNToCart(selected.length),
                     style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 13),
@@ -1014,13 +1018,13 @@ class _ReviewsSnippet extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Text('التقييمات ($count)',
+            Text(context.s.reviewsCountN(count),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             const Spacer(),
             GestureDetector(
               onTap: () => safePush(context, '/product/$productId/reviews'),
-              child: const Text('الكل ←',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+              child: Text(context.s.seeAllReviews,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                   color: AppColors.primary)),
             ),
           ]),
@@ -1038,7 +1042,7 @@ class _ReviewsSnippet extends ConsumerWidget {
                   itemBuilder: (_, __) => const Icon(Icons.star_rounded, color: AppColors.gold),
                 ),
                 const SizedBox(height: 4),
-                Text('بناءً على $count تقييم موثّق',
+                Text(context.s.basedOnN(count),
                   style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
               ]),
             ]),
@@ -1325,7 +1329,7 @@ class _QtySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      const Text('الكمية', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+      Text(context.s.qty, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
       const Spacer(),
       Container(
         decoration: BoxDecoration(
@@ -1370,9 +1374,9 @@ class _TrustPills extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <(IconData, String)>[
-      (Icons.refresh_rounded,                 'إرجاع واستبدال'),
-      (Icons.account_balance_wallet_outlined, 'الدفع عند الاستلام'),
-      (Icons.local_shipping_outlined,         'توصيل سريع'),
+      (Icons.refresh_rounded,                 context.s.trustReturn),
+      (Icons.account_balance_wallet_outlined, context.s.trustPayment),
+      (Icons.local_shipping_outlined,         context.s.trustDelivery),
     ];
     return Row(
       children: [
@@ -1418,9 +1422,13 @@ class _DeliveryCard extends ConsumerWidget {
   static const _arabicDays = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   static const _arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  static const _englishDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  static const _englishMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  static String _fmtDate(DateTime d) =>
-      '${_arabicDays[d.weekday % 7]} ${d.day} ${_arabicMonths[d.month - 1]}';
+  static String _fmtDate(DateTime d, bool isAr) => isAr
+      ? '${_arabicDays[d.weekday % 7]} ${d.day} ${_arabicMonths[d.month - 1]}'
+      : '${_englishDays[d.weekday % 7]}, ${_englishMonths[d.month - 1]} ${d.day}';
 
   static (int, int) _daysForCity(String city) {
     if (city.contains('طرابلس') || city.contains('مصراتة') || city.contains('الزاوية') ||
@@ -1438,11 +1446,12 @@ class _DeliveryCard extends ConsumerWidget {
     final city = ref.watch(cityProvider);
     final (minDays, maxDays) = _daysForCity(city);
     final now = DateTime.now();
-    final minDate = _fmtDate(now.add(Duration(days: minDays)));
-    final maxDate = _fmtDate(now.add(Duration(days: maxDays)));
-    final estimate = minDays == maxDays
-        ? 'يصل يوم $minDate'
-        : 'يصل بين $minDate و$maxDate';
+    final isAr = context.isAr;
+    final minDate = _fmtDate(now.add(Duration(days: minDays)), isAr);
+    final maxDate = _fmtDate(now.add(Duration(days: maxDays)), isAr);
+    final estimate = isAr
+        ? (minDays == maxDays ? 'يصل يوم $minDate' : 'يصل بين $minDate و$maxDate')
+        : (minDays == maxDays ? 'Arrives $minDate' : 'Arrives between $minDate and $maxDate');
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1456,7 +1465,7 @@ class _DeliveryCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text('التوصيل إلى $city',
+              Text(context.s.deliveryToCity(city),
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
               const SizedBox(width: 6),
               const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.primary),
@@ -1488,8 +1497,10 @@ class _VendorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = vendor.storeNameAr.isNotEmpty
-        ? vendor.storeNameAr : vendor.storeName;
+    final isAr = context.isAr;
+    final name = isAr
+        ? (vendor.storeNameAr.isNotEmpty ? vendor.storeNameAr : vendor.storeName)
+        : (vendor.storeName.isNotEmpty ? vendor.storeName : vendor.storeNameAr);
     return Row(children: [
       Container(
         width: 44, height: 44,
@@ -1524,8 +1535,8 @@ class _VendorRow extends StatelessWidget {
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        child: const Text('زيارة المتجر',
-          style: TextStyle(fontFamily: 'Cairo',
+        child: Text(context.s.visitStore,
+          style: const TextStyle(fontFamily: 'Cairo',
             fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.success)),
       ),
     ]);
@@ -1561,8 +1572,8 @@ class _CouponSectionState extends State<_CouponSection> {
           onTap: () => setState(() => _expanded = !_expanded),
           child: Row(children: [
             const Spacer(),
-            const Text('هل لديك كوبون خصم؟',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(context.s.hasCoupon,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(width: 6),
             const Icon(Icons.local_offer_outlined, size: 15, color: AppColors.ink3),
             const SizedBox(width: 8),
@@ -1614,8 +1625,8 @@ class _CouponSectionState extends State<_CouponSection> {
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text('تطبيق',
-                  style: TextStyle(fontFamily: 'Cairo',
+                child: Text(context.s.apply,
+                  style: const TextStyle(fontFamily: 'Cairo',
                     fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.ink0)),
               ),
             ]),
@@ -1682,8 +1693,8 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('قد يعجبك أيضاً',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          Text(context.s.youMayAlsoLike,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
           const SizedBox(height: 12),
           GridView.builder(
             shrinkWrap: true,
@@ -1716,8 +1727,8 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
                   shape: const StadiumBorder(),
                   foregroundColor: Colors.black87,
                 ),
-                child: const Text('عرض المزيد',
-                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, fontSize: 13)),
+                child: Text(context.s.viewMore,
+                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, fontSize: 13)),
               ),
             ),
           ],
@@ -1780,8 +1791,8 @@ class _AddedToCartSheet extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('تمت الإضافة للسلة',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                Text(context.s.addedToCart,
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
                 Text('$qty× $name',
                   style: const TextStyle(fontSize: 12, color: AppColors.ink2),
@@ -1799,8 +1810,8 @@ class _AddedToCartSheet extends StatelessWidget {
                   side: const BorderSide(color: AppColors.border),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text('مواصلة التسوّق',
-                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, color: AppColors.ink0)),
+                child: Text(context.s.continueShopping,
+                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, color: AppColors.ink0)),
               ),
             ),
             const SizedBox(width: 10),
@@ -1818,8 +1829,8 @@ class _AddedToCartSheet extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   elevation: 0,
                 ),
-                child: const Text('عرض السلة',
-                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: AppColors.ink0)),
+                child: Text(context.s.viewCart,
+                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: AppColors.ink0)),
               ),
             ),
           ]),

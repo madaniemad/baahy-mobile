@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -8,25 +7,6 @@ import '../../../shared/theme/app_theme.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
-
-  void _launchUrl(BuildContext context, String page) {
-    // Show the URL for the user to open in browser (deep-link to web pages)
-    final urls = {
-      'privacy': 'https://baahy.com/privacy-policy-baahy',
-      'terms': 'https://baahy.com/terms',
-    };
-    final url = urls[page] ?? 'https://baahy.com';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(url, style: const TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 12)),
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'نسخ',
-          onPressed: () => Clipboard.setData(ClipboardData(text: url)),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -95,13 +75,13 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.shield_outlined,
               label: isAr ? 'سياسة الخصوصية' : 'Privacy Policy',
               trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
-              onTap: () => _launchUrl(context, 'privacy'),
+              onTap: () => context.push('/privacy'),
             ),
             _SettingsRow(
               icon: Icons.description_outlined,
               label: isAr ? 'الشروط والأحكام' : 'Terms of Service',
               trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
-              onTap: () => _launchUrl(context, 'terms'),
+              onTap: () => context.push('/terms'),
             ),
             _SettingsRow(
               icon: Icons.assignment_return_outlined,
@@ -189,8 +169,8 @@ class _AppVersionBadge extends StatelessWidget {
         const Text('baahy', style: TextStyle(fontFamily: 'Cairo',
           fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary))),
       const SizedBox(height: 6),
-      const Text('الإصدار 1.0.0',
-        style: TextStyle(fontSize: 11, color: AppColors.ink4)),
+      Text(context.s.versionN('1.0.0'),
+        style: const TextStyle(fontSize: 11, color: AppColors.ink4)),
       const SizedBox(height: 2),
       const Text('© 2026 Baahy. All rights reserved.',
         style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 10, color: AppColors.ink4)),
