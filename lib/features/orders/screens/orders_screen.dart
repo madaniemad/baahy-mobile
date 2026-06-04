@@ -9,9 +9,10 @@ import '../../../core/providers/cart_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/app_button.dart';
 
 final _ordersProvider = FutureProvider<List<Order>>((ref) async {
-  final res = await ApiClient.instance.dio.get('/orders');
+  final res = await ApiClient.instance.dio.get('/orders', queryParameters: {'per_page': 50});
   final body = res.data;
   // API may return paginated {data:{data:[...]}} or flat {data:[...]}
   List? raw;
@@ -40,13 +41,18 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     ('delivered', context.s.completedOrders),
   ];
 
+  static const _activeStatuses = [
+    'pending_confirmation', 'pending', 'confirmed',
+    'processing', 'fulfilled', 'shipped', 'out_for_delivery',
+  ];
+
   List<Order> _filtered(List<Order> all) {
     switch (_tab) {
       case 'active':
-        return all.where((o) =>
-          ['pending', 'confirmed', 'processing', 'shipped'].contains(o.status)).toList();
+        return all.where((o) => _activeStatuses.contains(o.status)).toList();
       case 'delivered':
-        return all.where((o) => o.status == 'delivered').toList();
+        return all.where((o) =>
+          ['delivered', 'returned', 'refunded', 'cancelled'].contains(o.status)).toList();
       default:
         return all;
     }
@@ -58,14 +64,31 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       content: Text(context.s.addingToCart),
       duration: const Duration(seconds: 2),
     ));
-    for (final item in order.allItems) {
-      try {
-        final res = await ApiClient.instance.dio.get('/products/${item.productId}');
-        final product = Product.fromJson(res.data['data']);
-        await ref.read(cartProvider.notifier).add(product, qty: item.quantity);
-      } catch (_) {}
+    final results = await Future.wait(
+      order.allItems.map((item) async {
+        try {
+          final res = await ApiClient.instance.dio.get('/products/${item.productId}');
+          return (product: Product.fromJson(res.data['data']), qty: item.quantity);
+        } catch (_) {
+          return null;
+        }
+      }),
+    );
+    int added = 0;
+    for (final r in results) {
+      if (r == null || !r.product.inStock) continue;
+      await ref.read(cartProvider.notifier).add(r.product, qty: r.qty);
+      added++;
     }
-    if (context.mounted) safePush(context, '/cart');
+    if (context.mounted) {
+      if (added == 0) {
+        snack.showSnackBar(SnackBar(
+          content: Text(context.s.noItemsInStock),
+          backgroundColor: AppColors.warn,
+        ));
+      }
+      safePush(context, '/cart');
+    }
   }
 
   @override
@@ -139,20 +162,30 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     const SizedBox(height: 12),
                     Text(context.s.noOrders,
                       style: const TextStyle(fontSize: 16, color: AppColors.ink2)),
+                    const SizedBox(height: 20),
+                    AppButton(
+                      label: context.s.startShopping,
+                      width: 200,
+                      onTap: () => context.go('/home'),
+                    ),
                   ]),
                 ),
               ]),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(12),
-            itemCount: list.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (_, i) => _OrderCard(
-              order: list[i],
-              onReorder: list[i].status == 'delivered'
-                  ? () => _reorder(context, list[i])
-                  : null,
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async => ref.invalidate(_ordersProvider),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(12),
+              itemCount: list.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (_, i) => _OrderCard(
+                order: list[i],
+                onReorder: list[i].status == 'delivered'
+                    ? () => _reorder(context, list[i])
+                    : null,
+              ),
             ),
           );
         },
@@ -189,7 +222,7 @@ class _OrderCard extends StatelessWidget {
   String _statusLabel(BuildContext context, String s) =>
       context.s.statusLabel(s);
 
-  bool get _isActive => ['pending', 'confirmed', 'processing', 'shipped'].contains(order.status);
+  bool get _isActive => _OrdersScreenState._activeStatuses.contains(order.status);
 
   @override
   Widget build(BuildContext context) {

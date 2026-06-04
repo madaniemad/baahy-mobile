@@ -42,7 +42,8 @@ class ReturnScreen extends ConsumerStatefulWidget {
 
 class _ReturnScreenState extends ConsumerState<ReturnScreen> {
   int _step = 0;
-  final Map<int, bool> _selected = {};
+  // item_id → qty (0 = not selected)
+  final Map<int, int> _selected = {};
   String? _reason;
   final _notesCtrl = TextEditingController();
   final List<XFile> _images = [];
@@ -57,23 +58,28 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
   Future<void> _submit() async {
     if (_reason == null) return;
     final items = _selected.entries
-        .where((e) => e.value)
-        .map((e) => {'order_item_id': e.key})
+        .where((e) => e.value > 0)
+        .map((e) => {'order_item_id': e.key, 'quantity': e.value})
         .toList();
+    if (items.isEmpty) return;
     setState(() => _loading = true);
     try {
-      final formData = FormData.fromMap({
-        'items': items.map((i) => i['order_item_id'].toString()).join(','),
-        'reason': _reason,
-        'notes': _notesCtrl.text.trim(),
-        if (_images.isNotEmpty)
-          'images[]': await Future.wait(_images.map((f) async =>
-            MultipartFile.fromFile(f.path, filename: f.name))),
-      });
-      await ApiClient.instance.dio.post(
-        '/orders/${widget.orderId}/returns',
-        data: formData,
-      );
+      final formData = FormData();
+      formData.fields.add(MapEntry('order_id', widget.orderId.toString()));
+      formData.fields.add(MapEntry('reason', _reason!));
+      formData.fields.add(MapEntry('notes', _notesCtrl.text.trim()));
+      for (var i = 0; i < items.length; i++) {
+        formData.fields.add(MapEntry('items[$i][order_item_id]', items[i]['order_item_id'].toString()));
+        formData.fields.add(MapEntry('items[$i][quantity]', items[i]['quantity'].toString()));
+      }
+      if (_images.isNotEmpty) {
+        final files = await Future.wait(_images.map((f) async =>
+            MultipartFile.fromFile(f.path, filename: f.name)));
+        for (final f in files) {
+          formData.files.add(MapEntry('images[]', f));
+        }
+      }
+      await ApiClient.instance.dio.post('/returns', data: formData);
       if (mounted) setState(() => _step = 2);
     } catch (_) {
       setState(() => _loading = false);
@@ -151,9 +157,9 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
         return _StepItems(
           orderId: widget.orderId,
           selected: _selected,
-          onToggle: (id, val) => setState(() => _selected[id] = val),
+          onToggle: (id, qty) => setState(() => _selected[id] = qty),
           onNext: () {
-            if (_selected.values.any((v) => v)) setState(() => _step = 1);
+            if (_selected.values.any((v) => v > 0)) setState(() => _step = 1);
           },
         );
       case 1:
@@ -179,8 +185,8 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
 
 class _StepItems extends ConsumerWidget {
   final int orderId;
-  final Map<int, bool> selected;
-  final void Function(int id, bool val) onToggle;
+  final Map<int, int> selected;
+  final void Function(int id, int qty) onToggle;
   final VoidCallback onNext;
   const _StepItems({required this.orderId, required this.selected,
     required this.onToggle, required this.onNext});
@@ -202,17 +208,69 @@ class _StepItems extends ConsumerWidget {
               itemBuilder: (_, i) {
                 final item = items[i];
                 final id = item['id'] as int? ?? i;
-                final isChecked = selected[id] ?? false;
-                return CheckboxListTile(
-                  value: isChecked,
-                  onChanged: (v) => onToggle(id, v ?? false),
-                  activeColor: AppColors.primary,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  title: Text(item['product_name'] ?? item['name'] ?? '',
-                    style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
-                  subtitle: Text(context.s.quantityN(item['quantity'] as int? ?? 1),
-                    style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.ink3)),
+                final maxQty = item['quantity'] as int? ?? 1;
+                final qty = selected[id] ?? 0;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(children: [
+                    GestureDetector(
+                      onTap: () => onToggle(id, qty > 0 ? 0 : 1),
+                      child: Container(
+                        width: 22, height: 22,
+                        decoration: BoxDecoration(
+                          color: qty > 0 ? AppColors.primary : Colors.transparent,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: qty > 0 ? AppColors.primary : AppColors.borderStrong,
+                            width: 1.5),
+                        ),
+                        child: qty > 0
+                            ? const Icon(Icons.check_rounded, size: 14, color: AppColors.ink0)
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(item['product_name'] ?? item['name'] ?? '',
+                        style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
+                      Text(context.s.quantityN(maxQty),
+                        style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.ink3)),
+                    ])),
+                    if (qty > 0) Row(mainAxisSize: MainAxisSize.min, children: [
+                      GestureDetector(
+                        onTap: qty > 1 ? () => onToggle(id, qty - 1) : () => onToggle(id, 0),
+                        child: Container(
+                          width: 28, height: 28,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.border),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(Icons.remove, size: 14, color: AppColors.ink1),
+                        ),
+                      ),
+                      Container(
+                        width: 32,
+                        alignment: Alignment.center,
+                        child: Text('$qty',
+                          style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                            fontWeight: FontWeight.w700, fontSize: 14)),
+                      ),
+                      GestureDetector(
+                        onTap: qty < maxQty ? () => onToggle(id, qty + 1) : null,
+                        child: Container(
+                          width: 28, height: 28,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: qty < maxQty ? AppColors.border : AppColors.border.withValues(alpha: 0.3)),
+                            borderRadius: BorderRadius.circular(6),
+                            color: qty < maxQty ? null : AppColors.surfaceSoft,
+                          ),
+                          child: Icon(Icons.add, size: 14,
+                            color: qty < maxQty ? AppColors.ink1 : AppColors.ink4),
+                        ),
+                      ),
+                    ]),
+                  ]),
                 );
               },
             ),

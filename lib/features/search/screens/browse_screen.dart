@@ -18,7 +18,7 @@ final _categoryProductsProvider = FutureProvider.family<List<Product>, String>((
       queryParameters: {'category_id': ids[0], 'per_page': 50, 'sort': 'popular'});
     final list = (res.data['data']['data'] as List?)
         ?.map((p) => Product.fromJson(p)).toList() ?? [];
-    list.shuffle(Random());
+    list.shuffle(Random(ids[0]));
     return list;
   }
   // Fetch from each subcategory in parallel for a true cross-category mix
@@ -33,7 +33,7 @@ final _categoryProductsProvider = FutureProvider.family<List<Product>, String>((
   ).toList();
   final results = await Future.wait(futures);
   final combined = results.expand((l) => l).toList();
-  combined.shuffle(Random());
+  combined.shuffle(Random(ids[0]));
   return combined;
 });
 
@@ -177,34 +177,67 @@ class _RightContentState extends ConsumerState<_RightContent> {
         : '${widget.categoryId}';
     final productsAsync = ref.watch(_categoryProductsProvider(key));
 
+    Widget _subcatGrid() => GridView.builder(
+      shrinkWrap: true,
+      padding: EdgeInsets.zero,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 0.82),
+      itemCount: subcats.length,
+      itemBuilder: (_, i) {
+        final sub = subcats[i];
+        return _SubTile(
+          label: isAr ? sub.nameAr : sub.name,
+          image: sub.image,
+          onTap: () => safePush(context, '/search/results?q=&category=${sub.id}'),
+        );
+      },
+    );
+
     return productsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          if (subcats.isNotEmpty) ...[_subcatGrid(), const SizedBox(height: 16)],
+          GridView.builder(
+            shrinkWrap: true, padding: EdgeInsets.zero,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, mainAxisExtent: 285),
+            itemCount: 6,
+            itemBuilder: (_, __) => const ProductCardSkeleton(),
+          ),
+        ],
+      ),
       error: (_, __) => Center(child: Text(context.s.loadError, style: const TextStyle(color: AppColors.ink2))),
       data: (products) => ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          // Subcategory tiles — tap navigates to search results
-          if (subcats.isNotEmpty) ...[
-            GridView.builder(
-              shrinkWrap: true,
-              padding: EdgeInsets.zero,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 0.82,
+          // View All button
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: GestureDetector(
+              onTap: () => safePush(context, '/search/results?q=&category=${widget.categoryId}'),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text(context.s.viewAllProducts,
+                    style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward_rounded, size: 12, color: AppColors.primary),
+                ]),
               ),
-              itemCount: subcats.length,
-              itemBuilder: (_, i) {
-                final sub = subcats[i];
-                return _SubTile(
-                  label: isAr ? sub.nameAr : sub.name,
-                  image: sub.image,
-                  onTap: () => safePush(context, '/search/results?q=&category=${sub.id}'),
-                );
-              },
             ),
+          ),
+
+          // Subcategory tiles
+          if (subcats.isNotEmpty) ...[
+            _subcatGrid(),
             const SizedBox(height: 20),
             Row(children: [
               Container(width: 3, height: 16, decoration: BoxDecoration(

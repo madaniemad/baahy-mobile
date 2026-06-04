@@ -334,7 +334,15 @@ class AppStrings {
   String get startShopping     => isAr ? 'ابدأ التسوق'            : 'Start Shopping';
   String versionN(String v)    => isAr ? 'الإصدار $v'             : 'Version $v';
   String get addingToCart      => isAr ? 'جارٍ إضافة المنتجات إلى السلة...' : 'Adding items to cart...';
+  String get noItemsInStock    => isAr ? 'المنتجات غير متوفرة حالياً' : 'Items are currently out of stock';
   String get reorder           => isAr ? 'إعادة الطلب'            : 'Reorder';
+  String get downloadInvoice   => isAr ? 'تنزيل الفاتورة'         : 'Download Invoice';
+  String get pleaseSelectPayment => isAr ? 'يرجى اختيار طريقة الدفع' : 'Please select a payment method';
+  String get skipBtn           => isAr ? 'تخطي'                   : 'Skip';
+  String get saveForLater      => isAr ? 'احفظ للاحقاً'           : 'Save for Later';
+  String get savedToWishlist   => isAr ? 'تمت الإضافة للمفضلة'   : 'Saved to Wishlist';
+  String get viewAllProducts   => isAr ? 'عرض الكل'               : 'View All';
+  String get daysLabel         => isAr ? 'يوم'                    : 'day(s)';
   String orderNumber(String n) => isAr ? 'الطلب $n'               : 'Order $n';
   String get orderDetails      => isAr ? 'تفاصيل الطلب'           : 'Order Details';
   String get loadOrderFailed   => isAr ? 'تعذر تحميل الطلب'       : 'Failed to load order';

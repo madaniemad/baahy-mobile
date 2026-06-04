@@ -67,6 +67,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       await ref.read(authProvider.notifier).verifyOtp(widget.phone, _code);
       if (mounted) context.go('/home');
     } catch (_) {
+      HapticFeedback.mediumImpact();
       setState(() { _hasError = true; _loading = false; });
       _ctrl.clear();
       _focus.requestFocus();

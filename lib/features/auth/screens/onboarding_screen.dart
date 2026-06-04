@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -53,6 +54,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Future<void> _start() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_done', true);
+    PushNotificationService.instance.requestPermissionIfNeeded();
     if (mounted) context.go('/home');
   }
 
@@ -125,6 +127,25 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 ),
               ),
             ]),
+          ),
+        ),
+
+        // Skip button
+        Positioned(
+          top: top + 14, left: 16,
+          child: GestureDetector(
+            onTap: _start,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(context.s.skipBtn,
+                style: const TextStyle(fontFamily: 'Cairo',
+                  fontSize: 13, fontWeight: FontWeight.w700,
+                  color: Colors.white)),
+            ),
           ),
         ),
 

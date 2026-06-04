@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../../core/api/api_client.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
+// Returns empty stats — the referral code comes from the user's auth profile.
+// The /referrals endpoint does not exist yet; stats will be added when ready.
 final _referralProvider = FutureProvider<Map<String, dynamic>>((ref) async {
-  final res = await ApiClient.instance.dio.get('/referrals');
-  return Map<String, dynamic>.from(res.data['data'] ?? {});
+  return <String, dynamic>{};
 });
 
 int _parseInt(dynamic v) {

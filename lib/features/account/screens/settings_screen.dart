@@ -41,7 +41,14 @@ class SettingsScreen extends ConsumerWidget {
               label: isAr ? 'اللغة' : 'Language',
               trailing: Text(isAr ? 'العربية' : 'English',
                 style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
-              onTap: () => ref.read(localeProvider.notifier).toggle(),
+              onTap: () {
+                final msg = isAr ? 'Language changed to English' : 'تم التغيير إلى العربية';
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(msg, style: const TextStyle(fontFamily: 'Cairo')),
+                  duration: const Duration(seconds: 2),
+                ));
+                ref.read(localeProvider.notifier).toggle();
+              },
             ),
             _SettingsRow(
               icon: Icons.notifications_outlined,

@@ -8,26 +8,78 @@ import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 
-final _vendorDetailProvider = FutureProvider.autoDispose.family<Vendor, int>((ref, id) async {
-  final res = await ApiClient.instance.dio.get('/vendors/$id');
-  return Vendor.fromJson(res.data['data']);
-});
-
-final _vendorProductsProvider = FutureProvider.autoDispose.family<List<Product>, int>((ref, id) async {
-  final res = await ApiClient.instance.dio.get('/products',
-    queryParameters: {'vendor_id': id, 'per_page': 20, 'has_image': 1});
-  return (res.data['data']['data'] as List?)
-      ?.map((p) => Product.fromJson(p)).toList() ?? [];
-});
-
-class VendorStoreScreen extends ConsumerWidget {
+class VendorStoreScreen extends ConsumerStatefulWidget {
   final int vendorId;
   const VendorStoreScreen({required this.vendorId, super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final vendorAsync = ref.watch(_vendorDetailProvider(vendorId));
-    final productsAsync = ref.watch(_vendorProductsProvider(vendorId));
+  ConsumerState<VendorStoreScreen> createState() => _VendorStoreScreenState();
+}
+
+class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
+  Vendor? _vendor;
+  List<Product> _products = [];
+  bool _loadingVendor = true;
+  bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = false;
+  int _page = 1;
+  static const _perPage = 20;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVendor();
+    _loadProducts(1);
+  }
+
+  Future<void> _loadVendor() async {
+    try {
+      final res = await ApiClient.instance.dio.get('/vendors/${widget.vendorId}');
+      if (mounted) setState(() { _vendor = Vendor.fromJson(res.data['data']); _loadingVendor = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loadingVendor = false);
+    }
+  }
+
+  Future<void> _loadProducts(int page) async {
+    if (page == 1) {
+      if (mounted) setState(() => _loading = true);
+    } else {
+      if (_loadingMore) return;
+      if (mounted) setState(() => _loadingMore = true);
+    }
+    try {
+      final res = await ApiClient.instance.dio.get('/products', queryParameters: {
+        'vendor_id': widget.vendorId,
+        'per_page': _perPage,
+        'has_image': 1,
+        'page': page,
+      });
+      final list = (res.data['data']['data'] as List?)
+          ?.map((p) => Product.fromJson(p)).toList() ?? [];
+      final total = (res.data['data']['total'] as num?)?.toInt() ?? list.length;
+      if (mounted) {
+        setState(() {
+          if (page == 1) _products = list;
+          else _products = [..._products, ...list];
+          _page = page;
+          _hasMore = _products.length < total;
+          _loading = false;
+          _loadingMore = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() { _loading = false; _loadingMore = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = context.isAr;
+    final vendorName = _vendor != null
+        ? (isAr && _vendor!.storeNameAr.isNotEmpty ? _vendor!.storeNameAr : _vendor!.storeName)
+        : '';
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -40,24 +92,19 @@ class VendorStoreScreen extends ConsumerWidget {
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => context.pop(),
             ),
-            title: vendorAsync.when(
-              loading: () => const SizedBox.shrink(),
-              error: (_, __) => Text(context.s.storeLabel, style: const TextStyle(color: Colors.white)),
-              data: (v) => Text(
-                context.isAr && v.storeNameAr.isNotEmpty ? v.storeNameAr : v.storeName,
-                style: const TextStyle(color: Colors.white, fontFamily: 'Cairo',
-                  fontSize: 17, fontWeight: FontWeight.w700),
-              ),
-            ),
+            title: _loadingVendor
+                ? const SizedBox.shrink()
+                : Text(
+                    vendorName.isNotEmpty ? vendorName : context.s.storeLabel,
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Cairo',
+                      fontSize: 17, fontWeight: FontWeight.w700),
+                  ),
           ),
 
           // Vendor header
-          SliverToBoxAdapter(
-            child: vendorAsync.when(
-              loading: () => const SizedBox(height: 80,
-                child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (vendor) => Container(
+          if (_vendor != null)
+            SliverToBoxAdapter(
+              child: Container(
                 color: Colors.white,
                 padding: const EdgeInsets.all(16),
                 child: Row(children: [
@@ -68,28 +115,27 @@ class VendorStoreScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: vendor.logo != null
+                    child: _vendor!.logo != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: CachedNetworkImage(
-                              imageUrl: vendor.logo!, fit: BoxFit.cover))
+                            child: CachedNetworkImage(imageUrl: _vendor!.logo!, fit: BoxFit.cover))
                         : const Icon(Icons.store_outlined, size: 30, color: AppColors.ink2),
                   ),
                   const SizedBox(width: 14),
                   Expanded(child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(vendor.storeNameAr.isNotEmpty ? vendor.storeNameAr : vendor.storeName,
+                      Text(
+                        _vendor!.storeNameAr.isNotEmpty ? _vendor!.storeNameAr : _vendor!.storeName,
                         style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                      if (vendor.city != null && vendor.city!.isNotEmpty)
-                        Text(vendor.city!,
+                      if (_vendor!.city != null && _vendor!.city!.isNotEmpty)
+                        Text(_vendor!.city!,
                           style: const TextStyle(fontSize: 13, color: AppColors.ink3)),
                     ],
                   )),
                 ]),
               ),
             ),
-          ),
 
           // Section header
           SliverToBoxAdapter(
@@ -101,35 +147,56 @@ class VendorStoreScreen extends ConsumerWidget {
           ),
 
           // Products grid
-          productsAsync.when(
-            loading: () => const SliverToBoxAdapter(
+          if (_loading)
+            const SliverToBoxAdapter(
               child: SizedBox(height: 200,
-                child: Center(child: CircularProgressIndicator(color: AppColors.primary)))),
-            error: (_, __) => SliverToBoxAdapter(
+                child: Center(child: CircularProgressIndicator(color: AppColors.primary))))
+          else if (_products.isEmpty)
+            SliverToBoxAdapter(
               child: Center(child: Padding(
                 padding: const EdgeInsets.all(32),
-                child: Text(context.s.loadProductsFailed, style: const TextStyle(color: AppColors.ink3))))),
-            data: (products) => products.isEmpty
-                ? SliverToBoxAdapter(
-                    child: Center(child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Text(context.s.noProductsNow, style: const TextStyle(color: AppColors.ink3)))))
-                : SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 100),
-                    sliver: SliverGrid(
-                      delegate: SliverChildBuilderDelegate(
-                        (_, i) => ProductCard(product: products[i]),
-                        childCount: products.length,
+                child: Text(context.s.noProductsNow, style: const TextStyle(color: AppColors.ink3)))))
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+              sliver: SliverGrid(
+                delegate: SliverChildBuilderDelegate(
+                  (_, i) => ProductCard(product: _products[i]),
+                  childCount: _products.length,
+                ),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  mainAxisExtent: 344,
+                ),
+              ),
+            ),
+
+          // Load more button
+          if (_hasMore || _loadingMore)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: _loadingMore
+                    ? const Center(child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(color: AppColors.primary)))
+                    : OutlinedButton(
+                        onPressed: () => _loadProducts(_page + 1),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 44),
+                          side: const BorderSide(color: AppColors.border),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: Text(context.s.viewMore,
+                          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,
+                            color: AppColors.ink0)),
                       ),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        mainAxisExtent: 344,
-                      ),
-                    ),
-                  ),
-          ),
+              ),
+            )
+          else
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );

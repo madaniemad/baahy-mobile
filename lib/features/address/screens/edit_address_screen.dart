@@ -1,20 +1,15 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/models/shipping_rate.dart';
 import '../../../core/providers/address_provider.dart';
+import '../../../core/providers/shipping_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../features/map/map_location_picker.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
-
-const _libyanCities = [
-  'طرابلس', 'مصراتة', 'بنغازي', 'الزاوية', 'الخمس', 'سرت',
-  'زليتن', 'ترهونة', 'طبرق', 'درنة', 'البيضاء', 'أجدابيا',
-  'سبها', 'غريان', 'يفرن', 'نالوت', 'غدامس', 'صبراتة',
-  'صرمان', 'جنزور', 'تاجوراء', 'قصر بن غشير', 'الكفرة',
-  'مرزق', 'بني وليد',
-];
 
 class EditAddressScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic>? address;
@@ -49,8 +44,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
     final existing = widget.address?['label'] as String?;
     _label = existing != null && _labels.any((l) => l.$1 == existing)
         ? existing : _labels[0].$1;
-    final savedCity = widget.address?['city'] as String?;
-    _city = savedCity != null && _libyanCities.contains(savedCity) ? savedCity : null;
+    _city = widget.address?['city'] as String?;
   }
 
   @override
@@ -74,11 +68,12 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
   }
 
   Future<void> _pickCitySheet() async {
+    final rates = ref.read(shippingRatesProvider).valueOrNull ?? [];
     final picked = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _CityPickerSheet(current: _city),
+      builder: (_) => _CityPickerSheet(current: _city, rates: rates),
     );
     if (picked != null) setState(() => _city = picked);
   }
@@ -222,21 +217,22 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               // ── City — GPS + tap to pick ───────────────────────────────────
               const _FieldLabel('المدينة'),
               Row(children: [
-                // GPS auto-detect button
-                GestureDetector(
-                  onTap: _openMapPicker,
-                  child: Container(
-                    width: 46, height: 46,
-                    margin: const EdgeInsets.only(left: 8),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF1AC5CD), AppColors.primary]),
-                      borderRadius: BorderRadius.circular(10),
+                // GPS button hidden in release — requires Google Maps key
+                if (kDebugMode)
+                  GestureDetector(
+                    onTap: _openMapPicker,
+                    child: Container(
+                      width: 46, height: 46,
+                      margin: const EdgeInsets.only(left: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1AC5CD), AppColors.primary]),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.my_location_rounded,
+                        color: Colors.white, size: 20),
                     ),
-                    child: const Icon(Icons.my_location_rounded,
-                      color: Colors.white, size: 20),
                   ),
-                ),
                 // City display / picker
                 Expanded(
                   child: GestureDetector(
@@ -268,14 +264,6 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                     ),
                   ),
                 ),
-              ]),
-              const SizedBox(height: 6),
-              Row(children: [
-                const SizedBox(width: 54),
-                const Icon(Icons.map_outlined, size: 11, color: AppColors.ink3),
-                const SizedBox(width: 4),
-                Text(context.s.tapToOpenMap,
-                  style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
               ]),
               const SizedBox(height: 14),
 
@@ -350,7 +338,8 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
 
 class _CityPickerSheet extends StatefulWidget {
   final String? current;
-  const _CityPickerSheet({this.current});
+  final List<ShippingRate> rates;
+  const _CityPickerSheet({this.current, required this.rates});
   @override
   State<_CityPickerSheet> createState() => _CityPickerSheetState();
 }
@@ -359,9 +348,11 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
   String _query = '';
   final _ctrl = TextEditingController();
 
-  List<String> get _filtered => _query.isEmpty
-      ? _libyanCities
-      : _libyanCities.where((c) => c.contains(_query)).toList();
+  List<ShippingRate> get _filtered => _query.isEmpty
+      ? widget.rates
+      : widget.rates.where((r) =>
+          r.cityAr.contains(_query) ||
+          r.city.toLowerCase().contains(_query.toLowerCase())).toList();
 
   @override
   void dispose() { _ctrl.dispose(); super.dispose(); }
@@ -377,7 +368,6 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
       padding: EdgeInsets.fromLTRB(16, 12, 16, bottom + 16),
       height: MediaQuery.of(context).size.height * 0.75,
       child: Column(children: [
-        // Handle
         Container(
           width: 36, height: 4,
           decoration: BoxDecoration(
@@ -390,7 +380,6 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
             fontSize: 17, fontWeight: FontWeight.w800)),
         const SizedBox(height: 12),
 
-        // Search
         Container(
           decoration: BoxDecoration(
             color: AppColors.surfaceSoft,
@@ -417,43 +406,47 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
         ),
         const SizedBox(height: 12),
 
-        // Grid
-        Expanded(
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 2.4,
-            ),
-            itemCount: _filtered.length,
-            itemBuilder: (_, i) {
-              final c = _filtered[i];
-              final selected = c == widget.current;
-              return GestureDetector(
-                onTap: () => Navigator.of(context).pop(c),
-                child: Container(
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? const Color(0xFFF5F5F5) : AppColors.surfaceSoft,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: selected ? AppColors.primary : AppColors.border,
-                      width: selected ? 1.5 : 1),
+        if (widget.rates.isEmpty)
+          Expanded(child: Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ))
+        else
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 2.4,
+              ),
+              itemCount: _filtered.length,
+              itemBuilder: (_, i) {
+                final r = _filtered[i];
+                final selected = r.cityAr == widget.current;
+                return GestureDetector(
+                  onTap: () => Navigator.of(context).pop(r.cityAr),
+                  child: Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFFF5F5F5) : AppColors.surfaceSoft,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: selected ? AppColors.primary : AppColors.border,
+                        width: selected ? 1.5 : 1),
+                    ),
+                    child: Text(r.cityAr,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: selected ? AppColors.primary : AppColors.ink0,
+                      )),
                   ),
-                  child: Text(c,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: selected ? AppColors.primary : AppColors.ink0,
-                    )),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
       ]),
     );
   }

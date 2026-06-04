@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/order.dart';
 import '../../../core/utils/format.dart';
@@ -36,6 +37,20 @@ class OrderTrackingScreen extends ConsumerWidget {
           orElse: () => Text(context.s.orderDetails,
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         ),
+        actions: [
+          orderAsync.maybeWhen(
+            data: (o) => IconButton(
+              icon: const Icon(Icons.download_outlined, size: 22, color: AppColors.ink0),
+              tooltip: context.s.downloadInvoice,
+              onPressed: () async {
+                final url = Uri.parse(
+                    '${ApiClient.instance.dio.options.baseUrl}/orders/${o.id}/invoice');
+                if (await canLaunchUrl(url)) await launchUrl(url);
+              },
+            ),
+            orElse: () => const SizedBox.shrink(),
+          ),
+        ],
       ),
       body: orderAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -52,7 +67,8 @@ class _OrderBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isActive = ['shipped', 'processing', 'confirmed'].contains(order.status);
+    final isActive = ['pending_confirmation', 'pending', 'confirmed', 'processing',
+        'fulfilled', 'shipped', 'out_for_delivery'].contains(order.status);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -215,6 +231,16 @@ class _Timeline extends StatelessWidget {
   const _Timeline({required this.status});
 
   int _currentIdx(List<(String, String)> steps) {
+    // Map extra statuses to the closest standard timeline step index.
+    const extraMap = {
+      'pending_confirmation': 0,
+      'fulfilled': 2,
+      'out_for_delivery': 3,
+      'cancelled': 0,
+      'returned': 4,
+      'refunded': 4,
+    };
+    if (extraMap.containsKey(status)) return extraMap[status]!;
     for (int i = 0; i < steps.length; i++) {
       if (steps[i].$1 == status) return i;
     }

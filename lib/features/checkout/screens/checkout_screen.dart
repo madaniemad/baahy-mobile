@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/models/shipping_rate.dart';
 import '../../../core/models/app_config.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
+import '../../../core/providers/shipping_provider.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -110,8 +113,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
+        String msg = context.s.orderError;
+        if (e is DioException) {
+          final data = e.response?.data;
+          if (data is Map && data['message'] != null) {
+            msg = data['message'].toString();
+          }
+        }
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.s.orderError),
+            content: Text(msg),
             backgroundColor: AppColors.danger));
       }
     }
@@ -123,21 +133,49 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     super.dispose();
   }
 
-  bool get _selectedAddressIsTrioli {
-    final city = (_selectedAddress?['city'] ?? '').toString().toLowerCase();
-    return city.contains('طرابلس') || city.contains('tripoli');
+  ShippingRate? get _selectedRate {
+    final city = (_selectedAddress?['city'] ?? '').toString();
+    if (city.isEmpty) return null;
+    final rates = ref.read(shippingRatesProvider).valueOrNull ?? [];
+    try {
+      return rates.firstWhere(
+        (r) => r.cityAr == city || r.city.toLowerCase() == city.toLowerCase());
+    } catch (_) { return null; }
+  }
+
+  bool get _codAllowedForAddress {
+    final city = (_selectedAddress?['city'] ?? '').toString();
+    if (city.isEmpty) return true;
+    final rates = ref.read(shippingRatesProvider).valueOrNull ?? [];
+    try {
+      final rate = rates.firstWhere(
+        (r) => r.cityAr == city || r.city.toLowerCase() == city.toLowerCase());
+      return rate.codAllowed;
+    } catch (_) {
+      // City not in rates — fallback to Tripoli check
+      return city.contains('طرابلس') || city.toLowerCase().contains('tripoli');
+    }
   }
 
   void _next() {
     if (_step == 1) {
-      // Auto-switch away from COD if address is non-Tripoli
-      if (!_selectedAddressIsTrioli && _paymentMethod == 'cash_on_delivery') {
+      // Auto-switch away from COD if address city doesn't allow it
+      if (!_codAllowedForAddress && _paymentMethod == 'cash_on_delivery') {
         final methods = (ref.read(appConfigProvider).paymentMethods as List)
             .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet' && m.id != 'cash_on_delivery')
             .toList();
         if (methods.isNotEmpty) {
           setState(() => _paymentMethod = methods.first.id);
         }
+      }
+      setState(() => _step++);
+    } else if (_step == 2) {
+      final walletCoversAll = _useWallet && _walletBalance > 0 &&
+          _walletBalance >= ref.read(cartProvider).total;
+      if (!walletCoversAll && _paymentMethod.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.s.pleaseSelectPayment)));
+        return;
       }
       setState(() => _step++);
     } else if (_step < 3) {
@@ -244,6 +282,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               await _loadAddresses();
                             },
                             deliveryPromise: context.isAr ? config.deliveryPromiseAr : config.deliveryPromiseEn,
+                            selectedRate: _selectedRate,
                           )
                         : _step == 2
                             ? _StepPayment(
@@ -260,7 +299,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   _loadWallet();
                                 },
                                 total: ref.read(cartProvider).total,
-                                selectedAddress: _selectedAddress,
+                                codAllowed: _codAllowedForAddress,
                               )
                             : _StepReview(
                                 cart: cart,
@@ -350,8 +389,10 @@ class _StepAddress extends StatelessWidget {
   final void Function(Map<String, dynamic>) onSelect;
   final VoidCallback onAddNew;
   final String deliveryPromise;
+  final ShippingRate? selectedRate;
   const _StepAddress({required this.addresses, required this.selected,
-    required this.onSelect, required this.onAddNew, required this.deliveryPromise});
+    required this.onSelect, required this.onAddNew, required this.deliveryPromise,
+    this.selectedRate});
 
   @override
   Widget build(BuildContext context) {
@@ -438,6 +479,31 @@ class _StepAddress extends StatelessWidget {
         const SizedBox(height: 12),
       ],
 
+      // Delivery estimate for selected city
+      if (selected != null && selected!.isNotEmpty && selectedRate != null) ...[
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.teal50bg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.teal100bg),
+          ),
+          child: Row(children: [
+            const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                context.s.deliveryToCity(selected!['city']?.toString() ?? ''),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+              Text(
+                '${fmtPrice(selectedRate!.rate)} ${context.s.lydUnit} · ${selectedRate!.deliveryDays} ${context.s.daysLabel}',
+                style: const TextStyle(fontSize: 12, color: AppColors.ink2)),
+            ])),
+          ]),
+        ),
+        const SizedBox(height: 12),
+      ],
+
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
@@ -468,7 +534,7 @@ class _StepPayment extends StatelessWidget {
   final VoidCallback onWalletToggle;
   final VoidCallback onChargeWallet;
   final double total;
-  final Map<String, dynamic>? selectedAddress;
+  final bool codAllowed;
 
   const _StepPayment({
     required this.selected, required this.onChanged,
@@ -476,22 +542,16 @@ class _StepPayment extends StatelessWidget {
     required this.walletBalance, required this.walletLoading,
     required this.useWallet, required this.onWalletToggle,
     required this.onChargeWallet,
-    required this.total, required this.selectedAddress,
+    required this.total, required this.codAllowed,
   });
-
-  bool get _isTripoliAddress {
-    final city = (selectedAddress?['city'] ?? '').toString().toLowerCase();
-    return city.contains('طرابلس') || city.contains('tripoli');
-  }
 
   @override
   Widget build(BuildContext context) {
-    // Sadad and wallet removed from radio list; COD only for Tripoli
+    // Sadad and wallet removed from radio list; COD only when allowed by zone policy
     final allMethods = (config.paymentMethods as List)
         .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet')
         .toList();
-    final isTrioli = _isTripoliAddress;
-    final methods = isTrioli
+    final methods = codAllowed
         ? allMethods
         : allMethods.where((m) => m.id != 'cash_on_delivery').toList();
 
@@ -505,8 +565,8 @@ class _StepPayment extends StatelessWidget {
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 16),
 
-      // COD warning for non-Tripoli addresses
-      if (!isTrioli) ...[
+      // COD warning when not allowed by zone policy
+      if (!codAllowed) ...[
         Container(
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

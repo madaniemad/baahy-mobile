@@ -48,9 +48,22 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
 
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   int _imageIndex = 0;
+  late final PageController _pageController;
   ProductVariation? _selectedVariation;
   int _qty = 1;
   final Map<String, String> _selections = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   void _trySelectVariation(Product product) {
     if (product.variations.isEmpty) return;
@@ -63,20 +76,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     setState(() {});
   }
 
-  Future<void> _notifyMe(int productId) async {
-    try {
-      await ApiClient.instance.dio.post('/products/$productId/notify-me');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.s.notifyAvailability),
-          backgroundColor: AppColors.success,
-        ));
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.s.requestFailed)));
-    }
+  void _notifyMe(int productId) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.s.notifyAvailability),
+        backgroundColor: AppColors.success,
+      ));
   }
 
   Future<void> _addToCart(Product product, {bool goToCart = false}) async {
@@ -193,6 +199,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           Padding(
                             padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
                             child: PageView.builder(
+                            controller: _pageController,
                             itemCount: product.images.isEmpty ? 1 : product.images.length,
                             onPageChanged: (i) => setState(() => _imageIndex = i),
                             itemBuilder: (_, i) {
@@ -213,13 +220,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: List.generate(product.images.length, (i) =>
-                                  AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                                    width: i == _imageIndex ? 18 : 6, height: 6,
-                                    decoration: BoxDecoration(
-                                      color: i == _imageIndex ? AppColors.primary : AppColors.border,
-                                      borderRadius: BorderRadius.circular(3),
+                                  GestureDetector(
+                                    onTap: () => _pageController.animateToPage(i,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                                      width: i == _imageIndex ? 18 : 6, height: 6,
+                                      decoration: BoxDecoration(
+                                        color: i == _imageIndex ? AppColors.primary : AppColors.border,
+                                        borderRadius: BorderRadius.circular(3),
+                                      ),
                                     ),
                                   )),
                               ),
@@ -268,6 +280,40 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // ── Thumbnail strip ───────────────────────────
+                        if (product.images.length > 1)
+                          SizedBox(
+                            height: 62,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                              itemCount: product.images.length,
+                              itemBuilder: (_, i) => GestureDetector(
+                                onTap: () => _pageController.animateToPage(i,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut),
+                                child: Container(
+                                  width: 46, height: 46,
+                                  margin: const EdgeInsets.only(right: 6),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: i == _imageIndex ? AppColors.primary : AppColors.border,
+                                      width: i == _imageIndex ? 2 : 1),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(7),
+                                    child: CachedNetworkImage(
+                                      imageUrl: product.images[i],
+                                      fit: BoxFit.cover,
+                                      errorWidget: (_, __, ___) =>
+                                        Container(color: AppColors.surfaceSoft)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
                         const SizedBox(height: 10),
 
                         // ── Card 1: Title, price, rating ─────────────
@@ -396,7 +442,36 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           ),
                         ),
 
-                        // ── Card 2: Attributes / Variations ──────────
+                        // ── Card 2: Description ──────────────────────
+                        if (product.description != null && product.description!.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: AppShadows.shadowCard,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(context.s.description,
+                                  textAlign: TextAlign.start,
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                                const SizedBox(height: 8),
+                                Text(isAr
+                                    ? (product.descriptionAr ?? product.description!)
+                                    : product.description!,
+                                  textAlign: TextAlign.start,
+                                  style: const TextStyle(
+                                    fontSize: 14, color: AppColors.ink2, height: 1.6)),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        // ── Card 3: Attributes / Variations ──────────
                         if (product.variations.isEmpty && product.productAttributes.isNotEmpty) ...[
                           const SizedBox(height: 10),
                           Container(
@@ -446,6 +521,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               qty: _qty,
                               onChanged: (v) => setState(() => _qty = v),
                               enabled: product.inStock,
+                              max: product.stockQuantity ?? 99,
                             ),
                             const SizedBox(height: 16),
                             const Divider(height: 1, color: AppColors.border),
@@ -495,35 +571,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           child: const _CouponSection(),
                         ),
 
-                        // ── Card 6: Description ───────────────────────
-                        if (product.description != null && product.description!.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 12),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: AppShadows.shadowCard,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(context.s.description,
-                                  textAlign: TextAlign.start,
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                                const SizedBox(height: 8),
-                                Text(isAr
-                                    ? (product.descriptionAr ?? product.description!)
-                                    : product.description!,
-                                  textAlign: TextAlign.start,
-                                  style: const TextStyle(
-                                    fontSize: 14, color: AppColors.ink2, height: 1.6)),
-                              ],
-                            ),
-                          ),
-                        ],
-
                         // ── Frequently bought together ───────────────
                         if (product.category != null)
                           _FrequentlyBoughtTogether(
@@ -561,7 +608,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () => Share.share(
-                            '${product.nameAr}\nhttps://baahy.ly/product/${product.id}'),
+                            '${product.nameAr}\nhttps://baahy-web.vercel.app/products/${product.id}'),
                           child: Container(
                             margin: const EdgeInsets.only(right: 4),
                             padding: const EdgeInsets.all(8),
@@ -1324,7 +1371,8 @@ class _QtySelector extends StatelessWidget {
   final int qty;
   final ValueChanged<int> onChanged;
   final bool enabled;
-  const _QtySelector({required this.qty, required this.onChanged, this.enabled = true});
+  final int max;
+  const _QtySelector({required this.qty, required this.onChanged, this.enabled = true, this.max = 99});
 
   @override
   Widget build(BuildContext context) {
@@ -1344,7 +1392,7 @@ class _QtySelector extends StatelessWidget {
               style: const TextStyle(fontFamily: 'PlusJakartaSans',
                 fontSize: 16, fontWeight: FontWeight.w700)),
           ),
-          _QtyBtn(Icons.add, enabled ? () => onChanged(qty + 1) : null),
+          _QtyBtn(Icons.add, enabled && qty < max ? () => onChanged(qty + 1) : null),
         ]),
       ),
     ]);

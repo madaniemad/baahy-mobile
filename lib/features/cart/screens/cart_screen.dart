@@ -4,12 +4,48 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/models/cart.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/widgets/app_button.dart';
+
+List<Widget> _buildGroupedItems(BuildContext context, List<CartItem> items) {
+  final isAr = context.isAr;
+  final Map<String, List<CartItem>> groups = {};
+  for (final item in items) {
+    final vendorName = item.product.vendor != null
+        ? (isAr && item.product.vendor!.storeNameAr.isNotEmpty
+            ? item.product.vendor!.storeNameAr
+            : item.product.vendor!.storeName)
+        : (isAr ? 'بائع آخر' : 'Other Seller');
+    groups.putIfAbsent(vendorName, () => []).add(item);
+  }
+  final multiVendor = groups.length > 1;
+  final result = <Widget>[];
+  for (final entry in groups.entries) {
+    if (multiVendor) {
+      result.add(Padding(
+        padding: const EdgeInsets.only(bottom: 6, top: 2),
+        child: Row(children: [
+          const Icon(Icons.store_outlined, size: 14, color: AppColors.ink2),
+          const SizedBox(width: 6),
+          Text(entry.key,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.ink1)),
+        ]),
+      ));
+    }
+    for (final item in entry.value) {
+      result.add(Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: _CartItemCard(item: item),
+      ));
+    }
+  }
+  return result;
+}
 
 class CartScreen extends ConsumerWidget {
   const CartScreen({super.key});
@@ -107,11 +143,8 @@ class CartScreen extends ConsumerWidget {
                         ]),
                       ),
 
-                      // Cart items
-                      ...cart.items.map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _CartItemCard(item: item),
-                      )),
+                      // Cart items grouped by vendor
+                      ..._buildGroupedItems(context, cart.items),
 
                       const SizedBox(height: 6),
 
@@ -381,7 +414,9 @@ class _CartItemCard extends ConsumerWidget {
                   children: [
                     _QtyBtn(
                       icon: Icons.remove,
-                      onTap: () => ref.read(cartProvider.notifier).updateQty(item.key, item.quantity - 1),
+                      onTap: item.quantity > 1
+                          ? () => ref.read(cartProvider.notifier).updateQty(item.key, item.quantity - 1)
+                          : null,
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -391,9 +426,26 @@ class _CartItemCard extends ConsumerWidget {
                     ),
                     _QtyBtn(
                       icon: Icons.add,
-                      onTap: () => ref.read(cartProvider.notifier).updateQty(item.key, item.quantity + 1),
+                      onTap: (item.product.stockQuantity != null &&
+                              item.quantity >= item.product.stockQuantity!)
+                          ? null
+                          : () => ref.read(cartProvider.notifier).updateQty(item.key, item.quantity + 1),
                     ),
                     const Spacer(),
+                    GestureDetector(
+                      onTap: () {
+                        ref.read(wishlistProvider.notifier).toggle(item.productId);
+                        ref.read(cartProvider.notifier).remove(item.key);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(context.s.savedToWishlist),
+                          duration: const Duration(seconds: 2),
+                        ));
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 6),
+                        child: Icon(Icons.favorite_outline_rounded, color: AppColors.ink3, size: 20),
+                      ),
+                    ),
                     GestureDetector(
                       onTap: () => ref.read(cartProvider.notifier).remove(item.key),
                       child: const Icon(Icons.delete_outline, color: AppColors.danger, size: 20),
@@ -417,13 +469,18 @@ class _QtyBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(6),
+    child: SizedBox(
+      width: 44, height: 44,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            border: Border.all(color: onTap != null ? AppColors.border : AppColors.border.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(icon, size: 16, color: onTap != null ? AppColors.ink0 : AppColors.ink4),
+        ),
       ),
-      child: Icon(icon, size: 16, color: AppColors.ink0),
     ),
   );
 }
@@ -500,11 +557,28 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
                           isAr ? u.item.product.nameAr : u.item.product.name,
                           style: const TextStyle(fontFamily: 'Cairo', fontSize: 13)),
                         if (u.oldPrice != null && u.newPrice != null)
-                          Text(
-                            '${fmtPrice(u.oldPrice!)} ← ${fmtPrice(u.newPrice!)} ${context.s.lydUnit}',
-                            style: const TextStyle(
-                              fontFamily: 'PlusJakartaSans', fontSize: 11.5,
-                              color: AppColors.warn, fontWeight: FontWeight.w600),
+                          Directionality(
+                            textDirection: TextDirection.ltr,
+                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                              Text(
+                                '${fmtPrice(u.oldPrice!)} ${context.s.lydUnit}',
+                                style: const TextStyle(
+                                  fontFamily: 'PlusJakartaSans', fontSize: 11.5,
+                                  color: AppColors.ink3, fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.lineThrough,
+                                  decorationColor: AppColors.ink3),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 4),
+                                child: Icon(Icons.arrow_forward_rounded, size: 12, color: AppColors.warn),
+                              ),
+                              Text(
+                                '${fmtPrice(u.newPrice!)} ${context.s.lydUnit}',
+                                style: const TextStyle(
+                                  fontFamily: 'PlusJakartaSans', fontSize: 11.5,
+                                  color: AppColors.warn, fontWeight: FontWeight.w700),
+                              ),
+                            ]),
                           ),
                       ],
                     )),

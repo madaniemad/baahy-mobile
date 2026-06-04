@@ -56,13 +56,9 @@ class PushNotificationService {
       },
     );
 
-    // Request permission.
-    final settings = await _fcm.requestPermission(
-      alert: true, badge: true, sound: true, provisional: false);
-    if (settings.authorizationStatus == AuthorizationStatus.denied) return;
-
-    // Upload FCM token to backend.
-    await _uploadToken();
+    // Permission is NOT requested on cold launch — call requestPermissionIfNeeded()
+    // after the user completes onboarding or performs their first meaningful action.
+    await _uploadTokenIfPermitted();
 
     // Refresh token when it rotates.
     _fcm.onTokenRefresh.listen(_sendTokenToServer);
@@ -80,6 +76,36 @@ class PushNotificationService {
     // iOS: show notifications while app is in foreground.
     await _fcm.setForegroundNotificationPresentationOptions(
       alert: true, badge: true, sound: true);
+  }
+
+  // Called on cold launch — only uploads token if permission already granted.
+  Future<void> _uploadTokenIfPermitted() async {
+    try {
+      final settings = await _fcm.getNotificationSettings();
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        final token = await _fcm.getToken();
+        if (token != null) await _sendTokenToServer(token);
+      }
+    } catch (_) {}
+  }
+
+  // Call this after onboarding completes or after first order/login.
+  Future<void> requestPermissionIfNeeded() async {
+    try {
+      final current = await _fcm.getNotificationSettings();
+      if (current.authorizationStatus == AuthorizationStatus.authorized ||
+          current.authorizationStatus == AuthorizationStatus.provisional) {
+        await _uploadToken();
+        return;
+      }
+      if (current.authorizationStatus == AuthorizationStatus.denied) return;
+      final settings = await _fcm.requestPermission(
+        alert: true, badge: true, sound: true, provisional: false);
+      if (settings.authorizationStatus != AuthorizationStatus.denied) {
+        await _uploadToken();
+      }
+    } catch (_) {}
   }
 
   Future<void> _uploadToken() async {

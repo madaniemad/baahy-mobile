@@ -5,6 +5,10 @@ class ShippingRate {
   final double rate;
   final int deliveryDays;
   final double? freeShippingThreshold;
+  final bool codAllowed;
+  final bool prepaidRequired;
+  final String? zoneType;
+  final int? hubId;
 
   const ShippingRate({
     required this.id,
@@ -13,6 +17,10 @@ class ShippingRate {
     required this.rate,
     required this.deliveryDays,
     this.freeShippingThreshold,
+    this.codAllowed = true,
+    this.prepaidRequired = false,
+    this.zoneType,
+    this.hubId,
   });
 
   factory ShippingRate.fromJson(Map<String, dynamic> j) => ShippingRate(
@@ -22,6 +30,10 @@ class ShippingRate {
     rate: _d(j['rate']),
     deliveryDays: (j['delivery_days'] as num?)?.toInt() ?? 3,
     freeShippingThreshold: j['free_shipping_threshold'] != null ? _d(j['free_shipping_threshold']) : null,
+    codAllowed: j['cod_allowed'] != false,
+    prepaidRequired: j['prepaid_required'] == true,
+    zoneType: j['zone_type']?.toString(),
+    hubId: (j['hub_id'] as num?)?.toInt(),
   );
 
   double effectiveRate(double orderTotal) {

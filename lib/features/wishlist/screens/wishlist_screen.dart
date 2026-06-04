@@ -99,6 +99,16 @@ class WishlistScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Text(context.s.wishlistEmpty,
                       style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
+                  const SizedBox(height: 6),
+                  Text(context.s.wishlistSub,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 13, color: AppColors.ink3)),
+                  const SizedBox(height: 20),
+                  AppButton(
+                    label: context.s.startShopping,
+                    width: 200,
+                    onTap: () => context.go('/home'),
+                  ),
                 ])),
               ]),
             );
@@ -272,7 +282,7 @@ class _WishlistCard extends ConsumerWidget {
               const SizedBox(height: 14),
               if (isVariable)
                 _ActionChip(
-                  label: context.s.choose,
+                  label: isAr ? 'اختر الخيار' : 'Options',
                   icon: Icons.tune_rounded,
                   filled: hasDiscount,
                   onTap: () => safePush(context, '/product/${product.id}'),

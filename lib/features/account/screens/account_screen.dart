@@ -8,24 +8,34 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 
-final _activeOrdersCountProvider = FutureProvider<int>((ref) async {
+const _kActiveStatuses = [
+  'pending_confirmation', 'pending', 'confirmed',
+  'processing', 'fulfilled', 'shipped', 'out_for_delivery',
+];
+
+// One call returns both total and active order counts.
+final _ordersCountsProvider = FutureProvider<({int active, int total})>((ref) async {
   try {
-    final res = await ApiClient.instance.dio.get('/orders', queryParameters: {
-      'status': 'pending,confirmed,processing,shipped',
-      'per_page': 1,
-    });
-    return (res.data['data']?['total'] as num?)?.toInt() ?? 0;
+    final res = await ApiClient.instance.dio.get('/orders', queryParameters: {'per_page': 50});
+    final d = res.data['data'];
+    List? raw;
+    if (d is Map) raw = d['data'] as List?;
+    else if (d is List) raw = d;
+    final orders = raw ?? [];
+    final total = (d is Map ? (d['total'] as num?)?.toInt() : null) ?? orders.length;
+    final active = orders.where((o) => _kActiveStatuses.contains(o['status'])).length;
+    return (active: active, total: total);
   } catch (_) {
-    return 0;
+    return (active: 0, total: 0);
   }
 });
 
-final _totalOrdersCountProvider = FutureProvider<int>((ref) async {
+final _freshWalletBalanceProvider = FutureProvider<double>((ref) async {
   try {
-    final res = await ApiClient.instance.dio.get('/orders', queryParameters: {'per_page': 1});
-    return (res.data['data']?['total'] as num?)?.toInt() ?? 0;
+    final res = await ApiClient.instance.dio.get('/wallet');
+    return (res.data['data']?['balance'] as num?)?.toDouble() ?? 0.0;
   } catch (_) {
-    return 0;
+    return 0.0;
   }
 });
 
@@ -74,8 +84,11 @@ class AccountScreen extends ConsumerWidget {
 
     final user = auth.user!;
     final wishlistCount = ref.watch(wishlistProvider).length;
-    final activeOrders = ref.watch(_activeOrdersCountProvider).value ?? 0;
-    final totalOrders = ref.watch(_totalOrdersCountProvider).value ?? 0;
+    final counts = ref.watch(_ordersCountsProvider).value;
+    final activeOrders = counts?.active ?? 0;
+    final totalOrders = counts?.total ?? 0;
+    final freshWallet = ref.watch(_freshWalletBalanceProvider);
+    final walletDisplay = freshWallet.valueOrNull ?? user.walletBalance;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -110,7 +123,7 @@ class AccountScreen extends ConsumerWidget {
                       icon: Icons.local_shipping_outlined,
                       iconColor: const Color(0xFF2563EB),
                       iconBg: const Color(0xFFEFF6FF),
-                      value: activeOrders > 0 ? '$activeOrders' : '—',
+                      value: counts == null ? '—' : '$activeOrders',
                       label: context.s.activeOrdersLbl,
                       onTap: () => safePush(context, '/orders'),
                     ),
@@ -119,7 +132,7 @@ class AccountScreen extends ConsumerWidget {
                       icon: Icons.receipt_long_outlined,
                       iconColor: const Color(0xFF7C3AED),
                       iconBg: const Color(0xFFF5F3FF),
-                      value: totalOrders > 0 ? '$totalOrders' : '—',
+                      value: counts == null ? '—' : '$totalOrders',
                       label: context.s.totalOrdersLbl,
                       onTap: () => safePush(context, '/orders'),
                     ),
@@ -128,7 +141,7 @@ class AccountScreen extends ConsumerWidget {
                       icon: Icons.favorite_outline_rounded,
                       iconColor: const Color(0xFFE11D48),
                       iconBg: const Color(0xFFFFF1F2),
-                      value: wishlistCount > 0 ? '$wishlistCount' : '—',
+                      value: '$wishlistCount',
                       label: context.s.savedItems,
                       onTap: () => safePush(context, '/wishlist'),
                     ),
@@ -165,7 +178,7 @@ class AccountScreen extends ConsumerWidget {
                             Text(context.s.myWallet,
                               style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
                             Text(
-                              '${user.walletBalance.toStringAsFixed(0)} ${context.s.lyd}',
+                              '${walletDisplay.toStringAsFixed(0)} ${context.s.lyd}',
                               style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                 fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.ink0, height: 1.1)),
                           ],
