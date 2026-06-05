@@ -75,8 +75,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _api.dio.post('/auth/otp/send', data: {'phone': phone});
   }
 
-  Future<void> verifyOtp(String phone, String code) async {
-    final res = await _api.dio.post('/auth/otp/verify', data: {'phone': phone, 'code': code});
+  Future<void> verifyOtp(String phone, String code, {String? referralCode}) async {
+    final body = <String, dynamic>{'phone': phone, 'code': code};
+    if (referralCode != null && referralCode.isNotEmpty) body['referred_by_code'] = referralCode;
+    final res = await _api.dio.post('/auth/otp/verify', data: body);
     await _api.setToken(res.data['token']);
     final userJson = res.data['user'] as Map<String, dynamic>;
     final prefs = await SharedPreferences.getInstance();

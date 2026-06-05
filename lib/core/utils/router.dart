@@ -49,7 +49,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/city',       builder: (_, __) => const CityScreen()),
       GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
       GoRoute(path: '/signin',   builder: (_, __) => const PhoneSignInScreen()),
-      GoRoute(path: '/otp',      builder: (_, state) => OtpScreen(phone: state.extra as String)),
+      GoRoute(path: '/otp', builder: (_, state) {
+        final extra = state.extra;
+        if (extra is Map<String, dynamic>) {
+          return OtpScreen(
+            phone: extra['phone'] as String,
+            referralCode: extra['ref'] as String?,
+          );
+        }
+        return OtpScreen(phone: extra as String);
+      }),
 
       // Main shell (tab bar)
       ShellRoute(

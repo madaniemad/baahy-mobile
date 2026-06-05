@@ -9,7 +9,8 @@ import '../../../shared/theme/app_theme.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   final String phone;
-  const OtpScreen({required this.phone, super.key});
+  final String? referralCode;
+  const OtpScreen({required this.phone, this.referralCode, super.key});
 
   @override
   ConsumerState<OtpScreen> createState() => _OtpScreenState();
@@ -64,7 +65,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     if (_code.length < 6) return;
     setState(() { _loading = true; _hasError = false; });
     try {
-      await ref.read(authProvider.notifier).verifyOtp(widget.phone, _code);
+      await ref.read(authProvider.notifier).verifyOtp(
+        widget.phone, _code, referralCode: widget.referralCode);
       if (mounted) context.go('/home');
     } catch (_) {
       HapticFeedback.mediumImpact();

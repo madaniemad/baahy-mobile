@@ -15,6 +15,7 @@ class PhoneSignInScreen extends ConsumerStatefulWidget {
 
 class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
   final _ctrl = TextEditingController();
+  final _refCtrl = TextEditingController();
   bool _loading = false;
   String? _error;
 
@@ -23,6 +24,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
   @override
   void dispose() {
     _ctrl.dispose();
+    _refCtrl.dispose();
     super.dispose();
   }
 
@@ -31,8 +33,10 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
     setState(() { _loading = true; _error = null; });
     try {
       final phone = '+218 ${_ctrl.text.trim()}';
+      final ref2 = _refCtrl.text.trim();
       await ref.read(authProvider.notifier).requestOtp(phone);
-      if (mounted) await safePush(context, '/otp', extra: phone);
+      if (mounted) await safePush(context, '/otp',
+          extra: <String, dynamic>{'phone': phone, 'ref': ref2.isNotEmpty ? ref2 : null});
     } catch (_) {
       setState(() => _error = 'تعذر الإرسال، حاول مجدداً');
     } finally {
@@ -129,6 +133,33 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               Text(_error!,
                 style: const TextStyle(color: AppColors.danger, fontSize: 13)),
             ],
+
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: context.col.bg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: context.col.border),
+              ),
+              child: TextField(
+                controller: _refCtrl,
+                textDirection: TextDirection.ltr,
+                textCapitalization: TextCapitalization.characters,
+                style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                  fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 1),
+                decoration: InputDecoration(
+                  hintText: 'كود الإحالة (اختياري)',
+                  hintStyle: TextStyle(
+                    fontFamily: 'Cairo', fontSize: 13,
+                    color: context.col.ink4, fontWeight: FontWeight.w400,
+                    letterSpacing: 0),
+                  prefixIcon: Icon(Icons.card_giftcard_outlined,
+                    size: 18, color: context.col.ink3),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                ),
+              ),
+            ),
 
             const Spacer(),
 
