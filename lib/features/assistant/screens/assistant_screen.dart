@@ -876,7 +876,7 @@ class _InputBar extends StatelessWidget {
                     hintText: context.s.assistantInputHint,
                     hintStyle: TextStyle(fontFamily: 'Cairo',
                       fontSize: 14, color: context.col.ink3),
-                    fillColor: context.col.surface,
+                    fillColor: Colors.white,
                     filled: true,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 10),
