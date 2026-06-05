@@ -559,7 +559,7 @@ class _BannerSlide extends StatelessWidget {
           CachedNetworkImage(
             imageUrl: banner.imageUrl!,
             fit: BoxFit.cover,
-            placeholder: (_, __) => _gradientBg(gradient),
+            placeholder: (context, __) => Container(color: context.col.surfaceSoft),
             errorWidget: (_, __, ___) => _gradientBg(gradient),
           )
         else
@@ -637,26 +637,11 @@ class _HeroBannerFallback extends StatelessWidget {
     return AspectRatio(
       aspectRatio: 1400 / 480,
       child: Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: [Color(0xFF1F2E2E), Color(0xFF0A1A1A)],
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: context.col.surfaceSoft,
+          borderRadius: BorderRadius.circular(10),
         ),
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Text(context.s.welcomeBaahy,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
-              color: Colors.white)),
-          const SizedBox(height: 4),
-          Text(context.s.discoverProducts,
-            style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.75))),
-        ],
-      ),
       ),
     );
   }
