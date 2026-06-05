@@ -11,15 +11,15 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final isDark = context.isDark;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0),
         ),
         title: Text(isAr ? 'الإعدادات' : 'Settings',
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 18)),
@@ -33,14 +33,14 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsRow(
               icon: Icons.location_city_outlined,
               label: isAr ? 'تغيير المدينة' : 'Change City',
-              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
               onTap: () => context.push('/city'),
             ),
             _SettingsRow(
               icon: Icons.language_outlined,
               label: isAr ? 'اللغة' : 'Language',
               trailing: Text(isAr ? 'العربية' : 'English',
-                style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+                style: TextStyle(fontSize: 13, color: context.col.ink2)),
               onTap: () {
                 final msg = isAr ? 'Language changed to English' : 'تم التغيير إلى العربية';
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -51,9 +51,18 @@ class SettingsScreen extends ConsumerWidget {
               },
             ),
             _SettingsRow(
+              icon: isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+              label: isAr ? 'المظهر' : 'Appearance',
+              trailing: Text(
+                isDark ? (isAr ? 'داكن' : 'Dark') : (isAr ? 'فاتح' : 'Light'),
+                style: TextStyle(fontSize: 13, color: context.col.ink2),
+              ),
+              onTap: () => ref.read(themeModeProvider.notifier).toggle(),
+            ),
+            _SettingsRow(
               icon: Icons.notifications_outlined,
               label: isAr ? 'الإشعارات' : 'Notifications',
-              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
               onTap: () => context.push('/notifications'),
             ),
           ]),
@@ -64,13 +73,13 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsRow(
               icon: Icons.help_outline_rounded,
               label: isAr ? 'الأسئلة الشائعة' : 'FAQ',
-              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
               onTap: () => context.push('/faq'),
             ),
             _SettingsRow(
               icon: Icons.support_agent_outlined,
               label: isAr ? 'تواصل مع الدعم' : 'Contact Support',
-              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
               onTap: () => context.push('/contact'),
             ),
           ]),
@@ -81,19 +90,19 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsRow(
               icon: Icons.shield_outlined,
               label: isAr ? 'سياسة الخصوصية' : 'Privacy Policy',
-              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
               onTap: () => context.push('/privacy'),
             ),
             _SettingsRow(
               icon: Icons.description_outlined,
               label: isAr ? 'الشروط والأحكام' : 'Terms of Service',
-              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
               onTap: () => context.push('/terms'),
             ),
             _SettingsRow(
               icon: Icons.assignment_return_outlined,
               label: isAr ? 'سياسة الإرجاع' : 'Return Policy',
-              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+              trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
               onTap: () => context.push('/return-policy'),
             ),
           ]),
@@ -125,15 +134,15 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.col.surface,
       borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: AppColors.border),
+      border: Border.all(color: context.col.border),
     ),
     child: Column(children: [
       for (var i = 0; i < children.length; i++) ...[
         children[i],
         if (i < children.length - 1)
-          const Divider(height: 1, indent: 48, endIndent: 0, color: AppColors.border),
+          Divider(height: 1, indent: 48, endIndent: 0, color: context.col.border),
       ],
     ]),
   );
@@ -156,11 +165,11 @@ class _SettingsRow extends StatelessWidget {
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(children: [
-        Icon(icon, size: 20, color: accent ? AppColors.danger : AppColors.ink1),
+        Icon(icon, size: 20, color: accent ? AppColors.danger : context.col.ink1),
         const SizedBox(width: 12),
         Expanded(child: Text(label,
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
-            color: accent ? AppColors.danger : AppColors.ink0))),
+            color: accent ? AppColors.danger : context.col.ink0))),
         trailing,
       ]),
     ),
@@ -177,10 +186,10 @@ class _AppVersionBadge extends StatelessWidget {
           fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary))),
       const SizedBox(height: 6),
       Text(context.s.versionN('1.0.0'),
-        style: const TextStyle(fontSize: 11, color: AppColors.ink4)),
+        style: TextStyle(fontSize: 11, color: context.col.ink4)),
       const SizedBox(height: 2),
-      const Text('© 2026 Baahy. All rights reserved.',
-        style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 10, color: AppColors.ink4)),
+      Text('© 2026 Baahy. All rights reserved.',
+        style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 10, color: context.col.ink4)),
     ]);
   }
 }

@@ -29,13 +29,13 @@ class ContactScreen extends ConsumerWidget {
     final pages = ref.watch(appPagesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.col.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0),
         ),
         title: Text(context.s.contactUs,
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
@@ -46,9 +46,9 @@ class ContactScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.col.surface,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.col.border),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +60,7 @@ class ContactScreen extends ConsumerWidget {
                         fontSize: 16)),
                 const SizedBox(height: 4),
                 Text(context.s.supportAvailable,
-                    style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+                    style: TextStyle(fontSize: 13, color: context.col.ink2)),
                 const SizedBox(height: 20),
                 if (pages.contactWhatsapp.isNotEmpty)
                   _ContactRow(
@@ -84,7 +84,7 @@ class ContactScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   _ContactRow(
                     icon: Icons.email_outlined,
-                    color: AppColors.ink1,
+                    color: context.col.ink1,
                     label: context.s.emailLabel,
                     subtitle: pages.contactEmail,
                     onTap: () => _openEmail(pages.contactEmail),
@@ -97,17 +97,17 @@ class ContactScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F9FF),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFBAE6FD)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
             ),
             child: Row(children: [
-              const Icon(Icons.info_outline_rounded, color: Color(0xFF0284C7), size: 18),
+              const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 18),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   context.s.orderComplaintTip,
-                  style: const TextStyle(fontSize: 12.5, color: Color(0xFF0369A1), height: 1.5),
+                  style: const TextStyle(fontSize: 12.5, color: AppColors.primary, height: 1.5),
                 ),
               ),
             ]),
@@ -153,11 +153,11 @@ class _ContactRow extends StatelessWidget {
           children: [
             Text(label, style: const TextStyle(
                 fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 13.5)),
-            Text(subtitle, style: const TextStyle(
-                fontFamily: 'PlusJakartaSans', fontSize: 12.5, color: AppColors.ink2)),
+            Text(subtitle, style: TextStyle(
+                fontFamily: 'PlusJakartaSans', fontSize: 12.5, color: context.col.ink2)),
           ],
         )),
-        const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+        Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
       ]),
     );
   }

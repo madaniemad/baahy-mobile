@@ -29,18 +29,11 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final home = ref.watch(homeProvider);
-    final unread = ref.watch(unreadNotificationCountProvider);
     final banners = ref.watch(bannersProvider);
     final config = ref.watch(appConfigProvider);
-    final cityAr = ref.watch(cityProvider);
-    final isAr = ref.watch(localeProvider).languageCode == 'ar';
-    final cities = ref.watch(appPagesProvider).cities;
-    final city = isAr
-        ? cityAr
-        : (cities.firstWhere((c) => c.ar == cityAr, orElse: () => CityEntry(ar: cityAr, en: cityAr)).en);
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: () => ref.read(homeProvider.notifier).fetch(),
@@ -67,41 +60,9 @@ class HomeScreen extends ConsumerWidget {
               title: Padding(
                 padding: const EdgeInsets.only(right: 16, left: 8),
                 child: Row(children: [
-                  GestureDetector(
-                    onTap: () => context.push('/city'),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.location_on_outlined, size: 15, color: Colors.white),
-                      const SizedBox(width: 3),
-                      Text(city, style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w700,
-                        fontFamily: 'Cairo', color: Colors.white)),
-                      const SizedBox(width: 2),
-                      const Icon(Icons.keyboard_arrow_down_rounded, size: 15, color: Colors.white70),
-                    ]),
-                  ),
+                  const _CityLabel(),
                   const Spacer(),
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      IconButton(
-                        onPressed: () => safePush(context, '/notifications'),
-                        icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      if (unread > 0)
-                        Positioned(
-                          top: -1, right: -1,
-                          child: Container(
-                            width: 8, height: 8,
-                            decoration: BoxDecoration(
-                              color: AppColors.danger, shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFF32DDE5), width: 1.5),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                  const _NotificationBell(),
                 ]),
               ),
               bottom: PreferredSize(
@@ -117,11 +78,11 @@ class HomeScreen extends ConsumerWidget {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Row(children: [
-                        Icon(Icons.search, size: 17, color: AppColors.ink3),
+                      child: Row(children: [
+                        Icon(Icons.search, size: 17, color: context.col.ink3),
                         SizedBox(width: 7),
                         Expanded(child: _SearchHintText()),
-                        Icon(Icons.mic_none_rounded, size: 17, color: AppColors.ink3),
+                        Icon(Icons.mic_none_rounded, size: 17, color: context.col.ink3),
                       ]),
                     ),
                   ),
@@ -278,7 +239,7 @@ class HomeScreen extends ConsumerWidget {
                             child: CachedNetworkImage(
                               imageUrl: item.imageUrl,
                               fit: BoxFit.cover,
-                              placeholder: (_, __) => Container(color: AppColors.surfaceSoft),
+                              placeholder: (_, __) => Container(color: context.col.surfaceSoft),
                               errorWidget: (_, __, ___) => const SizedBox.shrink(),
                             ),
                           ),
@@ -344,13 +305,67 @@ class HomeScreen extends ConsumerWidget {
 
 // ── App Bar ──────────────────────────────────────────────────────────────────
 
+class _CityLabel extends ConsumerWidget {
+  const _CityLabel();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cityAr = ref.watch(cityProvider);
+    final isAr = ref.watch(localeProvider).languageCode == 'ar';
+    final cities = ref.watch(appPagesProvider).cities;
+    final city = isAr
+        ? cityAr
+        : (cities.firstWhere((c) => c.ar == cityAr, orElse: () => CityEntry(ar: cityAr, en: cityAr)).en);
+    return GestureDetector(
+      onTap: () => context.push('/city'),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.location_on_outlined, size: 15, color: Colors.white),
+        const SizedBox(width: 3),
+        Text(city, style: const TextStyle(
+            fontSize: 13, fontWeight: FontWeight.w700,
+            fontFamily: 'Cairo', color: Colors.white)),
+        const SizedBox(width: 2),
+        const Icon(Icons.keyboard_arrow_down_rounded, size: 15, color: Colors.white70),
+      ]),
+    );
+  }
+}
+
+class _NotificationBell extends ConsumerWidget {
+  const _NotificationBell();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(unreadNotificationCountProvider);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          onPressed: () => safePush(context, '/notifications'),
+          icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        if (unread > 0)
+          Positioned(
+            top: -1, right: -1,
+            child: Container(
+              width: 8, height: 8,
+              decoration: BoxDecoration(
+                color: AppColors.danger, shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF32DDE5), width: 1.5),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
 
 class _SearchHintText extends StatelessWidget {
   const _SearchHintText();
   @override
   Widget build(BuildContext context) => Text(
     context.s.searchHint,
-    style: const TextStyle(color: AppColors.ink0, fontSize: 14));
+    style: TextStyle(color: context.col.ink0, fontSize: 14));
 }
 
 // ── Active order strip ────────────────────────────────────────────────────────
@@ -395,13 +410,13 @@ class _ActiveOrderStrip extends ConsumerWidget {
                   style: const TextStyle(fontSize: 12.5),
                   children: [
                     TextSpan(text: context.s.onTheWay,
-                      style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink0)),
+                      style: TextStyle(fontWeight: FontWeight.w700, color: context.col.ink0)),
                     TextSpan(text: ' · $orderNum',
-                      style: const TextStyle(color: AppColors.ink3)),
+                      style: TextStyle(color: context.col.ink3)),
                   ],
                 )),
               ),
-              const Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.ink3),
+              Icon(Icons.arrow_forward_ios, size: 12, color: context.col.ink3),
             ]),
           ),
         );
@@ -685,7 +700,7 @@ class _SubHeroBannerState extends State<_SubHeroBanner> {
               imageUrl: banner.imageUrl!,
               fit: BoxFit.cover,
               width: double.infinity,
-              placeholder: (_, __) => Container(color: AppColors.surfaceSoft),
+              placeholder: (_, __) => Container(color: context.col.surfaceSoft),
               errorWidget: (_, __, ___) => const SizedBox.shrink(),
             ),
           ),
@@ -850,9 +865,9 @@ class _PromiseStrip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.col.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.col.border),
         boxShadow: AppShadows.shadowCard,
       ),
       child: Row(
@@ -860,10 +875,10 @@ class _PromiseStrip extends StatelessWidget {
         children: [
           const _PromiseChip(icon: Icons.local_shipping_outlined,
             ar: 'توصيل سريع', en: 'Fast delivery'),
-          Container(width: 1, height: 24, color: AppColors.border),
+          Container(width: 1, height: 24, color: context.col.border),
           const _PromiseChip(icon: Icons.refresh_rounded,
             ar: 'ارجاع واستبدال', en: 'Returns & exchanges'),
-          Container(width: 1, height: 24, color: AppColors.border),
+          Container(width: 1, height: 24, color: context.col.border),
           const _PromiseChip(icon: Icons.verified_outlined,
             ar: 'ضمان المنتج', en: 'Product warranty'),
         ],
@@ -884,7 +899,7 @@ class _PromiseChip extends StatelessWidget {
       Icon(icon, size: 18, color: AppColors.primary),
       const SizedBox(height: 3),
       Text(isAr ? ar : en,
-        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.ink1),
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.col.ink1),
         textAlign: TextAlign.center),
     ]);
   }
@@ -933,18 +948,18 @@ class _CategoryImagesCarousel extends StatelessWidget {
                           width: 72, height: 72,
                           fit: BoxFit.cover,
                           placeholder: (_, __) => Container(
-                            width: 72, height: 72, color: AppColors.surfaceSoft),
+                            width: 72, height: 72, color: context.col.surfaceSoft),
                           errorWidget: (_, __, ___) => Container(
-                            width: 72, height: 72, color: AppColors.surfaceSoft,
-                            child: const Icon(Icons.category_outlined,
-                              size: 28, color: AppColors.ink3)),
+                            width: 72, height: 72, color: context.col.surfaceSoft,
+                            child: Icon(Icons.category_outlined,
+                              size: 28, color: context.col.ink3)),
                         ),
                       ),
                       const SizedBox(height: 5),
                       Text(
                         isAr ? cat.nameAr : cat.name,
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                          fontFamily: 'Cairo', color: AppColors.ink1),
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                          fontFamily: 'Cairo', color: context.col.ink1),
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -1162,7 +1177,7 @@ class _CategoriesGridState extends State<_CategoriesGrid> {
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: item.isParent ? FontWeight.w700 : FontWeight.w500,
-                    color: item.isParent ? AppColors.ink0 : AppColors.ink1,
+                    color: item.isParent ? context.col.ink0 : context.col.ink1,
                   ),
                   textAlign: TextAlign.center, maxLines: 1,
                   overflow: TextOverflow.ellipsis),
@@ -1340,10 +1355,10 @@ class _BrandCarousel extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   child: brand.hasImage
                       ? CachedNetworkImage(imageUrl: brand.imageUrl!, fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(color: AppColors.surfaceSoft,
-                            child: const Icon(Icons.store_outlined, color: AppColors.ink3, size: 24)))
-                      : Container(color: AppColors.surfaceSoft,
-                          child: const Icon(Icons.store_outlined, color: AppColors.ink3, size: 24)),
+                          errorWidget: (_, __, ___) => Container(color: context.col.surfaceSoft,
+                            child: Icon(Icons.store_outlined, color: context.col.ink3, size: 24)))
+                      : Container(color: context.col.surfaceSoft,
+                          child: Icon(Icons.store_outlined, color: context.col.ink3, size: 24)),
                 ),
               );
             },
@@ -1577,8 +1592,8 @@ class _BudgetCarousel extends StatelessWidget {
               child: Stack(fit: StackFit.expand, children: [
                 p.firstImage != null
                     ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => Container(color: AppColors.surfaceSoft))
-                    : Container(color: AppColors.surfaceSoft),
+                        errorWidget: (_, __, ___) => Container(color: context.col.surfaceSoft))
+                    : Container(color: context.col.surfaceSoft),
                 Positioned(
                   left: 6, bottom: 6,
                   child: Container(
@@ -1612,9 +1627,9 @@ class _BaahyPromiseCard extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: [AppColors.ink0, Color(0xFF1A3838)],
+          colors: [context.col.ink0, Color(0xFF1A3838)],
         ),
       ),
       child: Stack(children: [
@@ -1700,17 +1715,17 @@ class _HomeSkeleton extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Column(children: [
         Container(height: 130, decoration: BoxDecoration(
-          color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(10))),
+          color: context.col.surfaceSoft, borderRadius: BorderRadius.circular(10))),
         const SizedBox(height: 14),
         Container(height: 54, decoration: BoxDecoration(
-          color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(10))),
+          color: context.col.surfaceSoft, borderRadius: BorderRadius.circular(10))),
         const SizedBox(height: 24),
         Wrap(spacing: 10, runSpacing: 10,
           children: List.generate(8, (_) => Container(
             width: (MediaQuery.of(context).size.width - 82) / 4,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.surfaceSoft, borderRadius: BorderRadius.circular(10))))),
+              color: context.col.surfaceSoft, borderRadius: BorderRadius.circular(10))))),
         const SizedBox(height: 24),
         SizedBox(
           height: 320,

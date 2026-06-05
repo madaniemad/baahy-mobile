@@ -136,14 +136,14 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.col.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0,
+        backgroundColor: context.col.surface, elevation: 0,
         title: Text(_isEdit ? 'تعديل عنوان' : 'عنوان جديد',
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0)),
       ),
       body: Column(children: [
         Expanded(
@@ -166,11 +166,11 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                           color: isSelected ? const Color(0xFFF5F5F5) : Colors.white,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isSelected ? AppColors.primary : AppColors.border,
+                            color: isSelected ? AppColors.primary : context.col.border,
                             width: isSelected ? 1.5 : 1),
                         ),
                         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(l.$2, size: 18, color: AppColors.ink1),
+                          Icon(l.$2, size: 18, color: context.col.ink1),
                           const SizedBox(height: 4),
                           Text(l.$1, style: const TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 13)),
@@ -191,9 +191,9 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                   const _FieldLabel('رقم الهاتف'),
                   Container(
                     decoration: BoxDecoration(
-                      color: AppColors.bg,
+                      color: context.col.bg,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: context.col.border),
                     ),
                     child: Directionality(
                       textDirection: TextDirection.ltr,
@@ -201,9 +201,9 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                         controller: _phoneCtrl,
                         keyboardType: TextInputType.phone,
                         textAlign: TextAlign.right,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: '+218 91 234 5678',
-                          hintStyle: TextStyle(color: AppColors.ink3, fontSize: 13),
+                          hintStyle: TextStyle(color: context.col.ink3, fontSize: 13),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
@@ -241,10 +241,10 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 13),
                       decoration: BoxDecoration(
-                        color: AppColors.bg,
+                        color: context.col.bg,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: _city != null ? AppColors.primary : AppColors.border,
+                          color: _city != null ? AppColors.primary : context.col.border,
                           width: _city != null ? 1.5 : 1),
                       ),
                       child: Row(children: [
@@ -253,13 +253,13 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                             _city ?? 'اختر مدينة',
                             style: TextStyle(
                               fontSize: 14,
-                              color: _city != null ? AppColors.ink0 : AppColors.ink3,
+                              color: _city != null ? context.col.ink0 : context.col.ink3,
                               fontWeight: _city != null
                                   ? FontWeight.w600 : FontWeight.normal),
                           ),
                         ),
-                        const Icon(Icons.keyboard_arrow_down_rounded,
-                          color: AppColors.ink3, size: 20),
+                        Icon(Icons.keyboard_arrow_down_rounded,
+                          color: context.col.ink3, size: 20),
                       ]),
                     ),
                   ),
@@ -273,25 +273,25 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               const _FieldLabel('📍 ملاحظات معلم بارز (مستحسن)'),
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.bg,
+                  color: context.col.bg,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.col.border),
                 ),
                 child: TextField(
                   controller: _notesCtrl,
                   maxLines: 3,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'مثل: "مقابل المسجد الأبيض، بجانب مخبز المدينة"',
-                    hintStyle: TextStyle(color: AppColors.ink3, fontSize: 12.5),
+                    hintStyle: TextStyle(color: context.col.ink3, fontSize: 12.5),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(14),
                   ),
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'يساعد سائقينا في الوصول إليك بسرعة.',
-                style: TextStyle(fontSize: 11, color: AppColors.ink3, height: 1.4)),
+                style: TextStyle(fontSize: 11, color: context.col.ink3, height: 1.4)),
               const SizedBox(height: 16),
 
               // ── Default checkbox ───────────────────────────────────────────
@@ -305,12 +305,12 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
                         color: _isDefault
-                            ? AppColors.primary : AppColors.borderStrong,
+                            ? AppColors.primary : context.col.borderStrong,
                         width: 1.5),
                     ),
                     child: _isDefault
-                        ? const Icon(Icons.check_rounded,
-                            size: 13, color: AppColors.ink0)
+                        ? Icon(Icons.check_rounded,
+                            size: 13, color: context.col.ink0)
                         : null,
                   ),
                   const SizedBox(width: 10),
@@ -361,8 +361,8 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.col.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
       ),
       padding: EdgeInsets.fromLTRB(16, 12, 16, bottom + 16),
@@ -371,7 +371,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
         Container(
           width: 36, height: 4,
           decoration: BoxDecoration(
-            color: AppColors.border,
+            color: context.col.border,
             borderRadius: BorderRadius.circular(99)),
         ),
         const SizedBox(height: 16),
@@ -382,9 +382,9 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
 
         Container(
           decoration: BoxDecoration(
-            color: AppColors.surfaceSoft,
+            color: context.col.surfaceSoft,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.col.border),
           ),
           child: TextField(
             controller: _ctrl,
@@ -392,13 +392,13 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
             textAlign: TextAlign.right,
             decoration: InputDecoration(
               hintText: 'ابحث…',
-              hintStyle: const TextStyle(color: AppColors.ink3, fontSize: 14),
+              hintStyle: TextStyle(color: context.col.ink3, fontSize: 14),
               prefixIcon: _query.isEmpty
-                  ? const Icon(Icons.search_rounded, color: AppColors.ink3, size: 18)
+                  ? Icon(Icons.search_rounded, color: context.col.ink3, size: 18)
                   : GestureDetector(
                       onTap: () { _ctrl.clear(); setState(() => _query = ''); },
-                      child: const Icon(Icons.close_rounded,
-                          color: AppColors.ink3, size: 18)),
+                      child: Icon(Icons.close_rounded,
+                          color: context.col.ink3, size: 18)),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 12),
             ),
@@ -429,10 +429,10 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: selected
-                          ? const Color(0xFFF5F5F5) : AppColors.surfaceSoft,
+                          ? Color(0xFFF5F5F5) : context.col.surfaceSoft,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: selected ? AppColors.primary : AppColors.border,
+                        color: selected ? AppColors.primary : context.col.border,
                         width: selected ? 1.5 : 1),
                     ),
                     child: Text(r.cityAr,
@@ -440,7 +440,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: selected ? AppColors.primary : AppColors.ink0,
+                        color: selected ? AppColors.primary : context.col.ink0,
                       )),
                   ),
                 );
@@ -460,8 +460,8 @@ class _FieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 6),
-    child: Text(text, style: const TextStyle(
-      fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.ink2)),
+    child: Text(text, style: TextStyle(
+      fontSize: 12.5, fontWeight: FontWeight.w600, color: context.col.ink2)),
   );
 }
 
@@ -479,16 +479,16 @@ class _TextField extends StatelessWidget {
       _FieldLabel(label),
       Container(
         decoration: BoxDecoration(
-          color: AppColors.bg,
+          color: context.col.bg,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.col.border),
         ),
         child: TextField(
           controller: controller,
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.ink3, fontSize: 13),
+            hintStyle: TextStyle(color: context.col.ink3, fontSize: 13),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14, vertical: 12),

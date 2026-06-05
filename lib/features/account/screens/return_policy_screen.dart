@@ -11,13 +11,13 @@ class ReturnPolicyScreen extends StatelessWidget {
     final isAr = context.isAr;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.col.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0),
         ),
         title: Text(
           isAr ? 'الإرجاعات والاسترداد' : 'Returns & Refunds',
@@ -62,7 +62,7 @@ class ReturnPolicyScreen extends StatelessWidget {
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.ink0,
+              foregroundColor: context.col.ink0,
               minimumSize: const Size.fromHeight(50),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -90,9 +90,9 @@ class _PolicyCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.col.surface,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppColors.border),
+      border: Border.all(color: context.col.border),
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,8 +113,8 @@ class _PolicyCard extends StatelessWidget {
               Text(title, style: const TextStyle(
                 fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 14)),
               const SizedBox(height: 6),
-              Text(body, style: const TextStyle(
-                fontSize: 13, color: AppColors.ink2, height: 1.6)),
+              Text(body, style: TextStyle(
+                fontSize: 13, color: context.col.ink2, height: 1.6)),
             ],
           ),
         ),

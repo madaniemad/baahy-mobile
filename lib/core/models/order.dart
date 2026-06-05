@@ -6,6 +6,16 @@ double _d(dynamic v) {
   return 0.0;
 }
 
+class OrderStatusEntry {
+  final String toStatus;
+  final DateTime? createdAt;
+  const OrderStatusEntry({required this.toStatus, this.createdAt});
+  factory OrderStatusEntry.fromJson(Map<String, dynamic> j) => OrderStatusEntry(
+    toStatus: j['to_status'] ?? '',
+    createdAt: j['created_at'] != null ? DateTime.tryParse(j['created_at']) : null,
+  );
+}
+
 class Order {
   final int id;
   final String orderNumber;
@@ -20,6 +30,7 @@ class Order {
   final String? notes;
   final Map<String, dynamic>? shippingAddress;
   final List<OrderVendorGroup> vendorGroups;
+  final List<OrderStatusEntry> statusHistory;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -37,6 +48,7 @@ class Order {
     this.notes,
     this.shippingAddress,
     required this.vendorGroups,
+    this.statusHistory = const [],
     required this.createdAt,
     this.updatedAt,
   });
@@ -78,6 +90,8 @@ class Order {
         : null,
     vendorGroups: (j['vendor_groups'] as List?)
         ?.map((g) => OrderVendorGroup.fromJson(g)).toList() ?? [],
+    statusHistory: (j['status_history'] as List?)
+        ?.map((e) => OrderStatusEntry.fromJson(e)).toList() ?? [],
     createdAt: DateTime.tryParse(j['created_at'] ?? '') ?? DateTime.now(),
     updatedAt: j['updated_at'] != null
         ? DateTime.tryParse(j['updated_at'])

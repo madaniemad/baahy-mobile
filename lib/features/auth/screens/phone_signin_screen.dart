@@ -43,12 +43,12 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.col.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0,
+        backgroundColor: context.col.surface, elevation: 0,
         leading: IconButton(
           onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0)),
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -58,7 +58,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
             Container(
               width: 56, height: 56,
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.phone_outlined,
@@ -70,7 +70,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
             const SizedBox(height: 8),
             Text(context.s.phoneSub,
-              style: const TextStyle(fontSize: 14.5, color: AppColors.ink2, height: 1.5)),
+              style: TextStyle(fontSize: 14.5, color: context.col.ink2, height: 1.5)),
             const SizedBox(height: 24),
 
             // Phone input — always LTR so country code stays on the left
@@ -80,14 +80,14 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceSoft,
+                    color: context.col.surfaceSoft,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Row(children: [
+                  child: Row(children: [
                     Text('LY', style: TextStyle(
                       fontFamily: 'PlusJakartaSans',
                       fontSize: 12, fontWeight: FontWeight.w700,
-                      color: AppColors.ink2)),
+                      color: context.col.ink2)),
                     SizedBox(width: 6),
                     Text('+218',
                       style: TextStyle(fontFamily: 'PlusJakartaSans',
@@ -98,10 +98,10 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.bg,
+                      color: context.col.bg,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: _error != null ? AppColors.danger : AppColors.border),
+                        color: _error != null ? AppColors.danger : context.col.border),
                     ),
                     child: TextField(
                       controller: _ctrl,
@@ -111,9 +111,9 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                       onChanged: (_) => setState(() => _error = null),
                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
                         fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 0.5),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: '91 234 5678',
-                        hintStyle: TextStyle(color: AppColors.ink4, fontWeight: FontWeight.w400),
+                        hintStyle: TextStyle(color: context.col.ink4, fontWeight: FontWeight.w400),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       ),
@@ -140,11 +140,11 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 onPressed: (_valid && !_loading) ? _send : null,
                 icon: _loading
                     ? const SizedBox(width: 18, height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.ink0),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87))
+                    : const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.black87),
                 label: Text(context.s.sendCode,
                   style: const TextStyle(fontFamily: 'Cairo',
-                    fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink0)),
+                    fontWeight: FontWeight.w800, fontSize: 15, color: Colors.black87)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
@@ -159,12 +159,12 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               height: 48,
               child: OutlinedButton.icon(
                 onPressed: () {},
-                icon: const Icon(Icons.chat_outlined, size: 16, color: AppColors.ink1),
+                icon: Icon(Icons.chat_outlined, size: 16, color: context.col.ink1),
                 label: Text(context.s.viaWhatsapp,
-                  style: const TextStyle(fontFamily: 'Cairo',
-                    fontWeight: FontWeight.w700, color: AppColors.ink0)),
+                  style: TextStyle(fontFamily: 'Cairo',
+                    fontWeight: FontWeight.w700, color: context.col.ink0)),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: context.col.border),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
@@ -176,11 +176,11 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(context.s.browseAsGuest,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w600,
-                      color: AppColors.ink2,
+                      color: context.col.ink2,
                       decoration: TextDecoration.underline,
-                      decorationColor: AppColors.ink2)),
+                      decorationColor: context.col.ink2)),
                 ),
               ),
             ),
@@ -188,7 +188,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
             Text(
               context.s.termsAgreement,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 11, color: AppColors.ink3, height: 1.5)),
+              style: TextStyle(fontSize: 11, color: context.col.ink3, height: 1.5)),
           ],
         ),
       ),

@@ -39,16 +39,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           n.createdAt.day == now.day)).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.col.surface,
         elevation: 0,
         scrolledUnderElevation: 0.5,
         title: Text(context.s.activity,
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0)),
         actions: [
           if (unreadCount > 0)
             TextButton(
@@ -68,18 +68,18 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.notifications_none_rounded,
-                      size: 64, color: AppColors.ink4),
+                  Icon(Icons.notifications_none_rounded,
+                      size: 64, color: context.col.ink4),
                   const SizedBox(height: 12),
                   Text(context.s.upToDate,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.ink2)),
+                          color: context.col.ink2)),
                   const SizedBox(height: 4),
                   Text(context.s.notifSub,
-                      style: const TextStyle(fontSize: 13, color: AppColors.ink3)),
+                      style: TextStyle(fontSize: 13, color: context.col.ink3)),
                 ],
               ),
             )
@@ -108,10 +108,10 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 8, top: 4),
     child: Text(label,
-        style: const TextStyle(
+        style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: AppColors.ink3,
+            color: context.col.ink3,
             letterSpacing: 0.6)),
   );
 }
@@ -120,21 +120,21 @@ class _NotifCard extends ConsumerWidget {
   final AppNotification n;
   const _NotifCard({required this.n});
 
-  static Color _iconBg(String? type) {
+  static Color _iconBg(String? type, BuildContext context) {
     switch (type) {
       case 'order': return AppColors.teal50bg;
       case 'promo': return const Color(0xFFFFF3E0);
-      case 'system': return AppColors.surfaceSoft;
-      default: return AppColors.surfaceSoft;
+      case 'system': return context.col.surfaceSoft;
+      default: return context.col.surfaceSoft;
     }
   }
 
-  static Color _iconColor(String? type) {
+  static Color _iconColor(String? type, BuildContext context) {
     switch (type) {
       case 'order': return AppColors.primary;
       case 'promo': return const Color(0xFFD97757);
-      case 'system': return AppColors.ink2;
-      default: return AppColors.ink2;
+      case 'system': return context.col.ink2;
+      default: return context.col.ink2;
     }
   }
 
@@ -174,7 +174,7 @@ class _NotifCard extends ConsumerWidget {
           color: n.isRead ? Colors.white : AppColors.teal50bg,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: n.isRead ? AppColors.border : AppColors.teal100bg,
+            color: n.isRead ? context.col.border : AppColors.teal100bg,
             width: 1,
           ),
           boxShadow: n.isRead ? null : AppShadows.shadowCard,
@@ -186,10 +186,10 @@ class _NotifCard extends ConsumerWidget {
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: _iconBg(n.type),
+                color: _iconBg(n.type, context),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(_icon(n.type), color: _iconColor(n.type), size: 20),
+              child: Icon(_icon(n.type), color: _iconColor(n.type, context), size: 20),
             ),
             const SizedBox(width: 12),
 
@@ -209,22 +209,22 @@ class _NotifCard extends ConsumerWidget {
                                     : FontWeight.w700,
                                 fontSize: 13.5,
                                 height: 1.3,
-                                color: AppColors.ink0)),
+                                color: context.col.ink0)),
                       ),
                       const SizedBox(width: 8),
                       Text(_formatTime(),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontFamily: 'PlusJakartaSans',
                               fontSize: 11,
-                              color: AppColors.ink3)),
+                              color: context.col.ink3)),
                     ],
                   ),
                   if (n.body.isNotEmpty) ...[
                     const SizedBox(height: 3),
                     Text(n.body,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12.5,
-                            color: AppColors.ink2,
+                            color: context.col.ink2,
                             height: 1.45)),
                   ],
                 ],

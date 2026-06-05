@@ -121,7 +121,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(context.s.locationFailed),
-            backgroundColor: AppColors.ink1,
+            backgroundColor: context.col.ink1,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10)),
@@ -309,8 +309,8 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                       blurRadius: 8, offset: const Offset(0, 2))],
                   ),
                   child: Row(children: [
-                    const Icon(Icons.search_rounded,
-                      color: AppColors.ink3, size: 18),
+                    Icon(Icons.search_rounded,
+                      color: context.col.ink3, size: 18),
                     const SizedBox(width: 8),
                     Text(
                       _geocoding ? 'جاري تحديد الموقع…' :
@@ -318,7 +318,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                       style: TextStyle(
                         fontSize: 13.5,
                         color: _address.isNotEmpty
-                            ? AppColors.ink0 : AppColors.ink3,
+                            ? context.col.ink0 : context.col.ink3,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -347,7 +347,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                     width: 36, height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: AppColors.border,
+                      color: context.col.border,
                       borderRadius: BorderRadius.circular(99)),
                   ),
 
@@ -356,7 +356,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                     Container(
                       width: 44, height: 44,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceSoft,
+                        color: context.col.surfaceSoft,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.location_pin,
@@ -383,8 +383,8 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                                   Text(_address,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 12, color: AppColors.ink2)),
+                                    style: TextStyle(
+                                      fontSize: 12, color: context.col.ink2)),
                               ],
                             ),
                     ),
@@ -427,7 +427,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                                     colors: [Color(0xFF1AC5CD), AppColors.primary])
                                 : null,
                             color: _city.isEmpty || _geocoding
-                                ? AppColors.border : null,
+                                ? context.col.border : null,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           alignment: Alignment.center,
@@ -435,7 +435,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                             'تأكيد الموقع',
                             style: TextStyle(
                               color: _city.isNotEmpty && !_geocoding
-                                  ? Colors.white : AppColors.ink3,
+                                  ? Colors.white : context.col.ink3,
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
                             ),
@@ -472,7 +472,7 @@ class _MapBtn extends StatelessWidget {
           color: Colors.black.withValues(alpha: 0.1),
           blurRadius: 8, offset: const Offset(0, 2))],
       ),
-      child: Icon(icon, color: AppColors.ink0, size: 20),
+      child: Icon(icon, color: context.col.ink0, size: 20),
     ),
   );
 }
@@ -498,7 +498,7 @@ class _ShimmerLine extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     width: width, height: height,
     decoration: BoxDecoration(
-      color: AppColors.border,
+      color: context.col.border,
       borderRadius: BorderRadius.circular(4)),
   );
 }

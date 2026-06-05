@@ -32,7 +32,7 @@ class OrderConfirmedScreen extends StatelessWidget {
     final total = rawTotal is num ? rawTotal.toDouble() : double.tryParse(rawTotal?.toString() ?? '');
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -46,7 +46,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                       width: 96, height: 96,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFFF5F5F5),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         border: Border.all(color: AppColors.primary, width: 3),
                       ),
                       child: const Icon(Icons.check_rounded,
@@ -60,7 +60,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                     Text(
                       context.s.confirmSent(orderNumber.toString()),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 14, color: AppColors.ink2, height: 1.5),
+                      style: TextStyle(fontSize: 14, color: context.col.ink2, height: 1.5),
                     ),
                     const SizedBox(height: 24),
                     if (total != null)
@@ -68,9 +68,9 @@ class OrderConfirmedScreen extends StatelessWidget {
                         constraints: const BoxConstraints(maxWidth: 320),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.col.surface,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: context.col.border),
                         ),
                         child: Column(
                           children: [
@@ -78,7 +78,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(context.s.deliveryLabel,
-                                  style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+                                  style: TextStyle(fontSize: 13, color: context.col.ink2)),
                                 Text(_deliveryLabel(context),
                                   style: const TextStyle(fontSize: 13.5,
                                     fontWeight: FontWeight.w600)),
@@ -89,7 +89,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(context.s.paidLabel,
-                                  style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+                                  style: TextStyle(fontSize: 13, color: context.col.ink2)),
                                 Text('${fmtPrice(total)} ${context.s.lydUnit}',
                                   style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                     fontSize: 15, fontWeight: FontWeight.w800,
@@ -113,12 +113,12 @@ class OrderConfirmedScreen extends StatelessWidget {
                     onPressed: () => context.go('/home'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 50),
-                      side: const BorderSide(color: AppColors.border),
+                      side: BorderSide(color: context.col.border),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     child: Text(context.s.continueShopping,
-                      style: const TextStyle(fontFamily: 'Cairo',
-                        fontWeight: FontWeight.w700, color: AppColors.ink0)),
+                      style: TextStyle(fontFamily: 'Cairo',
+                        fontWeight: FontWeight.w700, color: context.col.ink0)),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -133,7 +133,7 @@ class OrderConfirmedScreen extends StatelessWidget {
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(0, 50),
-                      backgroundColor: AppColors.ink0,
+                      backgroundColor: context.col.ink0,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

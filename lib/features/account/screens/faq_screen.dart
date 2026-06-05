@@ -13,13 +13,13 @@ class FaqScreen extends ConsumerWidget {
     final items = pages.faqItems;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.col.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0),
         ),
         title: Text(context.s.faqTitle,
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
@@ -52,9 +52,9 @@ class _FaqTileState extends State<_FaqTile> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.col.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _open ? AppColors.borderStrong : AppColors.border),
+        border: Border.all(color: _open ? context.col.borderStrong : context.col.border),
       ),
       child: Column(
         children: [
@@ -73,7 +73,7 @@ class _FaqTileState extends State<_FaqTile> {
                 ),
                 Icon(
                   _open ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                  color: AppColors.ink2, size: 20,
+                  color: context.col.ink2, size: 20,
                 ),
               ]),
             ),
@@ -82,8 +82,8 @@ class _FaqTileState extends State<_FaqTile> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
               child: Text(context.isAr ? (widget.item['a_ar'] ?? widget.item['a'] ?? '') : (widget.item['a_en']?.isNotEmpty == true ? widget.item['a_en']! : (widget.item['a_ar'] ?? widget.item['a'] ?? '')),
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.ink2, height: 1.65)),
+                  style: TextStyle(
+                      fontSize: 13, color: context.col.ink2, height: 1.65)),
             ),
         ],
       ),

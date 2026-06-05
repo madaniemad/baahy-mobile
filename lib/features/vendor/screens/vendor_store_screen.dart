@@ -82,7 +82,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
         : '';
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -105,21 +105,21 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
           if (_vendor != null)
             SliverToBoxAdapter(
               child: Container(
-                color: Colors.white,
+                color: context.col.surface,
                 padding: const EdgeInsets.all(16),
                 child: Row(children: [
                   Container(
                     width: 64, height: 64,
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceSoft,
+                      color: context.col.surfaceSoft,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: context.col.border),
                     ),
                     child: _vendor!.logo != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: CachedNetworkImage(imageUrl: _vendor!.logo!, fit: BoxFit.cover))
-                        : const Icon(Icons.store_outlined, size: 30, color: AppColors.ink2),
+                        : Icon(Icons.store_outlined, size: 30, color: context.col.ink2),
                   ),
                   const SizedBox(width: 14),
                   Expanded(child: Column(
@@ -130,7 +130,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                         style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
                       if (_vendor!.city != null && _vendor!.city!.isNotEmpty)
                         Text(_vendor!.city!,
-                          style: const TextStyle(fontSize: 13, color: AppColors.ink3)),
+                          style: TextStyle(fontSize: 13, color: context.col.ink3)),
                     ],
                   )),
                 ]),
@@ -155,7 +155,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
             SliverToBoxAdapter(
               child: Center(child: Padding(
                 padding: const EdgeInsets.all(32),
-                child: Text(context.s.noProductsNow, style: const TextStyle(color: AppColors.ink3)))))
+                child: Text(context.s.noProductsNow, style: TextStyle(color: context.col.ink3)))))
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
@@ -186,12 +186,12 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                         onPressed: () => _loadProducts(_page + 1),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 44),
-                          side: const BorderSide(color: AppColors.border),
+                          side: BorderSide(color: context.col.border),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         child: Text(context.s.viewMore,
-                          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,
-                            color: AppColors.ink0)),
+                          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,
+                            color: context.col.ink0)),
                       ),
               ),
             )

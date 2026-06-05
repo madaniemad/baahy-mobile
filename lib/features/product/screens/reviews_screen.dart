@@ -28,7 +28,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.col.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (_) => _WriteReviewSheet(
@@ -43,16 +43,16 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     final reviewsAsync = ref.watch(_reviewsProvider(widget.productId));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.col.surface,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showWriteReview,
-        backgroundColor: AppColors.ink0,
+        backgroundColor: context.col.ink0,
         icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 18),
         label: Text(context.s.writeYourReview,
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: Colors.white)),
       ),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.col.surface,
         elevation: 0,
         scrolledUnderElevation: 0.5,
         leading: IconButton(
@@ -66,9 +66,9 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) => Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.ink3),
+            Icon(Icons.wifi_off_rounded, size: 48, color: context.col.ink3),
             const SizedBox(height: 12),
-            Text(context.s.loadReviewsFailed, style: const TextStyle(color: AppColors.ink2)),
+            Text(context.s.loadReviewsFailed, style: TextStyle(color: context.col.ink2)),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => ref.refresh(_reviewsProvider(widget.productId)),
@@ -79,10 +79,10 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           if (reviews.isEmpty) {
             return Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.star_border_rounded, size: 56, color: AppColors.border),
+                Icon(Icons.star_border_rounded, size: 56, color: context.col.border),
                 const SizedBox(height: 12),
                 Text(context.s.noReviews,
-                  style: const TextStyle(color: AppColors.ink3, fontSize: 15)),
+                  style: TextStyle(color: context.col.ink3, fontSize: 15)),
               ]),
             );
           }
@@ -103,7 +103,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceSoft,
+                  color: context.col.surfaceSoft,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -123,7 +123,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(context.s.reviewCountN(reviews.length),
-                        style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
+                        style: TextStyle(fontSize: 12, color: context.col.ink3)),
                     ]),
                     const SizedBox(width: 20),
                     Expanded(
@@ -136,8 +136,8 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 2.5),
                             child: Row(children: [
                               Text('$star',
-                                style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                  fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.ink2)),
+                                style: TextStyle(fontFamily: 'PlusJakartaSans',
+                                  fontSize: 12, fontWeight: FontWeight.w600, color: context.col.ink2)),
                               const SizedBox(width: 4),
                               const Icon(Icons.star_rounded, size: 12, color: AppColors.gold),
                               const SizedBox(width: 8),
@@ -147,7 +147,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                                   child: LinearProgressIndicator(
                                     value: pct,
                                     minHeight: 7,
-                                    backgroundColor: AppColors.border,
+                                    backgroundColor: context.col.border,
                                     color: AppColors.gold,
                                   ),
                                 ),
@@ -156,8 +156,8 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                               SizedBox(width: 22,
                                 child: Text('$count',
                                   textAlign: TextAlign.end,
-                                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                    fontSize: 12, color: AppColors.ink3))),
+                                  style: TextStyle(fontFamily: 'PlusJakartaSans',
+                                    fontSize: 12, color: context.col.ink3))),
                             ]),
                           );
                         }),
@@ -196,7 +196,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                   padding: const EdgeInsets.only(top: 32),
                   child: Center(
                     child: Text(context.s.noReviewsForN(_filterRating ?? 0),
-                      style: const TextStyle(color: AppColors.ink3)),
+                      style: TextStyle(color: context.col.ink3)),
                   ),
                 )
               else
@@ -215,17 +215,17 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.ink0 : Colors.white,
+          color: isSelected ? context.col.ink0 : Colors.white,
           borderRadius: BorderRadius.circular(99),
           border: Border.all(
-            color: isSelected ? AppColors.ink0 : AppColors.border),
+            color: isSelected ? context.col.ink0 : context.col.border),
         ),
         child: Text(label,
           style: TextStyle(
             fontFamily: 'Cairo',
             fontSize: 12.5,
             fontWeight: FontWeight.w700,
-            color: isSelected ? Colors.white : AppColors.ink1,
+            color: isSelected ? Colors.white : context.col.ink1,
           )),
       ),
     );
@@ -242,9 +242,9 @@ class _ReviewCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.col.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.col.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,7 +266,7 @@ class _ReviewCard extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 if (review.createdAt != null)
                   Text(review.createdAt!,
-                    style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+                    style: TextStyle(fontSize: 11, color: context.col.ink3)),
               ],
             )),
             Row(children: List.generate(5, (i) => Icon(
@@ -276,7 +276,7 @@ class _ReviewCard extends StatelessWidget {
           if (review.body.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text(review.body,
-              style: const TextStyle(fontSize: 13.5, color: AppColors.ink1, height: 1.6)),
+              style: TextStyle(fontSize: 13.5, color: context.col.ink1, height: 1.6)),
           ],
           if (review.photos.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -361,7 +361,7 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
             child: Container(
               width: 40, height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: context.col.border,
                 borderRadius: BorderRadius.circular(2)),
             ),
           ),
@@ -385,15 +385,15 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
             textDirection: TextDirection.rtl,
             decoration: InputDecoration(
               hintText: context.s.shareThoughtsHint,
-              hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink3),
+              hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink3),
               filled: true,
-              fillColor: AppColors.bg,
+              fillColor: context.col.bg,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border)),
+                borderSide: BorderSide(color: context.col.border)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border)),
+                borderSide: BorderSide(color: context.col.border)),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: AppColors.primary, width: 2)),
@@ -407,7 +407,7 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
             child: ElevatedButton(
               onPressed: _loading ? null : _submit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.ink0,
+                backgroundColor: context.col.ink0,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

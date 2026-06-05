@@ -30,10 +30,10 @@ List<Widget> _buildGroupedItems(BuildContext context, List<CartItem> items) {
       result.add(Padding(
         padding: const EdgeInsets.only(bottom: 6, top: 2),
         child: Row(children: [
-          const Icon(Icons.store_outlined, size: 14, color: AppColors.ink2),
+          Icon(Icons.store_outlined, size: 14, color: context.col.ink2),
           const SizedBox(width: 6),
           Text(entry.key,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.ink1)),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.col.ink1)),
         ]),
       ));
     }
@@ -55,9 +55,9 @@ class CartScreen extends ConsumerWidget {
     final cart = ref.watch(cartProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.col.surface,
         elevation: 0,
         title: Text(
           context.tr('السلة (${cart.count})', 'Cart (${cart.count})'),
@@ -94,10 +94,10 @@ class CartScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.shopping_bag_outlined, size: 72, color: AppColors.ink4),
+                  Icon(Icons.shopping_bag_outlined, size: 72, color: context.col.ink4),
                   const SizedBox(height: 12),
                   Text(context.s.emptyCart,
-                    style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
+                    style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: context.col.ink2)),
                   const SizedBox(height: 20),
                   AppButton(
                     label: context.s.shopNow,
@@ -138,7 +138,7 @@ class CartScreen extends ConsumerWidget {
                             Text(context.s.deliveryBy,
                               style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
                             Text(context.s.oneShipment,
-                              style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+                              style: TextStyle(fontSize: 11, color: context.col.ink3)),
                           ]),
                         ]),
                       ),
@@ -176,7 +176,7 @@ class _FreeShippingBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
+        color: context.col.surfaceSoft,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -191,10 +191,10 @@ class _FreeShippingBanner extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: '${fmtPrice(remaining)} ${context.s.lydUnit}',
-                    style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink0,
+                    style: TextStyle(fontWeight: FontWeight.w800, color: context.col.ink0,
                       fontFamily: 'PlusJakartaSans')),
                   TextSpan(text: ' ${context.tr('حتى الشحن المجاني', 'for free shipping')}',
-                    style: const TextStyle(color: AppColors.ink1)),
+                    style: TextStyle(color: context.col.ink1)),
                 ],
               )),
             ),
@@ -205,7 +205,7 @@ class _FreeShippingBanner extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 4,
-              backgroundColor: AppColors.teal100,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.2),
               color: AppColors.primary,
             ),
           ),
@@ -266,7 +266,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.col.surface,
         borderRadius: BorderRadius.circular(10),
         boxShadow: AppShadows.shadowCard,
       ),
@@ -274,7 +274,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.local_offer_outlined, size: 16, color: AppColors.ink1),
+            Icon(Icons.local_offer_outlined, size: 16, color: context.col.ink1),
             const SizedBox(width: 8),
             Text(context.s.coupon,
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
@@ -304,7 +304,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
               const Spacer(),
               GestureDetector(
                 onTap: () => ref.read(cartProvider.notifier).removeCoupon(),
-                child: const Icon(Icons.close, size: 18, color: AppColors.ink3),
+                child: Icon(Icons.close, size: 18, color: context.col.ink3),
               ),
             ])
           else
@@ -315,15 +315,15 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                   textCapitalization: TextCapitalization.characters,
                   decoration: InputDecoration(
                     hintText: context.s.couponHint,
-                    hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink3),
-                    filled: true, fillColor: AppColors.bg,
+                    hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink3),
+                    filled: true, fillColor: context.col.bg,
                     errorText: _error,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppColors.border)),
+                      borderSide: BorderSide(color: context.col.border)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppColors.border)),
+                      borderSide: BorderSide(color: context.col.border)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: AppColors.primary, width: 2)),
@@ -337,17 +337,17 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                 child: ElevatedButton(
                   onPressed: _loading ? null : _apply,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.ink0,
+                    backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     elevation: 0,
                   ),
                   child: _loading
                       ? const SizedBox(width: 16, height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87))
                       : Text(context.s.apply,
                           style: const TextStyle(fontFamily: 'Cairo',
-                            fontWeight: FontWeight.w700, color: Colors.white)),
+                            fontWeight: FontWeight.w700, color: Colors.black87)),
                 ),
               ),
             ]),
@@ -371,7 +371,7 @@ class _CartItemCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.col.surface,
         borderRadius: BorderRadius.circular(10),
         boxShadow: AppShadows.shadowCard,
       ),
@@ -383,8 +383,8 @@ class _CartItemCard extends ConsumerWidget {
               width: 72, height: 72,
               child: item.image != null
                   ? CachedNetworkImage(imageUrl: item.image!, fit: BoxFit.cover)
-                  : Container(color: AppColors.bg,
-                      child: const Icon(Icons.image_outlined, color: AppColors.ink4)),
+                  : Container(color: context.col.bg,
+                      child: Icon(Icons.image_outlined, color: context.col.ink4)),
             ),
           ),
           const SizedBox(width: 12),
@@ -400,14 +400,14 @@ class _CartItemCard extends ConsumerWidget {
                     item.variation!.attributes
                         .map((a) => isAr && a.valueAr.isNotEmpty ? a.valueAr : a.value)
                         .join(' · '),
-                    style: const TextStyle(fontSize: 12, color: AppColors.ink2),
+                    style: TextStyle(fontSize: 12, color: context.col.ink2),
                   ),
                 ],
                 const SizedBox(height: 4),
                 Text(
                   '${fmtPrice(item.unitPrice)} ${context.s.lydUnit}',
-                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.ink0),
+                  style: TextStyle(fontFamily: 'PlusJakartaSans',
+                    fontWeight: FontWeight.w700, fontSize: 15, color: context.col.ink0),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -441,9 +441,14 @@ class _CartItemCard extends ConsumerWidget {
                           duration: const Duration(seconds: 2),
                         ));
                       },
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 6),
-                        child: Icon(Icons.favorite_outline_rounded, color: AppColors.ink3, size: 20),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.bookmark_border_rounded, color: context.col.ink3, size: 15),
+                          const SizedBox(width: 3),
+                          Text(context.s.saveForLater,
+                            style: TextStyle(fontSize: 11, color: context.col.ink3)),
+                        ]),
                       ),
                     ),
                     GestureDetector(
@@ -475,10 +480,10 @@ class _QtyBtn extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            border: Border.all(color: onTap != null ? AppColors.border : AppColors.border.withValues(alpha: 0.5)),
+            border: Border.all(color: onTap != null ? context.col.border : context.col.border.withValues(alpha: 0.5)),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: Icon(icon, size: 16, color: onTap != null ? AppColors.ink0 : AppColors.ink4),
+          child: Icon(icon, size: 16, color: onTap != null ? context.col.ink0 : context.col.ink4),
         ),
       ),
     ),
@@ -562,11 +567,11 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
                             child: Row(mainAxisSize: MainAxisSize.min, children: [
                               Text(
                                 '${fmtPrice(u.oldPrice!)} ${context.s.lydUnit}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: 'PlusJakartaSans', fontSize: 11.5,
-                                  color: AppColors.ink3, fontWeight: FontWeight.w600,
+                                  color: context.col.ink3, fontWeight: FontWeight.w600,
                                   decoration: TextDecoration.lineThrough,
-                                  decorationColor: AppColors.ink3),
+                                  decorationColor: context.col.ink3),
                               ),
                               const Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 4),
@@ -590,15 +595,15 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
                 unavailable.isNotEmpty
                     ? context.s.willRemoveUnavailable
                     : context.s.continueUpdatedPrices,
-                style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
-                  color: AppColors.ink2)),
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                  color: context.col.ink2)),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: Text(context.s.cancel,
-                style: const TextStyle(fontFamily: 'Cairo', color: AppColors.ink2)),
+                style: TextStyle(fontFamily: 'Cairo', color: context.col.ink2)),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
@@ -609,7 +614,7 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
               child: Text(
                 unavailable.isNotEmpty ? context.s.removeAndContinue : context.s.continueBtn,
                 style: const TextStyle(fontFamily: 'Cairo',
-                  fontWeight: FontWeight.w700, color: AppColors.ink0)),
+                  fontWeight: FontWeight.w700, color: Colors.black87)),
             ),
           ],
         ),
@@ -631,7 +636,7 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
     return Container(
       padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(context).padding.bottom + 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.col.surface,
         boxShadow: AppShadows.shadowPop,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
       ),
@@ -649,7 +654,7 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
             cart.deliveryFee == 0 ? context.s.free : '${fmtPrice(cart.deliveryFee)} ${context.s.lyd}',
             color: cart.deliveryFee == 0 ? AppColors.success : null,
           ),
-          const Divider(height: 20, color: AppColors.border),
+          Divider(height: 20, color: context.col.border),
           _SummaryRow(context.s.total, '${fmtPrice(cart.total)} ${context.s.lyd}',
             bold: true, fontSize: 17),
           const SizedBox(height: 14),
@@ -685,7 +690,7 @@ class _SummaryRow extends StatelessWidget {
           fontFamily: 'PlusJakartaSans',
           fontSize: fontSize,
           fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-          color: color ?? AppColors.ink0)),
+          color: color ?? context.col.ink0)),
       ],
     ),
   );

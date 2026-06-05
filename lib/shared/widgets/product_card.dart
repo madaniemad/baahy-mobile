@@ -36,27 +36,26 @@ class ProductCard extends ConsumerWidget {
     return BoxFit.contain;
   }
 
-  static Widget _buildProductImage(Product p) {
+  static Widget _buildProductImage(Product p, Color bgColor) {
     final fit = _imageFit(p);
     Widget img = p.firstImage != null
         ? CachedNetworkImage(
             imageUrl: p.firstImage!,
             fit: fit,
-            placeholder: (_, __) => Container(color: AppColors.cardImageBg),
+            memCacheWidth: 400,
+            memCacheHeight: 500,
+            placeholder: (_, __) => Container(color: bgColor),
             errorWidget: (_, __, ___) => Container(
-              color: AppColors.cardImageBg,
-              child: const Icon(Icons.image_not_supported_outlined, color: AppColors.ink4, size: 28),
+              color: bgColor,
+              child: Icon(Icons.image_not_supported_outlined, color: bgColor, size: 28),
             ),
           )
         : Container(
-            color: AppColors.cardImageBg,
-            child: const Icon(Icons.image_outlined, color: AppColors.ink4),
+            color: bgColor,
+            child: Icon(Icons.image_outlined, color: bgColor),
           );
-    // Multiply blends white-background product images into the card's gray zone:
-    // white × cardImageBg = cardImageBg (seamless), dark/colored pixels barely affected.
-    // Applied to all images — covers both cut-out PNGs (contain) and studio-white JPEGs (cover).
     img = ColorFiltered(
-      colorFilter: const ColorFilter.mode(AppColors.cardImageBg, BlendMode.multiply),
+      colorFilter: ColorFilter.mode(bgColor, BlendMode.multiply),
       child: img,
     );
     return img;
@@ -85,9 +84,9 @@ class ProductCard extends ConsumerWidget {
         width: width,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.col.surface,
           borderRadius: AppRadius.cardRadius,
-          border: Border.all(color: const Color(0xFFF3F4F6)),
+          border: Border.all(color: context.col.border),
           boxShadow: AppShadows.shadowCard,
         ),
         child: Column(
@@ -99,10 +98,10 @@ class ProductCard extends ConsumerWidget {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
                   child: Container(
-                    color: AppColors.cardImageBg,
+                    color: context.col.cardImageBg,
                     child: AspectRatio(
                       aspectRatio: 0.8,
-                      child: _buildProductImage(product),
+                      child: _buildProductImage(product, context.col.cardImageBg),
                     ),
                   ),
                 ),
@@ -184,11 +183,11 @@ class ProductCard extends ConsumerWidget {
                     children: [
                       Text(
                         '${fmtPrice(product.displayPrice)} ${context.s.lydUnit}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'PlusJakartaSans',
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.ink0,
+                          color: context.col.ink0,
                           height: 1.0,
                         ),
                       ),
@@ -268,12 +267,12 @@ class _StarRating extends StatelessWidget {
           const SizedBox(width: 3),
           Text(
             rating!.toStringAsFixed(1),
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.ink1, height: 1.0),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.col.ink1, height: 1.0),
           ),
           const SizedBox(width: 2),
           Text(
             '($count)',
-            style: const TextStyle(fontSize: 10, color: AppColors.ink3, height: 1.0),
+            style: TextStyle(fontSize: 10, color: context.col.ink3, height: 1.0),
           ),
         ],
       ],
@@ -308,7 +307,7 @@ class _WishlistButton extends ConsumerWidget {
         child: Icon(
           inWishlist ? Icons.favorite_rounded : Icons.favorite_outline,
           size: 16,
-          color: inWishlist ? AppColors.danger : AppColors.ink3,
+          color: inWishlist ? AppColors.danger : context.col.ink3,
         ),
       ),
     );
@@ -322,26 +321,28 @@ class ProductCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bg = context.col.surfaceSoft;
+    final surface = context.col.surface;
     return Container(
       width: width,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surface,
         borderRadius: AppRadius.cardRadius,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AspectRatio(aspectRatio: 0.8, child: _shimmer()),
+          AspectRatio(aspectRatio: 0.8, child: Container(color: bg)),
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _shimmerBox(height: 12, width: double.infinity),
+                _shimmerBox(bg, height: 12, width: double.infinity),
                 const SizedBox(height: 6),
-                _shimmerBox(height: 12, width: 80),
+                _shimmerBox(bg, height: 12, width: 80),
                 const SizedBox(height: 8),
-                _shimmerBox(height: 14, width: 60),
+                _shimmerBox(bg, height: 14, width: 60),
               ],
             ),
           ),
@@ -350,10 +351,9 @@ class ProductCardSkeleton extends StatelessWidget {
     );
   }
 
-  Widget _shimmer() => Container(color: AppColors.bg);
-  Widget _shimmerBox({required double height, required double width}) =>
+  Widget _shimmerBox(Color c, {required double height, required double width}) =>
       Container(height: height, width: width, decoration: BoxDecoration(
-        color: AppColors.bg,
+        color: c,
         borderRadius: BorderRadius.circular(4),
       ));
 }

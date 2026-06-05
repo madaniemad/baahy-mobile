@@ -48,14 +48,14 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     final balance = user?.walletBalance ?? 0.0;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0,
+        backgroundColor: context.col.surface, elevation: 0,
         title: Text(context.s.baahyWallet,
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0)),
       ),
       body: SingleChildScrollView(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -92,8 +92,8 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(context.s.walletHistory,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4, color: AppColors.ink1)),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4, color: context.col.ink1)),
               ),
               walletAsync.when(
                 loading: () => const Center(
@@ -107,19 +107,19 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 40),
                       child: Center(
                         child: Column(children: [
-                          Icon(Icons.receipt_long_outlined, size: 60, color: AppColors.ink4),
+                          Icon(Icons.receipt_long_outlined, size: 60, color: context.col.ink4),
                           const SizedBox(height: 12),
                           Text(context.s.noTransactions,
-                            style: const TextStyle(fontSize: 15, color: AppColors.ink2)),
+                            style: TextStyle(fontSize: 15, color: context.col.ink2)),
                         ]),
                       ),
                     );
                   }
                   return Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.col.surface,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: context.col.border),
                     ),
                     child: Column(
                       children: List.generate(txns.length, (i) =>
@@ -163,27 +163,27 @@ class _BalanceCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        color: Colors.white,
-        border: Border.all(color: AppColors.border),
+        color: context.col.surface,
+        border: Border.all(color: context.col.border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(context.s.availableBalance,
-            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
-              letterSpacing: 0.4, color: AppColors.ink2)),
-          const Icon(Icons.qr_code_2_rounded, color: AppColors.ink3, size: 20),
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
+              letterSpacing: 0.4, color: context.col.ink2)),
+          Icon(Icons.qr_code_2_rounded, color: context.col.ink3, size: 20),
         ]),
         const SizedBox(height: 6),
         Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic,
           children: [
             Text(balance.toStringAsFixed(2),
-              style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                fontSize: 42, fontWeight: FontWeight.w800, color: AppColors.ink0,
+              style: TextStyle(fontFamily: 'PlusJakartaSans',
+                fontSize: 42, fontWeight: FontWeight.w800, color: context.col.ink0,
                 letterSpacing: -1, height: 1)),
             const SizedBox(width: 8),
             Text(context.s.lydUnit,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600,
-                color: AppColors.ink2)),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600,
+                color: context.col.ink2)),
           ],
         ),
         const SizedBox(height: 16),
@@ -194,7 +194,7 @@ class _BalanceCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppColors.ink0,
+                  color: context.col.ink0,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -212,15 +212,15 @@ class _BalanceCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.surfaceSoft,
+                color: context.col.surfaceSoft,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Icon(Icons.upload_outlined, color: AppColors.ink2, size: 16),
+                Icon(Icons.upload_outlined, color: context.col.ink2, size: 16),
                 const SizedBox(width: 6),
                 Text(context.s.sendMoney,
-                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,
-                    fontSize: 13, color: AppColors.ink1)),
+                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,
+                    fontSize: 13, color: context.col.ink1)),
               ]),
             ),
           ),
@@ -241,9 +241,9 @@ class _InfoTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.col.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.col.border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(icon, size: 20, color: AppColors.primary),
@@ -252,7 +252,7 @@ class _InfoTile extends StatelessWidget {
           style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
         const SizedBox(height: 2),
         Text(subtitle,
-          style: const TextStyle(fontSize: 11.5, color: AppColors.ink2, height: 1.4)),
+          style: TextStyle(fontSize: 11.5, color: context.col.ink2, height: 1.4)),
       ]),
     );
   }
@@ -395,14 +395,14 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       child: Container(
       margin: const EdgeInsets.all(12),
       padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.col.surface,
         borderRadius: BorderRadius.all(Radius.circular(10)),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(child: Container(width: 40, height: 4,
-            decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)))),
+            decoration: BoxDecoration(color: context.col.border, borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 16),
 
           // Header with back button on steps 1+
@@ -410,9 +410,9 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
             if (_step > 0)
               GestureDetector(
                 onTap: () => setState(() { _step--; _error = null; }),
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.only(left: 12),
-                  child: Icon(Icons.arrow_back, size: 20, color: AppColors.ink0)),
+                  child: Icon(Icons.arrow_back, size: 20, color: context.col.ink0)),
               ),
             Expanded(
               child: Text(
@@ -427,7 +427,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
             _step == 0 ? 'ادفع مرة، استخدمه عبر الطلبات.'
                 : _step == 1 ? 'أدخل رقم البطاقة لإرسال رمز OTP'
                 : 'تم إرسال رمز OTP إلى بطاقتك',
-            style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+            style: TextStyle(fontSize: 13, color: context.col.ink2)),
           const SizedBox(height: 20),
 
           // ── Step 0: amount + method ─────────────────────────────────────────
@@ -437,18 +437,18 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.bg,
+                color: context.col.bg,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(_amount > 0 ? fmtPrice(_amount) : '0',
-                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                      fontSize: 42, fontWeight: FontWeight.w800, color: AppColors.ink0)),
+                    style: TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 42, fontWeight: FontWeight.w800, color: context.col.ink0)),
                   const SizedBox(width: 8),
                   Text(context.s.lydUnit,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.ink2)),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.col.ink2)),
                 ],
               ),
             ),
@@ -466,14 +466,14 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColors.ink0 : Colors.white,
+                        color: isSelected ? context.col.ink0 : context.col.surface,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: isSelected ? AppColors.ink0 : AppColors.border, width: 1.5)),
+                          color: isSelected ? context.col.ink0 : context.col.border, width: 1.5)),
                       child: Center(child: Text('$amt',
                         style: TextStyle(fontFamily: 'PlusJakartaSans',
                           fontWeight: FontWeight.w800, fontSize: 14,
-                          color: isSelected ? Colors.white : AppColors.ink0))),
+                          color: isSelected ? Colors.white : context.col.ink0))),
                     ),
                   ),
                 ),
@@ -484,10 +484,10 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
             // Custom amount
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.col.surface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: _customCtrl.text.trim().isNotEmpty ? AppColors.primary : AppColors.border,
+                  color: _customCtrl.text.trim().isNotEmpty ? AppColors.primary : context.col.border,
                   width: _customCtrl.text.trim().isNotEmpty ? 1.5 : 1)),
               child: TextField(
                 controller: _customCtrl,
@@ -495,13 +495,13 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 textAlign: TextAlign.center,
                 onChanged: (_) => setState(() => _selected = null),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'أو أدخل مبلغاً آخر',
-                  hintStyle: TextStyle(fontSize: 13, color: AppColors.ink3),
+                  hintStyle: TextStyle(fontSize: 13, color: context.col.ink3),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   suffixText: 'د.ل',
-                  suffixStyle: TextStyle(fontSize: 13, color: AppColors.ink2, fontWeight: FontWeight.w600),
+                  suffixStyle: TextStyle(fontSize: 13, color: context.col.ink2, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -516,10 +516,10 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFF5F5F5) : Colors.white,
+                    color: isSelected ? context.col.surfaceSoft : context.col.surface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.border,
+                      color: isSelected ? AppColors.primary : context.col.border,
                       width: isSelected ? 1.5 : 1)),
                   child: Row(children: [
                     Container(
@@ -527,7 +527,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isSelected ? AppColors.primary : Colors.transparent,
-                        border: isSelected ? null : Border.all(color: AppColors.borderStrong, width: 1.5)),
+                        border: isSelected ? null : Border.all(color: context.col.borderStrong, width: 1.5)),
                       child: isSelected
                           ? const Icon(Icons.circle, size: 8, color: Colors.white) : null,
                     ),
@@ -536,11 +536,11 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                       Text(m.label,
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                       Text(m.desc,
-                        style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
+                        style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
                     ])),
                     Icon(
                       m.id == 'mobicash' ? Icons.credit_card_outlined : Icons.language_rounded,
-                      size: 18, color: AppColors.ink3),
+                      size: 18, color: context.col.ink3),
                   ]),
                 ),
               );
@@ -551,44 +551,44 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
           if (_step == 1) ...[
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.col.surface,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border)),
+                border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _cardCtrl,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 autofocus: true,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'رقم بطاقة موبيكاش',
-                  hintStyle: TextStyle(fontSize: 14, color: AppColors.ink3),
+                  hintStyle: TextStyle(fontSize: 14, color: context.col.ink3),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.all(14),
-                  prefixIcon: Icon(Icons.credit_card_outlined, size: 18, color: AppColors.ink3),
+                  prefixIcon: Icon(Icons.credit_card_outlined, size: 18, color: context.col.ink3),
                 ),
               ),
             ),
             const SizedBox(height: 8),
             Text(context.isAr ? 'المبلغ: ${fmtPrice(_amount)} د.ل' : 'Amount: ${fmtPrice(_amount)} LYD',
-              style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
+              style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
           ],
 
           // ── Step 2: Mobicash OTP ────────────────────────────────────────────
           if (_step == 2) ...[
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.col.surface,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border)),
+                border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _otpCtrl,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 autofocus: true,
                 textAlign: TextAlign.center,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'أدخل رمز OTP',
-                  hintStyle: TextStyle(fontSize: 14, color: AppColors.ink3),
+                  hintStyle: TextStyle(fontSize: 14, color: context.col.ink3),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.all(14),
                 ),
@@ -613,15 +613,15 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               child: _loading
-                  ? const SizedBox(width: 20, height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink0))
+                  ? SizedBox(width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: context.col.ink0))
                   : Text(
                       _step == 0
                           ? (_amount > 0 ? 'متابعة · ${fmtPrice(_amount)} د.ل' : 'متابعة')
                           : _step == 1 ? 'إرسال OTP'
                           : 'تأكيد الشحن',
-                      style: const TextStyle(fontFamily: 'Cairo',
-                        fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink0)),
+                      style: TextStyle(fontFamily: 'Cairo',
+                        fontWeight: FontWeight.w800, fontSize: 15, color: context.col.ink0)),
             ),
           ),
         ],
@@ -646,7 +646,7 @@ class _TransactionRow extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         border: hasBorder
-            ? const Border(bottom: BorderSide(color: AppColors.border))
+            ? Border(bottom: BorderSide(color: context.col.border))
             : null,
       ),
       child: Row(children: [
@@ -656,11 +656,11 @@ class _TransactionRow extends StatelessWidget {
             shape: BoxShape.circle,
             color: isCredit
                 ? AppColors.success.withValues(alpha: 0.12)
-                : AppColors.surfaceSoft,
+                : context.col.surfaceSoft,
           ),
           child: Icon(
             isCredit ? Icons.add_rounded : Icons.remove_rounded,
-            color: isCredit ? AppColors.success : AppColors.ink2, size: 16),
+            color: isCredit ? AppColors.success : context.col.ink2, size: 16),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -673,8 +673,8 @@ class _TransactionRow extends StatelessWidget {
                   final dt = DateTime.tryParse(tx['created_at']);
                   return dt != null ? '${dt.day}/${dt.month}/${dt.year}' : '';
                 }(),
-                style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                  fontSize: 11, color: AppColors.ink3),
+                style: TextStyle(fontFamily: 'PlusJakartaSans',
+                  fontSize: 11, color: context.col.ink3),
               ),
           ]),
         ),
@@ -683,7 +683,7 @@ class _TransactionRow extends StatelessWidget {
           style: TextStyle(
             fontFamily: 'PlusJakartaSans',
             fontWeight: FontWeight.w800, fontSize: 14,
-            color: isCredit ? AppColors.success : AppColors.ink0)),
+            color: isCredit ? AppColors.success : context.col.ink0)),
       ]),
     );
   }

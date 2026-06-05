@@ -32,6 +32,7 @@ import '../../features/account/screens/return_policy_screen.dart';
 import '../../features/account/screens/faq_screen.dart';
 import '../../features/account/screens/contact_screen.dart';
 import '../../features/vendor/screens/vendor_store_screen.dart';
+import '../../features/assistant/screens/assistant_screen.dart';
 import '../shell/main_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -56,6 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/home',       builder: (_, __) => const HomeScreen()),
           GoRoute(path: '/wishlist',   builder: (_, __) => const WishlistScreen()),
+          GoRoute(path: '/assistant',  builder: (_, __) => const AssistantScreen()),
           GoRoute(path: '/browse',     builder: (_, __) => const BrowseScreen()),
           GoRoute(path: '/cart',       builder: (_, __) => const CartScreen()),
           GoRoute(path: '/account',    builder: (_, __) => const AccountScreen()),

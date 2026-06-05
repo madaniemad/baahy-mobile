@@ -23,7 +23,7 @@ final _categoryProductsProvider = FutureProvider.family<List<Product>, String>((
   }
   // Fetch from each subcategory in parallel for a true cross-category mix
   final subcatIds = ids.skip(1).toList();
-  final perCat = (48 / subcatIds.length).ceil().clamp(4, 12);
+  final perCat = (48 / subcatIds.length).ceil().clamp(4, 8);
   final futures = subcatIds.map((id) =>
     ApiClient.instance.dio.get('/products',
       queryParameters: {'category_id': id, 'per_page': perCat, 'sort': 'popular'})
@@ -61,9 +61,9 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
             orElse: () => categories.first);
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.col.surface,
         elevation: 0,
         title: Text(context.s.categories,
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 18)),
@@ -77,9 +77,9 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                 // Left rail
                 Container(
                   width: 94,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceSoft,
-                    border: Border(right: BorderSide(color: AppColors.border)),
+                  decoration: BoxDecoration(
+                    color: context.col.surfaceSoft,
+                    border: Border(right: BorderSide(color: context.col.border)),
                   ),
                   child: ListView.builder(
                     itemCount: categories.length,
@@ -92,7 +92,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 5),
                           decoration: BoxDecoration(
-                            color: isActive ? Colors.white : Colors.transparent,
+                            color: isActive ? context.col.surface : Colors.transparent,
                             border: isAr
                               ? Border(left: BorderSide(
                                   color: isActive ? AppColors.primary : Colors.transparent,
@@ -110,6 +110,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                                   child: cat.image != null
                                       ? CachedNetworkImage(
                                           imageUrl: cat.image!, fit: BoxFit.cover,
+                                          memCacheWidth: 160,
+                                          memCacheHeight: 160,
                                           errorWidget: (_, __, ___) =>
                                             Container(color: AppColors.primary.withValues(alpha: 0.1),
                                               child: const Icon(Icons.grid_view_rounded,
@@ -130,7 +132,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                                 style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w600,
-                                  color: isActive ? AppColors.primary : AppColors.ink2,
+                                  color: isActive ? AppColors.primary : context.col.ink2,
                                   fontFamily: 'Cairo',
                                 ),
                               ),
@@ -209,32 +211,10 @@ class _RightContentState extends ConsumerState<_RightContent> {
           ),
         ],
       ),
-      error: (_, __) => Center(child: Text(context.s.loadError, style: const TextStyle(color: AppColors.ink2))),
+      error: (_, __) => Center(child: Text(context.s.loadError, style: TextStyle(color: context.col.ink2))),
       data: (products) => ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          // View All button
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: GestureDetector(
-              onTap: () => safePush(context, '/search/results?q=&category=${widget.categoryId}'),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(context.s.viewAllProducts,
-                    style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward_rounded, size: 12, color: AppColors.primary),
-                ]),
-              ),
-            ),
-          ),
-
           // Subcategory tiles
           if (subcats.isNotEmpty) ...[
             _subcatGrid(),
@@ -244,8 +224,8 @@ class _RightContentState extends ConsumerState<_RightContent> {
                 color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 8),
               Text(context.s.sneakPeek,
-                style: const TextStyle(fontFamily: 'Cairo',
-                  fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.ink0)),
+                style: TextStyle(fontFamily: 'Cairo',
+                  fontWeight: FontWeight.w800, fontSize: 14, color: context.col.ink0)),
             ]),
             const SizedBox(height: 10),
           ],
@@ -253,7 +233,7 @@ class _RightContentState extends ConsumerState<_RightContent> {
           if (products.isEmpty)
             Center(child: Padding(
               padding: const EdgeInsets.all(32),
-              child: Text(context.s.noProducts, style: const TextStyle(color: AppColors.ink2)),
+              child: Text(context.s.noProducts, style: TextStyle(color: context.col.ink2)),
             ))
           else
             GridView.builder(
@@ -297,6 +277,8 @@ class _SubTile extends StatelessWidget {
               child: image != null
                   ? CachedNetworkImage(
                       imageUrl: image!, fit: BoxFit.cover,
+                      memCacheWidth: 400,
+                      memCacheHeight: 400,
                       errorWidget: (_, __, ___) =>
                           Container(color: AppColors.primary.withValues(alpha: 0.12)),
                     )
@@ -309,10 +291,10 @@ class _SubTile extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: AppColors.ink0,
+              color: context.col.ink0,
               fontFamily: 'Cairo',
             ),
           ),

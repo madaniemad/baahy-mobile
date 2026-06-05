@@ -24,12 +24,12 @@ class OrderTrackingScreen extends ConsumerWidget {
     final orderAsync = ref.watch(_orderDetailProvider(id));
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0,
+        backgroundColor: context.col.surface, elevation: 0,
         leading: IconButton(
           onPressed: () => context.canPop() ? context.pop() : context.go('/orders'),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0)),
         titleSpacing: 0,
         title: orderAsync.maybeWhen(
           data: (o) => Text(context.s.orderNumber(o.orderNumber),
@@ -38,9 +38,14 @@ class OrderTrackingScreen extends ConsumerWidget {
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome_outlined, size: 22),
+            tooltip: 'اسأل عن طلبك',
+            onPressed: () => safePush(context, '/assistant'),
+          ),
           orderAsync.maybeWhen(
             data: (o) => IconButton(
-              icon: const Icon(Icons.download_outlined, size: 22, color: AppColors.ink0),
+              icon: Icon(Icons.download_outlined, size: 22, color: context.col.ink0),
               tooltip: context.s.downloadInvoice,
               onPressed: () async {
                 final url = Uri.parse(
@@ -83,15 +88,15 @@ class _OrderBody extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.col.surface,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.col.border),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(context.s.orderStatus,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
-            _Timeline(status: order.status),
+            _Timeline(status: order.status, history: order.statusHistory),
           ]),
         ),
 
@@ -109,9 +114,9 @@ class _OrderBody extends StatelessWidget {
             ),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.col.surface,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.col.border),
               ),
               child: Column(
                 children: group.items.asMap().entries.map((e) =>
@@ -130,19 +135,19 @@ class _OrderBody extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.col.surface,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.col.border),
           ),
           child: Column(children: [
-            _SumRow(context.s.subtotalOrder, '${fmtPrice(order.subtotal)} ${context.s.lydUnit}'),
+            _SumRow(context.s.subtotalOrder, '${fmtPrice(order.subtotal)} ${context.s.lydUnit}', ctx: context),
             if (order.shippingCost > 0)
-              _SumRow(context.s.shippingLabel, '${fmtPrice(order.shippingCost)} ${context.s.lydUnit}'),
+              _SumRow(context.s.shippingLabel, '${fmtPrice(order.shippingCost)} ${context.s.lydUnit}', ctx: context),
             if (order.discount > 0)
               _SumRow(context.s.discountLabel, '-${fmtPrice(order.discount)} ${context.s.lydUnit}',
-                color: AppColors.success),
-            const Divider(height: 20, color: AppColors.border),
-            _SumRow(context.s.totalLabel, '${fmtPrice(order.total)} ${context.s.lydUnit}', bold: true),
+                color: AppColors.success, ctx: context),
+            Divider(height: 20, color: context.col.border),
+            _SumRow(context.s.totalLabel, '${fmtPrice(order.total)} ${context.s.lydUnit}', bold: true, ctx: context),
           ]),
         ),
 
@@ -159,7 +164,7 @@ class _OrderBody extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                side: const BorderSide(color: AppColors.border),
+                side: BorderSide(color: context.col.border),
               ),
             ),
           ),
@@ -175,7 +180,7 @@ class _OrderBody extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 13),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              side: const BorderSide(color: AppColors.border),
+              side: BorderSide(color: context.col.border),
             ),
           ),
         ),
@@ -193,7 +198,7 @@ class _HeroCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.ink0,
+        color: context.col.ink0,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Stack(children: [
@@ -228,23 +233,32 @@ class _HeroCard extends StatelessWidget {
 
 class _Timeline extends StatelessWidget {
   final String status;
-  const _Timeline({required this.status});
+  final List<OrderStatusEntry> history;
+  const _Timeline({required this.status, this.history = const []});
+
+  static const _extraMap = {
+    'pending_confirmation': 0,
+    'fulfilled': 2,
+    'out_for_delivery': 3,
+    'cancelled': 0,
+    'returned': 4,
+    'refunded': 4,
+  };
 
   int _currentIdx(List<(String, String)> steps) {
-    // Map extra statuses to the closest standard timeline step index.
-    const extraMap = {
-      'pending_confirmation': 0,
-      'fulfilled': 2,
-      'out_for_delivery': 3,
-      'cancelled': 0,
-      'returned': 4,
-      'refunded': 4,
-    };
-    if (extraMap.containsKey(status)) return extraMap[status]!;
+    if (_extraMap.containsKey(status)) return _extraMap[status]!;
     for (int i = 0; i < steps.length; i++) {
       if (steps[i].$1 == status) return i;
     }
     return 0;
+  }
+
+  // Find timestamp from history for a given step status
+  DateTime? _timestampFor(String stepStatus) {
+    for (final entry in history) {
+      if (entry.toStatus == stepStatus) return entry.createdAt;
+    }
+    return null;
   }
 
   @override
@@ -262,6 +276,7 @@ class _Timeline extends StatelessWidget {
         final isDone = i <= current;
         final isActive = i == current;
         final isLast = i == steps.length - 1;
+        final ts = isDone ? _timestampFor(steps[i].$1) : null;
         return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SizedBox(
             width: 22,
@@ -272,30 +287,39 @@ class _Timeline extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: isDone ? AppColors.primary : Colors.transparent,
                   border: Border.all(
-                    color: isDone ? AppColors.primary : AppColors.borderStrong,
+                    color: isDone ? AppColors.primary : context.col.borderStrong,
                     width: 2),
                 ),
                 child: isDone
-                    ? const Icon(Icons.check_rounded, size: 12, color: AppColors.ink0)
+                    ? Icon(Icons.check_rounded, size: 12, color: context.col.ink0)
                     : null,
               ),
               if (!isLast)
                 Container(
-                  width: 2, height: 40,
+                  width: 2, height: ts != null ? 50 : 40,
                   color: isDone && (i + 1) <= current
                       ? AppColors.primary
-                      : AppColors.border),
+                      : context.col.border),
             ]),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(top: 1, bottom: isLast ? 0 : 20),
-              child: Text(steps[i].$2,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: isActive ? AppColors.primary : AppColors.ink0)),
+              padding: EdgeInsets.only(top: 1, bottom: isLast ? 0 : (ts != null ? 24 : 20)),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(steps[i].$2,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    color: isActive ? AppColors.primary : context.col.ink0)),
+                if (ts != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${ts.day}/${ts.month}/${ts.year} ${ts.hour.toString().padLeft(2, '0')}:${ts.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(fontSize: 11, color: context.col.ink3,
+                      fontFamily: 'PlusJakartaSans')),
+                ],
+              ]),
             ),
           ),
         ]);
@@ -304,7 +328,7 @@ class _Timeline extends StatelessWidget {
   }
 }
 
-Widget _SummaryRow(String label, String value, {Color? color, bool bold = false}) =>
+Widget _SummaryRow(String label, String value, {Color? color, bool bold = false, required BuildContext ctx}) =>
   Padding(
     padding: const EdgeInsets.symmetric(vertical: 3),
     child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -312,12 +336,12 @@ Widget _SummaryRow(String label, String value, {Color? color, bool bold = false}
       Text(value, style: TextStyle(
         fontFamily: 'PlusJakartaSans', fontSize: 14,
         fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-        color: color ?? AppColors.ink0)),
+        color: color ?? ctx.col.ink0)),
     ]),
   );
 
-Widget _SumRow(String label, String value, {Color? color, bool bold = false}) =>
-  _SummaryRow(label, value, color: color, bold: bold);
+Widget _SumRow(String label, String value, {Color? color, bool bold = false, required BuildContext ctx}) =>
+  _SummaryRow(label, value, color: color, bold: bold, ctx: ctx);
 
 class _OrderItemRow extends StatelessWidget {
   final OrderItem item;
@@ -330,7 +354,7 @@ class _OrderItemRow extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: hasBorder
-            ? const Border(bottom: BorderSide(color: AppColors.border))
+            ? Border(bottom: BorderSide(color: context.col.border))
             : null,
       ),
       child: Row(children: [
@@ -340,8 +364,8 @@ class _OrderItemRow extends StatelessWidget {
             width: 44, height: 44,
             child: item.productImage != null
                 ? CachedNetworkImage(imageUrl: item.productImage!, fit: BoxFit.cover)
-                : Container(color: AppColors.bg,
-                    child: const Icon(Icons.image_outlined, color: AppColors.ink4)),
+                : Container(color: context.col.bg,
+                    child: Icon(Icons.image_outlined, color: context.col.ink4)),
           ),
         ),
         const SizedBox(width: 10),
@@ -351,10 +375,10 @@ class _OrderItemRow extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, height: 1.3)),
             if (item.variationLabel != null)
               Text(item.variationLabel!,
-                style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+                style: TextStyle(fontSize: 11, color: context.col.ink3)),
             Text('×${item.quantity}',
-              style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                fontSize: 11, color: AppColors.ink2)),
+              style: TextStyle(fontFamily: 'PlusJakartaSans',
+                fontSize: 11, color: context.col.ink2)),
           ]),
         ),
         Text('${fmtPrice(item.total)} ${context.s.lydUnit}',

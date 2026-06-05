@@ -31,11 +31,11 @@ class WishlistScreen extends ConsumerWidget {
 
     if (!isLoggedIn) {
       return Scaffold(
-        backgroundColor: AppColors.bg,
+        backgroundColor: context.col.bg,
         appBar: AppBar(
           title: Text(context.s.wishlistTitle,
               style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
-          backgroundColor: Colors.white,
+          backgroundColor: context.col.surface,
           elevation: 0,
         ),
         body: Center(
@@ -44,9 +44,9 @@ class WishlistScreen extends ConsumerWidget {
             children: [
               Container(
                 width: 90, height: 90,
-                decoration: const BoxDecoration(
-                    color: AppColors.surfaceSoft, shape: BoxShape.circle),
-                child: const Icon(Icons.favorite_outline, size: 36, color: AppColors.ink3),
+                decoration: BoxDecoration(
+                    color: context.col.surfaceSoft, shape: BoxShape.circle),
+                child: Icon(Icons.favorite_outline, size: 36, color: context.col.ink3),
               ),
               const SizedBox(height: 14),
               Text(context.s.wishlistEmpty,
@@ -55,7 +55,7 @@ class WishlistScreen extends ConsumerWidget {
               const SizedBox(height: 6),
               Text(context.s.wishlistSub,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13.5, color: AppColors.ink2)),
+                  style: TextStyle(fontSize: 13.5, color: context.col.ink2)),
               const SizedBox(height: 20),
               AppButton(
                   label: context.s.signIn,
@@ -68,9 +68,9 @@ class WishlistScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.col.surface,
         elevation: 0,
         title: Text('${context.s.wishlistTitle} (${wishlistIds.length})',
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
@@ -79,7 +79,7 @@ class WishlistScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) => Center(
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text(context.s.loadError, style: const TextStyle(color: AppColors.ink2)),
+            Text(context.s.loadError, style: TextStyle(color: context.col.ink2)),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => ref.read(wishlistProductsProvider.notifier).fetch(),
@@ -95,14 +95,14 @@ class WishlistScreen extends ConsumerWidget {
               child: ListView(children: [
                 const SizedBox(height: 100),
                 Center(child: Column(children: [
-                  const Icon(Icons.favorite_outline, size: 72, color: AppColors.ink4),
+                  Icon(Icons.favorite_outline, size: 72, color: context.col.ink4),
                   const SizedBox(height: 12),
                   Text(context.s.wishlistEmpty,
-                      style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
+                      style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: context.col.ink2)),
                   const SizedBox(height: 6),
                   Text(context.s.wishlistSub,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 13, color: AppColors.ink3)),
+                      style: TextStyle(fontSize: 13, color: context.col.ink3)),
                   const SizedBox(height: 20),
                   AppButton(
                     label: context.s.startShopping,
@@ -137,7 +137,7 @@ class WishlistScreen extends ConsumerWidget {
                             fontFamily: 'Cairo', fontWeight: FontWeight.w800,
                             fontSize: 13, color: AppColors.warn)),
                         Text('$discountCount ${context.s.priceDropBanner}',
-                            style: const TextStyle(fontSize: 12, color: AppColors.ink2, height: 1.4)),
+                            style: TextStyle(fontSize: 12, color: context.col.ink2, height: 1.4)),
                       ])),
                     ]),
                   ),
@@ -178,9 +178,9 @@ class _WishlistCard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.col.surface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.col.border),
           boxShadow: AppShadows.shadowCard,
         ),
         child: Row(children: [
@@ -196,14 +196,14 @@ class _WishlistCard extends ConsumerWidget {
                           imageUrl: product.firstImage!,
                           fit: BoxFit.cover,
                           errorWidget: (_, __, ___) =>
-                              Container(color: AppColors.surfaceSoft,
-                                child: const Icon(Icons.image_outlined,
-                                    color: AppColors.ink4, size: 28)),
+                              Container(color: context.col.surfaceSoft,
+                                child: Icon(Icons.image_outlined,
+                                    color: context.col.ink4, size: 28)),
                         )
                       : Container(
-                          color: AppColors.surfaceSoft,
-                          child: const Icon(Icons.image_outlined,
-                              color: AppColors.ink4, size: 28)),
+                          color: context.col.surfaceSoft,
+                          child: Icon(Icons.image_outlined,
+                              color: context.col.ink4, size: 28)),
                 ),
               ),
               if (hasDiscount)
@@ -234,7 +234,7 @@ class _WishlistCard extends ConsumerWidget {
               children: [
                 if (brandLabel != null)
                   Text(brandLabel,
-                      style: const TextStyle(fontSize: 11, color: AppColors.ink3),
+                      style: TextStyle(fontSize: 11, color: context.col.ink3),
                       maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
                 Text(name,
@@ -252,10 +252,10 @@ class _WishlistCard extends ConsumerWidget {
                   if (hasDiscount) ...[
                     const SizedBox(width: 6),
                     Text('${fmtPrice(product.price)} ${context.s.lydUnit}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontFamily: 'PlusJakartaSans',
                             fontSize: 11,
-                            color: AppColors.ink3,
+                            color: context.col.ink3,
                             decoration: TextDecoration.lineThrough)),
                   ],
                 ]),
@@ -274,15 +274,15 @@ class _WishlistCard extends ConsumerWidget {
                   ref.read(wishlistProvider.notifier).toggle(product.id);
                   ref.read(wishlistProductsProvider.notifier).remove(product.id);
                 },
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.all(2),
-                  child: Icon(Icons.close, size: 18, color: AppColors.ink3),
+                  child: Icon(Icons.close, size: 18, color: context.col.ink3),
                 ),
               ),
               const SizedBox(height: 14),
               if (isVariable)
                 _ActionChip(
-                  label: isAr ? 'اختر الخيار' : 'Options',
+                  label: isAr ? 'اختر الخيار' : 'Select Options',
                   icon: Icons.tune_rounded,
                   filled: hasDiscount,
                   onTap: () => safePush(context, '/product/${product.id}'),
@@ -329,17 +329,17 @@ class _ActionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.ink2, width: 1.0),
+          border: Border.all(color: context.col.ink2, width: 1.0),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 14, color: AppColors.ink2),
+          Icon(icon, size: 14, color: context.col.ink2),
           const SizedBox(width: 4),
           Text(label,
-              style: const TextStyle(
+              style: TextStyle(
                   fontFamily: 'Cairo',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.ink2)),
+                  color: context.col.ink2)),
         ]),
       ),
     );

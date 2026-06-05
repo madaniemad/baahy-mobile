@@ -38,14 +38,14 @@ class ReferralScreen extends ConsumerWidget {
     final receiver = config.referralReceiverAmount;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0,
+        backgroundColor: context.col.surface, elevation: 0,
         title: Text(context.s.inviteTitle,
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0)),
       ),
       body: SingleChildScrollView(
         child: Column(children: [
@@ -53,12 +53,8 @@ class ReferralScreen extends ConsumerWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFF5F5F5), Colors.white],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+            decoration: BoxDecoration(
+              color: context.col.surfaceSoft,
             ),
             child: Column(children: [
               const Text('🎁', style: TextStyle(fontSize: 56)),
@@ -71,7 +67,7 @@ class ReferralScreen extends ConsumerWidget {
               Text(
                 context.s.referralSubtitle(receiver, giver),
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: AppColors.ink2,
+                style: TextStyle(fontSize: 14, color: context.col.ink2,
                   height: 1.5)),
             ]),
           ),
@@ -104,8 +100,8 @@ class ReferralScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Text(context.s.howItWorks,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4, color: AppColors.ink1)),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4, color: context.col.ink1)),
               ),
               ...[
                 (1, context.s.referralStep1),
@@ -166,14 +162,14 @@ class _CodeCardState extends State<_CodeCard> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.col.surface,
         borderRadius: BorderRadius.circular(10),
         boxShadow: AppShadows.shadowCard,
       ),
       child: Column(children: [
         Text(context.s.yourCode,
-          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
-            letterSpacing: 0.5, color: AppColors.ink2)),
+          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
+            letterSpacing: 0.5, color: context.col.ink2)),
         const SizedBox(height: 6),
 
         // Code row
@@ -182,10 +178,10 @@ class _CodeCardState extends State<_CodeCard> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.surfaceSoft,
+                color: context.col.surfaceSoft,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: AppColors.borderStrong,
+                  color: context.col.borderStrong,
                   style: BorderStyle.solid),
               ),
               child: Text(widget.code,
@@ -200,17 +196,17 @@ class _CodeCardState extends State<_CodeCard> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: _copied ? AppColors.success.withValues(alpha: 0.1) : AppColors.surfaceSoft,
+                color: _copied ? AppColors.success.withValues(alpha: 0.1) : context.col.surfaceSoft,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.col.border),
               ),
               child: Row(children: [
                 Icon(_copied ? Icons.check_rounded : Icons.upload_outlined,
-                  size: 16, color: _copied ? AppColors.success : AppColors.ink1),
+                  size: 16, color: _copied ? AppColors.success : context.col.ink1),
                 const SizedBox(width: 6),
                 Text(_copied ? context.s.copied : context.s.copyBtn,
                   style: TextStyle(fontWeight: FontWeight.w700,
-                    color: _copied ? AppColors.success : AppColors.ink0)),
+                    color: _copied ? AppColors.success : context.col.ink0)),
               ]),
             ),
           ),
@@ -220,8 +216,8 @@ class _CodeCardState extends State<_CodeCard> {
 
         // Share options
         Text(context.s.orShareVia,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-            color: AppColors.ink3, letterSpacing: 0.4)),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+            color: context.col.ink3, letterSpacing: 0.4)),
         const SizedBox(height: 10),
         Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
           _ShareBtn(label: context.s.whatsapp, color: const Color(0xFF25D366),
@@ -232,7 +228,7 @@ class _CodeCardState extends State<_CodeCard> {
             icon: Icons.sms_outlined,
             onTap: () => Share.share(
               context.s.referralShareSMS(widget.code, widget.receiverAmount))),
-          _ShareBtn(label: context.s.moreOptions, color: AppColors.ink2,
+          _ShareBtn(label: context.s.moreOptions, color: context.col.ink2,
             icon: Icons.share_outlined,
             onTap: () => Share.share(
               context.s.referralShareGeneral(widget.code, widget.receiverAmount))),
@@ -241,18 +237,18 @@ class _CodeCardState extends State<_CodeCard> {
         // Stats
         if (widget.invited > 0 || widget.joined > 0 || widget.earned > 0) ...[
           const SizedBox(height: 14),
-          const Divider(color: AppColors.border),
+          Divider(color: context.col.border),
           const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.col.border),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(children: [
               _StatCell('${widget.invited}', context.s.statInvited),
-              Container(width: 1, height: 40, color: AppColors.border),
+              Container(width: 1, height: 40, color: context.col.border),
               _StatCell('${widget.joined}', context.s.statJoined),
-              Container(width: 1, height: 40, color: AppColors.border),
+              Container(width: 1, height: 40, color: context.col.border),
               _StatCell('${widget.earned.toStringAsFixed(0)}', context.s.statEarned, isMoney: true),
             ]),
           ),
@@ -302,12 +298,12 @@ class _StatCell extends StatelessWidget {
               fontSize: 22, fontWeight: FontWeight.w800, height: 1)),
           if (isMoney)
             Text(' ${context.s.lydUnit}',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                color: AppColors.ink2)),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                color: context.col.ink2)),
         ]),
         const SizedBox(height: 4),
         Text(label,
-          style: const TextStyle(fontSize: 11.5, color: AppColors.ink3)),
+          style: TextStyle(fontSize: 11.5, color: context.col.ink3)),
       ]),
     ),
   );

@@ -46,14 +46,14 @@ class AddressesScreen extends ConsumerWidget {
     final addressesAsync = ref.watch(_addressesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0,
+        backgroundColor: context.col.surface, elevation: 0,
         title: Text(context.s.addressesTitle,
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0)),
       ),
       body: addressesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -103,16 +103,16 @@ class AddressesScreen extends ConsumerWidget {
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: AppColors.borderStrong,
+                    color: context.col.borderStrong,
                     width: 1.5,
                     strokeAlign: BorderSide.strokeAlignInside,
                   ),
                 ),
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  const Icon(Icons.add_rounded, size: 18, color: AppColors.ink2),
+                  Icon(Icons.add_rounded, size: 18, color: context.col.ink2),
                   const SizedBox(width: 8),
                   Text(context.s.addNewAddress,
-                    style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink1)),
+                    style: TextStyle(fontWeight: FontWeight.w700, color: context.col.ink1)),
                 ]),
               ),
             ),
@@ -121,7 +121,7 @@ class AddressesScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
+                color: context.col.surfaceSoft,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -130,7 +130,7 @@ class AddressesScreen extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     context.s.libyaLandmarkTip,
-                    style: const TextStyle(fontSize: 12.5, height: 1.5, color: AppColors.ink1)),
+                    style: TextStyle(fontSize: 12.5, height: 1.5, color: context.col.ink1)),
                 ),
               ]),
             ),
@@ -167,10 +167,10 @@ class _AddressCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDefault ? const Color(0xFFF5F5F5) : Colors.white,
+        color: isDefault ? context.col.surfaceSoft : context.col.surface,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isDefault ? AppColors.primary : AppColors.border,
+          color: isDefault ? AppColors.primary : context.col.border,
           width: isDefault ? 1.5 : 1),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -186,7 +186,7 @@ class _AddressCard extends StatelessWidget {
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(6)),
               child: Text(context.s.defaultAddr,
-                style: const TextStyle(color: AppColors.ink0,
+                style: TextStyle(color: context.col.ink0,
                   fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.4)),
             ),
           ],
@@ -198,7 +198,7 @@ class _AddressCard extends StatelessWidget {
         if (address.isNotEmpty) ...[
           const SizedBox(height: 2),
           Text(address,
-            style: const TextStyle(fontSize: 12.5, color: AppColors.ink2, height: 1.4)),
+            style: TextStyle(fontSize: 12.5, color: context.col.ink2, height: 1.4)),
         ],
         if (addr['notes'] != null && addr['notes'].toString().isNotEmpty) ...[
           const SizedBox(height: 6),
@@ -246,17 +246,17 @@ class _ActionBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: AppColors.surfaceSoft,
+          color: context.col.surfaceSoft,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(children: [
           if (icon != null) ...[
-            Icon(icon, size: 13, color: AppColors.ink1),
+            Icon(icon, size: 13, color: context.col.ink1),
             const SizedBox(width: 4),
           ],
           Text(label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-              color: AppColors.ink1)),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+              color: context.col.ink1)),
         ]),
       ),
     );

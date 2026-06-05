@@ -48,11 +48,11 @@ class AccountScreen extends ConsumerWidget {
 
     if (!auth.isLoggedIn) {
       return Scaffold(
-        backgroundColor: AppColors.bg,
+        backgroundColor: context.col.bg,
         appBar: AppBar(
           title: Text(context.s.myAccount,
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
-          backgroundColor: Colors.white, elevation: 0,
+          backgroundColor: context.col.surface, elevation: 0,
         ),
         body: Center(
           child: Padding(
@@ -62,9 +62,9 @@ class AccountScreen extends ConsumerWidget {
               children: [
                 Container(
                   width: 80, height: 80,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surfaceSoft, shape: BoxShape.circle),
-                  child: const Icon(Icons.person_outline, size: 44, color: AppColors.ink3),
+                  decoration: BoxDecoration(
+                    color: context.col.surfaceSoft, shape: BoxShape.circle),
+                  child: Icon(Icons.person_outline, size: 44, color: context.col.ink3),
                 ),
                 const SizedBox(height: 16),
                 Text(context.s.signInPrompt,
@@ -72,7 +72,7 @@ class AccountScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Text(context.s.signInSub,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 14, color: AppColors.ink2)),
+                  style: TextStyle(fontFamily: 'Cairo', fontSize: 14, color: context.col.ink2)),
                 const SizedBox(height: 24),
                 AppButton(label: context.s.signIn, onTap: () => safePush(context, '/signin')),
               ],
@@ -91,7 +91,7 @@ class AccountScreen extends ConsumerWidget {
     final walletDisplay = freshWallet.valueOrNull ?? user.walletBalance;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       body: CustomScrollView(
         slivers: [
           // ── Dark gradient header ────────────────────────────────────────────
@@ -101,7 +101,7 @@ class AccountScreen extends ConsumerWidget {
               onEdit: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
-                backgroundColor: Colors.white,
+                backgroundColor: context.col.surface,
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
                 builder: (_) => _EditProfileSheet(
@@ -122,7 +122,7 @@ class AccountScreen extends ConsumerWidget {
                     _StatTile(
                       icon: Icons.local_shipping_outlined,
                       iconColor: const Color(0xFF2563EB),
-                      iconBg: const Color(0xFFEFF6FF),
+                      iconBg: const Color(0xFF2563EB).withValues(alpha: 0.12),
                       value: counts == null ? '—' : '$activeOrders',
                       label: context.s.activeOrdersLbl,
                       onTap: () => safePush(context, '/orders'),
@@ -131,7 +131,7 @@ class AccountScreen extends ConsumerWidget {
                     _StatTile(
                       icon: Icons.receipt_long_outlined,
                       iconColor: const Color(0xFF7C3AED),
-                      iconBg: const Color(0xFFF5F3FF),
+                      iconBg: const Color(0xFF7C3AED).withValues(alpha: 0.12),
                       value: counts == null ? '—' : '$totalOrders',
                       label: context.s.totalOrdersLbl,
                       onTap: () => safePush(context, '/orders'),
@@ -140,7 +140,7 @@ class AccountScreen extends ConsumerWidget {
                     _StatTile(
                       icon: Icons.favorite_outline_rounded,
                       iconColor: const Color(0xFFE11D48),
-                      iconBg: const Color(0xFFFFF1F2),
+                      iconBg: const Color(0xFFE11D48).withValues(alpha: 0.12),
                       value: '$wishlistCount',
                       label: context.s.savedItems,
                       onTap: () => safePush(context, '/wishlist'),
@@ -156,10 +156,10 @@ class AccountScreen extends ConsumerWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.col.surface,
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: AppShadows.shadowCard,
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: context.col.border),
                       ),
                       child: Row(children: [
                         Container(
@@ -176,11 +176,11 @@ class AccountScreen extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(context.s.myWallet,
-                              style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
+                              style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
                             Text(
                               '${walletDisplay.toStringAsFixed(0)} ${context.s.lyd}',
-                              style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.ink0, height: 1.1)),
+                              style: TextStyle(fontFamily: 'PlusJakartaSans',
+                                fontSize: 20, fontWeight: FontWeight.w800, color: context.col.ink0, height: 1.1)),
                           ],
                         )),
                         Container(
@@ -188,13 +188,13 @@ class AccountScreen extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: Colors.transparent,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AppColors.ink2, width: 1.0),
+                            border: Border.all(color: context.col.ink2, width: 1.0),
                           ),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Text(context.s.chargeWallet, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
-                              color: AppColors.ink2, fontFamily: 'Cairo')),
+                            Text(context.s.chargeWallet, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                              color: context.col.ink2, fontFamily: 'Cairo')),
                             const SizedBox(width: 4),
-                            const Icon(Icons.add, size: 12, color: AppColors.ink2),
+                            Icon(Icons.add, size: 12, color: context.col.ink2),
                           ]),
                         ),
                       ]),
@@ -277,8 +277,8 @@ class AccountScreen extends ConsumerWidget {
                 ),
 
                 const SizedBox(height: 20),
-                const Text('baahy v1.0 · 2026',
-                  style: TextStyle(fontSize: 11, color: AppColors.ink4)),
+                Text('baahy v1.0 · 2026',
+                  style: TextStyle(fontSize: 11, color: context.col.ink4)),
                 const SizedBox(height: 32),
               ],
             ),
@@ -301,7 +301,7 @@ class _ProfileHeader extends StatelessWidget {
     final initial = (user.name as String).isNotEmpty ? (user.name as String)[0] : 'U';
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(color: Colors.white),
+      decoration: BoxDecoration(color: context.col.surface),
       child: SafeArea(
           bottom: false,
           child: Padding(
@@ -326,14 +326,14 @@ class _ProfileHeader extends StatelessWidget {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(user.name as String,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800,
-                      color: AppColors.ink0, fontFamily: 'Cairo', height: 1.2)),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800,
+                      color: context.col.ink0, fontFamily: 'Cairo', height: 1.2)),
                   const SizedBox(height: 3),
                   Row(children: [
                     Text(user.phone as String,
                       textDirection: TextDirection.ltr,
-                      style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                        fontSize: 12, color: AppColors.ink3)),
+                      style: TextStyle(fontFamily: 'PlusJakartaSans',
+                        fontSize: 12, color: context.col.ink3)),
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -359,10 +359,10 @@ class _ProfileHeader extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceSoft,
+                    color: context.col.surfaceSoft,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.edit_outlined, size: 17, color: AppColors.ink2),
+                  child: Icon(Icons.edit_outlined, size: 17, color: context.col.ink2),
                 ),
               ),
             ]),
@@ -393,7 +393,7 @@ class _StatTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.col.surface,
           borderRadius: BorderRadius.circular(10),
           boxShadow: AppShadows.shadowCard,
         ),
@@ -404,12 +404,12 @@ class _StatTile extends StatelessWidget {
             child: Icon(icon, size: 16, color: iconColor),
           ),
           const SizedBox(height: 6),
-          Text(value, style: const TextStyle(
+          Text(value, style: TextStyle(
             fontFamily: 'PlusJakartaSans',
             fontSize: 22, fontWeight: FontWeight.w800,
-            color: AppColors.ink0, height: 1)),
+            color: context.col.ink0, height: 1)),
           const SizedBox(height: 3),
-          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.ink2),
+          Text(label, style: TextStyle(fontSize: 11, color: context.col.ink2),
             textAlign: TextAlign.center),
         ]),
       ),
@@ -427,7 +427,7 @@ class _MenuGroup extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.symmetric(horizontal: 12),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.col.surface,
       borderRadius: BorderRadius.circular(10),
       boxShadow: AppShadows.shadowCard,
     ),
@@ -436,7 +436,7 @@ class _MenuGroup extends StatelessWidget {
         for (int i = 0; i < rows.length; i++) ...[
           rows[i],
           if (i < rows.length - 1)
-            const Divider(height: 1, color: AppColors.border, indent: 58, endIndent: 0),
+            Divider(height: 1, color: context.col.border, indent: 58, endIndent: 0),
         ],
       ],
     ),
@@ -463,10 +463,10 @@ class _MenuRow extends StatelessWidget {
         Container(
           width: 34, height: 34,
           decoration: BoxDecoration(
-            color: AppColors.surfaceSoft,
+            color: context.col.surfaceSoft,
             borderRadius: BorderRadius.circular(9),
           ),
-          child: Icon(icon, size: 17, color: AppColors.ink0),
+          child: Icon(icon, size: 17, color: context.col.ink0),
         ),
         const SizedBox(width: 13),
         Expanded(child: Text(label,
@@ -475,7 +475,7 @@ class _MenuRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F3FF),
+              color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(badge!,
@@ -484,7 +484,7 @@ class _MenuRow extends StatelessWidget {
           ),
           const SizedBox(width: 6),
         ],
-        const Icon(Icons.arrow_forward_ios, size: 13, color: AppColors.ink4),
+        Icon(Icons.arrow_forward_ios, size: 13, color: context.col.ink4),
       ]),
     ),
   );
@@ -552,29 +552,29 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           Center(
             child: Container(width: 40, height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+                color: context.col.border, borderRadius: BorderRadius.circular(2))),
           ),
           const SizedBox(height: 16),
           Text(context.s.editProfileTitle,
             style: const TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
           Text(context.s.nameLabel,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.col.ink1)),
           const SizedBox(height: 8),
           TextField(
             controller: _nameCtrl,
             textDirection: TextDirection.rtl,
             decoration: InputDecoration(
               hintText: context.s.fullNameHint,
-              hintStyle: const TextStyle(fontFamily: 'Cairo', color: AppColors.ink3),
+              hintStyle: TextStyle(fontFamily: 'Cairo', color: context.col.ink3),
               filled: true,
-              fillColor: AppColors.bg,
+              fillColor: context.col.bg,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border)),
+                borderSide: BorderSide(color: context.col.border)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border)),
+                borderSide: BorderSide(color: context.col.border)),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: AppColors.primary, width: 2)),

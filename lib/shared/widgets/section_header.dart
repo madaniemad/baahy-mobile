@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../../core/utils/l10n.dart';
 
 class SectionHeader extends StatelessWidget {
   final String titleAr;
@@ -21,10 +22,10 @@ class SectionHeader extends StatelessWidget {
         children: [
           Text(
             isAr ? titleAr : titleEn,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: AppColors.ink0,
+              color: context.col.ink0,
             ),
           ),
           const Spacer(),

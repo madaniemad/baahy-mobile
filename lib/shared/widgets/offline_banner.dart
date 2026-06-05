@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/connectivity_provider.dart';
 import '../theme/app_theme.dart';
+import '../../core/utils/l10n.dart';
 
 /// Slides in from the top when the device goes offline. Auto-hides when back online.
 class OfflineBanner extends ConsumerWidget {

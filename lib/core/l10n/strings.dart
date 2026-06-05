@@ -35,7 +35,7 @@ class AppStrings {
   String get newArrivals    => isAr ? 'وصل حديثاً'             : 'New Arrivals';
   String get bestSellers    => isAr ? 'الأكثر مبيعاً'          : 'Bestsellers';
   String get featuredDeals  => isAr ? 'عروض مميزة'             : 'Featured Deals';
-  String get under50        => isAr ? 'تحت 50 د.ل'             : 'Under 50 L.D';
+  String get under50        => isAr ? 'تحت 50 د.ل'             : 'Under 50 LD';
   String get recentlyViewed => isAr ? 'شاهدته مؤخراً'          : 'Recently Viewed';
   String get activeOrder    => isAr ? 'طلبك في الطريق'         : 'Your order is on the way';
   String get trackOrder     => isAr ? 'تتبّع الطلب'            : 'Track Order';
@@ -224,7 +224,7 @@ class AppStrings {
   String get errorTryAgain  => isAr ? 'حدث خطأ، حاول مجدداً'   : 'Something went wrong, try again';
   String get noInternet     => isAr ? 'لا يوجد اتصال بالإنترنت' : 'No internet connection';
   String get checkInternet  => isAr ? 'تحقق من اتصالك وحاول مجدداً' : 'Check your connection and try again';
-  String get lyd            => isAr ? 'د.ل'                    : 'L.D';
+  String get lyd            => isAr ? 'د.ل'                    : 'LD';
   String get change         => isAr ? 'تغيير'                  : 'Change';
 
   // ── Home extras ──────────────────────────────────────────────────────────────
@@ -244,11 +244,11 @@ class AppStrings {
   String get whereToDeliver    => isAr ? 'أين نوصل الطلب؟'       : 'Where should we deliver?';
   String get notesOptional     => isAr ? 'ملاحظات (اختياري)'     : 'Notes (optional)';
   String get codTripiliOnly    => isAr ? 'الدفع عند الاستلام متاح فقط لمناطق طرابلس. يرجى اختيار طريقة دفع إلكترونية.' : 'Cash on delivery is available for Tripoli area only. Please choose an electronic payment method.';
-  String walletCoversAll(String amt) => isAr ? 'محفظتك تغطي كامل الطلب ($amt د.ل)' : 'Your wallet covers the full order ($amt L.D)';
-  String walletPartial(String w, String d) => isAr ? 'محفظة: $w د.ل  +  $d د.ل عبر:' : 'Wallet: $w L.D  +  $d L.D via:';
-  String walletBalanceLabel(String amt) => isAr ? 'رصيدك: $amt د.ل' : 'Balance: $amt L.D';
+  String walletCoversAll(String amt) => isAr ? 'محفظتك تغطي كامل الطلب ($amt د.ل)' : 'Your wallet covers the full order ($amt LD)';
+  String walletPartial(String w, String d) => isAr ? 'محفظة: $w د.ل  +  $d د.ل عبر:' : 'Wallet: $w LD  +  $d LD via:';
+  String walletBalanceLabel(String amt) => isAr ? 'رصيدك: $amt د.ل' : 'Balance: $amt LD';
   String get walletEmpty       => isAr ? 'رصيدك فارغ'             : 'Your wallet is empty';
-  String serviceFeeN(String n) => isAr ? 'رسوم خدمة $n د.ل'      : 'Service fee $n L.D';
+  String serviceFeeN(String n) => isAr ? 'رسوم خدمة $n د.ل'      : 'Service fee $n LD';
   String get noFees            => isAr ? 'بدون رسوم'              : 'No fees';
   String get notesHint         => isAr ? 'أي تعليمات خاصة بطلبك...' : 'Any special instructions for your order...';
   String get reviewOrderTitle  => isAr ? 'مراجعة الطلب'          : 'Review Order';
@@ -310,25 +310,25 @@ class AppStrings {
   String get moreOptions       => isAr ? 'المزيد'                  : 'More';
   String referralSubtitle(int receiver, int giver) => isAr
       ? 'شارك رمزك. صديقك يحصل على خصم $receiver د.ل في طلبه الأول، وأنت تحصل على $giver د.ل عند شرائه.'
-      : 'Share your code. Your friend gets $receiver L.D off their first order, and you get $giver L.D when they buy.';
+      : 'Share your code. Your friend gets $receiver LD off their first order, and you get $giver LD when they buy.';
   String get referralStep1     => isAr ? 'شارك رمزك مع صديق'      : 'Share your code with a friend';
   String get referralStep2     => isAr ? 'يسجّل ويقوم بطلبه الأول' : 'They sign up and place their first order';
   String referralStep3(int giver) => isAr
       ? 'تحصلان معاً على $giver د.ل في المحفظة'
-      : 'You both get $giver L.D in your wallet';
+      : 'You both get $giver LD in your wallet';
   String get statInvited       => isAr ? 'دعوة'                    : 'Invites';
   String get statJoined        => isAr ? 'انضموا'                  : 'Joined';
   String get statEarned        => isAr ? 'ربحت'                    : 'Earned';
-  String get lydUnit           => isAr ? 'د.ل'                     : 'L.D';
+  String get lydUnit           => isAr ? 'د.ل'                     : 'LD';
   String referralShareWhatsApp(String code, int amount) => isAr
       ? 'جرّب تطبيق باهي للتسوق! استخدم رمزي $code واحصل على $amount د.ل خصم على أول طلب 🛍️'
-      : 'Try the Baahy shopping app! Use my code $code and get $amount L.D off your first order 🛍️';
+      : 'Try the Baahy shopping app! Use my code $code and get $amount LD off your first order 🛍️';
   String referralShareSMS(String code, int amount) => isAr
       ? 'رمز باهي: $code · خصم $amount د.ل'
-      : 'Baahy code: $code · $amount L.D off';
+      : 'Baahy code: $code · $amount LD off';
   String referralShareGeneral(String code, int amount) => isAr
       ? 'جرّب تطبيق باهي للتسوق! استخدم رمزي $code واحصل على $amount د.ل خصم على أول طلب'
-      : 'Try the Baahy shopping app! Use my code $code and get $amount L.D off your first order';
+      : 'Try the Baahy shopping app! Use my code $code and get $amount LD off your first order';
 
   // ── Onboarding extras ────────────────────────────────────────────────────────
   String get startShopping     => isAr ? 'ابدأ التسوق'            : 'Start Shopping';
@@ -410,6 +410,16 @@ class AppStrings {
   // ── Browse ───────────────────────────────────────────────────────────────────
   String get sneakPeek         => isAr ? 'عينة عالسريع'            : 'Sneak Peek';
 
+  // ── AI Assistant ─────────────────────────────────────────────────────────────
+  String get assistantTitle    => isAr ? 'مساعد باهي'             : 'Baahy Assistant';
+  String get assistantGreeting => isAr ? 'كيف يمكنني مساعدتك اليوم؟' : 'How can I help you today?';
+  String get assistantInputHint=> isAr ? 'اكتب رسالتك...'         : 'Type your message...';
+  String get assistantLimitHit => isAr ? 'استنفدت رصيدك من المحادثات اليوم.' : 'You\'ve reached your daily limit.';
+  String get assistantWhatsapp => isAr ? 'تواصل مع الدعم على واتساب' : 'Contact support on WhatsApp';
+  String get assistantError    => isAr ? 'حدث خطأ، حاول مجدداً'  : 'Something went wrong, try again';
+  String get browseCategories  => isAr ? 'تصفح الأقسام'           : 'Browse Categories';
+  String get askAssistant      => isAr ? 'اسأل المساعد الذكي'     : 'Ask AI Assistant';
+
   // ── Product detail extras ─────────────────────────────────────────────────────
   String lowStockN(int n)      => isAr ? 'تبقّى $n فقط'            : 'Only $n left';
   String get trustReturn       => isAr ? 'إرجاع واستبدال'          : 'Returns';
@@ -418,7 +428,7 @@ class AppStrings {
   String get saveAmountPrefix  => isAr ? 'وفّر'                    : 'Save';
 
   // ── Account extras ──────────────────────────────────────────────────────────
-  String get inviteEarnBadge   => isAr ? 'احصل على 10 د.ل'         : 'Get 10 L.D';
+  String get inviteEarnBadge   => isAr ? 'احصل على 10 د.ل'         : 'Get 10 LD';
 
   // ── Address extras ──────────────────────────────────────────────────────────
   String get editLabel         => isAr ? 'تعديل'                   : 'Edit';

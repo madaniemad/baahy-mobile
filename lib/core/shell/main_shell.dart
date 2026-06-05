@@ -6,6 +6,7 @@ import '../providers/cart_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../../shared/theme/app_theme.dart';
+import '../../core/utils/l10n.dart';
 import '../../shared/widgets/offline_banner.dart';
 
 class MainShell extends ConsumerWidget {
@@ -13,11 +14,11 @@ class MainShell extends ConsumerWidget {
   const MainShell({required this.child, super.key});
 
   static const _tabs = [
-    (path: '/home',     icon: Icons.home_outlined,           labelAr: 'الرئيسية', labelEn: 'Home'),
-    (path: '/wishlist', icon: Icons.favorite_outline,        labelAr: 'المفضلة',  labelEn: 'Wishlist'),
-    (path: '/browse',   icon: Icons.grid_view_outlined,      labelAr: 'الأقسام',  labelEn: 'Categories'),
-    (path: '/cart',     icon: Icons.shopping_cart_outlined,  labelAr: 'السلة',    labelEn: 'Cart'),
-    (path: '/account',  icon: Icons.person_outline,          labelAr: 'حسابي',    labelEn: 'Me'),
+    (path: '/home',      icon: Icons.home_outlined,           labelAr: 'الرئيسية', labelEn: 'Home'),
+    (path: '/wishlist',  icon: Icons.favorite_outline,        labelAr: 'المفضلة',  labelEn: 'Wishlist'),
+    (path: '/assistant', icon: Icons.auto_awesome_outlined,   labelAr: 'مساعد',    labelEn: 'AI'),
+    (path: '/cart',      icon: Icons.shopping_cart_outlined,  labelAr: 'السلة',    labelEn: 'Cart'),
+    (path: '/account',   icon: Icons.person_outline,          labelAr: 'حسابي',    labelEn: 'Me'),
   ];
 
   @override
@@ -38,8 +39,8 @@ class MainShell extends ConsumerWidget {
       ]),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.92),
-          border: const Border(top: BorderSide(color: AppColors.border)),
+          color: context.col.surface.withValues(alpha: 0.92),
+          border: Border(top: BorderSide(color: context.col.border)),
           boxShadow: AppShadows.shadowPop,
         ),
         child: SafeArea(
@@ -53,7 +54,7 @@ class MainShell extends ConsumerWidget {
                 Widget icon = Icon(
                   tab.icon,
                   size: 24,
-                  color: isActive ? AppColors.primary : AppColors.ink3,
+                  color: isActive ? AppColors.primary : context.col.ink3,
                 );
 
                 // Cart badge
@@ -101,7 +102,7 @@ class MainShell extends ConsumerWidget {
                             fontFamily: 'Cairo',
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: isActive ? AppColors.primary : AppColors.ink3,
+                            color: isActive ? AppColors.primary : context.col.ink3,
                           ),
                         ),
                       ],

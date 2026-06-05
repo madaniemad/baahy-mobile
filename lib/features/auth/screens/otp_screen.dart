@@ -78,12 +78,12 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   Widget build(BuildContext context) {
     final code = _ctrl.text;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.col.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0,
+        backgroundColor: context.col.surface, elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0)),
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -106,13 +106,13 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             children: [
               Text(
                 '${context.s.codeSentTo} ',
-                style: const TextStyle(fontSize: 14.5, color: AppColors.ink2, height: 1.5),
+                style: TextStyle(fontSize: 14.5, color: context.col.ink2, height: 1.5),
               ),
               Directionality(
                 textDirection: TextDirection.ltr,
                 child: Text(widget.phone,
-                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontWeight: FontWeight.w700, fontSize: 14.5, color: AppColors.ink0)),
+                  style: TextStyle(fontFamily: 'PlusJakartaSans',
+                    fontWeight: FontWeight.w700, fontSize: 14.5, color: context.col.ink0)),
               ),
             ],
           ),
@@ -155,7 +155,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         width: 46, height: 56,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceSoft,
+                          color: context.col.surfaceSoft,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             width: 1.5,
@@ -165,15 +165,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                                     ? AppColors.primary
                                     : filled
                                         ? AppColors.primary
-                                        : AppColors.borderStrong,
+                                        : context.col.borderStrong,
                           ),
                         ),
                         child: filled
                             ? Text(code[i],
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: 'PlusJakartaSans',
                                   fontSize: 24, fontWeight: FontWeight.w700,
-                                  color: AppColors.ink0))
+                                  color: context.col.ink0))
                             : active
                                 ? Container(
                                     width: 1.5, height: 24,
@@ -201,7 +201,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           Center(
             child: _seconds > 0
                 ? Text('${context.s.resendIn} $_seconds ${context.s.seconds}',
-                    style: const TextStyle(fontSize: 13, color: AppColors.ink3))
+                    style: TextStyle(fontSize: 13, color: context.col.ink3))
                 : GestureDetector(
                     onTap: () {
                       ref.read(authProvider.notifier).requestOtp(widget.phone);
@@ -218,15 +218,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.surfaceSoft,
+              color: context.col.surfaceSoft,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.ink3),
+              Icon(Icons.info_outline_rounded, size: 16, color: context.col.ink3),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(context.s.notReceivedInfo,
-                  style: const TextStyle(fontSize: 11.5, color: AppColors.ink2, height: 1.45)),
+                  style: TextStyle(fontSize: 11.5, color: context.col.ink2, height: 1.45)),
               ),
             ]),
           ),
@@ -246,10 +246,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               ),
               child: _loading
                   ? const SizedBox(width: 20, height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.ink0))
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87))
                   : Text(context.s.verify,
                       style: const TextStyle(fontFamily: 'Cairo',
-                        fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink0)),
+                        fontWeight: FontWeight.w800, fontSize: 15, color: Colors.black87)),
             ),
           ),
         ]),

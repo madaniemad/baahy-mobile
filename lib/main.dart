@@ -55,6 +55,7 @@ class BaahyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final locale = ref.watch(localeProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     // Wire push notifications once router is ready and Firebase is available.
     if (_firebaseReady) {
@@ -67,6 +68,8 @@ class BaahyApp extends ConsumerWidget {
       title: 'baahy',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: themeMode,
       routerConfig: router,
       locale: locale,
       supportedLocales: const [Locale('ar'), Locale('en')],

@@ -73,25 +73,25 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final categories = ref.watch(homeProvider).categories;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.col.surface,
       body: SafeArea(
         child: Column(
           children: [
             // Search bar
             Container(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: AppColors.border)),
+              decoration: BoxDecoration(
+                color: context.col.surface,
+                border: Border(bottom: BorderSide(color: context.col.border)),
               ),
               child: Row(children: [
                 GestureDetector(
                   onTap: () => context.pop(),
                   child: Container(
                     width: 36, height: 36,
-                    decoration: const BoxDecoration(
-                      color: AppColors.surfaceSoft, shape: BoxShape.circle),
-                    child: const Icon(Icons.arrow_back, size: 18, color: AppColors.ink0),
+                    decoration: BoxDecoration(
+                      color: context.col.surfaceSoft, shape: BoxShape.circle),
+                    child: Icon(Icons.arrow_back, size: 18, color: context.col.ink0),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -99,22 +99,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   child: Container(
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.col.surfaceSoft,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border, width: 1.2),
+                      border: Border.all(color: context.col.border, width: 1.2),
                     ),
                     child: Row(children: [
                       const SizedBox(width: 12),
-                      const Icon(Icons.search, size: 18, color: AppColors.ink3),
+                      Icon(Icons.search, size: 18, color: context.col.ink3),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
                           controller: _ctrl,
                           focusNode: _focus,
-                          style: const TextStyle(fontSize: 14, color: AppColors.ink0),
+                          style: TextStyle(fontSize: 14, color: context.col.ink0),
                           decoration: InputDecoration(
                             hintText: context.s.searchHint,
-                            hintStyle: TextStyle(color: AppColors.ink3, fontSize: 14),
+                            hintStyle: TextStyle(color: context.col.ink3, fontSize: 14),
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(vertical: 12),
                           ),
@@ -128,9 +128,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             _ctrl.clear();
                             setState(() { _query = ''; _debouncedQuery = ''; });
                           },
-                          child: const Padding(
+                          child: Padding(
                             padding: EdgeInsets.symmetric(horizontal: 12),
-                            child: Icon(Icons.close, size: 16, color: AppColors.ink3),
+                            child: Icon(Icons.close, size: 16, color: context.col.ink3),
                           ),
                         ),
                     ]),
@@ -180,10 +180,10 @@ class _LiveResults extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.search, size: 48, color: AppColors.ink4),
+                  Icon(Icons.search, size: 48, color: context.col.ink4),
                   const SizedBox(height: 12),
                   Text('${context.s.noResults} "$query"',
-                    style: const TextStyle(fontSize: 14, color: AppColors.ink2),
+                    style: TextStyle(fontSize: 14, color: context.col.ink2),
                     textAlign: TextAlign.center),
                   const SizedBox(height: 12),
                   TextButton(
@@ -214,11 +214,11 @@ class _LiveResults extends StatelessWidget {
                             ? CachedNetworkImage(
                                 imageUrl: p.firstImage!, fit: BoxFit.cover,
                                 errorWidget: (_, __, ___) => Container(
-                                  color: AppColors.surfaceSoft,
-                                  child: const Icon(Icons.image_outlined, color: AppColors.ink4, size: 20)),
+                                  color: context.col.surfaceSoft,
+                                  child: Icon(Icons.image_outlined, color: context.col.ink4, size: 20)),
                               )
-                            : Container(color: AppColors.surfaceSoft,
-                                child: const Icon(Icons.image_outlined, color: AppColors.ink4, size: 20)),
+                            : Container(color: context.col.surfaceSoft,
+                                child: Icon(Icons.image_outlined, color: context.col.ink4, size: 20)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -229,7 +229,7 @@ class _LiveResults extends StatelessWidget {
                           maxLines: 2, overflow: TextOverflow.ellipsis),
                         if (p.vendor != null)
                           Text(isAr ? p.vendor!.storeNameAr : p.vendor!.storeName,
-                            style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
+                            style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
                       ]),
                     ),
                     Text('${fmtPrice(p.displayPrice)} ${context.s.lydUnit}',
@@ -271,8 +271,8 @@ class _EmptyState extends StatelessWidget {
         children: [
           // Trending
           Text(context.s.trendingNow,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-              color: AppColors.ink2, letterSpacing: 0.5)),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+              color: context.col.ink2, letterSpacing: 0.5)),
           const SizedBox(height: 8),
           ...List.generate(trending.length, (i) => InkWell(
             onTap: () => onSearch(trending[i]),
@@ -282,15 +282,15 @@ class _EmptyState extends StatelessWidget {
                 SizedBox(
                   width: 22,
                   child: Text('0${i + 1}',
-                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                      fontWeight: FontWeight.w700, color: AppColors.ink3, fontSize: 13)),
+                    style: TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontWeight: FontWeight.w700, color: context.col.ink3, fontSize: 13)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(trending[i],
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
                 ),
-                const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.ink3),
+                Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
               ]),
             ),
           )),
@@ -298,8 +298,8 @@ class _EmptyState extends StatelessWidget {
           if (categories.isNotEmpty) ...[
             const SizedBox(height: 20),
             Text(context.s.categories,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                color: AppColors.ink2, letterSpacing: 0.5)),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                color: context.col.ink2, letterSpacing: 0.5)),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8, runSpacing: 8,
@@ -308,9 +308,9 @@ class _EmptyState extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceSoft,
+                    color: context.col.surfaceSoft,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: context.col.border),
                   ),
                   child: Text(c, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                 ),

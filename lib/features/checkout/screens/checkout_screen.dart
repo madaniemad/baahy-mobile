@@ -199,13 +199,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final config = ref.watch(appConfigProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       body: SafeArea(
         child: Column(
           children: [
             // Header with step counter
             Container(
-              color: Colors.white,
+              color: context.col.surface,
               child: Column(
                 children: [
                   Padding(
@@ -213,15 +213,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: Row(children: [
                       IconButton(
                         onPressed: _back,
-                        icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+                        icon: Icon(Icons.arrow_back, color: context.col.ink0)),
                       Expanded(
                         child: Text(context.s.checkout,
                           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
                             fontSize: 17)),
                       ),
                       Text('$_step/3',
-                        style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                          fontSize: 13, color: AppColors.ink3)),
+                        style: TextStyle(fontFamily: 'PlusJakartaSans',
+                          fontSize: 13, color: context.col.ink3)),
                     ]),
                   ),
                   // Step indicator
@@ -235,7 +235,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             Expanded(
                               child: Container(
                                 height: 2,
-                                color: _step > i ? AppColors.ink0 : AppColors.border,
+                                color: _step > i ? context.col.ink0 : context.col.border,
                               ),
                             ),
                         ],
@@ -249,17 +249,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       children: [
                         Text(context.s.address,
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                            color: _step == 1 ? AppColors.ink0 : AppColors.ink3)),
+                            color: _step == 1 ? context.col.ink0 : context.col.ink3)),
                         Text(context.s.payment,
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                            color: _step == 2 ? AppColors.ink0 : AppColors.ink3)),
+                            color: _step == 2 ? context.col.ink0 : context.col.ink3)),
                         Text(context.s.review,
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                            color: _step == 3 ? AppColors.ink0 : AppColors.ink3)),
+                            color: _step == 3 ? context.col.ink0 : context.col.ink3)),
                       ],
                     ),
                   ),
-                  const Divider(height: 1, color: AppColors.border),
+                  Divider(height: 1, color: context.col.border),
                 ],
               ),
             ),
@@ -319,7 +319,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               padding: EdgeInsets.fromLTRB(16, 12, 16,
                 MediaQuery.of(context).padding.bottom + 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.col.surface,
                 boxShadow: AppShadows.shadowPop,
               ),
               child: Column(
@@ -328,7 +328,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(context.s.total,
-                        style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+                        style: TextStyle(fontSize: 13, color: context.col.ink2)),
                       Text('${fmtPrice(cart.total)} ${context.s.lydUnit}',
                         style: const TextStyle(fontFamily: 'PlusJakartaSans',
                           fontSize: 18, fontWeight: FontWeight.w800)),
@@ -338,8 +338,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   AppButton(
                     label: _step < 3 ? context.s.continueBtn : context.s.placeOrder,
                     icon: _step < 3
-                        ? Icon(context.isAr ? Icons.arrow_back_ios_new_rounded : Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.ink0)
-                        : const Icon(Icons.check_rounded, size: 16, color: AppColors.ink0),
+                        ? Icon(context.isAr ? Icons.arrow_back_ios_new_rounded : Icons.arrow_forward_ios_rounded, size: 14, color: context.col.ink0)
+                        : Icon(Icons.check_rounded, size: 16, color: context.col.ink0),
                     onTap: _next,
                     loading: _loading,
                   ),
@@ -366,16 +366,16 @@ class _StepCircle extends StatelessWidget {
       width: 26, height: 26,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: (isDone || isActive) ? AppColors.ink0 : AppColors.surfaceSoft,
+        color: (isDone || isActive) ? context.col.ink0 : context.col.surfaceSoft,
       ),
       child: Center(
         child: isDone
-            ? const Icon(Icons.check, size: 14, color: Colors.white)
+            ? Icon(Icons.check, size: 14, color: context.col.bg)
             : Text('$number',
                 style: TextStyle(
                   fontFamily: 'PlusJakartaSans',
                   fontSize: 12, fontWeight: FontWeight.w700,
-                  color: isActive ? Colors.white : AppColors.ink3)),
+                  color: isActive ? context.col.bg : context.col.ink3)),
       ),
     );
   }
@@ -401,7 +401,7 @@ class _StepAddress extends StatelessWidget {
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       const SizedBox(height: 4),
       Text(context.s.whereToDeliver,
-        style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+        style: TextStyle(fontSize: 13, color: context.col.ink2)),
       const SizedBox(height: 16),
 
       ...addresses.map((addr) => GestureDetector(
@@ -410,10 +410,10 @@ class _StepAddress extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.col.surface,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: selected?['id'] == addr['id'] ? AppColors.primary : AppColors.border,
+              color: selected?['id'] == addr['id'] ? AppColors.primary : context.col.border,
               width: selected?['id'] == addr['id'] ? 1.5 : 1),
             boxShadow: AppShadows.shadowCard,
           ),
@@ -424,12 +424,12 @@ class _StepAddress extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: selected?['id'] == addr['id']
                     ? null
-                    : Border.all(color: AppColors.borderStrong, width: 1.5),
+                    : Border.all(color: context.col.borderStrong, width: 1.5),
                 color: selected?['id'] == addr['id']
                     ? AppColors.primary : Colors.transparent,
               ),
               child: selected?['id'] == addr['id']
-                  ? const Icon(Icons.circle, size: 8, color: AppColors.ink0)
+                  ? Icon(Icons.circle, size: 8, color: context.col.ink0)
                   : null,
             ),
             const SizedBox(width: 12),
@@ -440,7 +440,7 @@ class _StepAddress extends StatelessWidget {
                 [context.s.translateCity(addr['city']?.toString() ?? ''), addr['address']]
                   .where((v) => v.isNotEmpty)
                   .join('، '),
-                style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
+                style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
             ])),
           ]),
         ),
@@ -452,7 +452,7 @@ class _StepAddress extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.col.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.primary, width: 1.5),
             ),
@@ -472,7 +472,7 @@ class _StepAddress extends StatelessWidget {
           label: Text(context.s.addNewAddress),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(double.infinity, 44),
-            side: const BorderSide(color: AppColors.border),
+            side: BorderSide(color: context.col.border),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
@@ -484,9 +484,9 @@ class _StepAddress extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.teal50bg,
+            color: AppColors.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.teal100bg),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
           ),
           child: Row(children: [
             const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.primary),
@@ -497,7 +497,7 @@ class _StepAddress extends StatelessWidget {
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
               Text(
                 '${fmtPrice(selectedRate!.rate)} ${context.s.lydUnit} · ${selectedRate!.deliveryDays} ${context.s.daysLabel}',
-                style: const TextStyle(fontSize: 12, color: AppColors.ink2)),
+                style: TextStyle(fontSize: 12, color: context.col.ink2)),
             ])),
           ]),
         ),
@@ -507,14 +507,14 @@ class _StepAddress extends StatelessWidget {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
+          color: context.col.surfaceSoft,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(children: [
           const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.primary),
           const SizedBox(width: 8),
           Expanded(child: Text(deliveryPromise,
-            style: const TextStyle(fontSize: 12.5, color: AppColors.ink1))),
+            style: TextStyle(fontSize: 12.5, color: context.col.ink1))),
         ]),
       ),
     ]);
@@ -571,7 +571,7 @@ class _StepPayment extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFFBEB),
+            color: AppColors.warn.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.warn.withValues(alpha: 0.4)),
           ),
@@ -594,21 +594,21 @@ class _StepPayment extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           margin: const EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
-            color: walletActive ? const Color(0xFFEFF6FF) : Colors.white,
+            color: walletActive ? context.col.hilite : context.col.surface,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: walletActive ? AppColors.primary : AppColors.border,
+              color: walletActive ? AppColors.primary : context.col.border,
               width: walletActive ? 1.5 : 1),
           ),
           child: Row(children: [
             Container(
               width: 36, height: 36,
               decoration: BoxDecoration(
-                color: walletActive ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surfaceSoft,
+                color: walletActive ? AppColors.primary.withValues(alpha: 0.1) : context.col.surfaceSoft,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(Icons.account_balance_wallet_outlined, size: 18,
-                color: walletActive ? AppColors.primary : AppColors.ink3),
+                color: walletActive ? AppColors.primary : context.col.ink3),
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -616,7 +616,7 @@ class _StepPayment extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
               walletLoading
                   ? Text(context.s.loading,
-                      style: const TextStyle(fontSize: 11.5, color: AppColors.ink3))
+                      style: TextStyle(fontSize: 11.5, color: context.col.ink3))
                   : Row(children: [
                       Text(
                         walletBalance > 0
@@ -624,16 +624,16 @@ class _StepPayment extends StatelessWidget {
                             : context.s.walletEmpty,
                         style: TextStyle(
                           fontSize: 11.5,
-                          color: walletBalance > 0 ? AppColors.success : AppColors.ink3)),
+                          color: walletBalance > 0 ? AppColors.success : context.col.ink3)),
                       const SizedBox(width: 8),
                       GestureDetector(
                         onTap: onChargeWallet,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.teal50,
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: AppColors.teal100),
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                           ),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             const Icon(Icons.add, size: 10, color: AppColors.primary),
@@ -652,7 +652,7 @@ class _StepPayment extends StatelessWidget {
                 width: 44, height: 24,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(999),
-                  color: walletActive ? AppColors.primary : AppColors.ink4,
+                  color: walletActive ? AppColors.primary : context.col.ink4,
                 ),
                 child: AnimatedAlign(
                   duration: const Duration(milliseconds: 150),
@@ -675,7 +675,7 @@ class _StepPayment extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: walletCoversAll ? const Color(0xFFF0FDF4) : const Color(0xFFEFF6FF),
+            color: walletCoversAll ? AppColors.success.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: walletCoversAll ? AppColors.success : AppColors.primary,
@@ -700,10 +700,10 @@ class _StepPayment extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: selected == m.id ? const Color(0xFFF5F5F5) : Colors.white,
+              color: selected == m.id ? context.col.surfaceSoft : context.col.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: selected == m.id ? AppColors.primary : AppColors.border,
+                color: selected == m.id ? AppColors.primary : context.col.border,
                 width: selected == m.id ? 1.5 : 1),
             ),
             child: Row(children: [
@@ -713,11 +713,11 @@ class _StepPayment extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: selected == m.id
                       ? null
-                      : Border.all(color: AppColors.borderStrong, width: 1.5),
+                      : Border.all(color: context.col.borderStrong, width: 1.5),
                   color: selected == m.id ? AppColors.primary : Colors.transparent,
                 ),
                 child: selected == m.id
-                    ? const Icon(Icons.circle, size: 8, color: AppColors.ink0)
+                    ? Icon(Icons.circle, size: 8, color: context.col.ink0)
                     : null,
               ),
               const SizedBox(width: 12),
@@ -730,7 +730,7 @@ class _StepPayment extends StatelessWidget {
                           : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees))
                       : (m.descriptionEn.isNotEmpty ? m.descriptionEn
                           : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees)),
-                  style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
+                  style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
               ])),
             ]),
           ),
@@ -743,16 +743,16 @@ class _StepPayment extends StatelessWidget {
       const SizedBox(height: 8),
       Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.col.surface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.col.border),
         ),
         child: TextField(
           controller: notesCtrl,
           maxLines: 3,
           decoration: InputDecoration(
             hintText: context.s.notesHint,
-            hintStyle: TextStyle(color: AppColors.ink3, fontSize: 14),
+            hintStyle: TextStyle(color: context.col.ink3, fontSize: 14),
             border: InputBorder.none,
             contentPadding: EdgeInsets.all(14),
           ),
@@ -798,21 +798,21 @@ class _StepReview extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.col.surface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.col.border),
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 2),
-            child: Icon(Icons.location_on_outlined, size: 18, color: AppColors.ink2),
+            child: Icon(Icons.location_on_outlined, size: 18, color: context.col.ink2),
           ),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Text(context.s.deliverTo,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
-                  color: AppColors.ink2, letterSpacing: 0.3)),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
+                  color: context.col.ink2, letterSpacing: 0.3)),
               GestureDetector(
                 onTap: onChangeAddress,
                 child: Text(context.s.change,
@@ -829,7 +829,7 @@ class _StepReview extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(addr['phone'] as String,
-                    style: const TextStyle(fontSize: 12.5, color: AppColors.ink2,
+                    style: TextStyle(fontSize: 12.5, color: context.col.ink2,
                       fontFamily: 'PlusJakartaSans')),
                 ),
               const SizedBox(height: 3),
@@ -837,7 +837,7 @@ class _StepReview extends StatelessWidget {
                 [context.s.translateAddrLabel((addr['label'] as String?) ?? ''), context.s.translateCity(addr['city']?.toString() ?? ''), addr['address']]
                   .where((v) => v != null && v.toString().isNotEmpty)
                   .join(' · '),
-                style: const TextStyle(fontSize: 12.5, color: AppColors.ink1)),
+                style: TextStyle(fontSize: 12.5, color: context.col.ink1)),
             ],
           ])),
         ]),
@@ -848,18 +848,18 @@ class _StepReview extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.col.surface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.col.border),
         ),
         child: Row(children: [
-          const Icon(Icons.credit_card_outlined, size: 18, color: AppColors.ink2),
+          Icon(Icons.credit_card_outlined, size: 18, color: context.col.ink2),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Text(context.s.payment,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
-                  color: AppColors.ink2, letterSpacing: 0.3)),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
+                  color: context.col.ink2, letterSpacing: 0.3)),
               GestureDetector(
                 onTap: onChangePayment,
                 child: Text(context.s.change,
@@ -878,14 +878,14 @@ class _StepReview extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.col.surface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.col.border),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(context.s.productsCountN(cart.items.length),
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
-              color: AppColors.ink2, letterSpacing: 0.3)),
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
+              color: context.col.ink2, letterSpacing: 0.3)),
           const SizedBox(height: 10),
           ...cart.items.map((item) {
             final variationLabel = item.variation?.attributes
@@ -904,16 +904,16 @@ class _StepReview extends StatelessWidget {
                           fit: BoxFit.cover,
                           errorWidget: (_, __, ___) => Container(
                             width: 56, height: 56,
-                            color: AppColors.surfaceSoft,
-                            child: const Icon(Icons.image_not_supported_outlined,
-                              size: 20, color: AppColors.ink3),
+                            color: context.col.surfaceSoft,
+                            child: Icon(Icons.image_not_supported_outlined,
+                              size: 20, color: context.col.ink3),
                           ),
                         )
                       : Container(
                           width: 56, height: 56,
-                          color: AppColors.surfaceSoft,
-                          child: const Icon(Icons.image_not_supported_outlined,
-                            size: 20, color: AppColors.ink3),
+                          color: context.col.surfaceSoft,
+                          child: Icon(Icons.image_not_supported_outlined,
+                            size: 20, color: context.col.ink3),
                         ),
                 ),
                 const SizedBox(width: 10),
@@ -925,12 +925,12 @@ class _StepReview extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(variationLabel,
-                        style: const TextStyle(fontSize: 11.5, color: AppColors.ink2)),
+                        style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
                     ),
                   const SizedBox(height: 4),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     Text('× ${item.quantity}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.ink2,
+                      style: TextStyle(fontSize: 12, color: context.col.ink2,
                         fontFamily: 'PlusJakartaSans')),
                     Text('${fmtPrice(item.total)} ${context.s.lydUnit}',
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
@@ -947,29 +947,30 @@ class _StepReview extends StatelessWidget {
       Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.col.surface,
           borderRadius: BorderRadius.circular(10),
           boxShadow: AppShadows.shadowCard,
         ),
         child: Column(children: [
-          _SummaryRow(context.s.subtotalLabel, '${fmtPrice(cart.subtotal)} ${context.s.lydUnit}'),
+          _SummaryRow(context.s.subtotalLabel, '${fmtPrice(cart.subtotal)} ${context.s.lydUnit}', ctx: context),
           if (cart.discountAmount > 0)
             _SummaryRow(context.s.couponDiscount, '− ${fmtPrice(cart.discountAmount)} ${context.s.lydUnit}',
-              color: AppColors.success),
+              color: AppColors.success, ctx: context),
           _SummaryRow(
             context.s.shippingCost,
             cart.deliveryFee == 0 ? context.s.freeText : '${fmtPrice(cart.deliveryFee)} ${context.s.lydUnit}',
             color: cart.deliveryFee == 0 ? AppColors.success : null,
+            ctx: context,
           ),
-          const Divider(height: 20, color: AppColors.border),
-          _SummaryRow(context.s.orderTotal, '${fmtPrice(cart.total)} ${context.s.lydUnit}', bold: true),
+          Divider(height: 20, color: context.col.border),
+          _SummaryRow(context.s.orderTotal, '${fmtPrice(cart.total)} ${context.s.lydUnit}', bold: true, ctx: context),
         ]),
       ),
     ]);
   }
 }
 
-Widget _SummaryRow(String label, String value, {Color? color, bool bold = false}) =>
+Widget _SummaryRow(String label, String value, {Color? color, bool bold = false, required BuildContext ctx}) =>
   Padding(
     padding: const EdgeInsets.symmetric(vertical: 3),
     child: Row(
@@ -980,7 +981,7 @@ Widget _SummaryRow(String label, String value, {Color? color, bool bold = false}
           fontFamily: 'PlusJakartaSans',
           fontSize: 14,
           fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-          color: color ?? AppColors.ink0)),
+          color: color ?? ctx.col.ink0)),
       ],
     ),
   );

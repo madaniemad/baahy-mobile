@@ -93,9 +93,9 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.col.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0,
+        backgroundColor: context.col.surface, elevation: 0,
         leading: _step < 2
           ? IconButton(
               icon: Icon(_step == 0 ? Icons.arrow_back : Icons.arrow_back),
@@ -124,21 +124,21 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
                       width: 28, height: 28,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: done || active ? AppColors.ink0 : AppColors.surfaceSoft,
+                        color: done || active ? context.col.ink0 : context.col.surfaceSoft,
                       ),
                       child: Center(
                         child: done
-                          ? const Icon(Icons.check, size: 14, color: Colors.white)
+                          ? Icon(Icons.check, size: 14, color: context.col.bg)
                           : Text('${i + 1}',
                               style: TextStyle(
                                 fontFamily: 'PlusJakartaSans',
                                 fontWeight: FontWeight.w800, fontSize: 12,
-                                color: active ? Colors.white : AppColors.ink3)),
+                                color: active ? context.col.bg : context.col.ink3)),
                       ),
                     ),
                     if (i < 1)
                       Expanded(child: Container(height: 2,
-                        color: _step > 0 ? AppColors.ink0 : AppColors.border)),
+                        color: _step > 0 ? context.col.ink0 : context.col.border)),
                   ]),
                 );
               })),
@@ -204,7 +204,7 @@ class _StepItems extends ConsumerWidget {
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: items.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+              separatorBuilder: (_, __) => Divider(height: 1, color: context.col.border),
               itemBuilder: (_, i) {
                 final item = items[i];
                 final id = item['id'] as int? ?? i;
@@ -221,11 +221,11 @@ class _StepItems extends ConsumerWidget {
                           color: qty > 0 ? AppColors.primary : Colors.transparent,
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
-                            color: qty > 0 ? AppColors.primary : AppColors.borderStrong,
+                            color: qty > 0 ? AppColors.primary : context.col.borderStrong,
                             width: 1.5),
                         ),
                         child: qty > 0
-                            ? const Icon(Icons.check_rounded, size: 14, color: AppColors.ink0)
+                            ? Icon(Icons.check_rounded, size: 14, color: context.col.ink0)
                             : null,
                       ),
                     ),
@@ -234,7 +234,7 @@ class _StepItems extends ConsumerWidget {
                       Text(item['product_name'] ?? item['name'] ?? '',
                         style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
                       Text(context.s.quantityN(maxQty),
-                        style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.ink3)),
+                        style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: context.col.ink3)),
                     ])),
                     if (qty > 0) Row(mainAxisSize: MainAxisSize.min, children: [
                       GestureDetector(
@@ -242,10 +242,10 @@ class _StepItems extends ConsumerWidget {
                         child: Container(
                           width: 28, height: 28,
                           decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: context.col.border),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Icon(Icons.remove, size: 14, color: AppColors.ink1),
+                          child: Icon(Icons.remove, size: 14, color: context.col.ink1),
                         ),
                       ),
                       Container(
@@ -261,12 +261,12 @@ class _StepItems extends ConsumerWidget {
                           width: 28, height: 28,
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: qty < maxQty ? AppColors.border : AppColors.border.withValues(alpha: 0.3)),
+                              color: qty < maxQty ? context.col.border : context.col.border.withValues(alpha: 0.3)),
                             borderRadius: BorderRadius.circular(6),
-                            color: qty < maxQty ? null : AppColors.surfaceSoft,
+                            color: qty < maxQty ? null : context.col.surfaceSoft,
                           ),
                           child: Icon(Icons.add, size: 14,
-                            color: qty < maxQty ? AppColors.ink1 : AppColors.ink4),
+                            color: qty < maxQty ? context.col.ink1 : context.col.ink4),
                         ),
                       ),
                     ]),
@@ -322,16 +322,16 @@ class _StepReason extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: reason == r
                         ? AppColors.primary.withValues(alpha: 0.08)
-                        : Colors.white,
+                        : context.col.surface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: reason == r ? AppColors.primary : AppColors.border,
+                      color: reason == r ? AppColors.primary : context.col.border,
                       width: reason == r ? 2 : 1),
                   ),
                   child: Row(children: [
                     Icon(
                       reason == r ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                      size: 18, color: reason == r ? AppColors.primary : AppColors.ink3),
+                      size: 18, color: reason == r ? AppColors.primary : context.col.ink3),
                     const SizedBox(width: 10),
                     Text(r, style: const TextStyle(fontFamily: 'Cairo',
                       fontWeight: FontWeight.w600, fontSize: 14)),
@@ -340,21 +340,21 @@ class _StepReason extends StatelessWidget {
               )),
               const SizedBox(height: 8),
               Text(context.s.additionalNotes,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.col.ink1)),
               const SizedBox(height: 8),
               TextField(
                 controller: notesCtrl,
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: context.isAr ? 'صف المشكلة بمزيد من التفصيل...' : 'Describe the issue in more detail...',
-                  hintStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink3),
-                  filled: true, fillColor: AppColors.bg,
+                  hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink3),
+                  filled: true, fillColor: context.col.bg,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.border)),
+                    borderSide: BorderSide(color: context.col.border)),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.border)),
+                    borderSide: BorderSide(color: context.col.border)),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: const BorderSide(color: AppColors.primary, width: 2)),
@@ -363,7 +363,7 @@ class _StepReason extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(context.s.productPhotos,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.ink1)),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.col.ink1)),
               const SizedBox(height: 8),
               SizedBox(
                 height: 80,
@@ -384,17 +384,17 @@ class _StepReason extends StatelessWidget {
                         width: 80, height: 80,
                         margin: const EdgeInsets.only(left: 8),
                         decoration: BoxDecoration(
-                          color: AppColors.bg,
+                          color: context.col.bg,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.border, style: BorderStyle.solid),
+                          border: Border.all(color: context.col.border, style: BorderStyle.solid),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.add_photo_alternate_outlined,
-                              size: 28, color: AppColors.ink3),
+                            Icon(Icons.add_photo_alternate_outlined,
+                              size: 28, color: context.col.ink3),
                             const SizedBox(height: 4),
-                            Text(context.s.addPhoto, style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+                            Text(context.s.addPhoto, style: TextStyle(fontSize: 11, color: context.col.ink3)),
                           ],
                         ),
                       ),
@@ -464,7 +464,7 @@ class _StepDone extends StatelessWidget {
             width: 90, height: 90,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFF5F5F5),
+              color: AppColors.primary.withValues(alpha: 0.1),
               border: Border.all(color: AppColors.primary, width: 3)),
             child: const Icon(Icons.check_rounded,
               size: 44, color: AppColors.primary),
@@ -479,20 +479,20 @@ class _StepDone extends StatelessWidget {
               ? 'سنراجع ونردّ خلال 24 ساعة. عند الموافقة، سيمرّ سائقنا لاستلام المنتجات من باب منزلك.'
               : 'We\'ll review and respond within 24 hours. Upon approval, our driver will pick up the items from your door.',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, color: AppColors.ink2, height: 1.5),
+            style: TextStyle(fontSize: 14, color: context.col.ink2, height: 1.5),
           ),
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.col.surface,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.col.border),
             ),
             child: Column(children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Text(context.s.refundTo,
-                  style: const TextStyle(fontSize: 12.5, color: AppColors.ink2)),
+                  style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
                 Text(context.s.baahyWalletInstant,
                   style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
               ]),

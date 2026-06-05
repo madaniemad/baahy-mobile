@@ -49,6 +49,8 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   int _imageIndex = 0;
   late final PageController _pageController;
+  late final ScrollController _scrollController;
+  bool _lazyTriggered = false;
   ProductVariation? _selectedVariation;
   int _qty = 1;
   final Map<String, String> _selections = {};
@@ -57,10 +59,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    _scrollController = ScrollController()
+      ..addListener(() {
+        if (!_lazyTriggered && _scrollController.offset > 500) {
+          setState(() => _lazyTriggered = true);
+        }
+      });
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -99,7 +108,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     } else {
       showModalBottomSheet(
         context: context,
-        backgroundColor: Colors.white,
+        backgroundColor: context.col.surface,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(10))),
         builder: (_) => _AddedToCartSheet(
@@ -119,14 +128,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final productAsync = ref.watch(_productDetailProvider(widget.id));
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       body: productAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) => Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.ink3),
+            Icon(Icons.wifi_off_rounded, size: 48, color: context.col.ink3),
             const SizedBox(height: 12),
-            Text(context.s.loadProductFailed, style: const TextStyle(color: AppColors.ink2)),
+            Text(context.s.loadProductFailed, style: TextStyle(color: context.col.ink2)),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => ref.refresh(_productDetailProvider(widget.id)),
@@ -172,12 +181,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           return Stack(
             children: [
               CustomScrollView(
+                controller: _scrollController,
                 slivers: [
                   // ── Image gallery ────────────────────────────────
                   SliverAppBar(
                     expandedHeight: 340 + MediaQuery.of(context).padding.top,
                     pinned: true,
-                    backgroundColor: Colors.white,
+                    backgroundColor: context.col.surface,
                     elevation: 0,
                     leading: Padding(
                       padding: const EdgeInsets.all(8),
@@ -185,11 +195,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         onTap: () => context.pop(),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.95),
+                            color: context.col.surface.withValues(alpha: 0.95),
                             shape: BoxShape.circle,
                             boxShadow: AppShadows.shadowCard,
                           ),
-                          child: const Icon(Icons.arrow_back, size: 20, color: AppColors.ink0),
+                          child: Icon(Icons.arrow_back, size: 20, color: context.col.ink0),
                         ),
                       ),
                     ),
@@ -204,8 +214,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             onPageChanged: (i) => setState(() => _imageIndex = i),
                             itemBuilder: (_, i) {
                               if (product.images.isEmpty) {
-                                return Container(color: AppColors.bg,
-                                  child: const Icon(Icons.image_outlined, size: 80, color: AppColors.border));
+                                return Container(color: context.col.bg,
+                                  child: Icon(Icons.image_outlined, size: 80, color: context.col.border));
                               }
                               return InteractiveViewer(
                                 minScale: 1.0,
@@ -229,7 +239,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                       margin: const EdgeInsets.symmetric(horizontal: 3),
                                       width: i == _imageIndex ? 18 : 6, height: 6,
                                       decoration: BoxDecoration(
-                                        color: i == _imageIndex ? AppColors.primary : AppColors.border,
+                                        color: i == _imageIndex ? AppColors.primary : context.col.border,
                                         borderRadius: BorderRadius.circular(3),
                                       ),
                                     ),
@@ -298,7 +308,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: i == _imageIndex ? AppColors.primary : AppColors.border,
+                                      color: i == _imageIndex ? AppColors.primary : context.col.border,
                                       width: i == _imageIndex ? 2 : 1),
                                   ),
                                   child: ClipRRect(
@@ -307,7 +317,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                       imageUrl: product.images[i],
                                       fit: BoxFit.cover,
                                       errorWidget: (_, __, ___) =>
-                                        Container(color: AppColors.surfaceSoft)),
+                                        Container(color: context.col.surfaceSoft)),
                                   ),
                                 ),
                               ),
@@ -321,7 +331,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           margin: const EdgeInsets.symmetric(horizontal: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.col.surface,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: AppShadows.shadowCard,
                           ),
@@ -362,14 +372,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                         fontSize: 13, fontWeight: FontWeight.w700)),
                                     const SizedBox(width: 4),
                                     Text('(${product.reviewsCount})',
-                                      style: const TextStyle(color: AppColors.ink3, fontSize: 12)),
+                                      style: TextStyle(color: context.col.ink3, fontSize: 12)),
                                     if (product.soldCount != null && product.soldCount! > 0) ...[
-                                      const Padding(
+                                      Padding(
                                         padding: EdgeInsets.symmetric(horizontal: 6),
-                                        child: Text('·', style: TextStyle(color: AppColors.ink3)),
+                                        child: Text('·', style: TextStyle(color: context.col.ink3)),
                                       ),
                                       Text(context.s.nSold(product.soldCount!),
-                                        style: const TextStyle(fontSize: 12, color: AppColors.ink2)),
+                                        style: TextStyle(fontSize: 12, color: context.col.ink2)),
                                     ],
                                   ]),
                                 ),
@@ -380,21 +390,21 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 children: [
                                   if (showRange) ...[
                                     Text('${fmtPrice(varMinPrice!)} - ${fmtPrice(varMaxPrice!)} ${context.s.lydUnit}',
-                                      style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                        fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.ink0)),
+                                      style: TextStyle(fontFamily: 'PlusJakartaSans',
+                                        fontSize: 22, fontWeight: FontWeight.w800, color: context.col.ink0)),
                                   ] else ...[
                                     Text('${fmtPrice(displayPrice)} ${context.s.lydUnit}',
-                                      style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                        fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.ink0)),
+                                      style: TextStyle(fontFamily: 'PlusJakartaSans',
+                                        fontSize: 26, fontWeight: FontWeight.w800, color: context.col.ink0)),
                                     if (displayPrice < product.price) ...[
                                       const SizedBox(width: 8),
                                       Padding(
                                         padding: const EdgeInsets.only(bottom: 3),
                                         child: Text('${fmtPrice(product.price)} ${context.s.lydUnit}',
-                                          style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                            fontSize: 15, color: AppColors.ink3,
+                                          style: TextStyle(fontFamily: 'PlusJakartaSans',
+                                            fontSize: 15, color: context.col.ink3,
                                             decoration: TextDecoration.lineThrough,
-                                            decorationColor: AppColors.ink3)),
+                                            decorationColor: context.col.ink3)),
                                       ),
                                       const SizedBox(width: 8),
                                       Padding(
@@ -449,7 +459,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: context.col.surface,
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: AppShadows.shadowCard,
                             ),
@@ -464,8 +474,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                     ? (product.descriptionAr ?? product.description!)
                                     : product.description!,
                                   textAlign: TextAlign.start,
-                                  style: const TextStyle(
-                                    fontSize: 14, color: AppColors.ink2, height: 1.6)),
+                                  style: TextStyle(
+                                    fontSize: 14, color: context.col.ink2, height: 1.6)),
                               ],
                             ),
                           ),
@@ -478,7 +488,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: context.col.surface,
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: AppShadows.shadowCard,
                             ),
@@ -491,7 +501,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: context.col.surface,
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: AppShadows.shadowCard,
                             ),
@@ -512,7 +522,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           margin: const EdgeInsets.symmetric(horizontal: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.col.surface,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: AppShadows.shadowCard,
                           ),
@@ -524,20 +534,20 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               max: product.stockQuantity ?? 99,
                             ),
                             const SizedBox(height: 16),
-                            const Divider(height: 1, color: AppColors.border),
+                            Divider(height: 1, color: context.col.border),
                             const SizedBox(height: 16),
                             const _TrustPills(),
                             const SizedBox(height: 12),
                             const _DeliveryCard(),
                             const SizedBox(height: 14),
-                            const Divider(height: 1, color: AppColors.border),
+                            Divider(height: 1, color: context.col.border),
                             const SizedBox(height: 12),
                             Row(children: [
-                              const Icon(Icons.shield_outlined, size: 15, color: AppColors.ink3),
+                              Icon(Icons.shield_outlined, size: 15, color: context.col.ink3),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(context.s.trustedSellers,
-                                  style: const TextStyle(fontSize: 12, color: AppColors.ink2, height: 1.4)),
+                                  style: TextStyle(fontSize: 12, color: context.col.ink2, height: 1.4)),
                               ),
                             ]),
                           ]),
@@ -550,7 +560,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: context.col.surface,
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: AppShadows.shadowCard,
                             ),
@@ -564,7 +574,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           margin: const EdgeInsets.symmetric(horizontal: 12),
                           padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.col.surface,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: AppShadows.shadowCard,
                           ),
@@ -576,18 +586,21 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           _FrequentlyBoughtTogether(
                             mainProduct: product,
                             categoryId: product.category!.id,
+                            lazyLoad: _lazyTriggered,
                           ),
 
                         // ── You may also like ────────────────────────
                         _YouMayAlsoLike(
                           productId: product.id,
                           categoryId: product.category?.id,
+                          lazyLoad: _lazyTriggered,
                         ),
 
                         // ── Reviews snippet ─────────────────────────
                         _ReviewsSnippet(productId: product.id,
                           count: product.reviewsCount ?? 0,
-                          rating: product.averageRating ?? 0),
+                          rating: product.averageRating ?? 0,
+                          lazyLoad: _lazyTriggered),
 
                         const SizedBox(height: 100),
                       ],
@@ -613,11 +626,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             margin: const EdgeInsets.only(right: 4),
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.95),
+                              color: context.col.surface.withValues(alpha: 0.95),
                               shape: BoxShape.circle,
                               boxShadow: AppShadows.shadowCard,
                             ),
-                            child: const Icon(Icons.share_outlined, size: 20, color: AppColors.ink0),
+                            child: Icon(Icons.share_outlined, size: 20, color: context.col.ink0),
                           ),
                         ),
                         GestureDetector(
@@ -627,14 +640,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             margin: const EdgeInsets.only(right: 4),
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.95),
+                              color: context.col.surface.withValues(alpha: 0.95),
                               shape: BoxShape.circle,
                               boxShadow: AppShadows.shadowCard,
                             ),
                             child: Icon(
                               inWishlist ? Icons.favorite_rounded : Icons.favorite_outline,
                               size: 20,
-                              color: inWishlist ? AppColors.danger : AppColors.ink0,
+                              color: inWishlist ? AppColors.danger : context.col.ink0,
                             ),
                           ),
                         ),
@@ -651,7 +664,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   padding: EdgeInsets.fromLTRB(16, 10, 16,
                     MediaQuery.of(context).padding.bottom + 10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.97),
+                    color: context.col.surface.withValues(alpha: 0.97),
                     boxShadow: AppShadows.shadowPop,
                   ),
                   child: product.inStock
@@ -661,7 +674,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(context.s.priceLabel,
-                                style: const TextStyle(fontSize: 10, color: AppColors.ink3)),
+                                style: TextStyle(fontSize: 10, color: context.col.ink3)),
                               Text('${displayPrice.toStringAsFixed(0)} ${context.s.lydUnit}',
                                 style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                   fontSize: 16, fontWeight: FontWeight.w800)),
@@ -672,10 +685,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             child: ElevatedButton.icon(
                               onPressed: () => _addToCart(product),
                               icon: const Icon(Icons.shopping_cart_outlined,
-                                size: 18, color: AppColors.ink0),
+                                size: 18, color: Colors.black87),
                               label: Text(context.s.addToCart,
                                 style: const TextStyle(fontFamily: 'Cairo',
-                                  fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.ink0)),
+                                  fontWeight: FontWeight.w700, fontSize: 15, color: Colors.black87)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -688,18 +701,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         ])
                       : SizedBox(
                           width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: () => _notifyMe(product.id),
+                          child: OutlinedButton.icon(
+                            onPressed: null,
                             icon: const Icon(Icons.notifications_outlined, size: 18),
-                            label: Text(context.s.notifyMe,
+                            label: Text(context.s.outOfStock,
                               style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.surfaceSoft,
-                              foregroundColor: AppColors.ink1,
+                            style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10)),
-                              elevation: 0,
                             ),
                           ),
                         ),
@@ -731,7 +741,7 @@ class _StockEtaStrip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceSoft,
+        color: context.col.surfaceSoft,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -763,7 +773,7 @@ class _StockEtaStrip extends StatelessWidget {
           ]),
           if (product.inStock) ...[
             const SizedBox(height: 10),
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: context.col.border),
             const SizedBox(height: 10),
             if (product.fulfilledByBaahy)
               Padding(
@@ -791,8 +801,8 @@ class _StockEtaStrip extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(deliveryPromise,
-                  style: const TextStyle(fontSize: 12.5,
-                    fontWeight: FontWeight.w600, color: AppColors.ink1)),
+                  style: TextStyle(fontSize: 12.5,
+                    fontWeight: FontWeight.w600, color: context.col.ink1)),
               ),
             ]),
           ],
@@ -826,9 +836,9 @@ class _TrustBlock extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.col.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.col.border),
       ),
       child: Column(
         children: [
@@ -850,23 +860,23 @@ class _TrustBlock extends StatelessWidget {
                   Text(context.s.soldByBaahy,
                     style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
                   Text(context.s.qualityChecked,
-                    style: const TextStyle(fontSize: 11.5, color: AppColors.ink3)),
+                    style: TextStyle(fontSize: 11.5, color: context.col.ink3)),
                 ],
               )),
             ]),
           ),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: context.col.border),
           ...rows.map((row) => Column(children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(children: [
-                Icon(row.$1, size: 20, color: AppColors.ink2),
+                Icon(row.$1, size: 20, color: context.col.ink2),
                 const SizedBox(width: 12),
                 Expanded(child: Text(row.$2,
-                  style: const TextStyle(fontSize: 13, color: AppColors.ink1))),
+                  style: TextStyle(fontSize: 13, color: context.col.ink1))),
               ]),
             ),
-            if (row != rows.last) const Divider(height: 1, color: AppColors.border),
+            if (row != rows.last) Divider(height: 1, color: context.col.border),
           ])),
         ],
       ),
@@ -879,7 +889,8 @@ class _TrustBlock extends StatelessWidget {
 class _FrequentlyBoughtTogether extends ConsumerStatefulWidget {
   final Product mainProduct;
   final int categoryId;
-  const _FrequentlyBoughtTogether({required this.mainProduct, required this.categoryId});
+  final bool lazyLoad;
+  const _FrequentlyBoughtTogether({required this.mainProduct, required this.categoryId, this.lazyLoad = false});
   @override
   ConsumerState<_FrequentlyBoughtTogether> createState() => _FBTState();
 }
@@ -895,6 +906,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.lazyLoad) return const SizedBox.shrink();
     final relatedAsync = ref.watch(_relatedProductsProvider(widget.categoryId));
 
     return relatedAsync.when(
@@ -936,7 +948,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: _checked[all[i].id] == true
-                              ? AppColors.primary : AppColors.border,
+                              ? AppColors.primary : context.col.border,
                           width: 2),
                       ),
                       clipBehavior: Clip.antiAlias,
@@ -945,13 +957,13 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                         child: all[i].firstImage != null
                             ? CachedNetworkImage(
                                 imageUrl: all[i].firstImage!, fit: BoxFit.cover)
-                            : Container(color: AppColors.surfaceSoft),
+                            : Container(color: context.col.surfaceSoft),
                       ),
                     ),
                     if (i < all.length - 1)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.symmetric(horizontal: 6),
-                        child: Icon(Icons.add, size: 16, color: AppColors.ink3),
+                        child: Icon(Icons.add, size: 16, color: context.col.ink3),
                       ),
                   ],
                 ],
@@ -961,9 +973,9 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
               // Checkbox list
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.col.surface,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.col.border),
                 ),
                 child: Column(
                   children: [
@@ -978,12 +990,12 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                               width: 20, height: 20,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),
-                                color: _checked[all[i].id] == true ? AppColors.ink0 : Colors.white,
+                                color: _checked[all[i].id] == true ? context.col.ink0 : context.col.surface,
                                 border: _checked[all[i].id] == true
-                                    ? null : Border.all(color: AppColors.borderStrong, width: 1.8),
+                                    ? null : Border.all(color: context.col.borderStrong, width: 1.8),
                               ),
                               child: _checked[all[i].id] == true
-                                  ? const Icon(Icons.check, size: 13, color: Colors.white)
+                                  ? Icon(Icons.check, size: 13, color: context.col.bg)
                                   : null,
                             ),
                             const SizedBox(width: 10),
@@ -1003,7 +1015,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                           ]),
                         ),
                       ),
-                      if (i < all.length - 1) const Divider(height: 1, color: AppColors.border),
+                      if (i < all.length - 1) Divider(height: 1, color: context.col.border),
                     ],
                   ],
                 ),
@@ -1053,10 +1065,12 @@ class _ReviewsSnippet extends ConsumerWidget {
   final int productId;
   final int count;
   final double rating;
-  const _ReviewsSnippet({required this.productId, required this.count, required this.rating});
+  final bool lazyLoad;
+  const _ReviewsSnippet({required this.productId, required this.count, required this.rating, this.lazyLoad = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!lazyLoad) return const SizedBox.shrink();
     final reviewsAsync = ref.watch(_productReviewsProvider(productId));
 
     return Padding(
@@ -1090,7 +1104,7 @@ class _ReviewsSnippet extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(context.s.basedOnN(count),
-                  style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
+                  style: TextStyle(fontSize: 12, color: context.col.ink3)),
               ]),
             ]),
           ],
@@ -1118,7 +1132,7 @@ class _ReviewCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceSoft,
+        color: context.col.surfaceSoft,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -1138,7 +1152,7 @@ class _ReviewCard extends StatelessWidget {
                 Text(review.reviewerName,
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                 Text(review.createdAt ?? '',
-                  style: const TextStyle(fontSize: 11, color: AppColors.ink3)),
+                  style: TextStyle(fontSize: 11, color: context.col.ink3)),
               ],
             )),
             Row(children: List.generate(5, (i) => Icon(
@@ -1146,7 +1160,7 @@ class _ReviewCard extends StatelessWidget {
               size: 13, color: AppColors.gold))),
           ]),
           const SizedBox(height: 8),
-          Text(review.body, style: const TextStyle(fontSize: 13, color: AppColors.ink1, height: 1.5)),
+          Text(review.body, style: TextStyle(fontSize: 13, color: context.col.ink1, height: 1.5)),
         ],
       ),
     );
@@ -1183,7 +1197,7 @@ class _ProductAttributesDisplay extends StatelessWidget {
                   if (isColor && v.colorHex != null) {
                     return _ColorSwatch(hex: v.colorHex!, selected: false, available: true, size: 22);
                   }
-                  return Text(val, style: const TextStyle(fontSize: 13, color: AppColors.ink2));
+                  return Text(val, style: TextStyle(fontSize: 13, color: context.col.ink2));
                 }).toList(),
               ),
             ],
@@ -1242,7 +1256,7 @@ class _VariationPicker extends StatelessWidget {
                   _ColorSwatch(hex: opt.colorHex!, selected: false, available: true, size: 22),
                   const SizedBox(width: 6),
                 ],
-                Text(val, style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+                Text(val, style: TextStyle(fontSize: 13, color: context.col.ink2)),
               ],
             ),
           );
@@ -1258,7 +1272,7 @@ class _VariationPicker extends StatelessWidget {
                 Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                 const SizedBox(width: 6),
                 if (selections[typeName] != null)
-                  Text(selections[typeName]!, style: const TextStyle(fontSize: 13, color: AppColors.ink2)),
+                  Text(selections[typeName]!, style: TextStyle(fontSize: 13, color: context.col.ink2)),
               ]),
               const SizedBox(height: 10),
               Wrap(
@@ -1285,23 +1299,23 @@ class _VariationPicker extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.ink0
-                                : isOutOfStock ? const Color(0xFFF2F2F2)
-                                : Colors.white,
+                            color: isSelected ? context.col.ink0
+                                : isOutOfStock ? context.col.surfaceSoft
+                                : context.col.surface,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: isSelected ? AppColors.ink0
-                                  : isOutOfStock ? const Color(0xFFDDDDDD)
-                                  : AppColors.border,
+                              color: isSelected ? context.col.ink0
+                                  : isOutOfStock ? context.col.border
+                                  : context.col.border,
                               width: 1.5),
                           ),
                           child: Text(opt.value,
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
-                              color: isSelected ? Colors.white
-                                  : isOutOfStock ? const Color(0xFFBBBBBB)
-                                  : AppColors.ink0)),
+                              color: isSelected ? context.col.bg
+                                  : isOutOfStock ? context.col.ink3
+                                  : context.col.ink0)),
                         ),
                         if (isOutOfStock)
                           Positioned.fill(
@@ -1381,7 +1395,7 @@ class _QtySelector extends StatelessWidget {
       const Spacer(),
       Container(
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.col.border),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(children: [
@@ -1409,7 +1423,7 @@ class _QtyBtn extends StatelessWidget {
     child: Padding(
       padding: const EdgeInsets.all(10),
       child: Icon(icon, size: 18,
-        color: onTap != null ? AppColors.ink0 : AppColors.border),
+        color: onTap != null ? context.col.ink0 : context.col.border),
     ),
   );
 }
@@ -1449,7 +1463,7 @@ class _TrustPills extends StatelessWidget {
                     child: Text(items[i].$2,
                       style: TextStyle(fontSize: 10.5,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.ink1),
+                        color: context.col.ink1),
                       overflow: TextOverflow.ellipsis),
                   ),
                 ],
@@ -1504,7 +1518,7 @@ class _DeliveryCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.col.border),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -1524,11 +1538,11 @@ class _DeliveryCard extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: AppColors.surfaceSoft,
+              color: context.col.surfaceSoft,
               borderRadius: BorderRadius.circular(8)),
             child: Text(estimate,
-              style: const TextStyle(fontSize: 12.5,
-                fontWeight: FontWeight.w600, color: AppColors.ink1),
+              style: TextStyle(fontSize: 12.5,
+                fontWeight: FontWeight.w600, color: context.col.ink1),
               textAlign: TextAlign.end),
           ),
         ],
@@ -1553,15 +1567,15 @@ class _VendorRow extends StatelessWidget {
       Container(
         width: 44, height: 44,
         decoration: BoxDecoration(
-          color: AppColors.surfaceSoft,
+          color: context.col.surfaceSoft,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border)),
+          border: Border.all(color: context.col.border)),
         child: vendor.logo != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: CachedNetworkImage(
                   imageUrl: vendor.logo!, fit: BoxFit.cover))
-            : const Icon(Icons.store_outlined, size: 22, color: AppColors.ink2),
+            : Icon(Icons.store_outlined, size: 22, color: context.col.ink2),
       ),
       const SizedBox(width: 12),
       Expanded(child: Column(
@@ -1571,7 +1585,7 @@ class _VendorRow extends StatelessWidget {
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
           if (vendor.city != null && vendor.city!.isNotEmpty)
             Text(vendor.city!,
-              style: const TextStyle(fontSize: 12, color: AppColors.ink3)),
+              style: TextStyle(fontSize: 12, color: context.col.ink3)),
         ],
       )),
       OutlinedButton(
@@ -1614,7 +1628,7 @@ class _CouponSectionState extends State<_CouponSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        const Divider(height: 1, color: AppColors.border),
+        Divider(height: 1, color: context.col.border),
         const SizedBox(height: 12),
         GestureDetector(
           onTap: () => setState(() => _expanded = !_expanded),
@@ -1623,12 +1637,12 @@ class _CouponSectionState extends State<_CouponSection> {
             Text(context.s.hasCoupon,
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(width: 6),
-            const Icon(Icons.local_offer_outlined, size: 15, color: AppColors.ink3),
+            Icon(Icons.local_offer_outlined, size: 15, color: context.col.ink3),
             const SizedBox(width: 8),
             AnimatedRotation(
               turns: _expanded ? 0.5 : 0,
               duration: const Duration(milliseconds: 200),
-              child: const Icon(Icons.expand_more_rounded, size: 20, color: AppColors.ink3),
+              child: Icon(Icons.expand_more_rounded, size: 20, color: context.col.ink3),
             ),
           ]),
         ),
@@ -1640,7 +1654,7 @@ class _CouponSectionState extends State<_CouponSection> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: context.col.border),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: TextField(
@@ -1649,11 +1663,11 @@ class _CouponSectionState extends State<_CouponSection> {
                     textAlign: TextAlign.start,
                     style: const TextStyle(fontFamily: 'PlusJakartaSans',
                       fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.5),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'أدخل كود الخصم',
                       hintTextDirection: TextDirection.rtl,
                       hintStyle: TextStyle(
-                        color: AppColors.ink3,
+                        color: context.col.ink3,
                         fontWeight: FontWeight.w400,
                         fontSize: 13,
                         letterSpacing: 0,
@@ -1675,7 +1689,7 @@ class _CouponSectionState extends State<_CouponSection> {
                 ),
                 child: Text(context.s.apply,
                   style: const TextStyle(fontFamily: 'Cairo',
-                    fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.ink0)),
+                    fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87)),
               ),
             ]),
           ),
@@ -1692,7 +1706,8 @@ class _CouponSectionState extends State<_CouponSection> {
 class _YouMayAlsoLike extends ConsumerStatefulWidget {
   final int productId;
   final int? categoryId;
-  const _YouMayAlsoLike({required this.productId, this.categoryId});
+  final bool lazyLoad;
+  const _YouMayAlsoLike({required this.productId, this.categoryId, this.lazyLoad = false});
   @override
   ConsumerState<_YouMayAlsoLike> createState() => _YouMayAlsoLikeState();
 }
@@ -1706,7 +1721,13 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
   @override
   void initState() {
     super.initState();
-    _loadMore();
+    if (widget.lazyLoad) _loadMore();
+  }
+
+  @override
+  void didUpdateWidget(_YouMayAlsoLike old) {
+    super.didUpdateWidget(old);
+    if (!old.lazyLoad && widget.lazyLoad && _products.isEmpty) _loadMore();
   }
 
   Future<void> _loadMore() async {
@@ -1824,7 +1845,7 @@ class _AddedToCartSheet extends StatelessWidget {
           Container(
             width: 36, height: 4,
             decoration: BoxDecoration(
-              color: AppColors.border,
+              color: context.col.border,
               borderRadius: BorderRadius.circular(2)),
           ),
           const SizedBox(height: 16),
@@ -1843,7 +1864,7 @@ class _AddedToCartSheet extends StatelessWidget {
                   style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
                 Text('$qty× $name',
-                  style: const TextStyle(fontSize: 12, color: AppColors.ink2),
+                  style: TextStyle(fontSize: 12, color: context.col.ink2),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
               ]),
             ),
@@ -1855,11 +1876,11 @@ class _AddedToCartSheet extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 13),
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: context.col.border),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: Text(context.s.continueShopping,
-                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, color: AppColors.ink0)),
+                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, color: context.col.ink0)),
               ),
             ),
             const SizedBox(width: 10),
@@ -1878,7 +1899,7 @@ class _AddedToCartSheet extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: Text(context.s.viewCart,
-                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: AppColors.ink0)),
+                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: Colors.black87)),
               ),
             ),
           ]),

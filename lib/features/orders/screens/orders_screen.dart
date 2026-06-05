@@ -11,7 +11,7 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 
-final _ordersProvider = FutureProvider<List<Order>>((ref) async {
+final _ordersProvider = FutureProvider.autoDispose<List<Order>>((ref) async {
   final res = await ApiClient.instance.dio.get('/orders', queryParameters: {'per_page': 50});
   final body = res.data;
   // API may return paginated {data:{data:[...]}} or flat {data:[...]}
@@ -96,18 +96,18 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final ordersAsync = ref.watch(_ordersProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0,
+        backgroundColor: context.col.surface, elevation: 0,
         title: Text(context.s.myOrders,
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0)),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0)),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
-            color: Colors.white,
+            color: context.col.surface,
             child: Column(children: [
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -121,19 +121,19 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                         margin: const EdgeInsets.only(right: 6, bottom: 8),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                         decoration: BoxDecoration(
-                          color: isActive ? AppColors.ink0 : AppColors.surfaceSoft,
+                          color: isActive ? AppColors.primary : context.col.surfaceSoft,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(t.$2,
                           style: TextStyle(
                             fontSize: 13, fontWeight: FontWeight.w600,
-                            color: isActive ? Colors.white : AppColors.ink1)),
+                            color: isActive ? Colors.black87 : context.col.ink1)),
                       ),
                     );
                   }).toList(),
                 ),
               ),
-              const Divider(height: 1, color: AppColors.border),
+              Divider(height: 1, color: context.col.border),
             ]),
           ),
         ),
@@ -141,7 +141,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       body: ordersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (e, __) => Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(context.s.loadFailed, style: const TextStyle(color: AppColors.ink2)),
+          Text(context.s.loadFailed, style: TextStyle(color: context.col.ink2)),
           const SizedBox(height: 12),
           TextButton(
             onPressed: () => ref.invalidate(_ordersProvider),
@@ -158,10 +158,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 const SizedBox(height: 120),
                 Center(
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const Icon(Icons.receipt_long_outlined, size: 72, color: AppColors.ink4),
+                    Icon(Icons.receipt_long_outlined, size: 72, color: context.col.ink4),
                     const SizedBox(height: 12),
                     Text(context.s.noOrders,
-                      style: const TextStyle(fontSize: 16, color: AppColors.ink2)),
+                      style: TextStyle(fontSize: 16, color: context.col.ink2)),
                     const SizedBox(height: 20),
                     AppButton(
                       label: context.s.startShopping,
@@ -211,11 +211,11 @@ class _OrderCard extends StatelessWidget {
 
   static Color _statusBg(String s) {
     switch (s) {
-      case 'delivered': return const Color(0xFFEAF6F0);
+      case 'delivered': return AppColors.success.withValues(alpha: 0.15);
       case 'cancelled':
-      case 'returned': return const Color(0xFFFDECE9);
-      case 'shipped': return const Color(0xFFEFF6FF);
-      default: return const Color(0xFFFFF1EB);
+      case 'returned': return AppColors.danger.withValues(alpha: 0.15);
+      case 'shipped': return AppColors.info.withValues(alpha: 0.15);
+      default: return AppColors.warn.withValues(alpha: 0.15);
     }
   }
 
@@ -235,10 +235,10 @@ class _OrderCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.col.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: _isActive ? AppColors.teal100bg : AppColors.border),
+            color: _isActive ? AppColors.primary.withValues(alpha: 0.4) : context.col.border),
           boxShadow: _isActive ? AppShadows.shadowCard : null,
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -249,9 +249,9 @@ class _OrderCard extends StatelessWidget {
                 width: 56, height: 56,
                 child: firstImage != null
                     ? CachedNetworkImage(imageUrl: firstImage, fit: BoxFit.cover)
-                    : Container(color: AppColors.surfaceSoft,
-                        child: const Icon(Icons.shopping_bag_outlined,
-                          color: AppColors.ink3, size: 24)),
+                    : Container(color: context.col.surfaceSoft,
+                        child: Icon(Icons.shopping_bag_outlined,
+                          color: context.col.ink3, size: 24)),
               ),
             ),
             const SizedBox(width: 12),
@@ -278,23 +278,23 @@ class _OrderCard extends StatelessWidget {
                 Row(children: [
                   Text(
                     '${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}',
-                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                      fontSize: 11.5, color: AppColors.ink3)),
-                  const Text('  ·  ', style: TextStyle(color: AppColors.ink4)),
+                    style: TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 11.5, color: context.col.ink3)),
+                  Text('  ·  ', style: TextStyle(color: context.col.ink4)),
                   Text('${order.allItems.length} ${context.s.items}',
-                    style: const TextStyle(fontSize: 11.5, color: AppColors.ink3)),
+                    style: TextStyle(fontSize: 11.5, color: context.col.ink3)),
                 ]),
                 const SizedBox(height: 6),
                 Text('${order.total.toStringAsFixed(0)} ${context.s.lyd}',
-                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ink0)),
+                  style: TextStyle(fontFamily: 'PlusJakartaSans',
+                    fontSize: 14, fontWeight: FontWeight.w700, color: context.col.ink0)),
               ]),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.ink3, size: 20),
+            Icon(Icons.chevron_right_rounded, color: context.col.ink3, size: 20),
           ]),
           if (onReorder != null) ...[
             const SizedBox(height: 10),
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: context.col.border),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -305,8 +305,8 @@ class _OrderCard extends StatelessWidget {
                 label: Text(context.s.reorder,
                   style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 13)),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.ink0,
-                  side: const BorderSide(color: AppColors.border),
+                  foregroundColor: context.col.ink0,
+                  side: BorderSide(color: context.col.border),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),

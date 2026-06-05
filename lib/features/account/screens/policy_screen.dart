@@ -22,13 +22,13 @@ class PolicyScreen extends ConsumerWidget {
     };
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.col.surface,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink0),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0),
         ),
         title: Text(title,
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
@@ -81,7 +81,7 @@ class _TextBody extends StatelessWidget {
               fontFamily: 'Cairo',
               fontSize: isHeader ? 15 : 13.5,
               fontWeight: isHeader ? FontWeight.w700 : FontWeight.w400,
-              color: isHeader ? AppColors.ink0 : AppColors.ink1,
+              color: isHeader ? context.col.ink0 : context.col.ink1,
               height: 1.7,
             ),
           ),
@@ -110,9 +110,9 @@ class _ReturnPolicyBody extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.col.surface,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.col.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,8 +122,8 @@ class _ReturnPolicyBody extends StatelessWidget {
                       fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 14)),
               const SizedBox(height: 8),
               Text(isAr ? (s['body_ar'] ?? '') : (s['body_en']?.isNotEmpty == true ? s['body_en']! : (s['body_ar'] ?? '')),
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.ink2, height: 1.6)),
+                  style: TextStyle(
+                      fontSize: 13, color: context.col.ink2, height: 1.6)),
             ],
           ),
         );

@@ -255,7 +255,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     final result = await showModalBottomSheet<_FilterState>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.col.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(10))),
       builder: (_) => _FilterSheet(initial: _filters, scopeCategoryId: widget.categoryId),
@@ -310,9 +310,9 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.col.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.col.surface,
         elevation: 0,
         title: Text(
           widget.query.isNotEmpty ? widget.query : 'المنتجات',
@@ -323,7 +323,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             children: [
               IconButton(
                 onPressed: _openFilters,
-                icon: const Icon(Icons.tune_rounded, color: AppColors.ink0),
+                icon: Icon(Icons.tune_rounded, color: context.col.ink0),
               ),
               if (_filters.isActive)
                 Positioned(
@@ -337,7 +337,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             ],
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.sort, color: AppColors.ink0),
+            icon: Icon(Icons.sort, color: context.col.ink0),
             onSelected: (v) { _sort = v; _fetch(reset: true); },
             itemBuilder: (_) => _sortOptions.map((opt) =>
               PopupMenuItem(value: opt.$1, child: Text(opt.$2,
@@ -366,10 +366,10 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.search_off, size: 64, color: AppColors.ink4),
+                            Icon(Icons.search_off, size: 64, color: context.col.ink4),
                             const SizedBox(height: 12),
                             Text(context.s.noResultsFound,
-                              style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, color: AppColors.ink2)),
+                              style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: context.col.ink2)),
                             if (_filters.isActive) ...[
                               const SizedBox(height: 12),
                               TextButton.icon(
@@ -381,6 +381,17 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                                 label: Text(context.s.removeFilters),
                               ),
                             ],
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: () => safePush(context, '/assistant'),
+                              icon: const Icon(Icons.auto_awesome_outlined,
+                                size: 16, color: AppColors.primary),
+                              label: Text(context.s.askAssistant,
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Cairo')),
+                            ),
                           ],
                         ),
                       )
@@ -421,7 +432,7 @@ class _SubcatTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Container(
-      color: Colors.white,
+      color: context.col.surface,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -468,7 +479,7 @@ class _Tab extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? AppColors.ink0 : AppColors.surfaceSoft,
+          color: selected ? context.col.ink0 : context.col.surfaceSoft,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(label,
@@ -476,7 +487,7 @@ class _Tab extends StatelessWidget {
             fontFamily: 'Cairo',
             fontSize: 13,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? Colors.white : AppColors.ink1,
+            color: selected ? Colors.white : context.col.ink1,
           )),
       ),
     );
@@ -520,7 +531,7 @@ class _BannerSliderState extends State<_BannerSlider> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: context.col.surface,
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       child: LayoutBuilder(builder: (context, constraints) {
         final itemW = constraints.maxWidth * 0.88;
@@ -551,8 +562,8 @@ class _BannerSliderState extends State<_BannerSlider> {
                         child: CachedNetworkImage(
                           imageUrl: banner.imageUrl,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(color: AppColors.cardImageBg),
-                          errorWidget: (_, __, ___) => Container(color: AppColors.cardImageBg),
+                          placeholder: (_, __) => Container(color: context.col.cardImageBg),
+                          errorWidget: (_, __, ___) => Container(color: context.col.cardImageBg),
                         ),
                       ),
                     ),
@@ -570,7 +581,7 @@ class _BannerSliderState extends State<_BannerSlider> {
                   width: _current == i ? 16 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: _current == i ? AppColors.ink0 : AppColors.border,
+                    color: _current == i ? context.col.ink0 : context.col.border,
                     borderRadius: BorderRadius.circular(3),
                   ),
                 )),
@@ -690,11 +701,11 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(children: [
           Text(title,
-            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
-              color: AppColors.ink1)),
+            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
+              color: context.col.ink1)),
           const Spacer(),
           Icon(expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-            color: AppColors.ink3, size: 20),
+            color: context.col.ink3, size: 20),
         ]),
       ),
     );
@@ -737,7 +748,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Center(child: Container(width: 40, height: 4,
-                decoration: BoxDecoration(color: AppColors.border,
+                decoration: BoxDecoration(color: context.col.border,
                   borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 14),
               Row(children: [
@@ -746,10 +757,10 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   child: Container(
                     width: 32, height: 32,
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceSoft,
+                      color: context.col.surfaceSoft,
                       borderRadius: BorderRadius.circular(99),
                     ),
-                    child: const Icon(Icons.close_rounded, size: 18, color: AppColors.ink1),
+                    child: Icon(Icons.close_rounded, size: 18, color: context.col.ink1),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -758,7 +769,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 const Spacer(),
                 TextButton(onPressed: _reset,
                   child: Text(context.s.resetFilters,
-                    style: const TextStyle(color: AppColors.ink2))),
+                    style: TextStyle(color: context.col.ink2))),
               ]),
               const Divider(height: 1),
             ]),
@@ -840,10 +851,10 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                         child: Container(
                                           width: 32, height: 32,
                                           decoration: BoxDecoration(
-                                            color: color ?? AppColors.bg,
+                                            color: color ?? context.col.bg,
                                             shape: BoxShape.circle,
                                             border: Border.all(
-                                              color: sel ? AppColors.ink0 : AppColors.border,
+                                              color: sel ? context.col.ink0 : context.col.border,
                                               width: sel ? 2.5 : 1.5)),
                                           child: sel ? const Icon(Icons.check,
                                             size: 14, color: Colors.white) : null,
@@ -858,15 +869,15 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 12, vertical: 7),
                                         decoration: BoxDecoration(
-                                          color: sel ? AppColors.ink0 : Colors.white,
+                                          color: sel ? context.col.ink0 : context.col.surface,
                                           borderRadius: BorderRadius.circular(10),
                                           border: Border.all(
-                                            color: sel ? AppColors.ink0 : AppColors.border,
+                                            color: sel ? context.col.ink0 : context.col.border,
                                             width: 1.5)),
                                         child: Text(valLabel,
                                           style: TextStyle(
                                             fontSize: 12, fontWeight: FontWeight.w600,
-                                            color: sel ? Colors.white : AppColors.ink1)),
+                                            color: sel ? Colors.white : context.col.ink1)),
                                       ),
                                     );
                                   }).toList(),
@@ -906,15 +917,15 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 7),
                                     decoration: BoxDecoration(
-                                      color: sel ? AppColors.ink0 : Colors.white,
+                                      color: sel ? context.col.ink0 : context.col.surface,
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: sel ? AppColors.ink0 : AppColors.border,
+                                        color: sel ? context.col.ink0 : context.col.border,
                                         width: 1.5)),
                                     child: Text(b,
                                       style: TextStyle(
                                         fontSize: 12, fontWeight: FontWeight.w600,
-                                        color: sel ? Colors.white : AppColors.ink1)),
+                                        color: sel ? Colors.white : context.col.ink1)),
                                   ),
                                 );
                               }).toList(),
@@ -936,9 +947,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 if (_priceExpanded) ...[
                   Row(children: [
                     Expanded(child: _PriceField(controller: _minCtrl, hint: 'الحد الأدنى')),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text('—', style: TextStyle(color: AppColors.ink3))),
+                      child: Text('—', style: TextStyle(color: context.col.ink3))),
                     Expanded(child: _PriceField(controller: _maxCtrl, hint: 'الحد الأقصى')),
                   ]),
                   const SizedBox(height: 12),
@@ -952,8 +963,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Row(children: [
                       Text(context.s.dealsOnly,
-                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
-                          color: AppColors.ink1)),
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
+                          color: context.col.ink1)),
                       const Spacer(),
                       Switch(
                         value: _featured,
@@ -973,8 +984,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Row(children: [
                       Text(context.s.inStockOnly,
-                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
-                          color: AppColors.ink1)),
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700,
+                          color: context.col.ink1)),
                       const Spacer(),
                       Switch(
                         value: _inStock,
@@ -1001,10 +1012,10 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: selected ? AppColors.ink0 : Colors.white,
+                            color: selected ? context.col.ink0 : context.col.surface,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: selected ? AppColors.ink0 : AppColors.border,
+                              color: selected ? context.col.ink0 : context.col.border,
                               width: 1.5),
                           ),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -1014,7 +1025,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                             Text('$star+ نجوم',
                               style: TextStyle(
                                 fontSize: 12, fontWeight: FontWeight.w700,
-                                color: selected ? Colors.white : AppColors.ink1)),
+                                color: selected ? Colors.white : context.col.ink1)),
                           ]),
                         ),
                       );
@@ -1045,15 +1056,15 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                                 decoration: BoxDecoration(
-                                  color: sel ? AppColors.ink0 : Colors.white,
+                                  color: sel ? context.col.ink0 : context.col.surface,
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: sel ? AppColors.ink0 : AppColors.border,
+                                    color: sel ? context.col.ink0 : context.col.border,
                                     width: 1.5)),
                                 child: Text(v.name,
                                   style: TextStyle(
                                     fontSize: 12, fontWeight: FontWeight.w600,
-                                    color: sel ? Colors.white : AppColors.ink1)),
+                                    color: sel ? Colors.white : context.col.ink1)),
                               ),
                             );
                           }).toList(),
@@ -1081,8 +1092,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: Text(context.s.applyFilters,
-                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
-                    fontSize: 15, color: AppColors.ink0)),
+                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
+                    fontSize: 15, color: context.col.ink0)),
               ),
             ),
           ),
@@ -1109,7 +1120,7 @@ class _CatRow extends StatelessWidget {
           Text(label,
             style: TextStyle(
               fontSize: small ? 12 : 13,
-              color: selected ? AppColors.primary : AppColors.ink1,
+              color: selected ? AppColors.primary : context.col.ink1,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
             )),
           const Spacer(),
@@ -1135,17 +1146,17 @@ class _CatChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.ink0 : Colors.white,
+          color: selected ? context.col.ink0 : context.col.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? AppColors.ink0 : AppColors.border,
+            color: selected ? context.col.ink0 : context.col.border,
             width: 1.5),
         ),
         child: Text(label,
           style: TextStyle(
             fontSize: 12.5,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? Colors.white : AppColors.ink1,
+            color: selected ? Colors.white : context.col.ink1,
           )),
       ),
     );
@@ -1165,14 +1176,14 @@ class _PriceField extends StatelessWidget {
       style: const TextStyle(fontFamily: 'PlusJakartaSans', fontWeight: FontWeight.w700),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(fontSize: 12, color: AppColors.ink3, fontFamily: 'Cairo'),
-        filled: true, fillColor: AppColors.surfaceSoft,
+        hintStyle: TextStyle(fontSize: 12, color: context.col.ink3, fontFamily: 'Cairo'),
+        filled: true, fillColor: context.col.surfaceSoft,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.border)),
+          borderSide: BorderSide(color: context.col.border)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.border)),
+          borderSide: BorderSide(color: context.col.border)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),

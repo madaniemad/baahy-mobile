@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../../core/utils/l10n.dart';
 
 enum AppButtonVariant { primary, outline, ghost, danger }
 
@@ -48,9 +49,9 @@ class _AppButtonState extends State<AppButton> {
         : isDanger ? AppColors.danger
         : Colors.transparent;
     final fg = isDanger ? Colors.white
-        : isPrimary ? AppColors.ink0
+        : isPrimary ? Colors.black87
         : isOutline ? AppColors.primary
-        : AppColors.ink1;
+        : context.col.ink1;
     final border = isOutline ? Border.all(color: AppColors.primary, width: 1.5) : null;
 
     return GestureDetector(
