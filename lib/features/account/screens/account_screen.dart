@@ -642,7 +642,7 @@ class _BirthdayRow extends ConsumerStatefulWidget {
 class _BirthdayRowState extends ConsumerState<_BirthdayRow> {
   bool _saving = false;
 
-  String? get _birthday => widget.user.birthday as String?;
+  String? get _birthday => widget.user.birthday?.toString();
 
   String _formatBirthday(String raw) {
     try {
