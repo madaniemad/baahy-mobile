@@ -20,17 +20,14 @@ class AppConfigNotifier extends StateNotifier<AppConfig> {
   }
 
   Future<void> _load() async {
-    // 1. Return stale cache immediately so UI is instant.
+    // 1. Return stale cache immediately so UI is instant on cold start.
     final stale = await CacheService.instance.getStale(_cacheKey);
     if (stale != null) {
       try { state = AppConfig.fromJson(stale); } catch (_) {}
     }
 
-    // 2. Check if fresh (within TTL) — skip network if so.
-    final fresh = await CacheService.instance.get(_cacheKey, maxAge: _cacheTtl);
-    if (fresh != null) return; // already up to date
-
-    // 3. Fetch from network and update.
+    // 2. Always fetch fresh from network so admin changes (e.g. AI toggle)
+    //    reflect on the next app open without waiting for cache to expire.
     await refresh();
   }
 
