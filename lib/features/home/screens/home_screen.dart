@@ -22,6 +22,8 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/providers/tier_provider.dart';
+import '../../../core/models/tier_status.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -100,6 +102,9 @@ class HomeScreen extends ConsumerWidget {
             else ...[
               // Active order strip — shows when user has a live order
               const SliverToBoxAdapter(child: _ActiveOrderStrip()),
+
+              // Contextual rewards nudge
+              const SliverToBoxAdapter(child: _RewardsNudgeCard()),
 
               // Hero banner slider (real data from /api/content/banners)
               SliverToBoxAdapter(
@@ -1707,6 +1712,94 @@ class _RecentlyViewedSection extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Contextual rewards nudge card ────────────────────────────────────────────
+
+class _RewardsNudgeCard extends ConsumerWidget {
+  const _RewardsNudgeCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isLoggedIn = ref.watch(authProvider).isLoggedIn;
+    if (!isLoggedIn) return const SizedBox.shrink();
+
+    final tierAsync = ref.watch(tierProvider);
+    return tierAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (tier) {
+        if (identical(tier, TierStatus.empty)) return const SizedBox.shrink();
+
+        final String message;
+        final IconData icon;
+        final Color color;
+
+        final remaining = tier.nextMilestoneRemaining;
+        final reward    = tier.nextMilestoneReward;
+
+        if (remaining != null && remaining <= 2 && reward != null) {
+          message = remaining == 1
+              ? context.s.nudgeMilestone1(reward.toStringAsFixed(0))
+              : context.s.nudgeMilestone2(reward.toStringAsFixed(0));
+          icon  = Icons.card_giftcard_rounded;
+          color = AppColors.success;
+        } else if (tier.tier == null) {
+          message = context.s.nudgeNoTier(tier.ordersRemaining, tier.spendRemaining.toStringAsFixed(0));
+          icon  = Icons.workspace_premium_outlined;
+          color = AppColors.primary;
+        } else if (tier.tier == 'silver') {
+          message = context.s.nudgeSilver(tier.ordersRemaining, tier.spendRemaining.toStringAsFixed(0));
+          icon  = Icons.workspace_premium_outlined;
+          color = const Color(0xFF9E9E9E);
+        } else if (tier.tier == 'gold') {
+          message = context.s.nudgeGold(tier.ordersRemaining, tier.spendRemaining.toStringAsFixed(0));
+          icon  = Icons.workspace_premium_rounded;
+          color = AppColors.gold;
+        } else {
+          message = context.s.nudgePlatinum(tier.cashbackRate.toStringAsFixed(0));
+          icon  = Icons.diamond_outlined;
+          color = AppColors.primary;
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: GestureDetector(
+            onTap: () => safePush(context, '/account'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: color.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 18, color: color),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_ios_rounded, size: 11, color: color.withValues(alpha: 0.6)),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

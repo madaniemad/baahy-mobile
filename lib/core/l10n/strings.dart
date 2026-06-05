@@ -425,6 +425,12 @@ class AppStrings {
   String get addBirthday        => isAr ? 'أضف تاريخ ميلادك'       : 'Add your birthday';
   String get birthdayRewardHint => isAr ? 'احصل على مكافأة في عيد ميلادك' : 'Get a reward on your birthday';
   String get birthdayLabel      => isAr ? 'تاريخ الميلاد'           : 'Birthday';
+  String nudgeMilestone1(String amount) => isAr ? 'طلب واحد فقط وتحصل على $amount د.ل 🎁' : '1 order away from earning $amount LD 🎁';
+  String nudgeMilestone2(String amount) => isAr ? 'طلبان فقط وتحصل على $amount د.ل 🎁'    : '2 orders away from earning $amount LD 🎁';
+  String nudgeNoTier(int orders, String spend) => isAr ? 'تسوّق $orders طلبات بـ $spend د.ل للوصول لمستوى Silver 🥈' : 'Place $orders orders & spend $spend LD to reach Silver 🥈';
+  String nudgeSilver(int orders, String spend) => isAr ? 'مستواك Silver 🥈 — $orders طلب و $spend د.ل من Gold'       : 'Silver 🥈 — $orders orders & $spend LD from Gold';
+  String nudgeGold(int orders, String spend)   => isAr ? 'مستواك Gold 🥇 — $orders طلب و $spend د.ل من Platinum'    : 'Gold 🥇 — $orders orders & $spend LD from Platinum';
+  String nudgePlatinum(String cashback)        => isAr ? 'أعلى مستوى 💎 — تمتع بـ $cashback% استرداد نقدي على كل طلب' : 'Top tier 💎 — enjoy $cashback% cashback on every order';
 
   // ── AI Assistant ─────────────────────────────────────────────────────────────
   String get assistantTitle    => 'BaahyAi';
