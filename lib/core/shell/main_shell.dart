@@ -10,6 +10,34 @@ import '../../shared/theme/app_theme.dart';
 import '../../core/utils/l10n.dart';
 import '../../shared/widgets/offline_banner.dart';
 
+// Invisible widget that refreshes appConfig whenever the app comes to foreground.
+class _AppLifecycleRefresh extends ConsumerStatefulWidget {
+  const _AppLifecycleRefresh();
+  @override
+  ConsumerState<_AppLifecycleRefresh> createState() => _AppLifecycleRefreshState();
+}
+class _AppLifecycleRefreshState extends ConsumerState<_AppLifecycleRefresh>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(appConfigProvider.notifier).refresh();
+    }
+  }
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
 typedef _Tab = ({String path, IconData icon, String labelAr, String labelEn});
 
 const _tabsWithAi = <_Tab>[
@@ -49,6 +77,7 @@ class MainShell extends ConsumerWidget {
       body: Stack(children: [
         child,
         const Positioned(top: 0, left: 0, right: 0, child: OfflineBanner()),
+        const _AppLifecycleRefresh(),
       ]),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
