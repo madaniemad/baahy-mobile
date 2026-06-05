@@ -14,6 +14,7 @@ class User {
   final double walletBalance;
   final int loyaltyPoints;
   final String? referralCode;
+  final String? birthday;
 
   const User({
     required this.id,
@@ -25,6 +26,7 @@ class User {
     this.walletBalance = 0.0,
     this.loyaltyPoints = 0,
     this.referralCode,
+    this.birthday,
   });
 
   factory User.fromJson(Map<String, dynamic> j) => User(
@@ -37,5 +39,6 @@ class User {
     walletBalance: j['wallet_balance'] != null ? _dUser(j['wallet_balance']) : 0.0,
     loyaltyPoints: j['loyalty_points'] ?? 0,
     referralCode: j['referral_code'],
+    birthday: j['birthday'] as String?,
   );
 }

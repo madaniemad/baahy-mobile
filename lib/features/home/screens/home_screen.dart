@@ -89,6 +89,12 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            // ── Seasonal cashback banner ────────────────────────────────────
+            if (config.seasonalEnabled)
+              SliverToBoxAdapter(
+                child: _SeasonalBanner(config: config),
+              ),
+
             if (home.loading && home.featured.isEmpty)
               const SliverFillRemaining(child: _HomeSkeleton())
             else ...[
@@ -1701,6 +1707,68 @@ class _RecentlyViewedSection extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Seasonal cashback banner ──────────────────────────────────────────────────
+
+class _SeasonalBanner extends StatelessWidget {
+  final AppConfig config;
+  const _SeasonalBanner({required this.config});
+
+  int? _daysRemaining() {
+    final endsAt = config.seasonalEndsAt;
+    if (endsAt == null || endsAt.isEmpty) return null;
+    try {
+      final end = DateTime.parse(endsAt);
+      final diff = end.difference(DateTime.now()).inDays;
+      return diff > 0 ? diff : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final days = _daysRemaining();
+    return Container(
+      width: double.infinity,
+      height: 44,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, Color(0xFF1E40AF)],
+          begin: Alignment.centerRight,
+          end: Alignment.centerLeft,
+        ),
+      ),
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${config.seasonalLabelAr} 🎉',
+              style: const TextStyle(
+                fontFamily: 'Cairo',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            if (days != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                context.isAr ? 'ينتهي خلال $days يوم' : 'Ends in $days days',
+                style: const TextStyle(
+                  fontFamily: 'Cairo',
+                  fontSize: 11,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

@@ -54,6 +54,10 @@ class AppConfig {
   final double welcomeBonusAmount;
   final double reviewRewardAmount;
   final bool aiEnabled;
+  final bool seasonalEnabled;
+  final double seasonalMultiplier;
+  final String? seasonalEndsAt;
+  final String seasonalLabelAr;
 
   const AppConfig({
     required this.shippingFee,
@@ -75,6 +79,10 @@ class AppConfig {
     this.welcomeBonusAmount = 10.0,
     this.reviewRewardAmount = 3.0,
     this.aiEnabled = true,
+    this.seasonalEnabled = false,
+    this.seasonalMultiplier = 2.0,
+    this.seasonalEndsAt,
+    this.seasonalLabelAr = 'كاش باك مضاعف',
   });
 
   static const AppConfig defaults = AppConfig(
@@ -110,6 +118,10 @@ class AppConfig {
     welcomeBonusAmount: 10.0,
     reviewRewardAmount: 3.0,
     aiEnabled: true,
+    seasonalEnabled: false,
+    seasonalMultiplier: 2.0,
+    seasonalEndsAt: null,
+    seasonalLabelAr: 'كاش باك مضاعف',
   );
 
   factory AppConfig.fromJson(Map<String, dynamic> j) {
@@ -139,6 +151,10 @@ class AppConfig {
       welcomeBonusAmount: _d(rewards?['welcome_bonus_amount'] ?? defaults.welcomeBonusAmount),
       reviewRewardAmount: _d(rewards?['review_reward_amount'] ?? defaults.reviewRewardAmount),
       aiEnabled: (j['ai_chat_enabled'] as bool?) ?? true,
+      seasonalEnabled: (j['seasonal'] as Map<String, dynamic>?)?['enabled'] as bool? ?? false,
+      seasonalMultiplier: ((j['seasonal'] as Map<String, dynamic>?)?['multiplier'] as num?)?.toDouble() ?? 2.0,
+      seasonalEndsAt: (j['seasonal'] as Map<String, dynamic>?)?['ends_at'] as String?,
+      seasonalLabelAr: (j['seasonal'] as Map<String, dynamic>?)?['label_ar'] as String? ?? 'كاش باك مضاعف',
     );
   }
 

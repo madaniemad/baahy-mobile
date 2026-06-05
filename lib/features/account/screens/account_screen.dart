@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/tier_provider.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
@@ -202,6 +203,12 @@ class AccountScreen extends ConsumerWidget {
                   ),
                 ),
 
+                // ── Tier card ───────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  child: _TierCard(),
+                ),
+
                 const SizedBox(height: 12),
 
                 // ── Menu group 1 ────────────────────────────────────────────
@@ -228,6 +235,12 @@ class AccountScreen extends ConsumerWidget {
                     badge: context.s.inviteEarnBadge,
                   ),
                 ]),
+
+                // ── Birthday row ─────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  child: _BirthdayRow(user: user),
+                ),
 
                 const SizedBox(height: 8),
 
@@ -488,6 +501,246 @@ class _MenuRow extends StatelessWidget {
       ]),
     ),
   );
+}
+
+// ── Tier card ─────────────────────────────────────────────────────────────────
+
+class _TierCard extends ConsumerWidget {
+  const _TierCard();
+
+  String _tierName(BuildContext context, String? tier) {
+    switch (tier) {
+      case 'silver':   return context.s.silverTier;
+      case 'gold':     return context.s.goldTier;
+      case 'platinum': return context.s.platinumTier;
+      default:         return context.s.noTier;
+    }
+  }
+
+  Color _tierColor(String? tier) {
+    switch (tier) {
+      case 'silver':   return Colors.grey.shade600;
+      case 'gold':     return Colors.amber.shade700;
+      case 'platinum': return Colors.blueAccent;
+      default:         return Colors.grey.shade500;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tierAsync = ref.watch(tierProvider);
+
+    return tierAsync.when(
+      loading: () => Container(
+        height: 80,
+        decoration: BoxDecoration(
+          color: context.col.surfaceSoft,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (tier) {
+        final isPlatinum = tier.tier == 'platinum';
+        final tierColor = _tierColor(tier.tier);
+        final tierName = _tierName(context, tier.tier);
+
+        // Progress: lower of orders/spend ratio, clamped 0..1
+        double progress = 0.0;
+        if (!isPlatinum && tier.ordersNeeded > 0 && tier.spendNeeded > 0) {
+          final orderRatio = tier.ordersCount / tier.ordersNeeded;
+          final spendRatio = tier.spendAmount / tier.spendNeeded;
+          progress = (orderRatio < spendRatio ? orderRatio : spendRatio).clamp(0.0, 1.0);
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 0),
+          decoration: BoxDecoration(
+            color: context.col.surface,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            boxShadow: AppShadows.shadowCard,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title row
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: tierColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: tierColor.withValues(alpha: 0.4)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.star_rounded, size: 12, color: tierColor),
+                    const SizedBox(width: 4),
+                    Text(tierName,
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                        color: tierColor, fontFamily: 'Cairo')),
+                  ]),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(context.s.tierLevel,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                      color: context.col.ink1, fontFamily: 'Cairo')),
+                ),
+                Text(
+                  '${tier.cashbackRate.toStringAsFixed(0)}% cashback',
+                  style: TextStyle(fontFamily: 'PlusJakartaSans',
+                    fontSize: 11, fontWeight: FontWeight.w700, color: tierColor),
+                ),
+              ]),
+
+              const SizedBox(height: 12),
+
+              if (isPlatinum) ...[
+                Center(
+                  child: Text(context.s.topTier,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+                      color: Colors.blueAccent, fontFamily: 'Cairo')),
+                ),
+              ] else ...[
+                // Progress bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: context.col.surfaceSoft,
+                    valueColor: AlwaysStoppedAnimation<Color>(tierColor),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Progress label
+                Text(
+                  context.isAr
+                    ? '${tier.ordersRemaining} ${context.s.ordersToNextTier} · ${tier.spendRemaining.toStringAsFixed(0)} ${context.s.spendToNextTier}'
+                    : '${tier.ordersRemaining} ${context.s.ordersToNextTier} · ${tier.spendRemaining.toStringAsFixed(0)} ${context.s.spendToNextTier}',
+                  style: TextStyle(fontSize: 11.5, color: context.col.ink2, fontFamily: 'Cairo'),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Birthday row ──────────────────────────────────────────────────────────────
+
+class _BirthdayRow extends ConsumerStatefulWidget {
+  final dynamic user;
+  const _BirthdayRow({required this.user});
+
+  @override
+  ConsumerState<_BirthdayRow> createState() => _BirthdayRowState();
+}
+
+class _BirthdayRowState extends ConsumerState<_BirthdayRow> {
+  bool _saving = false;
+
+  String? get _birthday => widget.user.birthday as String?;
+
+  String _formatBirthday(String raw) {
+    try {
+      final parts = raw.split('-');
+      if (parts.length >= 3) return '${parts[2]}/${parts[1]}';
+      return raw;
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final result = await showDatePicker(
+      context: context,
+      initialDate: DateTime(now.year - 25),
+      firstDate: DateTime(now.year - 100),
+      lastDate: DateTime(now.year, now.month, now.day - 1),
+      locale: Localizations.localeOf(context),
+    );
+    if (result == null || !mounted) return;
+    final formatted = '${result.year.toString().padLeft(4, '0')}-'
+        '${result.month.toString().padLeft(2, '0')}-'
+        '${result.day.toString().padLeft(2, '0')}';
+    setState(() => _saving = true);
+    try {
+      await ApiClient.instance.dio.patch('/user/profile/birthday', data: {'birthday': formatted});
+      ref.read(authProvider.notifier).refreshProfile();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.s.errorTryAgain)));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tierAsync = ref.watch(tierProvider);
+    final tier = tierAsync.valueOrNull;
+    final isGoldPlus = tier?.tier == 'gold' || tier?.tier == 'platinum';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: context.col.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        boxShadow: AppShadows.shadowCard,
+      ),
+      child: GestureDetector(
+        onTap: _birthday == null && !_saving ? _pickDate : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(children: [
+            Container(
+              width: 34, height: 34,
+              decoration: BoxDecoration(
+                color: context.col.surfaceSoft,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: _saving
+                ? const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.cake_outlined, size: 17),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(context.s.birthdayLabel,
+                    style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w500)),
+                  if (_birthday == null && isGoldPlus) ...[
+                    const SizedBox(height: 2),
+                    Text(context.s.birthdayRewardHint,
+                      style: TextStyle(fontSize: 11, color: AppColors.gold)),
+                  ],
+                ],
+              ),
+            ),
+            if (_birthday != null)
+              Text(_formatBirthday(_birthday!),
+                style: TextStyle(fontFamily: 'PlusJakartaSans',
+                  fontSize: 13, fontWeight: FontWeight.w600, color: context.col.ink2))
+            else
+              Text(context.s.addBirthday,
+                style: TextStyle(fontSize: 12, color: AppColors.primary,
+                  fontWeight: FontWeight.w600, fontFamily: 'Cairo')),
+            const SizedBox(width: 4),
+            if (_birthday == null)
+              Icon(Icons.arrow_forward_ios, size: 13, color: context.col.ink4),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 // ── Edit profile sheet ────────────────────────────────────────────────────────

@@ -410,6 +410,22 @@ class AppStrings {
   // ── Browse ───────────────────────────────────────────────────────────────────
   String get sneakPeek         => isAr ? 'عينة عالسريع'            : 'Sneak Peek';
 
+  // ── Tier / Loyalty ───────────────────────────────────────────────────────────
+  String get tierLevel          => isAr ? 'مستوى الولاء'           : 'Loyalty Tier';
+  String get silverTier         => isAr ? 'Silver'                  : 'Silver';
+  String get goldTier           => isAr ? 'Gold'                    : 'Gold';
+  String get platinumTier       => isAr ? 'Platinum'                : 'Platinum';
+  String get noTier             => isAr ? 'بدون مستوى'             : 'No Tier';
+  String get ordersToNextTier   => isAr ? 'طلب للمستوى التالي'     : 'orders to next tier';
+  String get spendToNextTier    => isAr ? 'د.ل للمستوى التالي'     : 'LYD to next tier';
+  String get nextMilestone      => isAr ? 'المكافأة القادمة'        : 'Next Milestone';
+  String get keepShopping       => isAr ? 'واصل التسوق'             : 'Keep Shopping';
+  String get topTier            => isAr ? 'أعلى مستوى 💎'          : 'Top Tier 💎';
+  String get seasonalBannerDefault => isAr ? 'كاش باك مضاعف'       : 'Double Cashback';
+  String get addBirthday        => isAr ? 'أضف تاريخ ميلادك'       : 'Add your birthday';
+  String get birthdayRewardHint => isAr ? 'احصل على مكافأة في عيد ميلادك' : 'Get a reward on your birthday';
+  String get birthdayLabel      => isAr ? 'تاريخ الميلاد'           : 'Birthday';
+
   // ── AI Assistant ─────────────────────────────────────────────────────────────
   String get assistantTitle    => 'BaahyAi';
   String get assistantGreeting => isAr ? 'كيف يمكنني مساعدتك اليوم؟' : 'How can I help you today?';

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/app_config_provider.dart';
+import '../../../core/providers/tier_provider.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -33,6 +34,8 @@ class OrderConfirmedScreen extends ConsumerWidget {
     final rawTotal = data['total'];
     final total = rawTotal is num ? rawTotal.toDouble() : double.tryParse(rawTotal?.toString() ?? '');
     final config = ref.watch(appConfigProvider);
+    final tierAsync = ref.watch(tierProvider);
+    final tier = tierAsync.valueOrNull;
     final rawSubtotal = data['subtotal'];
     final subtotal = rawSubtotal is num ? rawSubtotal.toDouble() : (total ?? 0.0);
     final cashbackAmount = subtotal >= config.cashbackMinOrder
@@ -126,6 +129,35 @@ class OrderConfirmedScreen extends ConsumerWidget {
                                 ? 'ستحصل على $cashbackAmount ${context.s.lydUnit} استرداد عند التوصيل'
                                 : 'You\'ll earn $cashbackAmount ${context.s.lydUnit} cashback on delivery',
                               style: const TextStyle(fontSize: 13, color: AppColors.success,
+                                fontWeight: FontWeight.w600, height: 1.4),
+                            ),
+                          ),
+                        ]),
+                      ),
+                    ],
+                    if (tier != null &&
+                        tier.nextMilestoneOrder != null &&
+                        tier.nextMilestoneRemaining != null &&
+                        tier.nextMilestoneRemaining! > 0 &&
+                        tier.nextMilestoneReward != null) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 320),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.emoji_events_outlined, color: AppColors.success, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              context.isAr
+                                ? '${tier.nextMilestoneRemaining} طلب أكثر ليصلك ${tier.nextMilestoneReward!.toStringAsFixed(0)} ${context.s.lydUnit}'
+                                : '${tier.nextMilestoneRemaining} more order${tier.nextMilestoneRemaining! > 1 ? "s" : ""} to earn ${tier.nextMilestoneReward!.toStringAsFixed(0)} ${context.s.lydUnit}',
+                              style: const TextStyle(fontSize: 12.5, color: AppColors.success,
                                 fontWeight: FontWeight.w600, height: 1.4),
                             ),
                           ),
