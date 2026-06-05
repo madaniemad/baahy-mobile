@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
-class OrderConfirmedScreen extends StatelessWidget {
+class OrderConfirmedScreen extends ConsumerWidget {
   final Map<String, dynamic> data;
   const OrderConfirmedScreen({required this.data, super.key});
 
@@ -25,11 +27,17 @@ class OrderConfirmedScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final orderNumber = data['order_number'] ?? '#${data['id']}';
     final orderId = data['id'];
     final rawTotal = data['total'];
     final total = rawTotal is num ? rawTotal.toDouble() : double.tryParse(rawTotal?.toString() ?? '');
+    final config = ref.watch(appConfigProvider);
+    final rawSubtotal = data['subtotal'];
+    final subtotal = rawSubtotal is num ? rawSubtotal.toDouble() : (total ?? 0.0);
+    final cashbackAmount = subtotal >= config.cashbackMinOrder
+        ? (subtotal * config.cashbackRate / 100).toStringAsFixed(2)
+        : null;
 
     return Scaffold(
       backgroundColor: context.col.bg,
@@ -99,6 +107,31 @@ class OrderConfirmedScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                    if (cashbackAmount != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 320),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.savings_outlined, color: AppColors.success, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              context.isAr
+                                ? 'ستحصل على $cashbackAmount ${context.s.lydUnit} استرداد عند التوصيل'
+                                : 'You\'ll earn $cashbackAmount ${context.s.lydUnit} cashback on delivery',
+                              style: const TextStyle(fontSize: 13, color: AppColors.success,
+                                fontWeight: FontWeight.w600, height: 1.4),
+                            ),
+                          ),
+                        ]),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -49,6 +49,10 @@ class AppConfig {
   final int referralReceiverAmount;
   final String referralTextAr;
   final String referralTextEn;
+  final double cashbackRate;
+  final double cashbackMinOrder;
+  final double welcomeBonusAmount;
+  final double reviewRewardAmount;
 
   const AppConfig({
     required this.shippingFee,
@@ -65,6 +69,10 @@ class AppConfig {
     required this.referralReceiverAmount,
     required this.referralTextAr,
     this.referralTextEn = 'Give 10, Get 10',
+    this.cashbackRate = 2.0,
+    this.cashbackMinOrder = 80.0,
+    this.welcomeBonusAmount = 10.0,
+    this.reviewRewardAmount = 3.0,
   });
 
   static const AppConfig defaults = AppConfig(
@@ -95,6 +103,10 @@ class AppConfig {
     referralGiverAmount: 10,
     referralReceiverAmount: 10,
     referralTextAr: 'أعطِ 10، احصل على 10',
+    cashbackRate: 2.0,
+    cashbackMinOrder: 80.0,
+    welcomeBonusAmount: 10.0,
+    reviewRewardAmount: 3.0,
   );
 
   factory AppConfig.fromJson(Map<String, dynamic> j) {
@@ -102,6 +114,7 @@ class AppConfig {
         ?.map((m) => PaymentMethod.fromJson(m as Map<String, dynamic>))
         .toList();
     final referral = j['referral'] as Map<String, dynamic>?;
+    final rewards = j['rewards'] as Map<String, dynamic>?;
     final delivery = j['delivery_promise'] as Map<String, dynamic>?;
     return AppConfig(
       shippingFee: _d(j['shipping_fee'] ?? defaults.shippingFee),
@@ -118,6 +131,10 @@ class AppConfig {
       referralReceiverAmount: (referral?['receiver_discount'] as num?)?.toInt() ?? defaults.referralReceiverAmount,
       referralTextAr: referral?['text_ar'] as String? ?? defaults.referralTextAr,
       referralTextEn: referral?['text_en'] as String? ?? defaults.referralTextEn,
+      cashbackRate: _d(rewards?['cashback_rate'] ?? defaults.cashbackRate),
+      cashbackMinOrder: _d(rewards?['cashback_min_order'] ?? defaults.cashbackMinOrder),
+      welcomeBonusAmount: _d(rewards?['welcome_bonus_amount'] ?? defaults.welcomeBonusAmount),
+      reviewRewardAmount: _d(rewards?['review_reward_amount'] ?? defaults.reviewRewardAmount),
     );
   }
 
