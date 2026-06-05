@@ -305,11 +305,6 @@ class _EmptyState extends ConsumerWidget {
                   color: AppColors.primary, size: 26),
               ),
               const SizedBox(height: 10),
-              Text(context.s.assistantTitle,
-                style: const TextStyle(
-                  fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800,
-                  color: AppColors.ink0)),
-              const SizedBox(height: 4),
               Text(context.s.assistantGreeting,
                 style: const TextStyle(
                   fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink2)),
@@ -881,7 +876,7 @@ class _InputBar extends StatelessWidget {
                     hintText: context.s.assistantInputHint,
                     hintStyle: TextStyle(fontFamily: 'Cairo',
                       fontSize: 14, color: context.col.ink3),
-                    fillColor: context.col.surfaceSoft,
+                    fillColor: context.col.surface,
                     filled: true,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 10),
