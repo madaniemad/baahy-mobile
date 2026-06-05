@@ -882,13 +882,13 @@ class _InputBar extends StatelessWidget {
                       horizontal: 14, vertical: 10),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none),
+                      borderSide: BorderSide(color: context.col.border)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none),
+                      borderSide: BorderSide(color: context.col.border)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: context.col.borderStrong)),
+                      borderSide: BorderSide(color: AppColors.primary)),
                   ),
                 ),
               ),
