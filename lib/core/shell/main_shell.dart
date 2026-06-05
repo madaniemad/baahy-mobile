@@ -15,7 +15,7 @@ class MainShell extends ConsumerWidget {
 
   static const _tabs = [
     (path: '/home',      icon: Icons.home_outlined,           labelAr: 'الرئيسية', labelEn: 'Home'),
-    (path: '/wishlist',  icon: Icons.favorite_outline,        labelAr: 'المفضلة',  labelEn: 'Wishlist'),
+    (path: '/browse',    icon: Icons.grid_view_outlined,      labelAr: 'الأقسام',  labelEn: 'Categories'),
     (path: '/assistant', icon: Icons.auto_awesome_outlined,   labelAr: 'مساعد',    labelEn: 'AI'),
     (path: '/cart',      icon: Icons.shopping_cart_outlined,  labelAr: 'السلة',    labelEn: 'Cart'),
     (path: '/account',   icon: Icons.person_outline,          labelAr: 'حسابي',    labelEn: 'Me'),
