@@ -229,7 +229,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
         backgroundColor: context.col.surface,
         elevation: 0,
         title: Text(context.s.assistantTitle,
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
+          style: const TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.w700, fontSize: 18, letterSpacing: 0.3)),
         centerTitle: true,
         actions: [
           if (_messages.isNotEmpty)
