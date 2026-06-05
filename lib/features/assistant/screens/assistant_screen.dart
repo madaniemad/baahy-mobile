@@ -277,10 +277,10 @@ class _EmptyState extends ConsumerWidget {
   const _EmptyState({required this.onChipTap});
 
   static const _chips = [
-    ('🔍', 'ابحث عن منتج'),
-    ('📦', 'وين طلبي؟'),
-    ('↩️', 'سياسة الإرجاع'),
-    ('🚚', 'رسوم التوصيل'),
+    (Icons.search_rounded,              'ابحث عن منتج'),
+    (Icons.local_shipping_outlined,     'وين طلبي؟'),
+    (Icons.assignment_return_outlined,  'سياسة الإرجاع'),
+    (Icons.delivery_dining_outlined,    'رسوم التوصيل'),
   ];
 
   @override
@@ -295,10 +295,14 @@ class _EmptyState extends ConsumerWidget {
         Center(
           child: Column(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.asset('assets/images/logo.png',
-                  width: 40, height: 40, fit: BoxFit.contain),
+              Container(
+                width: 52, height: 52,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.auto_awesome_rounded,
+                  color: AppColors.primary, size: 26),
               ),
               const SizedBox(height: 10),
               Text(context.s.assistantTitle,
@@ -321,7 +325,7 @@ class _EmptyState extends ConsumerWidget {
             children: _chips.map((chip) => Padding(
               padding: const EdgeInsets.only(left: 8),
               child: _QuickChip(
-                emoji: chip.$1,
+                icon: chip.$1,
                 label: chip.$2,
                 onTap: () => onChipTap(overrideText: chip.$2),
               ),
@@ -405,10 +409,10 @@ class _EmptyState extends ConsumerWidget {
 }
 
 class _QuickChip extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _QuickChip({required this.emoji, required this.label, required this.onTap});
+  const _QuickChip({required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -425,7 +429,7 @@ class _QuickChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 14)),
+            Icon(icon, size: 15, color: AppColors.primary),
             const SizedBox(width: 6),
             Text(label,
               style: TextStyle(
