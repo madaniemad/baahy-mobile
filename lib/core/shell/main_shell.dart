@@ -5,26 +5,39 @@ import 'package:badges/badges.dart' as badges;
 import '../providers/cart_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../providers/wishlist_provider.dart';
+import '../providers/app_config_provider.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../core/utils/l10n.dart';
 import '../../shared/widgets/offline_banner.dart';
+
+typedef _Tab = ({String path, IconData icon, String labelAr, String labelEn});
+
+const _tabsWithAi = <_Tab>[
+  (path: '/home',      icon: Icons.home_outlined,           labelAr: 'الرئيسية', labelEn: 'Home'),
+  (path: '/browse',    icon: Icons.grid_view_outlined,      labelAr: 'الأقسام',  labelEn: 'Categories'),
+  (path: '/assistant', icon: Icons.auto_awesome_outlined,   labelAr: 'مساعد',    labelEn: 'AI'),
+  (path: '/cart',      icon: Icons.shopping_cart_outlined,  labelAr: 'السلة',    labelEn: 'Cart'),
+  (path: '/account',   icon: Icons.person_outline,          labelAr: 'حسابي',    labelEn: 'Me'),
+];
+
+const _tabsNoAi = <_Tab>[
+  (path: '/home',      icon: Icons.home_outlined,           labelAr: 'الرئيسية', labelEn: 'Home'),
+  (path: '/browse',    icon: Icons.grid_view_outlined,      labelAr: 'الأقسام',  labelEn: 'Categories'),
+  (path: '/wishlist',  icon: Icons.favorite_outline,        labelAr: 'المفضلة',  labelEn: 'Wishlist'),
+  (path: '/cart',      icon: Icons.shopping_cart_outlined,  labelAr: 'السلة',    labelEn: 'Cart'),
+  (path: '/account',   icon: Icons.person_outline,          labelAr: 'حسابي',    labelEn: 'Me'),
+];
 
 class MainShell extends ConsumerWidget {
   final Widget child;
   const MainShell({required this.child, super.key});
 
-  static const _tabs = [
-    (path: '/home',      icon: Icons.home_outlined,           labelAr: 'الرئيسية', labelEn: 'Home'),
-    (path: '/browse',    icon: Icons.grid_view_outlined,      labelAr: 'الأقسام',  labelEn: 'Categories'),
-    (path: '/assistant', icon: Icons.auto_awesome_outlined,   labelAr: 'مساعد',    labelEn: 'AI'),
-    (path: '/cart',      icon: Icons.shopping_cart_outlined,  labelAr: 'السلة',    labelEn: 'Cart'),
-    (path: '/account',   icon: Icons.person_outline,          labelAr: 'حسابي',    labelEn: 'Me'),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.path;
-    final currentIdx = _tabs.indexWhere((t) => location.startsWith(t.path));
+    final aiEnabled = ref.watch(appConfigProvider.select((c) => c.aiEnabled));
+    final tabs = aiEnabled ? _tabsWithAi : _tabsNoAi;
+    final currentIdx = tabs.indexWhere((t) => location.startsWith(t.path));
     // select() — rebuild tab bar ONLY when count changes, not on every cart mutation
     final cartCount = ref.watch(cartProvider.select((s) => s.count));
     final wishlistCount = ref.watch(wishlistProvider.select((s) => s.length));
@@ -48,8 +61,8 @@ class MainShell extends ConsumerWidget {
           child: SizedBox(
             height: 56,
             child: Row(
-              children: List.generate(_tabs.length, (i) {
-                final tab = _tabs[i];
+              children: List.generate(tabs.length, (i) {
+                final tab = tabs[i];
                 final isActive = i == currentIdx;
                 Widget icon = Icon(
                   tab.icon,
