@@ -559,7 +559,7 @@ class _BannerSlide extends StatelessWidget {
           CachedNetworkImage(
             imageUrl: banner.imageUrl!,
             fit: BoxFit.cover,
-            placeholder: (context, __) => Container(color: context.col.surfaceSoft),
+            placeholder: (_, __) => const _BannerSkeleton(),
             errorWidget: (_, __, ___) => _gradientBg(gradient),
           )
         else
@@ -634,12 +634,47 @@ class _HeroBannerFallback extends StatelessWidget {
   const _HeroBannerFallback();
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
+    return const AspectRatio(
       aspectRatio: 1400 / 480,
-      child: Container(
+      child: _BannerSkeleton(),
+    );
+  }
+}
+
+class _BannerSkeleton extends StatefulWidget {
+  const _BannerSkeleton();
+  @override
+  State<_BannerSkeleton> createState() => _BannerSkeletonState();
+}
+
+class _BannerSkeletonState extends State<_BannerSkeleton> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+      ..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final base  = context.col.surfaceSoft;
+    final light = context.col.surface;
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Container(
         margin: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
-          color: context.col.surfaceSoft,
+          color: Color.lerp(base, light, _anim.value),
           borderRadius: BorderRadius.circular(10),
         ),
       ),
