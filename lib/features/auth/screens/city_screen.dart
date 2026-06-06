@@ -183,7 +183,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
                     color: Colors.white.withValues(alpha: 0.20),
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 120),
                   child: Column(children: [
                     ...filtered.map((city) => _CityRow(
                       cityAr: city.ar,
@@ -280,9 +280,9 @@ class _CityRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.white.withValues(alpha: 0.32),
+          color: selected ? Colors.white : Colors.white.withValues(alpha: 0.25),
           border: Border.all(
-            color: selected ? teal : Colors.white.withValues(alpha: 0.55),
+            color: selected ? teal : Colors.white.withValues(alpha: 0.35),
             width: selected ? 2 : 1.5),
           borderRadius: BorderRadius.circular(16),
           boxShadow: selected
@@ -401,7 +401,7 @@ class _BottomBar extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 22),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 22),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(999),
@@ -410,7 +410,7 @@ class _BottomBar extends StatelessWidget {
           ),
           child: Stack(alignment: Alignment.center, children: [
             Text(label, style: const TextStyle(fontFamily: 'Cairo',
-              fontSize: 19, fontWeight: FontWeight.w900, color: _navy)),
+              fontSize: 17, fontWeight: FontWeight.w900, color: _navy)),
             // Simple faint arrow — right side for Arabic (forward = right in RTL)
             Positioned(
               right: 0,

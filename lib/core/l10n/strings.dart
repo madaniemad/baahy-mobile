@@ -428,10 +428,10 @@ class AppStrings {
 
   // ── Rewards onboarding ────────────────────────────────────────────────────────
   String get onbRewardsHeadline1 => isAr ? 'تسوّق'                       : 'Shop';
-  String get onbRewardsHeadline2 => isAr ? 'واكسب دائماً'                 : 'and always earn';
+  String get onbRewardsHeadline2 => isAr ? 'واكسب'                        : 'and earn';
   String get onbCashbackTitle    => isAr ? 'استرداد نقدي على كل طلب'      : 'Cashback on every order';
   String onbCashbackSub(String rate) => isAr ? 'حتى $rate% تُضاف لمحفظتك تلقائياً' : 'Up to $rate% added to your wallet automatically';
-  String get onbTiersTitle       => 'Silver · Gold · Platinum';
+  String get onbTiersTitle       => 'Bronze · Silver · Gold · Platinum';
   String get onbTiersSub         => isAr ? 'كلما تسوّقت أكثر — مزايا أكبر وكاش باك أعلى' : 'The more you shop — bigger perks and higher cashback';
   String get onbReferralTitle    => isAr ? 'ادعُ صديقاً واكسبا معاً'      : 'Invite a friend, both earn';
   String onbReferralSub(String amount) => isAr ? 'كل منكما يحصل على $amount د.ل عند أول توصيل' : 'You each get $amount LYD on first delivery';

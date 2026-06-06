@@ -238,7 +238,7 @@ class _ActionBar extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 22),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 22),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(999),
@@ -252,7 +252,7 @@ class _ActionBar extends StatelessWidget {
                 child: Icon(Icons.arrow_forward_ios, size: 18, color: _teal)),
             ),
             Text(label, style: const TextStyle(fontFamily: 'Cairo',
-              fontSize: 19, fontWeight: FontWeight.w900, color: _navy)),
+              fontSize: 17, fontWeight: FontWeight.w900, color: _navy)),
           ]),
         ),
       ),
