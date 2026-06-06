@@ -98,7 +98,7 @@ class HomeScreen extends ConsumerWidget {
                 child: _SeasonalBanner(config: config),
               ),
 
-            if ((home.loading && home.featured.isEmpty) || !banners.initialized)
+            if ((home.loading && home.featured.isEmpty && home.newArrivals.isEmpty) || !banners.initialized)
               const SliverFillRemaining(child: _HomeSkeleton())
             else ...[
               // One-time rewards modal (invisible trigger)

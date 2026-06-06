@@ -317,6 +317,11 @@ class HomeNotifier extends StateNotifier<HomeData> {
     // A weight of ≥2 means either 2+ views or at least one cart addition (weight=3).
     final prefDealCats = await _loadPreferredCategoryIds(minWeight: 2);
 
+    // Fire personalized recommendations independently — it's the slowest call
+    // (fetches order/viewed signals first, then products). The rest of the screen
+    // can render while we wait for it.
+    final recommendedFuture = _fetchRecommended();
+
     // Build deal futures: per-preferred-category (high-relevance) + generic fallback.
     // Both start before any await, so they run in parallel with main requests below.
     // Up to 6 preferred categories × 10 products each, then generic fills the rest.
@@ -328,24 +333,19 @@ class HomeNotifier extends StateNotifier<HomeData> {
     ]);
 
     final results = await Future.wait([
-      _fetchRecommended(),                                                                                          // 0 recommended/forYou
-      _safeGet('/products', params: {'sort': 'popular', 'per_page': 20, 'has_image': '1', 'featured': '1'}),     // 1 featured (منتجات مميزة)
-      _safeGet('/products', params: {'sort': 'latest',  'per_page': 16, 'has_image': '1'}),                      // 2 (reserved — was newArrivals)
-      _safeGet('/products', params: {'category_id': 25,  'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 3 bestsellers men
-      _safeGet('/products', params: {'category_id': 1,   'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 4 bestsellers women
-      _safeGet('/products', params: {'category_id': 90,  'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 5 bestsellers electronics
-      _safeGet('/products', params: {'category_id': 64,  'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 6 bestsellers beauty
-      _safeGet('/products', params: {'category_id': 61,  'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 7 bestsellers perfumes
-      _safeGet('/products', params: {'category_id': 119, 'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 8 bestsellers home
-      _safeGet('/categories'),                                                                                   // 9
-      _safeGet('/home/sections', params: {'platform': 'mobile'}),                                              // 10 dynamic sections
+      _safeGet('/products', params: {'sort': 'popular', 'per_page': 20, 'has_image': '1', 'featured': '1'}),     // 0 featured (منتجات مميزة)
+      _safeGet('/products', params: {'sort': 'latest',  'per_page': 16, 'has_image': '1'}),                      // 1 (reserved — was newArrivals)
+      _safeGet('/products', params: {'category_id': 25,  'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 2 bestsellers men
+      _safeGet('/products', params: {'category_id': 1,   'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 3 bestsellers women
+      _safeGet('/products', params: {'category_id': 90,  'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 4 bestsellers electronics
+      _safeGet('/products', params: {'category_id': 64,  'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 5 bestsellers beauty
+      _safeGet('/products', params: {'category_id': 61,  'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 6 bestsellers perfumes
+      _safeGet('/products', params: {'category_id': 119, 'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 7 bestsellers home
+      _safeGet('/categories'),                                                                                   // 8
+      _safeGet('/home/sections', params: {'platform': 'mobile'}),                                              // 9 dynamic sections
     ]);
 
-    final dealResults = await dealFuture; // already resolved — ran in parallel
-
-    // recommended returns flat array at 'data', not paginated 'data.data'
-    final featured    = _products(results[0], 'data')..shuffle(Random());
-    final newArrivals = _products(results[1], 'data.data');
+    final newArrivals = _products(results[0], 'data.data');
 
     // One bestseller per main category — pick randomly from top pool so each open varies
     Product? _pick(int i) {
@@ -355,21 +355,20 @@ class HomeNotifier extends StateNotifier<HomeData> {
       return list.first;
     }
     final popular = [
-      _pick(3),  // men
-      _pick(4),  // women
-      _pick(5),  // electronics
-      _pick(6),  // beauty
-      _pick(7),  // perfumes
-      _pick(8),  // home
+      _pick(2),  // men
+      _pick(3),  // women
+      _pick(4),  // electronics
+      _pick(5),  // beauty
+      _pick(6),  // perfumes
+      _pick(7),  // home
     ].whereType<Product>().toList();
 
-    final categories = _categories(results[9]);
+    final categories = _categories(results[8]);
 
     // Parse dynamic home sections from admin API — preserve exact position order.
-    final sectionList = (results[10]?['data'] as List? ?? []);
+    final sectionList = (results[9]?['data'] as List? ?? []);
     final orderedSections = <HomeDynamicItem>[];
     final seenAboveIds = <int>{
-      ...featured.map((p) => p.id),
       ...popular.map((p) => p.id),
       ...newArrivals.map((p) => p.id),
     };
@@ -463,6 +462,22 @@ class HomeNotifier extends StateNotifier<HomeData> {
       }
     }
 
+    // Partial emit — skeleton clears as soon as the fast calls finish.
+    // featured (personalized) arrives in a second state update below.
+    state = state.copyWith(
+      newArrivals: newArrivals,
+      popular: popular,
+      categories: categories,
+      orderedDynamicSections: orderedSections,
+    );
+
+    // Wait for the slow personalized call + deals (deals likely already resolved).
+    final recommended = await recommendedFuture;
+    final dealResults = await dealFuture;
+
+    // recommended returns flat array at 'data', not paginated 'data.data'
+    final featured = _products(recommended, 'data')..shuffle(Random());
+
     // Build per-category preferred deal buckets (dealResults indices 0..prefDealCats.length-1).
     // Each bucket is sorted by discount % DESC — highest deal per category surfaces first.
     final popularIds = popular.map((p) => p.id).toSet();
@@ -510,7 +525,6 @@ class HomeNotifier extends StateNotifier<HomeData> {
 
     final deals = [...prefDeals, ...genericDeals];
 
-    // All sections are pre-fetched from the admin-controlled API — emit everything at once.
     state = HomeData(
       featured: featured,
       newArrivals: newArrivals,

@@ -26,13 +26,11 @@ class BannersNotifier extends StateNotifier<BannersData> {
       try { state = BannersData.fromJson(stale); } catch (_) {}
     }
 
-    // 2. Pre-warm the first hero image into Flutter's image cache before
-    //    marking initialized. This ensures CachedNetworkImage shows it
-    //    instantly (no placeholder flash) when the home skeleton clears.
-    await _prewarmFirstHero();
-
-    // 3. Mark initialized — home screen can now render without a blank slot.
+    // 2. Mark initialized immediately — home screen does not wait for the prewarm.
     if (!state.initialized) state = state.copyWith(initialized: true);
+
+    // 3. Pre-warm hero image concurrently so it's in Flutter's cache when it first renders.
+    unawaited(_prewarmFirstHero());
 
     // 4. Always fetch fresh in background.
     await refresh();
