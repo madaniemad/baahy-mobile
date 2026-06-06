@@ -126,7 +126,7 @@ class _TierHero extends StatelessWidget {
     'gold':     _TierDef(name: 'Gold',     nameAr: 'ذهبي',    icon: Icons.workspace_premium_rounded,  iconColor: Color(0xFFD4A82E), gradA: Color(0xFFD4A82E), gradB: Color(0xFF9B7012)),
     'platinum': _TierDef(name: 'Platinum', nameAr: 'بلاتيني', icon: Icons.diamond_rounded,            iconColor: Colors.white,     gradA: Color(0xFF6A82FB), gradB: Color(0xFF0E3C46)),
   };
-  static const _noTierDef = _TierDef(name: 'Starter', nameAr: 'مبتدئ', icon: Icons.storefront_outlined, iconColor: Colors.white, gradA: Color(0xFF2563EB), gradB: Color(0xFF0E3C46));
+  static const _noTierDef = _TierDef(name: 'Bronze', nameAr: 'برونز', icon: Icons.workspace_premium_outlined, iconColor: Color(0xFFCD7F32), gradA: Color(0xFFCD7F32), gradB: Color(0xFF7B4A1E));
 
   @override
   Widget build(BuildContext context) {
