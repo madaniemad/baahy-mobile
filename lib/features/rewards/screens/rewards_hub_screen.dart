@@ -69,12 +69,13 @@ class RewardsHubScreen extends ConsumerWidget {
 
             const SizedBox(height: 16),
 
-            // ── 4. Next milestone ─────────────────────────────────────────
-            if (tier.nextMilestoneOrder != null)
-              _MilestoneCard(tier: tier),
+            // ── 4. Milestones timeline ────────────────────────────────────
+            _SectionCard(
+              title: context.s.hubMilestonesTitle,
+              child: _MilestonesTimeline(tier: tier),
+            ),
 
-            if (tier.nextMilestoneOrder != null)
-              const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // ── 5. Referral ───────────────────────────────────────────────
             _SectionCard(
@@ -388,50 +389,142 @@ class _Cell extends StatelessWidget {
   }
 }
 
-// ── Milestone card ─────────────────────────────────────────────────────────────
-class _MilestoneCard extends StatelessWidget {
+// ── Milestones timeline ───────────────────────────────────────────────────────
+class _MilestonesTimeline extends StatelessWidget {
   final TierStatus tier;
-  const _MilestoneCard({required this.tier});
+  const _MilestonesTimeline({required this.tier});
+
+  static const _milestones = [1, 3, 5, 10, 25, 50];
 
   @override
   Widget build(BuildContext context) {
-    final isAr = context.isAr;
-    final order = tier.nextMilestoneOrder!;
-    final reward = tier.nextMilestoneReward?.toStringAsFixed(0) ?? '?';
-    final remaining = tier.nextMilestoneRemaining ?? 0;
+    final isAr     = context.isAr;
+    final done     = tier.totalDelivered;
+    final nextNum  = tier.nextMilestoneOrder;
+    final nextAmt  = tier.nextMilestoneReward;
 
-    return _SectionCard(
-      title: context.s.hubMilestonesTitle,
-      child: Row(children: [
-        Container(
-          width: 52, height: 52,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(Icons.emoji_events_rounded,
-            size: 28, color: AppColors.primary),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(
-              isAr
-                  ? 'الطلب رقم $order — مكافأة $reward د.ل'
-                  : 'Order #$order — earn $reward LYD',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 14,
-                fontWeight: FontWeight.w800, color: context.col.ink0)),
-            const SizedBox(height: 3),
-            Text(
-              isAr
-                  ? (remaining == 0 ? context.s.hubCompleted : 'متبقّي $remaining طلب')
-                  : (remaining == 0 ? context.s.hubCompleted : '$remaining order${remaining == 1 ? "" : "s"} away'),
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: remaining == 0 ? AppColors.success : context.col.ink2)),
-          ]),
-        ),
-      ]),
+    return Column(
+      children: List.generate(_milestones.length, (i) {
+        final orderNum  = _milestones[i];
+        final isLast    = i == _milestones.length - 1;
+        final completed = done >= orderNum;
+        final isCurrent = orderNum == nextNum;
+
+        // Amount: only known for the current (next) milestone
+        String? amountStr;
+        if (isCurrent && nextAmt != null && nextAmt > 0) {
+          amountStr = '${nextAmt.toStringAsFixed(0)} ${context.s.lydUnit}';
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Timeline track
+            Column(children: [
+              _MilestoneDot(completed: completed, active: isCurrent),
+              if (!isLast)
+                Container(
+                  width: 2, height: 36,
+                  color: completed
+                      ? AppColors.success.withValues(alpha: 0.4)
+                      : context.col.border),
+            ]),
+            const SizedBox(width: 14),
+            // Content
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 8, top: 2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isAr ? 'الطلب رقم $orderNum' : 'Order #$orderNum',
+                            style: TextStyle(
+                              fontFamily: 'Cairo', fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: completed
+                                  ? context.col.ink2
+                                  : isCurrent
+                                      ? context.col.ink0
+                                      : context.col.ink3),
+                          ),
+                          if (isCurrent && nextNum != null)
+                            Text(
+                              isAr
+                                  ? 'متبقّي ${tier.nextMilestoneRemaining ?? 0} طلب'
+                                  : '${tier.nextMilestoneRemaining ?? 0} order${(tier.nextMilestoneRemaining ?? 0) == 1 ? "" : "s"} away',
+                              style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                                color: context.col.ink2, height: 1.4)),
+                        ],
+                      ),
+                    ),
+                    if (completed)
+                      Text(context.s.hubCompleted,
+                        style: const TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                          fontWeight: FontWeight.w700, color: AppColors.success))
+                    else if (amountStr != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(amountStr,
+                          style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                            fontSize: 12, fontWeight: FontWeight.w800,
+                            color: AppColors.primary)),
+                      )
+                    else
+                      Text('—',
+                        style: TextStyle(fontSize: 14, color: context.col.ink4)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+}
+
+class _MilestoneDot extends StatelessWidget {
+  final bool completed;
+  final bool active;
+  const _MilestoneDot({required this.completed, required this.active});
+  @override
+  Widget build(BuildContext context) {
+    if (completed) {
+      return Container(
+        width: 24, height: 24,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle, color: AppColors.success),
+        child: const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+      );
+    }
+    if (active) {
+      return Container(
+        width: 24, height: 24,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.primary,
+          boxShadow: [BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.4),
+            blurRadius: 8, spreadRadius: 1)]),
+        child: const Icon(Icons.emoji_events_rounded, size: 13, color: Colors.white),
+      );
+    }
+    return Container(
+      width: 24, height: 24,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: context.col.border, width: 2),
+        color: context.col.surface),
     );
   }
 }

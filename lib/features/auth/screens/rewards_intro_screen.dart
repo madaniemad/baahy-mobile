@@ -72,6 +72,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
                 offset: Offset(0, _slideY.value), child: child)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Headline
                 RichText(
@@ -93,28 +94,22 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
                 const SizedBox(height: 28),
 
                 // Benefit cards
-                Expanded(
-                  child: Column(
-                    children: [
-                      _BenefitCard(
-                        icon: Icons.account_balance_wallet_rounded,
-                        title: s.onbCashbackTitle,
-                        subtitle: s.onbCashbackSub,
-                      ),
-                      const SizedBox(height: 12),
-                      _BenefitCard(
-                        icon: Icons.star_rounded,
-                        title: s.onbTiersTitle,
-                        subtitle: s.onbTiersSub,
-                      ),
-                      const SizedBox(height: 12),
-                      _BenefitCard(
-                        icon: Icons.group_rounded,
-                        title: s.onbReferralTitle,
-                        subtitle: s.onbReferralSub,
-                      ),
-                    ],
-                  ),
+                _BenefitCard(
+                  icon: Icons.account_balance_wallet_rounded,
+                  title: s.onbCashbackTitle,
+                  subtitle: s.onbCashbackSub,
+                ),
+                const SizedBox(height: 12),
+                _BenefitCard(
+                  icon: Icons.star_rounded,
+                  title: s.onbTiersTitle,
+                  subtitle: s.onbTiersSub,
+                ),
+                const SizedBox(height: 12),
+                _BenefitCard(
+                  icon: Icons.group_rounded,
+                  title: s.onbReferralTitle,
+                  subtitle: s.onbReferralSub,
                 ),
               ],
             ),
