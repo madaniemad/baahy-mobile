@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
+import '../providers/auth_provider.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/city_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
@@ -49,7 +49,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     // Handle deep links from baahy:// scheme and https://baahy.ly/
     redirect: (context, state) {
       final path = state.uri.path;
-      // Normalize: /product/123 → already correct; nothing to do
+      const _socialPaths = ['/friends', '/settings/privacy', '/username-setup'];
+      if (_socialPaths.any((p) => path == p || path.startsWith('$p/'))) {
+        final isLoggedIn = ref.read(authProvider).isLoggedIn;
+        if (!isLoggedIn) return '/signin';
+      }
       return null;
     },
     routes: [

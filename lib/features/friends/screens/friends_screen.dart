@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/friend.dart';
 import '../../../core/providers/friends_provider.dart';
-import '../../../core/providers/auth_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -22,12 +21,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> with SingleTicker
     super.initState();
     _tab = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = ref.read(authProvider).user;
-      if (user?.username == null || (user?.username?.isEmpty ?? true)) {
-        safePush(context, '/username-setup');
-      } else {
-        ref.read(friendsProvider.notifier).load();
-      }
+      ref.read(friendsProvider.notifier).load();
     });
   }
 

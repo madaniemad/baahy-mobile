@@ -326,8 +326,11 @@ class _FriendsCard extends ConsumerWidget {
     final friendCount  = friendsState.friends.length;
     final pendingCount = friendsState.incomingRequests.length;
 
+    final username = ref.read(authProvider).user?.username;
+    final target   = (username == null || username.isEmpty) ? '/username-setup' : '/friends';
+
     return GestureDetector(
-      onTap: () => safePush(context, '/friends'),
+      onTap: () => safePush(context, target),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart' show Share;
 import '../../../core/providers/auth_provider.dart';
@@ -39,6 +40,17 @@ class QrProfileScreen extends ConsumerWidget {
                   context.tr('أنت بحاجة إلى اسم مستخدم أولاً', 'You need a username first'),
                   style: TextStyle(fontFamily: 'Cairo', color: context.col.ink2, fontSize: 16),
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => context.push('/username-setup'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary, foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  ),
+                  child: Text(context.tr('اختر اسم مستخدم', 'Set Username'),
+                    style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
                 ),
               ] else ...[
                 Container(
