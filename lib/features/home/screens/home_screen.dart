@@ -97,7 +97,7 @@ class HomeScreen extends ConsumerWidget {
                 child: _SeasonalBanner(config: config),
               ),
 
-            if (home.loading && home.featured.isEmpty)
+            if ((home.loading && home.featured.isEmpty) || !banners.initialized)
               const SliverFillRemaining(child: _HomeSkeleton())
             else ...[
               // Active order strip — shows when user has a live order

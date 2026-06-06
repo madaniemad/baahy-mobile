@@ -55,6 +55,7 @@ class AppBanner {
 }
 
 class BannersData {
+  final bool initialized;
   final List<AppBanner> hero;
   final List<AppBanner> heroSide;
   final List<AppBanner> subHero;
@@ -68,6 +69,7 @@ class BannersData {
   final List<AppBanner> tile3;
 
   const BannersData({
+    this.initialized = false,
     this.hero = const [],
     this.heroSide = const [],
     this.subHero = const [],
@@ -81,12 +83,21 @@ class BannersData {
     this.tile3 = const [],
   });
 
+  BannersData copyWith({bool? initialized}) => BannersData(
+    initialized: initialized ?? this.initialized,
+    hero: hero, heroSide: heroSide, subHero: subHero,
+    promoStrip: promoStrip, promoLeft: promoLeft, promoRight: promoRight,
+    midBanner: midBanner, fashionBanner: fashionBanner,
+    tile1: tile1, tile2: tile2, tile3: tile3,
+  );
+
   factory BannersData.fromJson(Map<String, dynamic> data) {
     List<AppBanner> _parse(String key) =>
         (data[key] as List? ?? [])
             .map((b) => AppBanner.fromJson(b as Map<String, dynamic>))
             .toList();
     return BannersData(
+      initialized: true,
       hero: _parse('hero'),
       heroSide: _parse('hero_side'),
       subHero: _parse('sub_hero'),

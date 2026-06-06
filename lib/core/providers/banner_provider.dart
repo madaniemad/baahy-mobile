@@ -22,6 +22,8 @@ class BannersNotifier extends StateNotifier<BannersData> {
     if (stale != null) {
       try { state = BannersData.fromJson(stale); } catch (_) {}
     }
+    // Mark initialized so home screen exits skeleton mode even when cache is empty.
+    if (!state.initialized) state = state.copyWith(initialized: true);
 
     // 2. Always fetch fresh — no TTL gate so admin changes reflect immediately.
     await refresh();
