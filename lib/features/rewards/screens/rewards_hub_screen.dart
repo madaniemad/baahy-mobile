@@ -122,11 +122,11 @@ class _TierHero extends StatelessWidget {
   const _TierHero({required this.tier});
 
   static const _tierDefs = {
-    'silver':   _TierDef(name: 'Silver',   nameAr: 'فضي',    icon: '🥈', gradA: Color(0xFF8FA3B1), gradB: Color(0xFF4E6070)),
-    'gold':     _TierDef(name: 'Gold',     nameAr: 'ذهبي',   icon: '🥇', gradA: Color(0xFFD4A82E), gradB: Color(0xFF9B7012)),
-    'platinum': _TierDef(name: 'Platinum', nameAr: 'بلاتيني',icon: '💎', gradA: Color(0xFF6A82FB), gradB: Color(0xFF0E3C46)),
+    'silver':   _TierDef(name: 'Silver',   nameAr: 'فضي',     icon: Icons.workspace_premium_outlined, iconColor: Color(0xFFB0BEC5), gradA: Color(0xFF8FA3B1), gradB: Color(0xFF4E6070)),
+    'gold':     _TierDef(name: 'Gold',     nameAr: 'ذهبي',    icon: Icons.workspace_premium_rounded,  iconColor: Color(0xFFD4A82E), gradA: Color(0xFFD4A82E), gradB: Color(0xFF9B7012)),
+    'platinum': _TierDef(name: 'Platinum', nameAr: 'بلاتيني', icon: Icons.diamond_rounded,            iconColor: Colors.white,     gradA: Color(0xFF6A82FB), gradB: Color(0xFF0E3C46)),
   };
-  static const _noTierDef = _TierDef(name: 'Starter', nameAr: 'مبتدئ', icon: '⭐', gradA: Color(0xFF32DDE5), gradB: Color(0xFF0E3C46));
+  static const _noTierDef = _TierDef(name: 'Starter', nameAr: 'مبتدئ', icon: Icons.storefront_outlined, iconColor: Colors.white, gradA: Color(0xFF2563EB), gradB: Color(0xFF0E3C46));
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +145,7 @@ class _TierHero extends StatelessWidget {
         ),
       ),
       child: Column(children: [
-        Text(def.icon, style: const TextStyle(fontSize: 48)),
+        Icon(def.icon, size: 52, color: def.iconColor),
         const SizedBox(height: 8),
         Text(isAr ? def.nameAr : def.name,
           style: const TextStyle(fontFamily: 'Cairo', fontSize: 28,
@@ -183,11 +183,13 @@ class _TierHero extends StatelessWidget {
 class _TierDef {
   final String name;
   final String nameAr;
-  final String icon;
+  final IconData icon;
+  final Color iconColor;
   final Color gradA;
   final Color gradB;
   const _TierDef({required this.name, required this.nameAr,
-    required this.icon, required this.gradA, required this.gradB});
+    required this.icon, required this.iconColor,
+    required this.gradA, required this.gradB});
 }
 
 class _HeroStat extends StatelessWidget {
@@ -330,7 +332,7 @@ class _BenefitsTable extends StatelessWidget {
   // [No Tier, Silver, Gold, Platinum]
   static const _cashback = ['2%', '3%', '4%', '6%'];
   static const _shipping = ['150', '120', '100', '80'];
-  static const _returns  = ['7', '10', '14', '21'];
+  static const _returns  = ['3', '3', '5', '7'];
 
   @override
   Widget build(BuildContext context) {

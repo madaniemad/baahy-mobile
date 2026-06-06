@@ -53,6 +53,7 @@ class AppConfig {
   final double cashbackMinOrder;
   final double welcomeBonusAmount;
   final double reviewRewardAmount;
+  final double tierPlatinumCashback;
   final bool aiEnabled;
   final bool seasonalEnabled;
   final double seasonalMultiplier;
@@ -78,6 +79,7 @@ class AppConfig {
     this.cashbackMinOrder = 80.0,
     this.welcomeBonusAmount = 10.0,
     this.reviewRewardAmount = 3.0,
+    this.tierPlatinumCashback = 6.0,
     this.aiEnabled = true,
     this.seasonalEnabled = false,
     this.seasonalMultiplier = 2.0,
@@ -117,6 +119,7 @@ class AppConfig {
     cashbackMinOrder: 80.0,
     welcomeBonusAmount: 10.0,
     reviewRewardAmount: 3.0,
+    tierPlatinumCashback: 6.0,
     aiEnabled: true,
     seasonalEnabled: false,
     seasonalMultiplier: 2.0,
@@ -150,6 +153,7 @@ class AppConfig {
       cashbackMinOrder: _d(rewards?['cashback_min_order'] ?? defaults.cashbackMinOrder),
       welcomeBonusAmount: _d(rewards?['welcome_bonus_amount'] ?? defaults.welcomeBonusAmount),
       reviewRewardAmount: _d(rewards?['review_reward_amount'] ?? defaults.reviewRewardAmount),
+      tierPlatinumCashback: _d(rewards?['platinum_cashback'] ?? rewards?['tier_platinum_cashback'] ?? defaults.tierPlatinumCashback),
       aiEnabled: (j['ai_chat_enabled'] as bool?) ?? true,
       seasonalEnabled: (j['seasonal'] as Map<String, dynamic>?)?['enabled'] as bool? ?? false,
       seasonalMultiplier: ((j['seasonal'] as Map<String, dynamic>?)?['multiplier'] as num?)?.toDouble() ?? 2.0,

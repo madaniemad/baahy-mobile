@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -42,9 +43,12 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).padding.bottom;
-    final top    = MediaQuery.of(context).padding.top;
-    final s      = context.s;
+    final bottom  = MediaQuery.of(context).padding.bottom;
+    final top     = MediaQuery.of(context).padding.top;
+    final s       = context.s;
+    final config  = ref.watch(appConfigProvider);
+    final platCashback = config.tierPlatinumCashback.toStringAsFixed(0);
+    final referralAmt  = config.referralGiverAmount.toString();
 
     return Scaffold(
       backgroundColor: _teal,
@@ -97,7 +101,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
                 _BenefitCard(
                   icon: Icons.account_balance_wallet_rounded,
                   title: s.onbCashbackTitle,
-                  subtitle: s.onbCashbackSub,
+                  subtitle: s.onbCashbackSub(platCashback),
                 ),
                 const SizedBox(height: 12),
                 _BenefitCard(
@@ -109,7 +113,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
                 _BenefitCard(
                   icon: Icons.group_rounded,
                   title: s.onbReferralTitle,
-                  subtitle: s.onbReferralSub,
+                  subtitle: s.onbReferralSub(referralAmt),
                 ),
               ],
             ),

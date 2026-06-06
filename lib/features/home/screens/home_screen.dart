@@ -1969,10 +1969,7 @@ class _RewardsModalTriggerState extends ConsumerState<_RewardsModalTrigger> {
 class _RewardsModal extends StatelessWidget {
   const _RewardsModal();
 
-  static const _teal      = AppColors.primary;
-  static const _tealLight = Color(0xFF53E2E9);
-  static const _tealDark  = Color(0xFF2FCED5);
-  static const _navy      = Color(0xFF0E3C46);
+  static const _navy = Color(0xFF0E3C46);
 
   @override
   Widget build(BuildContext context) {
@@ -1996,22 +1993,15 @@ class _RewardsModal extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        // Hero icon with gradient background
+        // Hero icon
         Container(
-          width: 80, height: 80,
+          width: 56, height: 56,
           decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.10),
             shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [_tealLight, _tealDark],
-            ),
-            boxShadow: [BoxShadow(
-              color: _teal.withValues(alpha: 0.35),
-              blurRadius: 20, offset: const Offset(0, 8))],
           ),
-          child: const Icon(Icons.workspace_premium_rounded,
-            size: 40, color: Colors.white),
+          child: const Icon(Icons.card_membership_rounded,
+            color: AppColors.primary, size: 28),
         ),
         const SizedBox(height: 16),
 
@@ -2043,15 +2033,11 @@ class _RewardsModal extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [_tealLight, _tealDark],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(999),
               boxShadow: [BoxShadow(
-                color: _teal.withValues(alpha: 0.35),
-                blurRadius: 16, offset: const Offset(0, 6))],
+                color: AppColors.primary.withValues(alpha: 0.28),
+                blurRadius: 14, offset: const Offset(0, 6))],
             ),
             child: Text(s.discoverBenefits,
               textAlign: TextAlign.center,
