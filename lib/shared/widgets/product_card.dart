@@ -43,7 +43,6 @@ class ProductCard extends ConsumerWidget {
             imageUrl: p.firstImage!,
             fit: fit,
             memCacheWidth: 400,
-            memCacheHeight: 500,
             placeholder: (_, __) => Container(color: bgColor),
             errorWidget: (_, __, ___) => Container(
               color: bgColor,
