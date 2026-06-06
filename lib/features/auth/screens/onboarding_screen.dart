@@ -54,7 +54,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Future<void> _start() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_v2_done', true);
-    PushNotificationService.instance.requestPermissionIfNeeded();
+    try { PushNotificationService.instance.requestPermissionIfNeeded(); } catch (_) {}
     if (mounted) context.go('/home');
   }
 
