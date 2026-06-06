@@ -94,10 +94,11 @@ All from `lib/shared/theme/app_theme.dart`:
 
 ## Home Screen Architecture
 `home_provider.dart` fetches everything in one `fetch()` call:
-- **Featured** (`home.featured`): `/products/recommended` — personalized via viewed/cart/order signals
+- **Featured** (`home.featured`): `/products/recommended` — personalized via viewed/cart/order signals; fetched independently via `_fetchRecommended()` (slow call, fires in parallel with fast batch)
 - **New Arrivals** (`home.newArrivals`): `/products?sort=latest`
 - **Popular/Bestsellers** (`home.popular`): 1 random from each of 6 root categories (men/women/electronics/beauty/perfumes/home)
 - **Deals** (`home.deals`): preferred-category deals interleaved + generic fallback
+- **Two-phase loading**: fast 10-call batch emits partial state (newArrivals, popular, categories, sections) immediately; `featured` and `deals` fill in a second emit when slower calls finish. Skeleton gates on `(home.loading && home.featured.isEmpty && home.newArrivals.isEmpty) || !banners.initialized`. Banner `initialized` flag is set immediately on cache load (prewarm runs concurrently — no blocking delay).
 - **Ordered dynamic sections** (`home.orderedDynamicSections`): unified list of `HomeDynamicItem` subclasses — preserves exact admin position order, rendered as a single block after New Arrivals:
   - `DynGrid` — price-capped product grid (type: `grid`)
   - `DynCarousel` — category product carousel (type: `carousel`)
@@ -128,11 +129,25 @@ Admin controls sections at `/admin/home-section-resources`. Sections API: `GET /
 
 Hero images should be uploaded at **1400×480 px**. Sub-hero at any wide landscape ratio.
 
+## Onboarding Flow
+- Splash → checks `onboarding_v2_done` + `city` SharedPreferences keys → routes to `/city`, `/rewards-intro`, or `/home`
+- **City screen** (`city_screen.dart`): Column layout — language pill row → `Expanded(SingleChildScrollView)` → `_BottomBar`. SafeArea handles insets. Button never overlaps list. 28px side padding.
+- **Rewards intro** (`rewards_intro_screen.dart`): solid white `_BenefitCard` (navy text, teal `0xFFE8F9FB` icon bg); 5 floating background icons with staggered sin-phase animation (`_floatCtrl` 7 s loop); `onb-pattern.png` at 0.06 opacity texture. Uses `TickerProviderStateMixin`.
+- **Onboarding screen** (`onboarding_screen.dart`): final slide, calls `_start()` which sets `onboarding_v2_done = true` then navigates to `/home`.
+- To review onboarding from scratch: `xcrun simctl uninstall B764355C-AE75-49CC-8E30-8B5089A32CAB com.example.baahyCustomer` then `flutter run`.
+
+## Rewards / Loyalty Hub
+- Route: `/rewards` — `RewardsHubScreen` in `lib/features/rewards/screens/`
+- Tiers: Bronze (`0xFFCD7F32`) → Silver (`0xFF9E9E9E`) → Gold (`0xFFD4A82E`) → Platinum (`0xFF4FC3F7`)
+- No-tier state (`_noTierDef`): Bronze — `Icons.workspace_premium_outlined`, color `0xFFCD7F32`
+- Cashback rates and referral amounts come from `appConfigProvider`
+
 ## Product Card Details
 - "توصيل سريع" (fast delivery) badge: solid yellow `#FFF500`, black text, `fontSize: 8`, `icon size: 9`
 - Vendor button on product detail: `AppColors.success` green border + text (not primary blue)
 - Load-more button: outlined `StadiumBorder`, compact width, black border
 - Search bar (search screen): white fill, `border: Border.all(color: AppColors.border, width: 1.2)`, radius 10
+- `CachedNetworkImage`: use only `memCacheWidth` — do NOT set `memCacheHeight` (forces exact pixel dimensions via ResizeImage, distorts aspect ratio)
 
 ## Product Image Fit
 - **`BoxFit.cover`** for clothing categories (checks `category.nameAr.contains('ملاب')` AND parent)
