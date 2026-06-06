@@ -1813,7 +1813,7 @@ class _RewardsNudgeCard extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_ios_rounded, size: 11, color: color.withValues(alpha: 0.6)),
+                  Icon(Icons.arrow_forward_ios, size: 11, color: color.withValues(alpha: 0.6)),
                 ],
               ),
             ),
