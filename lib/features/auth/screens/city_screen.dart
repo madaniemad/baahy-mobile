@@ -183,7 +183,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
                     color: Colors.white.withValues(alpha: 0.20),
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 120),
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 160),
                   child: Column(children: [
                     ...filtered.map((city) => _CityRow(
                       cityAr: city.ar,
@@ -236,13 +236,6 @@ class _CityScreenState extends ConsumerState<CityScreen>
           ),
         ),
 
-        // Pagination dots (only during onboarding)
-        if (!_isReturning)
-          Positioned(
-            bottom: 88 + bottom, left: 0, right: 0,
-            child: _OnboardingDots(count: 3, active: 0),
-          ),
-
         // Bottom action bar
         Positioned(
           bottom: 0, left: 0, right: 0,
@@ -280,7 +273,7 @@ class _CityRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.white.withValues(alpha: 0.25),
+          color: selected ? Colors.white : Colors.white.withValues(alpha: 0.35),
           border: Border.all(
             color: selected ? teal : Colors.white.withValues(alpha: 0.35),
             width: selected ? 2 : 1.5),

@@ -139,7 +139,7 @@ class HomeScreen extends ConsumerWidget {
               // Promise strip
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
                   child: _PromiseStrip(config: config),
                 ),
               ),
@@ -1173,7 +1173,7 @@ class _CategoriesGridState extends State<_CategoriesGrid> {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     return SizedBox(
-      height: 190,
+      height: 172,
       child: GridView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
