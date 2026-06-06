@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,10 +18,11 @@ class RewardsIntroScreen extends ConsumerStatefulWidget {
 }
 
 class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _entryCtrl;
   late Animation<double> _fade;
   late Animation<double> _slideY;
+  late AnimationController _floatCtrl;
 
   @override
   void initState() {
@@ -31,11 +33,15 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
     _fade   = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut);
     _slideY = Tween<double>(begin: 14, end: 0).animate(
         CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic));
+    _floatCtrl = AnimationController(vsync: this,
+        duration: const Duration(milliseconds: 7000))
+      ..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _entryCtrl.dispose();
+    _floatCtrl.dispose();
     super.dispose();
   }
 
@@ -63,6 +69,48 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
               stops: [0.0, 0.46, 1.0],
             ),
           ),
+        ),
+
+        // Pattern texture
+        Positioned(
+          top: 0, left: 0, right: 0,
+          child: Opacity(
+            opacity: 0.06,
+            child: Image.asset('assets/images/onb-pattern.png',
+              width: double.infinity, fit: BoxFit.fitWidth,
+              alignment: Alignment.topCenter),
+          ),
+        ),
+
+        // Floating background icons
+        AnimatedBuilder(
+          animation: _floatCtrl,
+          builder: (_, __) {
+            final t = _floatCtrl.value * 2 * pi;
+            return Stack(children: [
+              Positioned(top: top + 60, left: 12,
+                child: Opacity(opacity: 0.10, child: Transform.translate(
+                  offset: Offset(0, sin(t) * 10),
+                  child: const Icon(Icons.shopping_bag_rounded, size: 72, color: Colors.white)))),
+              Positioned(top: top + 110, right: 8,
+                child: Opacity(opacity: 0.09, child: Transform.translate(
+                  offset: Offset(0, sin(t + pi * 0.4) * 8),
+                  child: const Icon(Icons.local_offer_rounded, size: 56, color: Colors.white)))),
+              Positioned(top: top + 240, left: 24,
+                child: Opacity(opacity: 0.08, child: Transform.translate(
+                  offset: Offset(0, sin(t + pi * 0.8) * 12),
+                  child: const Icon(Icons.star_rounded, size: 44, color: Colors.white)))),
+              Positioned(top: top + 310, right: 20,
+                child: Opacity(opacity: 0.09, child: Transform.translate(
+                  offset: Offset(0, sin(t + pi * 1.2) * 9),
+                  child: const Icon(Icons.account_balance_wallet_rounded, size: 60, color: Colors.white)))),
+              Positioned(top: top + 175, left: 0, right: 0,
+                child: Align(alignment: Alignment.topCenter,
+                  child: Opacity(opacity: 0.07, child: Transform.translate(
+                    offset: Offset(0, sin(t + pi * 1.6) * 11),
+                    child: const Icon(Icons.workspace_premium_rounded, size: 48, color: Colors.white))))),
+            ]);
+          },
         ),
 
         // Content
@@ -167,18 +215,20 @@ class _BenefitCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.18),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.32), width: 1.5),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withValues(alpha: 0.08),
+          blurRadius: 16, offset: const Offset(0, 6))],
       ),
       child: Row(children: [
         Container(
           width: 46, height: 46,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.28),
+            color: const Color(0xFFE8F9FB),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(icon, size: 24, color: Colors.white),
+          child: Icon(icon, size: 24, color: _teal),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -187,12 +237,11 @@ class _BenefitCard extends StatelessWidget {
             children: [
               Text(title,
                 style: const TextStyle(fontFamily: 'Cairo', fontSize: 15,
-                  fontWeight: FontWeight.w800, color: Colors.white)),
+                  fontWeight: FontWeight.w800, color: _navy)),
               const SizedBox(height: 2),
               Text(subtitle,
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.80))),
+                style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                  fontWeight: FontWeight.w600, color: Color(0xFF2A6E78))),
             ],
           ),
         ),

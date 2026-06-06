@@ -34,9 +34,8 @@ class _CityScreenState extends ConsumerState<CityScreen>
   final _searchCtrl = TextEditingController();
   String _query      = '';
   String _selected   = 'طرابلس';
-  bool _isReturning  = false; // true when existing user is changing city
+  bool _isReturning  = false;
 
-  // Entry animation
   late AnimationController _entryCtrl;
   late Animation<double> _slideY;
   late Animation<double> _fade;
@@ -81,173 +80,171 @@ class _CityScreenState extends ConsumerState<CityScreen>
     context.go(_isReturning ? '/home' : '/rewards-intro');
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).padding.bottom;
-    final top    = MediaQuery.of(context).padding.top;
-    final isAr   = ref.watch(localeProvider).languageCode == 'ar';
-    final pages  = ref.watch(appPagesProvider);
+    final isAr      = ref.watch(localeProvider).languageCode == 'ar';
+    final pages     = ref.watch(appPagesProvider);
     final allCities = pages.cities.isNotEmpty ? pages.cities : _fallbackCities;
-    final filtered = _filterCities(allCities);
+    final filtered  = _filterCities(allCities);
 
     return Scaffold(
       backgroundColor: _cityBase,
-      body: Stack(children: [
-        // Background gradient
-        Container(
-          decoration: const BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment(0, -0.86),
-              radius: 1.48,
-              colors: [Color(0xFF52D9E8), _cityBase],
-              stops: [0.0, 0.40],
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.86),
+            radius: 1.48,
+            colors: [Color(0xFF52D9E8), _cityBase],
+            stops: [0.0, 0.40],
           ),
         ),
-
-        // Scrollable content
-        GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          behavior: HitTestBehavior.translucent,
-          child: const SizedBox.expand(),
-        ),
-        SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(22, top + 72, 22, 160 + bottom),
-          physics: const BouncingScrollPhysics(),
-          child: AnimatedBuilder(
-            animation: Listenable.merge([_slideY, _fade]),
-            builder: (_, child) => Opacity(
-              opacity: _fade.value,
-              child: Transform.translate(
-                offset: Offset(0, _slideY.value), child: child)),
+        child: SafeArea(
+          child: GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            behavior: HitTestBehavior.translucent,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Heading
-                Text(isAr ? 'اختار مدينتك' : 'Choose Your City',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 34,
-                    fontWeight: FontWeight.w900, color: Colors.white,
-                    shadows: [Shadow(color: Color(0x2E0E3C46), blurRadius: 14, offset: Offset(0, 3))])),
-                const SizedBox(height: 10),
-                Text(isAr
-                    ? 'لنتمكن من عرض المنتجات والعروض المناسبة لك'
-                    : 'To show you relevant products and offers',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 15,
-                    fontWeight: FontWeight.w700, color: _navy, height: 1.5)),
-                const SizedBox(height: 20),
-
-                // Search bar
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.07),
-                      blurRadius: 12, offset: const Offset(0, 4))],
-                  ),
-                  child: Row(children: [
-                    const SizedBox(width: 16),
-                    const Icon(Icons.search_rounded, size: 22, color: Color(0xFF0D6B75)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchCtrl,
-                        autofocus: false,
-                        textAlign: isAr ? TextAlign.right : TextAlign.left,
-                        textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-                        onChanged: (v) => setState(() => _query = v),
-                        style: const TextStyle(fontFamily: 'Cairo',
-                          fontSize: 14, fontWeight: FontWeight.w600, color: _navy),
-                        decoration: InputDecoration(
-                          hintText: isAr ? 'ابحث عن مدينتك' : 'Search cities',
-                          hintStyle: const TextStyle(fontFamily: 'Cairo',
-                            color: Color(0xFF2A6E78), fontSize: 14, fontWeight: FontWeight.w500),
-                          border: InputBorder.none,
-                          filled: true,
-                          fillColor: Colors.transparent,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                // Language pill
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      GestureDetector(
+                        onTap: () => ref.read(localeProvider.notifier).toggle(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: [BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.12),
+                              blurRadius: 16, offset: const Offset(0, 6))],
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.language_rounded, size: 18, color: _teal),
+                            const SizedBox(width: 6),
+                            Text(isAr ? 'English' : 'العربية',
+                              style: const TextStyle(fontFamily: 'Cairo',
+                                fontSize: 15, fontWeight: FontWeight.w800, color: _navy)),
+                          ]),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                  ]),
-                ),
-                const SizedBox(height: 14),
-
-                // City list card
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.20),
-                    borderRadius: BorderRadius.circular(24),
+                    ],
                   ),
-                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 160),
-                  child: Column(children: [
-                    ...filtered.map((city) => _CityRow(
-                      cityAr: city.ar,
-                      cityEn: city.en,
-                      selected: _selected == city.ar,
-                      isAr: isAr,
-                      teal: _teal,
-                      onTap: () => setState(() => _selected = city.ar),
-                    )),
-                    if (filtered.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        child: Text(isAr ? 'لا توجد نتائج' : 'No results',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: _navy, fontWeight: FontWeight.w700)),
-                      ),
-                  ]),
                 ),
 
-                const SizedBox(height: 10),
+                // Scrollable content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(28, 16, 28, 16),
+                    physics: const BouncingScrollPhysics(),
+                    child: AnimatedBuilder(
+                      animation: Listenable.merge([_slideY, _fade]),
+                      builder: (_, child) => Opacity(
+                        opacity: _fade.value,
+                        child: Transform.translate(
+                          offset: Offset(0, _slideY.value), child: child)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Heading
+                          Text(isAr ? 'اختار مدينتك' : 'Choose Your City',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontFamily: 'Cairo', fontSize: 34,
+                              fontWeight: FontWeight.w900, color: Colors.white,
+                              shadows: [Shadow(color: Color(0x2E0E3C46), blurRadius: 14, offset: Offset(0, 3))])),
+                          const SizedBox(height: 10),
+                          Text(isAr
+                              ? 'لنتمكن من عرض المنتجات والعروض المناسبة لك'
+                              : 'To show you relevant products and offers',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontFamily: 'Cairo', fontSize: 15,
+                              fontWeight: FontWeight.w700, color: _navy, height: 1.5)),
+                          const SizedBox(height: 16),
 
-                // 3D map pin (floating)
-                _FloatingMapPin(),
+                          // Search bar
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.92),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.07),
+                                blurRadius: 12, offset: const Offset(0, 4))],
+                            ),
+                            child: Row(children: [
+                              const SizedBox(width: 16),
+                              const Icon(Icons.search_rounded, size: 22, color: Color(0xFF0D6B75)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextField(
+                                  controller: _searchCtrl,
+                                  autofocus: false,
+                                  textAlign: isAr ? TextAlign.right : TextAlign.left,
+                                  textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+                                  onChanged: (v) => setState(() => _query = v),
+                                  style: const TextStyle(fontFamily: 'Cairo',
+                                    fontSize: 14, fontWeight: FontWeight.w600, color: _navy),
+                                  decoration: InputDecoration(
+                                    hintText: isAr ? 'ابحث عن مدينتك' : 'Search cities',
+                                    hintStyle: const TextStyle(fontFamily: 'Cairo',
+                                      color: Color(0xFF2A6E78), fontSize: 14, fontWeight: FontWeight.w500),
+                                    border: InputBorder.none,
+                                    filled: true,
+                                    fillColor: Colors.transparent,
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                            ]),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // City list
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.20),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: Column(children: [
+                              ...filtered.map((city) => _CityRow(
+                                cityAr: city.ar,
+                                cityEn: city.en,
+                                selected: _selected == city.ar,
+                                isAr: isAr,
+                                teal: _teal,
+                                onTap: () => setState(() => _selected = city.ar),
+                              )),
+                              if (filtered.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  child: Text(isAr ? 'لا توجد نتائج' : 'No results',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: _navy, fontWeight: FontWeight.w700)),
+                                ),
+                            ]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Bottom action bar — always visible, never overlaps list
+                _BottomBar(
+                  label: _isReturning
+                      ? (isAr ? 'تأكيد' : 'Confirm')
+                      : (isAr ? 'التالي' : 'Next'),
+                  onTap: _proceed,
+                  isAr: isAr,
+                ),
               ],
             ),
           ),
         ),
-
-        // Language pill (top-right)
-        Positioned(
-          top: top + 12, right: 20,
-          child: GestureDetector(
-            onTap: () => ref.read(localeProvider.notifier).toggle(),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12),
-                  blurRadius: 16, offset: const Offset(0, 6))],
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.language_rounded, size: 18, color: _teal),
-                const SizedBox(width: 6),
-                Text(isAr ? 'English' : 'العربية',
-                  style: const TextStyle(fontFamily: 'Cairo',
-                    fontSize: 15, fontWeight: FontWeight.w800, color: _navy)),
-              ]),
-            ),
-          ),
-        ),
-
-        // Bottom action bar
-        Positioned(
-          bottom: 0, left: 0, right: 0,
-          child: _BottomBar(
-            label: _isReturning
-                ? (isAr ? 'تأكيد' : 'Confirm')
-                : (isAr ? 'التالي' : 'Next'),
-            onTap: _proceed,
-            isAr: isAr,
-          ),
-        ),
-      ]),
+      ),
     );
   }
 }
@@ -283,7 +280,6 @@ class _CityRow extends StatelessWidget {
               : [],
         ),
         child: Row(children: [
-          // Radio dot
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             width: 22, height: 22,
@@ -314,70 +310,6 @@ class _CityRow extends StatelessWidget {
   }
 }
 
-// ── Floating map pin ────────────────────────────────────────────────────────────
-class _FloatingMapPin extends StatefulWidget {
-  @override
-  State<_FloatingMapPin> createState() => _FloatingMapPinState();
-}
-class _FloatingMapPinState extends State<_FloatingMapPin>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _c;
-  late Animation<double> _y;
-  @override
-  void initState() {
-    super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 5000))
-      ..repeat(reverse: true);
-    _y = Tween<double>(begin: 0, end: -9).animate(
-        CurvedAnimation(parent: _c, curve: Curves.easeInOut));
-  }
-  @override
-  void dispose() { _c.dispose(); super.dispose(); }
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _y,
-      builder: (_, child) => Transform.translate(
-        offset: Offset(0, _y.value), child: child),
-      child: ShaderMask(
-        shaderCallback: (r) => const RadialGradient(
-          center: Alignment.center, radius: 0.5,
-          colors: [Colors.black, Colors.transparent],
-        ).createShader(r),
-        blendMode: BlendMode.dstIn,
-        child: Image.asset('assets/images/onb-mappin.png',
-          width: MediaQuery.of(context).size.width * 0.82,
-          alignment: Alignment.center),
-      ),
-    );
-  }
-}
-
-// ── Pagination dots ─────────────────────────────────────────────────────────────
-class _OnboardingDots extends StatelessWidget {
-  final int count;
-  final int active;
-  const _OnboardingDots({required this.count, required this.active});
-  @override
-  Widget build(BuildContext context) {
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      for (int i = 0; i < count; i++)
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          height: 8,
-          width: i == active ? 26 : 8,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: i == active
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.45),
-          ),
-        ),
-    ]);
-  }
-}
-
 // ── Bottom action bar ───────────────────────────────────────────────────────────
 class _BottomBar extends StatelessWidget {
   final String label;
@@ -387,9 +319,8 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).padding.bottom;
     return Container(
-      padding: EdgeInsets.fromLTRB(18, 0, 18, 26 + bottom),
+      padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
@@ -404,13 +335,12 @@ class _BottomBar extends StatelessWidget {
           child: Stack(alignment: Alignment.center, children: [
             Text(label, style: const TextStyle(fontFamily: 'Cairo',
               fontSize: 17, fontWeight: FontWeight.w900, color: _navy)),
-            // Simple faint arrow — right side for Arabic (forward = right in RTL)
             Positioned(
               right: 0,
               child: Opacity(
                 opacity: 0.45,
                 child: Icon(
-                  isAr ? Icons.arrow_forward_ios_rounded : Icons.arrow_back_ios_new_rounded,
+                  isAr ? Icons.arrow_forward_ios : Icons.arrow_back_ios_new_rounded,
                   size: 18, color: _teal),
               ),
             ),
