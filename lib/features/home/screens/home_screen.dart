@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -100,6 +101,9 @@ class HomeScreen extends ConsumerWidget {
             if ((home.loading && home.featured.isEmpty) || !banners.initialized)
               const SliverFillRemaining(child: _HomeSkeleton())
             else ...[
+              // One-time rewards modal (invisible trigger)
+              const SliverToBoxAdapter(child: _RewardsModalTrigger()),
+
               // Active order strip — shows when user has a live order
               const SliverToBoxAdapter(child: _ActiveOrderStrip()),
 
@@ -1787,7 +1791,7 @@ class _RewardsNudgeCard extends ConsumerWidget {
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: GestureDetector(
-            onTap: () => safePush(context, '/account'),
+            onTap: () => safePush(context, '/rewards-hub'),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
@@ -1915,6 +1919,158 @@ class _HomeSkeleton extends StatelessWidget {
             itemCount: 4,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (_, __) => ProductCardSkeleton(width: 165),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── One-time rewards modal trigger ────────────────────────────────────────────
+// Renders nothing; fires a post-frame callback that shows the modal once.
+class _RewardsModalTrigger extends ConsumerStatefulWidget {
+  const _RewardsModalTrigger();
+  @override
+  ConsumerState<_RewardsModalTrigger> createState() => _RewardsModalTriggerState();
+}
+
+class _RewardsModalTriggerState extends ConsumerState<_RewardsModalTrigger> {
+  static bool _firedThisSession = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_firedThisSession) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShow());
+  }
+
+  Future<void> _maybeShow() async {
+    final isLoggedIn = ref.read(authProvider).isLoggedIn;
+    if (!isLoggedIn) return;
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('rewards_modal_seen') == true) return;
+    if (!mounted) return;
+    _firedThisSession = true;
+    await prefs.setBool('rewards_modal_seen', true);
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _RewardsModal(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
+// ── Rewards modal sheet ───────────────────────────────────────────────────────
+class _RewardsModal extends StatelessWidget {
+  const _RewardsModal();
+
+  static const _teal      = AppColors.primary;
+  static const _tealLight = Color(0xFF53E2E9);
+  static const _tealDark  = Color(0xFF2FCED5);
+  static const _navy      = Color(0xFF0E3C46);
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).padding.bottom;
+    final s      = context.s;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.fromLTRB(24, 0, 24, 24 + bottom),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        // Handle
+        const SizedBox(height: 12),
+        Container(
+          width: 40, height: 4,
+          decoration: BoxDecoration(
+            color: const Color(0xFFDDDDDD),
+            borderRadius: BorderRadius.circular(999)),
+        ),
+        const SizedBox(height: 20),
+
+        // Hero icon with gradient background
+        Container(
+          width: 80, height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [_tealLight, _tealDark],
+            ),
+            boxShadow: [BoxShadow(
+              color: _teal.withValues(alpha: 0.35),
+              blurRadius: 20, offset: const Offset(0, 8))],
+          ),
+          child: const Icon(Icons.workspace_premium_rounded,
+            size: 40, color: Colors.white),
+        ),
+        const SizedBox(height: 16),
+
+        // Title
+        Text(s.rewardsArrived,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontFamily: 'Cairo', fontSize: 22,
+            fontWeight: FontWeight.w900, color: _navy, height: 1.2)),
+        const SizedBox(height: 10),
+
+        // Subtitle
+        Text(
+          context.isAr
+              ? 'احصل على استرداد نقدي على كل طلب، وارتقِ للمستويات الأعلى لمزايا أكبر'
+              : 'Earn cashback on every order and level up for bigger perks',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontFamily: 'Cairo', fontSize: 14,
+            fontWeight: FontWeight.w600, color: const Color(0xFF0E3C46).withValues(alpha: 0.70),
+            height: 1.5)),
+        const SizedBox(height: 24),
+
+        // Primary CTA → rewards hub
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).pop();
+            safePush(context, '/rewards-hub');
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [_tealLight, _tealDark],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: [BoxShadow(
+                color: _teal.withValues(alpha: 0.35),
+                blurRadius: 16, offset: const Offset(0, 6))],
+            ),
+            child: Text(s.discoverBenefits,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontFamily: 'Cairo', fontSize: 17,
+                fontWeight: FontWeight.w900, color: Colors.white)),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Secondary — dismiss
+        GestureDetector(
+          onTap: () => Navigator.of(context).pop(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(s.startShoppingNow,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontFamily: 'Cairo', fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: _navy.withValues(alpha: 0.55))),
           ),
         ),
       ]),

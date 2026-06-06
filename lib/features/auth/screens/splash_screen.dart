@@ -158,11 +158,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 1700)); // already at ~2800+1700=4500
     if (!mounted) return;
     final prefs = await SharedPreferences.getInstance();
-    final onboardingDone = prefs.getBool('onboarding_done') ?? false;
-    final cityChosen = prefs.getString('city') != null;
+    final v2Done  = prefs.getBool('onboarding_v2_done') ?? false;
+    final hasCity = prefs.getString('city') != null;
     if (!mounted) return;
-    if (onboardingDone && cityChosen) {
+    if (v2Done) {
       context.go('/home');
+    } else if (hasCity) {
+      context.go('/rewards-intro');
     } else {
       context.go('/city');
     }

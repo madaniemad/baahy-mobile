@@ -425,8 +425,39 @@ class AppStrings {
   String get addBirthday        => isAr ? 'أضف تاريخ ميلادك'       : 'Add your birthday';
   String get birthdayRewardHint => isAr ? 'احصل على مكافأة في عيد ميلادك' : 'Get a reward on your birthday';
   String get birthdayLabel      => isAr ? 'تاريخ الميلاد'           : 'Birthday';
-  String nudgeMilestone1(String amount) => isAr ? 'طلب واحد فقط وتحصل على $amount د.ل 🎁' : '1 order away from earning $amount LD 🎁';
-  String nudgeMilestone2(String amount) => isAr ? 'طلبان فقط وتحصل على $amount د.ل 🎁'    : '2 orders away from earning $amount LD 🎁';
+
+  // ── Rewards onboarding ────────────────────────────────────────────────────────
+  String get onbRewardsHeadline1 => isAr ? 'تسوّق'                       : 'Shop';
+  String get onbRewardsHeadline2 => isAr ? 'واكسب دائماً'                 : 'and always earn';
+  String get onbCashbackTitle    => isAr ? 'استرداد نقدي على كل طلب'      : 'Cashback on every order';
+  String get onbCashbackSub      => isAr ? 'حتى 6% تُضاف لمحفظتك تلقائياً' : 'Up to 6% added to your wallet automatically';
+  String get onbTiersTitle       => 'Silver · Gold · Platinum';
+  String get onbTiersSub         => isAr ? 'كلما تسوّقت أكثر — مزايا أكبر وكاش باك أعلى' : 'The more you shop — bigger perks and higher cashback';
+  String get onbReferralTitle    => isAr ? 'ادعُ صديقاً واكسبا معاً'      : 'Invite a friend, both earn';
+  String get onbReferralSub      => isAr ? 'كل منكما يحصل على 10 د.ل عند أول توصيل' : 'You each get 10 LYD on first delivery';
+  String get nextBtn             => isAr ? 'التالي'                       : 'Next';
+  String get rewardsArrived      => isAr ? 'برنامج الولاء وصل!'           : 'Loyalty program is here!';
+  String get discoverBenefits    => isAr ? 'اكتشف مزاياك'                 : 'Discover your perks';
+  String get startShoppingNow    => isAr ? 'ابدأ التسوق الآن'              : 'Start shopping now';
+  String get currentTierLabel    => isAr ? 'مستواك الحالي'                 : 'Your current tier';
+  String get startYourJourney    => isAr ? 'ابدأ رحلتك'                    : 'Start your journey';
+  String get hubProgressTitle    => isAr ? 'التقدم للمستوى التالي'          : 'Progress to next tier';
+  String get hubOrders           => isAr ? 'الطلبات'                       : 'Orders';
+  String get hubSpend            => isAr ? 'الإنفاق'                       : 'Spend';
+  String get hubBothRequired     => isAr ? 'يجب تحقيق الشرطين معاً للترقية' : 'Both conditions required to level up';
+  String get hubBenefitsTitle    => isAr ? 'مزايا كل مستوى'                : 'Tier benefits';
+  String get hubMilestonesTitle  => isAr ? 'مكافآت الطلبات'                : 'Order rewards';
+  String get hubInviteTitle      => isAr ? 'ادعُ أصدقاءك واكسب'            : 'Invite friends, earn together';
+  String get hubCashbackHowTitle => isAr ? 'كيف يعمل الاسترداد النقدي؟'   : 'How does cashback work?';
+  String get hubCashbackStep1    => isAr ? 'اطلب أي منتج بقيمة 80 د.ل فأكثر' : 'Place any order of 80 LYD or more';
+  String get hubCashbackStep2    => isAr ? 'استلم طلبك — يُحسب الاسترداد تلقائياً' : 'Receive your order — cashback is calculated automatically';
+  String get hubCashbackStep3    => isAr ? 'يُضاف المبلغ لمحفظتك مباشرة'  : 'Amount is added to your wallet instantly';
+  String get hubCashbackNote     => isAr ? '* النسبة تزداد مع ارتقائك في المستويات' : '* Rate increases as you level up';
+  String get hubCompleted        => isAr ? 'مكتمل ✓'                       : 'Done ✓';
+  String get cashbackLabel       => isAr ? 'كاش باك'                       : 'Cashback';
+
+  String nudgeMilestone1(String amount) => isAr ? 'طلب واحد فقط وتحصل على $amount د.ل' : '1 order away from earning $amount LD';
+  String nudgeMilestone2(String amount) => isAr ? 'طلبان فقط وتحصل على $amount د.ل'    : '2 orders away from earning $amount LD';
   String nudgeNoTier(int orders, String spend) => isAr ? 'تسوّق $orders طلبات بـ $spend د.ل للوصول لمستوى Silver 🥈' : 'Place $orders orders & spend $spend LD to reach Silver 🥈';
   String nudgeSilver(int orders, String spend) => isAr ? 'مستواك Silver 🥈 — $orders طلب و $spend د.ل من Gold'       : 'Silver 🥈 — $orders orders & $spend LD from Gold';
   String nudgeGold(int orders, String spend)   => isAr ? 'مستواك Gold 🥇 — $orders طلب و $spend د.ل من Platinum'    : 'Gold 🥇 — $orders orders & $spend LD from Platinum';

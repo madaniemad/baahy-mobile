@@ -53,7 +53,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   Future<void> _start() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_done', true);
+    await prefs.setBool('onboarding_v2_done', true);
     PushNotificationService.instance.requestPermissionIfNeeded();
     if (mounted) context.go('/home');
   }
@@ -212,7 +212,7 @@ class _ActionBar extends StatelessWidget {
             Positioned(
               right: 0,
               child: Opacity(opacity: 0.5,
-                child: Icon(Icons.arrow_forward_ios_rounded,
+                child: Icon(Icons.arrow_forward_ios,
                   size: 18, color: _teal)),
             ),
             Text(context.s.startShopping, style: const TextStyle(fontFamily: 'Cairo',

@@ -5,6 +5,7 @@ import '../api/api_client.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/city_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
+import '../../features/auth/screens/rewards_intro_screen.dart';
 import '../../features/auth/screens/phone_signin_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
 import '../../features/home/screens/home_screen.dart';
@@ -33,6 +34,7 @@ import '../../features/account/screens/faq_screen.dart';
 import '../../features/account/screens/contact_screen.dart';
 import '../../features/vendor/screens/vendor_store_screen.dart';
 import '../../features/assistant/screens/assistant_screen.dart';
+import '../../features/rewards/screens/rewards_hub_screen.dart';
 import '../shell/main_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -46,8 +48,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/splash',   builder: (_, __) => const SplashScreen()),
-      GoRoute(path: '/city',       builder: (_, __) => const CityScreen()),
-      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
+      GoRoute(path: '/city',          builder: (_, __) => const CityScreen()),
+      GoRoute(path: '/rewards-intro', builder: (_, __) => const RewardsIntroScreen()),
+      GoRoute(path: '/onboarding',    builder: (_, __) => const OnboardingScreen()),
       GoRoute(path: '/signin',   builder: (_, __) => const PhoneSignInScreen()),
       GoRoute(path: '/otp', builder: (_, state) {
         final extra = state.extra;
@@ -105,6 +108,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/orders/:id/return', builder: (_, state) =>
           ReturnScreen(orderId: int.parse(state.pathParameters['id']!))),
       GoRoute(path: '/referral',      builder: (_, __) => const ReferralScreen()),
+      GoRoute(path: '/rewards-hub',   builder: (_, __) => const RewardsHubScreen()),
       GoRoute(path: '/settings',      builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/return-policy', builder: (_, __) => const ReturnPolicyScreen()),
       GoRoute(path: '/privacy',       builder: (_, __) => const PolicyScreen(type: PolicyType.privacy)),

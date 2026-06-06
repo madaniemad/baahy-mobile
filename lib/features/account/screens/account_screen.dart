@@ -206,7 +206,10 @@ class AccountScreen extends ConsumerWidget {
                 // ── Tier card ───────────────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                  child: _TierCard(),
+                  child: GestureDetector(
+                    onTap: () => safePush(context, '/rewards-hub'),
+                    child: _TierCard(),
+                  ),
                 ),
 
                 const SizedBox(height: 12),

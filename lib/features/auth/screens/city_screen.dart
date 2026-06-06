@@ -57,7 +57,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _isReturning = prefs.getBool('onboarding_done') ?? false;
+      _isReturning = prefs.getBool('onboarding_v2_done') ?? false;
     });
   }
 
@@ -78,7 +78,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
   Future<void> _proceed() async {
     await ref.read(cityProvider.notifier).setCity(_selected);
     if (!mounted) return;
-    context.go(_isReturning ? '/home' : '/onboarding');
+    context.go(_isReturning ? '/home' : '/rewards-intro');
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -240,7 +240,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
         if (!_isReturning)
           Positioned(
             bottom: 88 + bottom, left: 0, right: 0,
-            child: _OnboardingDots(count: 3, active: 1),
+            child: _OnboardingDots(count: 3, active: 0),
           ),
 
         // Bottom action bar
