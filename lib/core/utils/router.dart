@@ -35,6 +35,12 @@ import '../../features/account/screens/contact_screen.dart';
 import '../../features/vendor/screens/vendor_store_screen.dart';
 import '../../features/assistant/screens/assistant_screen.dart';
 import '../../features/rewards/screens/rewards_hub_screen.dart';
+import '../../features/friends/screens/friends_screen.dart';
+import '../../features/friends/screens/user_search_screen.dart';
+import '../../features/friends/screens/friend_profile_screen.dart';
+import '../../features/friends/screens/qr_profile_screen.dart';
+import '../../features/friends/screens/privacy_settings_screen.dart';
+import '../../features/friends/screens/username_setup_screen.dart';
 import '../shell/main_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -117,6 +123,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/contact',       builder: (_, __) => const ContactScreen()),
       GoRoute(path: '/vendors/:id', builder: (_, state) =>
         VendorStoreScreen(vendorId: int.parse(state.pathParameters['id']!))),
+
+      // Friends
+      GoRoute(path: '/friends',        builder: (_, __) => const FriendsScreen()),
+      GoRoute(path: '/friends/search', builder: (_, __) => const UserSearchScreen()),
+      GoRoute(path: '/friends/qr',     builder: (_, __) => const QrProfileScreen()),
+      GoRoute(path: '/friends/:username', builder: (_, state) =>
+          FriendProfileScreen(username: state.pathParameters['username']!)),
+      GoRoute(path: '/settings/privacy', builder: (_, __) => const PrivacySettingsScreen()),
+      GoRoute(path: '/username-setup',   builder: (_, __) => const UsernameSetupScreen()),
     ],
   );
 

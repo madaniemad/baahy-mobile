@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/friends_provider.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/utils/l10n.dart';
@@ -45,7 +47,8 @@ class AccountScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authProvider);
+    final auth        = ref.watch(authProvider);
+    final config      = ref.watch(appConfigProvider);
 
     if (!auth.isLoggedIn) {
       return Scaffold(
@@ -214,6 +217,13 @@ class AccountScreen extends ConsumerWidget {
 
                 const SizedBox(height: 12),
 
+                // ── Friends card (social feature) ───────────────────────────
+                if (config.socialEnabled)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    child: _FriendsCard(),
+                  ),
+
                 // ── Menu group 1 ────────────────────────────────────────────
                 _MenuGroup([
                   _MenuRow(
@@ -300,6 +310,62 @@ class AccountScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Friends card ─────────────────────────────────────────────────────────────
+
+class _FriendsCard extends ConsumerWidget {
+  const _FriendsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final friendsState = ref.watch(friendsProvider);
+    final friendCount  = friendsState.friends.length;
+    final pendingCount = friendsState.incomingRequests.length;
+
+    return GestureDetector(
+      onTap: () => safePush(context, '/friends'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: context.col.surface,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: AppShadows.shadowCard,
+          border: Border.all(color: context.col.border),
+        ),
+        child: Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.teal.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.people_outline, color: AppColors.teal, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(context.tr('الأصدقاء', 'Friends'),
+              style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
+            Text('$friendCount ${context.tr('صديق', 'friends')}',
+              style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 18,
+                fontWeight: FontWeight.w800, color: context.col.ink0, height: 1.1)),
+          ])),
+          if (pendingCount > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.danger,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text('$pendingCount',
+                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
+          const SizedBox(width: 8),
+          Icon(Icons.chevron_right, color: context.col.ink3),
+        ]),
       ),
     );
   }

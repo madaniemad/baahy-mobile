@@ -55,6 +55,7 @@ class AppConfig {
   final double reviewRewardAmount;
   final double tierPlatinumCashback;
   final bool aiEnabled;
+  final bool socialEnabled;
   final bool seasonalEnabled;
   final double seasonalMultiplier;
   final String? seasonalEndsAt;
@@ -81,6 +82,7 @@ class AppConfig {
     this.reviewRewardAmount = 3.0,
     this.tierPlatinumCashback = 6.0,
     this.aiEnabled = true,
+    this.socialEnabled = false,
     this.seasonalEnabled = false,
     this.seasonalMultiplier = 2.0,
     this.seasonalEndsAt,
@@ -121,6 +123,7 @@ class AppConfig {
     reviewRewardAmount: 3.0,
     tierPlatinumCashback: 6.0,
     aiEnabled: true,
+    socialEnabled: false,
     seasonalEnabled: false,
     seasonalMultiplier: 2.0,
     seasonalEndsAt: null,
@@ -155,6 +158,7 @@ class AppConfig {
       reviewRewardAmount: _d(rewards?['review_reward_amount'] ?? defaults.reviewRewardAmount),
       tierPlatinumCashback: _d(rewards?['platinum_cashback'] ?? rewards?['tier_platinum_cashback'] ?? defaults.tierPlatinumCashback),
       aiEnabled: (j['ai_chat_enabled'] as bool?) ?? true,
+      socialEnabled: (j['social_enabled'] as bool?) ?? false,
       seasonalEnabled: (j['seasonal'] as Map<String, dynamic>?)?['enabled'] as bool? ?? false,
       seasonalMultiplier: ((j['seasonal'] as Map<String, dynamic>?)?['multiplier'] as num?)?.toDouble() ?? 2.0,
       seasonalEndsAt: (j['seasonal'] as Map<String, dynamic>?)?['ends_at'] as String?,

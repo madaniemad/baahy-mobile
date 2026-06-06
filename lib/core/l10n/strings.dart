@@ -563,4 +563,21 @@ Account Termination: We reserve the right to suspend any account that violates t
     };
     return map[city] ?? city;
   }
+
+  // ── Social Friends ────────────────────────────────────────────────────────────
+  String get friends              => isAr ? 'الأصدقاء'                    : 'Friends';
+  String get myFriends            => isAr ? 'أصدقائي'                     : 'My Friends';
+  String get friendRequests       => isAr ? 'الطلبات'                     : 'Requests';
+  String get addFriend            => isAr ? 'إضافة صديق'                  : 'Add Friend';
+  String get removeFriend         => isAr ? 'إزالة الصديق'                : 'Remove Friend';
+  String get friendRequestSent    => isAr ? 'تم إرسال طلب الصداقة'        : 'Friend Request Sent';
+  String get privacySettings      => isAr ? 'إعدادات الخصوصية'           : 'Privacy Settings';
+  String get myQrCode             => isAr ? 'كود QR الخاص بي'             : 'My QR Code';
+  String get chooseUsername       => isAr ? 'اختر اسم مستخدم'             : 'Choose Username';
+  String get usernameHint         => isAr ? 'اسم المستخدم'                : 'Username';
+  String get wishlistPrivacy      => isAr ? 'قائمة الرغبات'               : 'Wishlist';
+  String get purchasesPrivacy     => isAr ? 'المشتريات'                   : 'Purchases';
+  String get reviewsPrivacy       => isAr ? 'التقييمات'                   : 'Reviews';
+  String get tierPrivacy          => isAr ? 'درجة العضوية'                : 'Tier Badge';
+  String get friendsCard          => isAr ? 'الأصدقاء'                    : 'Friends';
 }

@@ -15,6 +15,11 @@ class User {
   final int loyaltyPoints;
   final String? referralCode;
   final String? birthday;
+  final String? username;
+  final String privacyWishlist;
+  final String privacyPurchases;
+  final String privacyReviews;
+  final String privacyTier;
 
   const User({
     required this.id,
@@ -27,6 +32,11 @@ class User {
     this.loyaltyPoints = 0,
     this.referralCode,
     this.birthday,
+    this.username,
+    this.privacyWishlist = 'friends',
+    this.privacyPurchases = 'friends',
+    this.privacyReviews = 'public',
+    this.privacyTier = 'friends',
   });
 
   factory User.fromJson(Map<String, dynamic> j) => User(
@@ -40,5 +50,10 @@ class User {
     loyaltyPoints: j['loyalty_points'] ?? 0,
     referralCode: j['referral_code'],
     birthday: j['birthday'] as String?,
+    username: j['username'] as String?,
+    privacyWishlist:  j['privacy_wishlist']  as String? ?? 'friends',
+    privacyPurchases: j['privacy_purchases'] as String? ?? 'friends',
+    privacyReviews:   j['privacy_reviews']   as String? ?? 'public',
+    privacyTier:      j['privacy_tier']      as String? ?? 'friends',
   );
 }
