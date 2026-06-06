@@ -73,16 +73,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         return OtpScreen(phone: extra as String);
       }),
 
-      // Main shell (tab bar)
-      ShellRoute(
-        builder: (context, state, child) => MainShell(child: child),
-        routes: [
-          GoRoute(path: '/home',       builder: (_, __) => const HomeScreen()),
-          GoRoute(path: '/wishlist',   builder: (_, __) => const WishlistScreen()),
-          GoRoute(path: '/assistant',  builder: (_, __) => const AssistantScreen()),
-          GoRoute(path: '/browse',     builder: (_, __) => const BrowseScreen()),
-          GoRoute(path: '/cart',       builder: (_, __) => const CartScreen()),
-          GoRoute(path: '/account',    builder: (_, __) => const AccountScreen()),
+      // Main shell (tab bar) — StatefulShellRoute keeps each tab alive in memory
+      // so switching tabs never triggers a rebuild of heavy screens (e.g. home).
+      // Branch order: home=0, browse=1, assistant=2, wishlist=3, cart=4, account=5
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) => MainShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(routes: [GoRoute(path: '/home',      builder: (_, __) => const HomeScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/browse',    builder: (_, __) => const BrowseScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/wishlist',  builder: (_, __) => const WishlistScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/cart',      builder: (_, __) => const CartScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/account',   builder: (_, __) => const AccountScreen())]),
         ],
       ),
 

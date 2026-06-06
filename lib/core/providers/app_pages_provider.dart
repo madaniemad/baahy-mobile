@@ -92,7 +92,9 @@ class AppPagesNotifier extends StateNotifier<AppPages> {
     }
     final fresh = await CacheService.instance.get(_cacheKey, maxAge: _cacheTtl);
     if (fresh != null) return;
-    await refresh();
+    // Cache expired — defer the network call so it doesn't compete with
+    // startup-critical requests (home feed, config, etc.).
+    Future.delayed(const Duration(seconds: 4), refresh);
   }
 
   Future<void> refresh() async {

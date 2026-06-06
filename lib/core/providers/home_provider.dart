@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -207,7 +208,9 @@ class HomeNotifier extends StateNotifier<HomeData> {
 
   Future<List<int>> _fetchOrderProductIds() async {
     try {
-      final res = await _api.dio.get('/orders', queryParameters: {'per_page': '5'});
+      final res = await _api.dio.get('/orders',
+          queryParameters: {'per_page': '5'},
+          options: Options(receiveTimeout: const Duration(seconds: 2)));
       final body = res.data;
       List? raw;
       final d = body['data'];

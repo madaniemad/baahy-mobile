@@ -26,6 +26,8 @@ import 'shared/theme/app_theme.dart';
 // ──────────────────────────────────────────────────────────────────────────────
 
 bool _firebaseReady = false;
+bool _fcmInited = false;
+Future<void>? _firebaseInit;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,15 +37,13 @@ Future<void> main() async {
     statusBarIconBrightness: Brightness.dark,
   ));
 
-  // Firebase init — gracefully skipped if config files are not yet present.
-  try {
-    await Firebase.initializeApp();
-    _firebaseReady = true;
-    // Crashlytics: re-enable after adding google-services.json + GoogleService-Info.plist
-    // and uncomment firebase_crashlytics in pubspec.yaml.
-  } catch (e) {
-    debugPrint('[Firebase] Not initialized — add config files to enable: $e');
-  }
+  // Firebase init — fire-and-forget so runApp() is not blocked.
+  // FCM wiring happens in BaahyApp once this future settles.
+  _firebaseInit = Firebase.initializeApp()
+      .then((_) { _firebaseReady = true; })
+      .catchError((Object e) {
+        debugPrint('[Firebase] Not initialized — add config files to enable: $e');
+      });
 
   runApp(const ProviderScope(child: BaahyApp()));
 }
@@ -57,10 +57,14 @@ class BaahyApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     final themeMode = ref.watch(themeModeProvider);
 
-    // Wire push notifications once router is ready and Firebase is available.
-    if (_firebaseReady) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        PushNotificationService.instance.init(router);
+    // Wire push notifications once Firebase settles (fire-and-forget init above).
+    // Guard ensures we never call init() more than once across rebuilds.
+    if (!_fcmInited && _firebaseInit != null) {
+      _firebaseInit!.then((_) {
+        if (_firebaseReady && !_fcmInited) {
+          _fcmInited = true;
+          PushNotificationService.instance.init(router);
+        }
       });
     }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:badges/badges.dart' as badges;
 import '../providers/cart_provider.dart';
 import '../providers/notifications_provider.dart';
@@ -38,44 +38,40 @@ class _AppLifecycleRefreshState extends ConsumerState<_AppLifecycleRefresh>
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-typedef _Tab = ({String path, IconData icon, String labelAr, String labelEn});
+// Branch indices in StatefulShellRoute (must match router.dart):
+//   0=home  1=browse  2=assistant  3=wishlist  4=cart  5=account
+typedef _Tab = ({IconData icon, String labelAr, String labelEn, int branchIdx});
 
-const _tabsWithAi = <_Tab>[
-  (path: '/home',      icon: Icons.home_outlined,           labelAr: 'الرئيسية', labelEn: 'Home'),
-  (path: '/browse',    icon: Icons.grid_view_outlined,      labelAr: 'الأقسام',  labelEn: 'Categories'),
-  (path: '/assistant', icon: Icons.auto_awesome_outlined,   labelAr: 'مساعد',    labelEn: 'AI'),
-  (path: '/cart',      icon: Icons.shopping_cart_outlined,  labelAr: 'السلة',    labelEn: 'Cart'),
-  (path: '/account',   icon: Icons.person_outline,          labelAr: 'حسابي',    labelEn: 'Me'),
-];
+const _Tab _tabHome      = (icon: Icons.home_outlined,          labelAr: 'الرئيسية', labelEn: 'Home',       branchIdx: 0);
+const _Tab _tabBrowse    = (icon: Icons.grid_view_outlined,     labelAr: 'الأقسام',  labelEn: 'Categories', branchIdx: 1);
+const _Tab _tabAssistant = (icon: Icons.auto_awesome_outlined,  labelAr: 'مساعد',    labelEn: 'AI',         branchIdx: 2);
+const _Tab _tabWishlist  = (icon: Icons.favorite_outline,       labelAr: 'المفضلة',  labelEn: 'Wishlist',   branchIdx: 3);
+const _Tab _tabCart      = (icon: Icons.shopping_cart_outlined, labelAr: 'السلة',    labelEn: 'Cart',       branchIdx: 4);
+const _Tab _tabAccount   = (icon: Icons.person_outline,         labelAr: 'حسابي',    labelEn: 'Me',         branchIdx: 5);
 
-const _tabsNoAi = <_Tab>[
-  (path: '/home',      icon: Icons.home_outlined,           labelAr: 'الرئيسية', labelEn: 'Home'),
-  (path: '/browse',    icon: Icons.grid_view_outlined,      labelAr: 'الأقسام',  labelEn: 'Categories'),
-  (path: '/wishlist',  icon: Icons.favorite_outline,        labelAr: 'المفضلة',  labelEn: 'Wishlist'),
-  (path: '/cart',      icon: Icons.shopping_cart_outlined,  labelAr: 'السلة',    labelEn: 'Cart'),
-  (path: '/account',   icon: Icons.person_outline,          labelAr: 'حسابي',    labelEn: 'Me'),
-];
+const _tabsWithAi  = [_tabHome, _tabBrowse, _tabAssistant, _tabCart, _tabAccount];
+const _tabsNoAi    = [_tabHome, _tabBrowse, _tabWishlist,  _tabCart, _tabAccount];
 
 class MainShell extends ConsumerWidget {
-  final Widget child;
-  const MainShell({required this.child, super.key});
+  final StatefulNavigationShell navigationShell;
+  const MainShell({required this.navigationShell, super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = GoRouterState.of(context).uri.path;
     final aiEnabled = ref.watch(appConfigProvider.select((c) => c.aiEnabled));
     final tabs = aiEnabled ? _tabsWithAi : _tabsNoAi;
-    final currentIdx = tabs.indexWhere((t) => location.startsWith(t.path));
-    // select() — rebuild tab bar ONLY when count changes, not on every cart mutation
-    final cartCount = ref.watch(cartProvider.select((s) => s.count));
+    final currentBranch = navigationShell.currentIndex;
+    final currentTabIdx = tabs.indexWhere((t) => t.branchIdx == currentBranch);
+
+    final cartCount     = ref.watch(cartProvider.select((s) => s.count));
     final wishlistCount = ref.watch(wishlistProvider.select((s) => s.length));
-    final unreadCount = ref.watch(notificationsProvider.select(
+    final unreadCount   = ref.watch(notificationsProvider.select(
         (list) => list.where((n) => !n.isRead).length));
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(
       body: Stack(children: [
-        child,
+        navigationShell,
         const Positioned(top: 0, left: 0, right: 0, child: OfflineBanner()),
         const _AppLifecycleRefresh(),
       ]),
@@ -92,7 +88,7 @@ class MainShell extends ConsumerWidget {
             child: Row(
               children: List.generate(tabs.length, (i) {
                 final tab = tabs[i];
-                final isActive = i == currentIdx;
+                final isActive = i == currentTabIdx;
                 Widget icon = Icon(
                   tab.icon,
                   size: 24,
@@ -100,7 +96,7 @@ class MainShell extends ConsumerWidget {
                 );
 
                 // Cart badge
-                if (tab.path == '/cart' && cartCount > 0) {
+                if (tab.branchIdx == 4 && cartCount > 0) {
                   icon = badges.Badge(
                     badgeContent: Text('$cartCount',
                       style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
@@ -110,7 +106,7 @@ class MainShell extends ConsumerWidget {
                 }
 
                 // Wishlist badge
-                if (tab.path == '/wishlist' && wishlistCount > 0) {
+                if (tab.branchIdx == 3 && wishlistCount > 0) {
                   icon = badges.Badge(
                     badgeContent: Text('$wishlistCount',
                       style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
@@ -120,7 +116,7 @@ class MainShell extends ConsumerWidget {
                 }
 
                 // Notifications badge
-                if (tab.path == '/account' && unreadCount > 0) {
+                if (tab.branchIdx == 5 && unreadCount > 0) {
                   icon = badges.Badge(
                     badgeContent: Text('$unreadCount',
                       style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
@@ -131,7 +127,11 @@ class MainShell extends ConsumerWidget {
 
                 return Expanded(
                   child: GestureDetector(
-                    onTap: () => context.go(tab.path),
+                    onTap: () => navigationShell.goBranch(
+                      tab.branchIdx,
+                      // Re-tapping the active tab scrolls back to top (goes to initialLocation).
+                      initialLocation: tab.branchIdx == currentBranch,
+                    ),
                     behavior: HitTestBehavior.opaque,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,

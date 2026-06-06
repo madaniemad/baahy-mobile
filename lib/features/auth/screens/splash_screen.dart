@@ -99,8 +99,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
     _breatheCtrl.repeat(reverse: true);
 
-    // Navigate ~400ms after entry animation completes
-    await Future.delayed(const Duration(milliseconds: 1700));
+    // Navigate as the entry animation finishes (2 000 ms total from start)
+    await Future.delayed(const Duration(milliseconds: 1300));
     if (!mounted) return;
     final prefs = await SharedPreferences.getInstance();
     final v2Done  = prefs.getBool('onboarding_v2_done') ?? false;

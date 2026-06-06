@@ -8,14 +8,13 @@ class CityNotifier extends StateNotifier<String> {
   }
 
   Future<void> _init() async {
-    // Read SharedPrefs immediately (synchronous-ish)
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString('city')?.trim();
     if (saved != null && saved.isNotEmpty && saved != 'كل ليبيا') {
       state = saved;
     }
-    // Then try to get the default address city from API
-    await _refreshFromAddress();
+    // API refresh is deferred — call refresh() explicitly when the user opens
+    // the addresses screen so startup isn't blocked by this network call.
   }
 
   Future<void> _refreshFromAddress() async {

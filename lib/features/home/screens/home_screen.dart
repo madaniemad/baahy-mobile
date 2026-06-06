@@ -385,7 +385,7 @@ class _SearchHintText extends StatelessWidget {
 
 // ── Active order strip ────────────────────────────────────────────────────────
 
-final _activeOrderProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+final _activeOrderProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/orders',
       queryParameters: {'status': 'shipped,confirmed,processing', 'per_page': 1});
