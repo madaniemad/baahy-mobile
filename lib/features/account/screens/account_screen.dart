@@ -847,7 +847,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     if (name.isEmpty) return;
     setState(() => _loading = true);
     try {
-      await ApiClient.instance.dio.patch('/auth/profile', data: {'name': name});
+      await ApiClient.instance.dio.put('/auth/profile', data: {'name': name});
       widget.onSaved();
       if (mounted) Navigator.of(context).pop();
       if (mounted) {

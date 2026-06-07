@@ -38,7 +38,8 @@ final _categoryProductsProvider = FutureProvider.family<List<Product>, String>((
 });
 
 class BrowseScreen extends ConsumerStatefulWidget {
-  const BrowseScreen({super.key});
+  final int? deepCategoryId;
+  const BrowseScreen({super.key, this.deepCategoryId});
 
   @override
   ConsumerState<BrowseScreen> createState() => _BrowseScreenState();
@@ -46,6 +47,16 @@ class BrowseScreen extends ConsumerStatefulWidget {
 
 class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   int? _activeCategoryId;
+  bool _deepLinked = false;
+
+  @override
+  void didUpdateWidget(BrowseScreen old) {
+    super.didUpdateWidget(old);
+    if (widget.deepCategoryId != old.deepCategoryId && widget.deepCategoryId != null) {
+      _deepLinked = false;
+      _activeCategoryId = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +64,26 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     final categories = home.categories;
 
     if (categories.isNotEmpty && _activeCategoryId == null) {
-      _activeCategoryId = categories.first.id;
+      if (!_deepLinked && widget.deepCategoryId != null) {
+        _deepLinked = true;
+        final targetId = widget.deepCategoryId!;
+        // Check if it's a root category
+        final isRoot = categories.any((c) => c.id == targetId);
+        if (isRoot) {
+          _activeCategoryId = targetId;
+        } else {
+          // Find the root that has this as a child
+          for (final root in categories) {
+            if (root.children.any((child) => child.id == targetId)) {
+              _activeCategoryId = root.id;
+              break;
+            }
+          }
+          _activeCategoryId ??= categories.first.id;
+        }
+      } else if (_activeCategoryId == null) {
+        _activeCategoryId = categories.first.id;
+      }
     }
 
     final activeCategory = categories.isEmpty ? null

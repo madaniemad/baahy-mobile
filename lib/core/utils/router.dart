@@ -80,7 +80,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, navigationShell) => MainShell(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: '/home',      builder: (_, __) => const HomeScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/browse',    builder: (_, __) => const BrowseScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/browse',    builder: (_, state) => BrowseScreen(deepCategoryId: int.tryParse(state.uri.queryParameters['categoryId'] ?? '')))]),
           StatefulShellBranch(routes: [GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/wishlist',  builder: (_, __) => const WishlistScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/cart',      builder: (_, __) => const CartScreen())]),

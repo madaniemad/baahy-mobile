@@ -44,6 +44,14 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>باهي تحتاج الوصول للكاميرا لمشاركة صور المنتجات مع المساعد الذكي</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>باهي تحتاج الوصول للمكتبة لاختيار صور المنتجات ومشاركتها مع المساعد الذكي</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>باهي تحتاج الإذن لحفظ الصور في مكتبتك</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>باهي تحتاج الوصول للميكروفون عند التقاط مقاطع فيديو</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>باهي تحتاج موقعك لتحديد مدينة التوصيل تلقائياً</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
