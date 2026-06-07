@@ -185,6 +185,16 @@ flutter build apk --release
 
 The booted simulator UDID as of last session: `B764355C-AE75-49CC-8E30-8B5089A32CAB` (iPhone 17 Pro)
 
+## AI Assistant Screen (`assistant_screen.dart`)
+- **Route**: `/assistant` — tab index 2 in `StatefulShellRoute`
+- **Chat API**: POST `/chat` with `{message, history, image?}` — `Options(receiveTimeout: Duration(seconds: 60))` required (two-pass Claude call takes 15-25s)
+- **`_ChatMessage` model**: includes `suggestedCategories: List<Map<String,dynamic>>` — rendered as `Wrap` of teal pill buttons
+- **Browse buttons**: tap → `safePush(context, '/search/results?q=&category=${cat['id']}')` — opens product listing filtered by that subcategory, NOT the categories overview page
+- **Error handling**: exceptions → persistent chat bubble with error text; `limit_hit:true` in DioException response body also handled (shows WhatsApp card)
+- **Image picker**: camera + photo library enabled; iOS privacy keys in `Info.plist` (NSCamera, NSPhotoLibrary, NSPhotoLibraryAdd, NSMicro)
+- **Conversation history**: persisted to SharedPreferences as JSON list; trimmed to last 10 messages for API (4 when >10)
+- **Rate limits** (from backend): 15 msg/hr, 5 img/hr, 50 msg/day — `limit_hit:true` triggers WhatsApp fallback card
+
 ## Browse Screen (`browse_screen.dart`)
 - **Sidebar rail**: white background, teal left accent bar on active item, 1px right border divider, width 108px
 - **Sidebar font**: 13px, maxLines 3 (handles long Arabic names like "الجمال والعناية الشخصية")
@@ -207,6 +217,14 @@ The booted simulator UDID as of last session: `B764355C-AE75-49CC-8E30-8B5089A32
 - **Lost connection bug**: caused by stale `development-service` process from iPhone session + wrong bundle ID app still running on simulator. Fix: `pkill -f "development-service"` + `xcrun simctl terminate ... com.baahy.customer` before running
 - **Stable run pattern**: terminate stale app, then `flutter run --no-devtools` in same shell session keeping process alive
 - **flutter run stability**: must keep start + monitor in same bash shell session — background processes from separate tool calls get killed when parent shell exits
+
+## iOS Permissions (`ios/Runner/Info.plist`)
+Required keys already present:
+- `NSCameraUsageDescription` — for assistant image capture
+- `NSPhotoLibraryUsageDescription` — for assistant image picker
+- `NSPhotoLibraryAddUsageDescription` — for saving images
+- `NSMicrophoneUsageDescription` — required alongside camera
+- `NSLocationWhenInUseUsageDescription` / `NSLocationAlwaysAndWhenInUseUsageDescription` — city detection
 
 ## Known Issues / TODO
 - Bundle ID `com.example.baahyCustomer` — should be changed to production bundle before App Store release
