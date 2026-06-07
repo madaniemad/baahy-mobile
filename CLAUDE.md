@@ -185,6 +185,29 @@ flutter build apk --release
 
 The booted simulator UDID as of last session: `B764355C-AE75-49CC-8E30-8B5089A32CAB` (iPhone 17 Pro)
 
+## Browse Screen (`browse_screen.dart`)
+- **Sidebar rail**: white background, teal left accent bar on active item, 1px right border divider, width 108px
+- **Sidebar font**: 13px, maxLines 3 (handles long Arabic names like "الجمال والعناية الشخصية")
+- **Subcategory grid**: 2 columns, `childAspectRatio: 0.88` (calibrated for 600×600 square images)
+- **Search bar margin**: `fromLTRB(12, 10, 12, 12)` — 12px below for breathing room
+
+## Product Detail Screen (`product_detail_screen.dart`)
+- **Section order**: Price → Variations/Size → Quantity+Trust+Delivery → Description → Vendor → Similar products
+- **Grid**: LayoutBuilder dynamic `mainAxisExtent` (no hardcoded height, adapts to screen width)
+
+## Wallet Screen (`wallet_screen.dart`)
+- Full redesign: teal gradient hero card (`Color(0xFF32DDE5)` → `Color(0xFF08AAAC)`), 4-stat row, tier progress, earn-more horizontal scroll, last-5 transactions
+- All original `_TopUpSheet` payment flows preserved (Mobicash OTP, Tadawel, Moamlat)
+
+## Home Screen Categories
+- Category tiles in horizontal scroll: `ClipOval` + `BoxShape.circle` (circular frames)
+
+## Simulator / flutter run Notes
+- **Bundle ID**: `com.example.baahyCustomer` — do NOT change for simulator (was temporarily changed for physical device, reverted back)
+- **Lost connection bug**: caused by stale `development-service` process from iPhone session + wrong bundle ID app still running on simulator. Fix: `pkill -f "development-service"` + `xcrun simctl terminate ... com.baahy.customer` before running
+- **Stable run pattern**: terminate stale app, then `flutter run --no-devtools` in same shell session keeping process alive
+- **flutter run stability**: must keep start + monitor in same bash shell session — background processes from separate tool calls get killed when parent shell exits
+
 ## Known Issues / TODO
 - Bundle ID `com.example.baahyCustomer` — should be changed to production bundle before App Store release
 - Firebase `google-services.json` and `GoogleService-Info.plist` are present but Crashlytics is commented out in pubspec
