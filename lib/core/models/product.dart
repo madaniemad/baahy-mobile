@@ -144,8 +144,9 @@ class Product {
   static const _storageBase = 'https://phplaravel-1620145-6391034.cloudwaysapps.com/storage/';
 
   static String _resolveImageUrl(String path) {
-    if (path.startsWith('http')) return path;
-    var p = path.replaceAll(RegExp(r'^/+'), '');
+    final fixed = path.replaceAll('/api/storage/', '/storage/');
+    if (fixed.startsWith('http')) return fixed;
+    var p = fixed.replaceAll(RegExp(r'^/+'), '');
     if (p.startsWith('storage/')) p = p.substring(8);
     return _storageBase + p;
   }
@@ -391,7 +392,9 @@ class Category {
 
   static String? _resolveImage(dynamic v) {
     if (v == null || (v as String).isEmpty) return null;
-    if (v.startsWith('http')) return v;
-    return 'https://phplaravel-1620145-6391034.cloudwaysapps.com/storage/${v.replaceAll(RegExp(r'^/+'), '')}';
+    // Backend bug: sometimes generates /api/storage/ instead of /storage/
+    final url = v.replaceAll('/api/storage/', '/storage/');
+    if (url.startsWith('http')) return url;
+    return 'https://phplaravel-1620145-6391034.cloudwaysapps.com/storage/${url.replaceAll(RegExp(r'^/+'), '')}';
   }
 }

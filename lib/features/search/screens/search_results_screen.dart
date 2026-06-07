@@ -395,24 +395,34 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                           ],
                         ),
                       )
-                    : GridView.builder(
-                        controller: _scrollCtrl,
-                        padding: const EdgeInsets.all(12),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          mainAxisExtent: 342,
-                        ),
-                        itemCount: _products.length + (_loadingMore ? 2 : 0),
-                        itemBuilder: (_, i) {
-                          if (i >= _products.length) return const ProductCardSkeleton();
-                          return Align(
-                            alignment: Alignment.topCenter,
-                            child: ProductCard(product: _products[i]),
-                          );
-                        },
-                      ),
+                    : LayoutBuilder(builder: (_, box) {
+                        const srcW = 165.0;
+                        const srcH = 345.0;
+                        final colW = (box.maxWidth - 12 - 24) / 2;
+                        final cellH = srcH * (colW / srcW);
+                        return GridView.builder(
+                          controller: _scrollCtrl,
+                          padding: const EdgeInsets.all(12),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            mainAxisExtent: cellH.ceilToDouble(),
+                          ),
+                          itemCount: _products.length + (_loadingMore ? 2 : 0),
+                          itemBuilder: (_, i) {
+                            if (i >= _products.length) return const ProductCardSkeleton();
+                            return FittedBox(
+                              fit: BoxFit.contain,
+                              alignment: Alignment.topCenter,
+                              child: SizedBox(
+                                width: srcW,
+                                child: ProductCard(product: _products[i], width: srcW),
+                              ),
+                            );
+                          },
+                        );
+                      }),
           ),
         ],
       ),

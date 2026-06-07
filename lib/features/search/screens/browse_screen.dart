@@ -60,101 +60,122 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
         : categories.firstWhere((c) => c.id == _activeCategoryId,
             orElse: () => categories.first);
 
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+
     return Scaffold(
-      backgroundColor: context.col.bg,
-      appBar: AppBar(
-        backgroundColor: context.col.surface,
-        elevation: 0,
-        title: Text(context.s.categories,
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 18)),
-        centerTitle: true,
-      ),
-      body: categories.isEmpty
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Left rail
-                Container(
-                  width: 94,
-                  decoration: BoxDecoration(
-                    color: context.col.surfaceSoft,
-                    border: Border(right: BorderSide(color: context.col.border)),
-                  ),
-                  child: ListView.builder(
-                    itemCount: categories.length,
-                    itemBuilder: (_, i) {
-                      final cat = categories[i];
-                      final isActive = cat.id == _activeCategoryId;
-                      final isAr = Localizations.localeOf(context).languageCode == 'ar';
-                      return GestureDetector(
-                        onTap: () => setState(() => _activeCategoryId = cat.id),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 5),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Full-width search bar ──────────────────────────────────────
+            GestureDetector(
+              onTap: () => safePush(context, '/search'),
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: context.col.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: context.col.border),
+                  boxShadow: AppShadows.shadowCard,
+                ),
+                child: Row(children: [
+                  Icon(Icons.search, size: 17, color: context.col.ink3),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(context.s.searchHint,
+                    style: TextStyle(color: context.col.ink3, fontSize: 13))),
+                  Icon(Icons.mic_none_rounded, size: 17, color: context.col.ink3),
+                ]),
+              ),
+            ),
+
+            // ── Rail + content ─────────────────────────────────────────────
+            Expanded(
+              child: categories.isEmpty
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left rail
+                        Container(
+                          width: 108,
                           decoration: BoxDecoration(
-                            color: isActive ? context.col.surface : Colors.transparent,
-                            border: isAr
-                              ? Border(left: BorderSide(
-                                  color: isActive ? AppColors.primary : Colors.transparent,
-                                  width: 3))
-                              : Border(right: BorderSide(
-                                  color: isActive ? AppColors.primary : Colors.transparent,
-                                  width: 3)),
+                            color: Colors.white,
+                            border: Border(right: BorderSide(color: context.col.border, width: 1)),
                           ),
+                          child: ListView.builder(
+                            itemCount: categories.length,
+                            itemBuilder: (_, i) {
+                              final cat = categories[i];
+                              final isActive = cat.id == _activeCategoryId;
+                              return GestureDetector(
+                                onTap: () => setState(() => _activeCategoryId = cat.id),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    color: isActive ? const Color(0xFFF0FFFE) : Colors.white,
+                                    border: isAr
+                                      ? Border(left: BorderSide(
+                                          color: isActive ? AppColors.teal : Colors.transparent,
+                                          width: 3))
+                                      : Border(right: BorderSide(
+                                          color: isActive ? AppColors.teal : Colors.transparent,
+                                          width: 3)),
+                                  ),
+                                  child: Text(
+                                    isAr ? cat.nameAr : cat.name,
+                                    textAlign: TextAlign.start,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                                      color: isActive ? AppColors.teal : context.col.ink1,
+                                      fontFamily: 'Cairo',
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        // Right panel
+                        Expanded(
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: AspectRatio(
-                                  aspectRatio: 1.0,
-                                  child: cat.image != null
-                                      ? CachedNetworkImage(
-                                          imageUrl: cat.image!, fit: BoxFit.cover,
-                                          memCacheWidth: 160,
-                                          memCacheHeight: 160,
-                                          errorWidget: (_, __, ___) =>
-                                            Container(color: AppColors.primary.withValues(alpha: 0.1),
-                                              child: const Icon(Icons.grid_view_rounded,
-                                                color: AppColors.primary, size: 24)),
-                                        )
-                                      : Container(
-                                          color: AppColors.primary.withValues(alpha: 0.1),
-                                          child: const Icon(Icons.grid_view_rounded,
-                                            color: AppColors.primary, size: 24)),
+                              // "الأقسام" title
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+                                child: Text(
+                                  context.s.categories,
+                                  textAlign: TextAlign.start,
+                                  style: const TextStyle(
+                                    fontFamily: 'Cairo',
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                isAr ? cat.nameAr : cat.name,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w600,
-                                  color: isActive ? AppColors.primary : context.col.ink2,
-                                  fontFamily: 'Cairo',
-                                ),
+                              Expanded(
+                                child: _activeCategoryId == null || activeCategory == null
+                                    ? const SizedBox.shrink()
+                                    : _RightContent(
+                                        categoryId: _activeCategoryId!,
+                                        category: activeCategory,
+                                      ),
                               ),
                             ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-
-                // Right content
-                Expanded(
-                  child: _activeCategoryId == null || activeCategory == null
-                      ? const SizedBox.shrink()
-                      : _RightContent(
-                          categoryId: _activeCategoryId!,
-                          category: activeCategory,
-                        ),
-                ),
-              ],
+                      ],
+                    ),
             ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -184,7 +205,7 @@ class _RightContentState extends ConsumerState<_RightContent> {
       padding: EdgeInsets.zero,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 0.82),
+        crossAxisCount: 2, mainAxisSpacing: 8, crossAxisSpacing: 8, childAspectRatio: 0.88),
       itemCount: subcats.length,
       itemBuilder: (_, i) {
         final sub = subcats[i];
@@ -201,19 +222,26 @@ class _RightContentState extends ConsumerState<_RightContent> {
         padding: const EdgeInsets.all(12),
         children: [
           if (subcats.isNotEmpty) ...[_subcatGrid(), const SizedBox(height: 16)],
-          GridView.builder(
-            shrinkWrap: true, padding: EdgeInsets.zero,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, mainAxisExtent: 285),
-            itemCount: 6,
-            itemBuilder: (_, __) => const ProductCardSkeleton(),
-          ),
+          LayoutBuilder(builder: (_, box) {
+            const srcW = 165.0;
+            const srcH = 335.0; // natural card height at srcW
+            final colW = (box.maxWidth - 10) / 2;
+            final cellH = srcH * (colW / srcW);
+            return GridView.builder(
+              shrinkWrap: true, padding: EdgeInsets.zero,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10,
+                mainAxisExtent: cellH.ceilToDouble()),
+              itemCount: 6,
+              itemBuilder: (_, __) => const ProductCardSkeleton(),
+            );
+          }),
         ],
       ),
       error: (_, __) => Center(child: Text(context.s.loadError, style: TextStyle(color: context.col.ink2))),
       data: (products) => ListView(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
         children: [
           // Subcategory tiles
           if (subcats.isNotEmpty) ...[
@@ -236,22 +264,32 @@ class _RightContentState extends ConsumerState<_RightContent> {
               child: Text(context.s.noProducts, style: TextStyle(color: context.col.ink2)),
             ))
           else
-            GridView.builder(
-              shrinkWrap: true,
-              padding: EdgeInsets.zero,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                mainAxisExtent: 285,
-              ),
-              itemCount: products.length,
-              itemBuilder: (_, i) => Align(
-                alignment: Alignment.topCenter,
-                child: ProductCard(product: products[i]),
-              ),
-            ),
+            LayoutBuilder(builder: (_, box) {
+              const srcW = 165.0;
+              const srcH = 335.0;
+              final colW = (box.maxWidth - 10) / 2;
+              final cellH = srcH * (colW / srcW);
+              return GridView.builder(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  mainAxisExtent: cellH.ceilToDouble(),
+                ),
+                itemCount: products.length,
+                itemBuilder: (_, i) => FittedBox(
+                  fit: BoxFit.contain,
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    width: srcW,
+                    child: ProductCard(product: products[i], width: srcW),
+                  ),
+                ),
+              );
+            }),
         ],
       ),
     );
@@ -278,7 +316,6 @@ class _SubTile extends StatelessWidget {
                   ? CachedNetworkImage(
                       imageUrl: image!, fit: BoxFit.cover,
                       memCacheWidth: 400,
-                      memCacheHeight: 400,
                       errorWidget: (_, __, ___) =>
                           Container(color: AppColors.primary.withValues(alpha: 0.12)),
                     )
@@ -292,7 +329,7 @@ class _SubTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: FontWeight.w700,
               color: context.col.ink0,
               fontFamily: 'Cairo',

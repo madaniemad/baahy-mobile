@@ -333,6 +333,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           decoration: BoxDecoration(
                             color: context.col.surface,
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.col.border),
                             boxShadow: AppShadows.shadowCard,
                           ),
                           child: Column(
@@ -452,36 +453,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           ),
                         ),
 
-                        // ── Card 2: Description ──────────────────────
-                        if (product.description != null && product.description!.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 12),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: context.col.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: AppShadows.shadowCard,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(context.s.description,
-                                  textAlign: TextAlign.start,
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                                const SizedBox(height: 8),
-                                Text(isAr
-                                    ? (product.descriptionAr ?? product.description!)
-                                    : product.description!,
-                                  textAlign: TextAlign.start,
-                                  style: TextStyle(
-                                    fontSize: 14, color: context.col.ink2, height: 1.6)),
-                              ],
-                            ),
-                          ),
-                        ],
-
-                        // ── Card 3: Attributes / Variations ──────────
+                        // ── Card 2: Attributes / Variations ──────────
                         if (product.variations.isEmpty && product.productAttributes.isNotEmpty) ...[
                           const SizedBox(height: 10),
                           Container(
@@ -524,6 +496,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           decoration: BoxDecoration(
                             color: context.col.surface,
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.col.border),
                             boxShadow: AppShadows.shadowCard,
                           ),
                           child: Column(children: [
@@ -553,6 +526,35 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           ]),
                         ),
 
+                        // ── Card 4: Description ──────────────────────
+                        if (product.description != null && product.description!.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: context.col.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: AppShadows.shadowCard,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(context.s.description,
+                                  textAlign: TextAlign.start,
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                                const SizedBox(height: 8),
+                                Text(isAr
+                                    ? (product.descriptionAr ?? product.description!)
+                                    : product.description!,
+                                  textAlign: TextAlign.start,
+                                  style: TextStyle(
+                                    fontSize: 14, color: context.col.ink2, height: 1.6)),
+                              ],
+                            ),
+                          ),
+                        ],
+
                         // ── Card 4: Vendor ────────────────────────────
                         if (product.vendor != null) ...[
                           const SizedBox(height: 10),
@@ -576,6 +578,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           decoration: BoxDecoration(
                             color: context.col.surface,
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.col.border),
                             boxShadow: AppShadows.shadowCard,
                           ),
                           child: const _CouponSection(),
@@ -666,6 +669,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   decoration: BoxDecoration(
                     color: context.col.surface.withValues(alpha: 0.97),
                     boxShadow: AppShadows.shadowPop,
+                    border: Border(top: BorderSide(color: context.col.border)),
                   ),
                   child: product.inStock
                       ? Row(children: [
@@ -1765,21 +1769,31 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
           Text(context.s.youMayAlsoLike,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
           const SizedBox(height: 12),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              mainAxisExtent: 336,
-            ),
-            itemCount: _products.length % 2 == 0 ? _products.length : _products.length - 1,
-            itemBuilder: (_, i) => Align(
-              alignment: Alignment.topCenter,
-              child: ProductCard(product: _products[i]),
-            ),
-          ),
+          LayoutBuilder(builder: (_, box) {
+            const srcW = 165.0;
+            const srcH = 345.0;
+            final colW = (box.maxWidth - 12) / 2;
+            final cellH = srcH * (colW / srcW);
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                mainAxisExtent: cellH.ceilToDouble(),
+              ),
+              itemCount: _products.length % 2 == 0 ? _products.length : _products.length - 1,
+              itemBuilder: (_, i) => FittedBox(
+                fit: BoxFit.contain,
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: srcW,
+                  child: ProductCard(product: _products[i], width: srcW),
+                ),
+              ),
+            );
+          }),
           if (_loading) ...[
             const SizedBox(height: 16),
             const Center(

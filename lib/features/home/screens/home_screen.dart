@@ -71,19 +71,19 @@ class HomeScreen extends ConsumerWidget {
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(50),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
                   child: GestureDetector(
                     onTap: () => safePush(context, '/search'),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(children: [
                         Icon(Icons.search, size: 17, color: context.col.ink3),
-                        SizedBox(width: 7),
+                        const SizedBox(width: 7),
                         Expanded(child: _SearchHintText()),
                         Icon(Icons.mic_none_rounded, size: 17, color: context.col.ink3),
                       ]),
@@ -1193,18 +1193,18 @@ class _CategoriesGridState extends State<_CategoriesGrid> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
+                Container(
                   width: 64, height: 64,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: item.color.withValues(alpha: 0.12),
+                  ),
+                  child: ClipOval(
                     child: item.cat.image != null
                         ? CachedNetworkImage(imageUrl: item.cat.image!, fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => Container(
-                              color: item.color.withValues(alpha: 0.15),
+                            errorWidget: (_, __, ___) => Center(
                               child: Icon(icon, size: 26, color: item.color)))
-                        : Container(
-                            color: item.color.withValues(alpha: 0.15),
-                            child: Icon(icon, size: 20, color: item.color)),
+                        : Center(child: Icon(icon, size: 20, color: item.color)),
                   ),
                 ),
                 const SizedBox(height: 3),

@@ -178,6 +178,7 @@ class _FreeShippingBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.col.surfaceSoft,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: context.col.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,6 +269,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: context.col.border),
         boxShadow: AppShadows.shadowCard,
       ),
       child: Column(
@@ -373,6 +375,7 @@ class _CartItemCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: context.col.border),
         boxShadow: AppShadows.shadowCard,
       ),
       child: Row(
@@ -638,6 +641,7 @@ class _CartSummaryState extends ConsumerState<_CartSummary> {
       decoration: BoxDecoration(
         color: context.col.surface,
         boxShadow: AppShadows.shadowPop,
+        border: Border(top: BorderSide(color: context.col.border)),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
       ),
       child: Column(

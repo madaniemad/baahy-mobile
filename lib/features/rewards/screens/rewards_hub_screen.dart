@@ -231,6 +231,7 @@ class _ProgressSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: context.col.border),
         boxShadow: AppShadows.shadowCard,
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -314,6 +315,7 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: context.col.border),
         boxShadow: AppShadows.shadowCard,
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

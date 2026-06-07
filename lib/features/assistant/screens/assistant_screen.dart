@@ -293,21 +293,22 @@ class _EmptyState extends ConsumerWidget {
       children: [
         // Logo + greeting
         Center(
-          child: Column(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 52, height: 52,
+                width: 40, height: 40,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.auto_awesome_rounded,
-                  color: AppColors.primary, size: 26),
+                  color: AppColors.primary, size: 22),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(width: 10),
               Text(context.s.assistantGreeting,
                 style: const TextStyle(
-                  fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink2)),
+                  fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.ink1)),
             ],
           ),
         ),

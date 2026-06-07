@@ -408,7 +408,7 @@ class AppStrings {
   String get discoverCategories=> isAr ? 'تسوّق أحدث المنتجات من مختلف الفئات' : 'Shop the latest products across all categories';
 
   // ── Browse ───────────────────────────────────────────────────────────────────
-  String get sneakPeek         => isAr ? 'عينة عالسريع'            : 'Sneak Peek';
+  String get sneakPeek         => isAr ? 'الأكثر رواجًا'           : 'Most Popular';
 
   // ── Tier / Loyalty ───────────────────────────────────────────────────────────
   String get tierLevel          => isAr ? 'مستوى الولاء'           : 'Loyalty Tier';

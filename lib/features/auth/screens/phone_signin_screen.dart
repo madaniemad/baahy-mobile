@@ -54,11 +54,14 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
           onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
           icon: Icon(Icons.arrow_back, color: context.col.ink0)),
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
             Container(
               width: 56, height: 56,
               decoration: BoxDecoration(
@@ -161,67 +164,72 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               ),
             ),
 
-            const Spacer(),
-
-            // Buttons
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: (_valid && !_loading) ? _send : null,
-                icon: _loading
-                    ? const SizedBox(width: 18, height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87))
-                    : const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.black87),
-                label: Text(context.s.sendCode,
-                  style: const TextStyle(fontFamily: 'Cairo',
-                    fontWeight: FontWeight.w800, fontSize: 15, color: Colors.black87)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: Icon(Icons.chat_outlined, size: 16, color: context.col.ink1),
-                label: Text(context.s.viaWhatsapp,
-                  style: TextStyle(fontFamily: 'Cairo',
-                    fontWeight: FontWeight.w700, color: context.col.ink0)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: context.col.border),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(24, 0, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: (_valid && !_loading) ? _send : null,
+                  icon: _loading
+                      ? const SizedBox(width: 18, height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87))
+                      : const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.black87),
+                  label: Text(context.s.sendCode,
+                    style: const TextStyle(fontFamily: 'Cairo',
+                      fontWeight: FontWeight.w800, fontSize: 15, color: Colors.black87)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: GestureDetector(
-                onTap: () => context.go('/home'),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Text(context.s.browseAsGuest,
-                    style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600,
-                      color: context.col.ink2,
-                      decoration: TextDecoration.underline,
-                      decorationColor: context.col.ink2)),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: Icon(Icons.chat_outlined, size: 16, color: context.col.ink1),
+                  label: Text(context.s.viaWhatsapp,
+                    style: TextStyle(fontFamily: 'Cairo',
+                      fontWeight: FontWeight.w700, color: context.col.ink0)),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: context.col.border),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              context.s.termsAgreement,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11, color: context.col.ink3, height: 1.5)),
-          ],
-        ),
+              const SizedBox(height: 12),
+              Center(
+                child: GestureDetector(
+                  onTap: () => context.go('/home'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(context.s.browseAsGuest,
+                      style: TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600,
+                        color: context.col.ink2,
+                        decoration: TextDecoration.underline,
+                        decorationColor: context.col.ink2)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                context.s.termsAgreement,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, color: context.col.ink3, height: 1.5)),
+            ]),
+          ),
+        ],
       ),
     );
   }

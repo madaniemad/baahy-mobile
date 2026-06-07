@@ -32,10 +32,10 @@ class BaahyColors extends ThemeExtension<BaahyColors> {
   });
 
   static const light = BaahyColors(
-    bg:            Color(0xFFFAFBFC),
+    bg:            Color(0xFFFFFFFF),
     surface:       Color(0xFFFFFFFF),
-    surfaceSoft:   Color(0xFFF6F7F7),
-    cardImageBg:   Color(0xFFEDEFEF),
+    surfaceSoft:   Color(0xFFF8F9F9),
+    cardImageBg:   Color(0xFFF4F5F5),
     border:        Color(0xFFECEFEF),
     borderStrong:  Color(0xFFD8DDDD),
     ink0:          Color(0xFF0A1A1A),
@@ -124,10 +124,10 @@ class AppColors {
   static const ink4        = Color(0xFFC4CCCE); // hairline
 
   // Surface
-  static const bg          = Color(0xFFFAFBFC);  // slightly lighter than gray-50
+  static const bg          = Color(0xFFFFFFFF);
   static const surface     = Color(0xFFFFFFFF);
-  static const surfaceSoft = Color(0xFFF6F7F7);  // lighter containers (search box, etc.)
-  static const cardImageBg = Color(0xFFEDEFEF);  // card image section — distinct from white info
+  static const surfaceSoft = Color(0xFFF8F9F9);  // lighter containers (search box, etc.)
+  static const cardImageBg = Color(0xFFF4F5F5);  // card image section — distinct from white info
   static const border      = Color(0xFFECEFEF);
   static const borderStrong= Color(0xFFD8DDDD);
 
