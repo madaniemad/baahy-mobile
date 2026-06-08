@@ -500,12 +500,12 @@ class _EmptyState extends ConsumerStatefulWidget {
 class _EmptyStateState extends ConsumerState<_EmptyState> {
   bool _showAll = false;
 
-  static const _suggestions = [
+  static final _suggestions = [
     _SuggestionData(
         Icons.local_shipping_outlined,
         'وين طلبي؟',
         'تتبع حالة طلبك',
-        AppColors.teal50,
+        AppColors.primary.withValues(alpha: 0.08),
         AppColors.primary,
         'وين طلبي؟'),
     _SuggestionData(
@@ -533,7 +533,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
         Icons.support_agent_outlined,
         'تواصل معنا',
         'دعم سريع عبر واتساب',
-        AppColors.teal50,
+        AppColors.primary.withValues(alpha: 0.08),
         AppColors.primary,
         'كيف أتواصل مع خدمة العملاء؟'),
     _SuggestionData(
@@ -561,7 +561,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: AppColors.teal50,
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(Icons.auto_awesome_rounded,
@@ -791,7 +791,7 @@ class _InlineInput extends StatelessWidget {
                           width: 38,
                           height: 38,
                           decoration: BoxDecoration(
-                            color: canSend ? AppColors.primary : AppColors.teal50,
+                            color: canSend ? AppColors.primary : AppColors.primary.withValues(alpha: 0.08),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -1127,10 +1127,10 @@ class _AssistantBubble extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 9),
                         decoration: BoxDecoration(
-                          color: AppColors.teal50,
+                          color: AppColors.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                              color: AppColors.teal.withValues(alpha: 0.4)),
+                              color: AppColors.primary.withValues(alpha: 0.4)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

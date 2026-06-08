@@ -122,7 +122,7 @@ class _NotifCard extends ConsumerWidget {
 
   static Color _iconBg(String? type, BuildContext context) {
     switch (type) {
-      case 'order': return AppColors.teal50bg;
+      case 'order': return AppColors.primary.withValues(alpha: 0.08);
       case 'promo': return const Color(0xFFFFF3E0);
       case 'system': return context.col.surfaceSoft;
       default: return context.col.surfaceSoft;
@@ -171,10 +171,10 @@ class _NotifCard extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: n.isRead ? Colors.white : AppColors.teal50bg,
+          color: n.isRead ? Colors.white : AppColors.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: n.isRead ? context.col.border : AppColors.teal100bg,
+            color: n.isRead ? context.col.border : AppColors.primary.withValues(alpha: 0.15),
             width: 1,
           ),
           boxShadow: n.isRead ? null : AppShadows.shadowCard,

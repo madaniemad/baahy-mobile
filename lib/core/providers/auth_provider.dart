@@ -103,6 +103,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = AuthState(user: User.fromJson(userJson));
     } catch (_) {}
   }
+
+  void updateAvatar(String url) {
+    final user = state.user;
+    if (user == null) return;
+    state = state.copyWith(user: user.copyWith(avatar: url));
+    SharedPreferences.getInstance().then((prefs) {
+      final cached = prefs.getString(_kCachedUser);
+      if (cached != null) {
+        final json = jsonDecode(cached) as Map<String, dynamic>;
+        json['avatar'] = url;
+        prefs.setString(_kCachedUser, jsonEncode(json));
+      }
+    });
+  }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {

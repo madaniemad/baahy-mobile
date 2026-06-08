@@ -39,6 +39,15 @@ class User {
     this.privacyTier = 'friends',
   });
 
+  User copyWith({String? avatar}) => User(
+    id: id, name: name, phone: phone, email: email,
+    avatar: avatar ?? this.avatar,
+    city: city, walletBalance: walletBalance, loyaltyPoints: loyaltyPoints,
+    referralCode: referralCode, birthday: birthday, username: username,
+    privacyWishlist: privacyWishlist, privacyPurchases: privacyPurchases,
+    privacyReviews: privacyReviews, privacyTier: privacyTier,
+  );
+
   factory User.fromJson(Map<String, dynamic> j) => User(
     id: j['id'],
     name: j['name'] ?? '',

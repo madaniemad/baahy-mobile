@@ -100,7 +100,7 @@ class _PolicyCard extends StatelessWidget {
         Container(
           width: 36, height: 36,
           decoration: BoxDecoration(
-            color: AppColors.teal50,
+            color: AppColors.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, size: 18, color: AppColors.primary),

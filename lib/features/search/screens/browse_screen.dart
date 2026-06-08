@@ -146,10 +146,10 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                                     color: isActive ? const Color(0xFFF0FFFE) : Colors.white,
                                     border: isAr
                                       ? Border(left: BorderSide(
-                                          color: isActive ? AppColors.teal : Colors.transparent,
+                                          color: isActive ? AppColors.primary : Colors.transparent,
                                           width: 3))
                                       : Border(right: BorderSide(
-                                          color: isActive ? AppColors.teal : Colors.transparent,
+                                          color: isActive ? AppColors.primary : Colors.transparent,
                                           width: 3)),
                                   ),
                                   child: Text(
@@ -160,7 +160,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                                      color: isActive ? AppColors.teal : context.col.ink1,
+                                      color: isActive ? AppColors.primary : context.col.ink1,
                                       fontFamily: 'Cairo',
                                       height: 1.35,
                                     ),
