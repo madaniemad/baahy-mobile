@@ -163,7 +163,11 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFF5F5F5) : Colors.white,
+                          color: isSelected
+                              ? (Theme.of(context).brightness == Brightness.dark
+                                  ? AppColors.primary.withValues(alpha: 0.12)
+                                  : const Color(0xFFF5F5F5))
+                              : context.col.surface,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isSelected ? AppColors.primary : context.col.border,

@@ -10,6 +10,18 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 
+// Standalone categories loader — used when homeProvider hasn't populated categories yet
+final _browseCategoriesProvider = FutureProvider<List<Category>>((ref) async {
+  try {
+    final res = await ApiClient.instance.dio.get('/categories');
+    final list = (res.data?['data'] as List?)
+        ?.map((c) => Category.fromJson(c as Map<String, dynamic>)).toList() ?? [];
+    return list;
+  } catch (_) {
+    return [];
+  }
+});
+
 // Key: "parentId" or "parentId,sub1,sub2,..."
 final _categoryProductsProvider = FutureProvider.family<List<Product>, String>((ref, key) async {
   final ids = key.split(',').map(int.parse).toList();
@@ -61,7 +73,11 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   @override
   Widget build(BuildContext context) {
     final home = ref.watch(homeProvider);
-    final categories = home.categories;
+    // Fall back to a direct /categories fetch if home provider hasn't loaded them yet
+    final categoriesAsync = ref.watch(_browseCategoriesProvider);
+    final categories = home.categories.isNotEmpty
+        ? home.categories
+        : (categoriesAsync.valueOrNull ?? []);
 
     if (categories.isNotEmpty && _activeCategoryId == null) {
       if (!_deepLinked && widget.deepCategoryId != null) {
@@ -91,9 +107,10 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
             orElse: () => categories.first);
 
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.col.bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -104,10 +121,10 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                 margin: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: context.col.surface,
+                  color: isDark ? context.col.surfaceSoft : context.col.surface,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: context.col.border),
-                  boxShadow: AppShadows.shadowCard,
+                  boxShadow: isDark ? null : AppShadows.shadowCard,
                 ),
                 child: Row(children: [
                   Icon(Icons.search, size: 17, color: context.col.ink3),
@@ -130,7 +147,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                         Container(
                           width: 108,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.col.surface,
                             border: Border(right: BorderSide(color: context.col.border, width: 1)),
                           ),
                           child: ListView.builder(
@@ -143,7 +160,9 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                                   decoration: BoxDecoration(
-                                    color: isActive ? const Color(0xFFF0FFFE) : Colors.white,
+                                    color: isActive
+                                        ? (isDark ? AppColors.primary.withValues(alpha: 0.12) : const Color(0xFFF0FFFE))
+                                        : context.col.surface,
                                     border: isAr
                                       ? Border(left: BorderSide(
                                           color: isActive ? AppColors.primary : Colors.transparent,

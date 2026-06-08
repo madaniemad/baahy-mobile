@@ -34,6 +34,7 @@ class HomeScreen extends ConsumerWidget {
     final home = ref.watch(homeProvider);
     final banners = ref.watch(bannersProvider);
     final config = ref.watch(appConfigProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: context.col.bg,
@@ -45,7 +46,7 @@ class HomeScreen extends ConsumerWidget {
             SliverAppBar(
               pinned: true,
               automaticallyImplyLeading: false,
-              backgroundColor: const Color(0xFF32DDE5),
+              backgroundColor: isDark ? context.col.surface : const Color(0xFF32DDE5),
               surfaceTintColor: Colors.transparent,
               elevation: 0,
               toolbarHeight: 28,
@@ -53,10 +54,15 @@ class HomeScreen extends ConsumerWidget {
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.none,
                 background: Stack(fit: StackFit.expand, children: [
-                  Container(color: const Color(0xFF32DDE5)),
+                  Container(color: isDark ? context.col.surface : const Color(0xFF32DDE5)),
                   Opacity(
-                    opacity: 0.28,
-                    child: Image.asset('assets/images/onb-pattern.png', fit: BoxFit.cover),
+                    opacity: isDark ? 0.07 : 0.28,
+                    child: Image.asset(
+                      'assets/images/onb-pattern.png',
+                      fit: BoxFit.cover,
+                      color: isDark ? Colors.white : null,
+                      colorBlendMode: isDark ? BlendMode.srcIn : null,
+                    ),
                   ),
                 ]),
               ),
@@ -78,8 +84,9 @@ class HomeScreen extends ConsumerWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: isDark ? context.col.surfaceSoft : Colors.white,
                         borderRadius: BorderRadius.circular(10),
+                        border: isDark ? Border.all(color: context.col.border) : null,
                       ),
                       child: Row(children: [
                         Icon(Icons.search, size: 17, color: context.col.ink3),
@@ -330,16 +337,18 @@ class _CityLabel extends ConsumerWidget {
     final city = isAr
         ? cityAr
         : (cities.firstWhere((c) => c.ar == cityAr, orElse: () => CityEntry(ar: cityAr, en: cityAr)).en);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final labelColor = isDark ? context.col.ink0 : Colors.white;
     return GestureDetector(
       onTap: () => context.push('/city'),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.location_on_outlined, size: 15, color: Colors.white),
+        Icon(Icons.location_on_outlined, size: 15, color: isDark ? AppColors.adaptive(context) : Colors.white),
         const SizedBox(width: 3),
-        Text(city, style: const TextStyle(
+        Text(city, style: TextStyle(
             fontSize: 13, fontWeight: FontWeight.w700,
-            fontFamily: 'Cairo', color: Colors.white)),
+            fontFamily: 'Cairo', color: labelColor)),
         const SizedBox(width: 2),
-        const Icon(Icons.keyboard_arrow_down_rounded, size: 15, color: Colors.white70),
+        Icon(Icons.keyboard_arrow_down_rounded, size: 15, color: labelColor.withValues(alpha: 0.7)),
       ]),
     );
   }
@@ -350,12 +359,15 @@ class _NotificationBell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unread = ref.watch(unreadNotificationCountProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark ? context.col.ink0 : Colors.white;
+    final badgeBorder = isDark ? context.col.surface : const Color(0xFF32DDE5);
     return Stack(
       clipBehavior: Clip.none,
       children: [
         IconButton(
           onPressed: () => safePush(context, '/notifications'),
-          icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
+          icon: Icon(Icons.notifications_none_rounded, color: iconColor, size: 22),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
         ),
@@ -366,7 +378,7 @@ class _NotificationBell extends ConsumerWidget {
               width: 8, height: 8,
               decoration: BoxDecoration(
                 color: AppColors.danger, shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF32DDE5), width: 1.5),
+                border: Border.all(color: badgeBorder, width: 1.5),
               ),
             ),
           ),
@@ -380,7 +392,7 @@ class _SearchHintText extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     context.s.searchHint,
-    style: TextStyle(color: context.col.ink0, fontSize: 14));
+    style: TextStyle(color: context.col.ink3, fontSize: 14));
 }
 
 // ── Active order strip ────────────────────────────────────────────────────────
@@ -1792,12 +1804,14 @@ class _RewardsNudgeCard extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: GestureDetector(
             onTap: () => safePush(context, '/rewards-hub'),
-            child: Container(
+            child: Builder(builder: (ctx) {
+              final isDk = Theme.of(ctx).brightness == Brightness.dark;
+              return Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.08),
+                color: isDk ? Colors.transparent : color.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: color.withValues(alpha: 0.25)),
+                border: Border.all(color: color.withValues(alpha: isDk ? 0.45 : 0.25)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -1820,7 +1834,8 @@ class _RewardsNudgeCard extends ConsumerWidget {
                   Icon(Icons.arrow_forward_ios, size: 11, color: color.withValues(alpha: 0.6)),
                 ],
               ),
-            ),
+            );
+            }),
           ),
         );
       },

@@ -684,14 +684,39 @@ class _CartItemCard extends ConsumerWidget {
                 Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5,
                     color: context.col.ink0)),
-                if (item.variation != null && item.variation!.attributes.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    item.variation!.attributes
-                        .map((a) => isAr && a.valueAr.isNotEmpty ? a.valueAr : a.value)
-                        .join(' · '),
-                    style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
-                ],
+                Builder(builder: (_) {
+                  // Try item.variation first, then fall back to product.variations lookup
+                  List<dynamic>? attrs = item.variation?.attributes.isNotEmpty == true
+                      ? item.variation!.attributes
+                      : item.variationId != null
+                          ? () {
+                              try {
+                                return item.product.variations
+                                    .firstWhere((v) => v.id == item.variationId)
+                                    .attributes;
+                              } catch (_) { return null; }
+                            }()
+                          : null;
+                  if (attrs == null || attrs.isEmpty) return const SizedBox.shrink();
+                  final label = attrs
+                      .map((a) => isAr && a.valueAr.isNotEmpty ? a.valueAr : a.value)
+                      .where((v) => (v as String).isNotEmpty)
+                      .join(' · ');
+                  if (label.isEmpty) return const SizedBox.shrink();
+                  return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(label,
+                        style: TextStyle(fontSize: 11, color: AppColors.primary,
+                          fontWeight: FontWeight.w600)),
+                    ),
+                  ]);
+                }),
                 const SizedBox(height: 4),
                 Text(
                   '${fmtPrice(item.unitPrice)} ${context.s.lydUnit}',
@@ -794,40 +819,37 @@ class _LoyaltyPointsBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final config = ref.watch(appConfigProvider);
-    final pointsRate = config.cashbackRate > 0 ? config.cashbackRate : 2.0;
-    final points = (subtotal * pointsRate / 10).round().clamp(1, 9999);
+    final rate = config.cashbackRate > 0 ? config.cashbackRate : 2.0;
+    final cashback = subtotal * rate / 100;
+    final points = (subtotal * rate / 10).round().clamp(1, 9999);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.07),
+        color: isDark ? Colors.transparent : AppColors.success.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.success.withValues(alpha: isDark ? 0.4 : 0.25)),
       ),
       child: Row(children: [
-        // Star circle (first = RIGHT in RTL)
         Container(
-          width: 42, height: 42,
-          decoration: const BoxDecoration(
-            color: AppColors.primary, shape: BoxShape.circle),
-          child: const Icon(Icons.star_outline_rounded, size: 22, color: Colors.white),
+          width: 38, height: 38,
+          decoration: BoxDecoration(
+            color: isDark ? Colors.transparent : AppColors.success,
+            shape: BoxShape.circle,
+            border: isDark ? Border.all(color: AppColors.success.withValues(alpha: 0.5)) : null,
+          ),
+          child: Icon(Icons.stars_rounded, size: 20,
+            color: isDark ? AppColors.success : Colors.white),
         ),
         const SizedBox(width: 12),
-        // Text (second = LEFT in RTL)
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(
-              context.tr(
-                'ستحصل على $points نقطة مكافآت من هذا الطلب',
-                'You\'ll earn $points reward points from this order'),
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                color: context.col.ink0, fontFamily: 'Cairo')),
-            const SizedBox(height: 2),
-            Text(
-              context.tr('عند إتمام الشراء', 'Upon completing purchase'),
-              style: const TextStyle(fontSize: 11, color: AppColors.primary,
-                fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
-          ]),
+          child: Text(
+            context.s.orderCashbackEarn(
+              cashback.toStringAsFixed(cashback.truncateToDouble() == cashback ? 0 : 1),
+              points.toString()),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+              color: AppColors.success, fontFamily: 'Cairo')),
         ),
       ]),
     );
@@ -964,24 +986,36 @@ class _RecommendedCard extends ConsumerWidget {
 class _TrustBadges extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final badges = [
-      (Icons.verified_outlined, context.tr('منتجات أصلية\n100%', 'Authentic\n100%')),
-      (Icons.local_shipping_outlined, context.tr('شحن سريع\n1-2 يوم', 'Fast Ship\n1-2 days')),
-      (Icons.payments_outlined, context.tr('الدفع عند\nالاستلام', 'Cash on\nDelivery')),
-      (Icons.undo_rounded, context.tr('استرجاع خلال\n3 أيام', 'Return in\n3 days')),
+      (Icons.verified_outlined,       context.tr('منتجات أصلية\n100%', 'Authentic\n100%'), const Color(0xFFD4A82E)),
+      (Icons.local_shipping_outlined, context.tr('توصيل سريع\n1-2 يوم', 'Fast Ship\n1-2 days'), AppColors.primary),
+      (Icons.payments_outlined,       context.tr('الدفع عند\nالاستلام', 'Cash on\nDelivery'), AppColors.success),
+      (Icons.undo_rounded,            context.tr('استرجاع خلال\n3 أيام', 'Return in\n3 days'), AppColors.warn),
     ];
+    final dimColor = AppColors.adaptive(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: context.col.surfaceSoft,
+        color: isDark ? Colors.transparent : context.col.surfaceSoft,
         borderRadius: BorderRadius.circular(10),
+        border: isDark ? Border.all(color: context.col.border) : null,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: badges.map((b) => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(b.$1, size: 22, color: context.col.ink2),
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDark ? Colors.transparent : b.$3.withValues(alpha: 0.10),
+                border: Border.all(
+                  color: isDark ? dimColor.withValues(alpha: 0.55) : b.$3.withValues(alpha: 0.35)),
+              ),
+              child: Icon(b.$1, size: 17, color: isDark ? dimColor : b.$3),
+            ),
             const SizedBox(height: 5),
             Text(b.$2,
               textAlign: TextAlign.center,

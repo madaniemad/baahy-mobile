@@ -53,11 +53,11 @@ class BaahyColors extends ThemeExtension<BaahyColors> {
     cardImageBg:   Color(0xFFEDEFEF),
     border:        Color(0xFF2A3636),
     borderStrong:  Color(0xFF3A4A4A),
-    ink0:          Color(0xFFEEF5F5),
-    ink1:          Color(0xFFC8D8D8),
-    ink2:          Color(0xFF8AABAB),
-    ink3:          Color(0xFF567070),
-    ink4:          Color(0xFF2E3E3E),
+    ink0:          Color(0xFFF2F2F2),
+    ink1:          Color(0xFFD2D2D2),
+    ink2:          Color(0xFFB8BDBF),
+    ink3:          Color(0xFFAAB5B7),
+    ink4:          Color(0xFF506060),
     hilite:        Color(0xFF2A2518),
   );
 
@@ -106,6 +106,12 @@ class BaahyColors extends ThemeExtension<BaahyColors> {
 class AppColors {
   // Brand primary — tiffany cyan for buttons/CTAs
   static const primary     = Color(0xFF32DDE5);
+  // Slightly muted tiffany for use on dark backgrounds (text/icons on dark bg)
+  static const primaryDim  = Color(0xFF26C0C7);
+
+  // Returns brightness-appropriate primary: muted on dark, full on light
+  static Color adaptive(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? primaryDim : primary;
 
   // Tiffany — highlight/accent only (active nav, links, selections, spinner)
   static const teal        = Color(0xFF4ECDC4);

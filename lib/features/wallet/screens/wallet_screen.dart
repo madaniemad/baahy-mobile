@@ -364,11 +364,16 @@ class _StatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(
           width: 36, height: 36,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: iconBg),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isDark ? Colors.transparent : iconBg,
+            border: isDark ? Border.all(color: iconColor.withValues(alpha: 0.5)) : null,
+          ),
           child: Icon(icon, size: 16, color: iconColor),
         ),
         const SizedBox(height: 6),
@@ -379,7 +384,7 @@ class _StatItem extends StatelessWidget {
         Text(label,
           textAlign: TextAlign.center,
           style: TextStyle(fontFamily: 'Cairo',
-            fontSize: 9.5, color: context.col.ink3, height: 1.3)),
+            fontSize: 9.5, color: isDark ? context.col.ink2 : context.col.ink3, height: 1.3)),
       ]),
     );
   }
@@ -562,6 +567,7 @@ class _EarnCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -575,7 +581,11 @@ class _EarnCard extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
             width: 38, height: 38,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: iconBg),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark ? Colors.transparent : iconBg,
+              border: isDark ? Border.all(color: iconColor.withValues(alpha: 0.5)) : null,
+            ),
             child: Icon(icon, size: 18, color: iconColor),
           ),
           const SizedBox(height: 10),

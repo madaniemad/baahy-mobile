@@ -84,7 +84,7 @@ class AppStrings {
   String get apply          => isAr ? 'تطبيق'                  : 'Apply';
   String get couponApplied  => isAr ? 'تم تطبيق الكوبون'       : 'Coupon applied';
   String get subtotal       => isAr ? 'المجموع الجزئي'         : 'Subtotal';
-  String get shipping       => isAr ? 'الشحن'                  : 'Shipping';
+  String get shipping       => isAr ? 'التوصيل'               : 'Delivery';
   String get discount       => isAr ? 'الخصم'                  : 'Discount';
   String get total          => isAr ? 'الإجمالي'               : 'Total';
   String get free           => isAr ? 'مجاني'                  : 'Free';
@@ -348,7 +348,7 @@ class AppStrings {
   String get loadOrderFailed   => isAr ? 'تعذر تحميل الطلب'       : 'Failed to load order';
   String get orderStatus       => isAr ? 'حالة الطلب'             : 'Order Status';
   String get subtotalOrder     => isAr ? 'المجموع الفرعي'         : 'Subtotal';
-  String get shippingLabel     => isAr ? 'الشحن'                  : 'Shipping';
+  String get shippingLabel     => isAr ? 'التوصيل'               : 'Delivery';
   String get discountLabel     => isAr ? 'الخصم'                  : 'Discount';
   String get totalLabel        => isAr ? 'الإجمالي'               : 'Total';
   String get returnItems       => isAr ? 'إرجاع منتجات'           : 'Return Items';
@@ -455,6 +455,9 @@ class AppStrings {
   String get hubCashbackNote     => isAr ? '* النسبة تزداد مع ارتقائك في المستويات' : '* Rate increases as you level up';
   String get hubCompleted        => isAr ? 'مكتمل ✓'                       : 'Done ✓';
   String get cashbackLabel       => isAr ? 'كاش باك'                       : 'Cashback';
+  String orderCashbackEarn(String cashback, String points) => isAr
+      ? 'ستكسب $cashback د.ل كاش باك + $points نقطة من هذا الطلب 🎉'
+      : "You'll earn $cashback LD cashback + $points pts on this order 🎉";
 
   String nudgeMilestone1(String amount) => isAr ? 'طلب واحد فقط وتحصل على $amount د.ل' : '1 order away from earning $amount LD';
   String nudgeMilestone2(String amount) => isAr ? 'طلبان فقط وتحصل على $amount د.ل'    : '2 orders away from earning $amount LD';
@@ -475,6 +478,7 @@ class AppStrings {
 
   // ── Product detail extras ─────────────────────────────────────────────────────
   String lowStockN(int n)      => isAr ? 'تبقّى $n فقط'            : 'Only $n left';
+  String get trustAuthentic    => isAr ? 'منتجات أصلية'            : 'Authentic';
   String get trustReturn       => isAr ? 'إرجاع واستبدال'          : 'Returns';
   String get trustPayment      => isAr ? 'الدفع عند الاستلام'      : 'Cash on Delivery';
   String get trustDelivery     => isAr ? 'توصيل سريع'              : 'Fast Delivery';
@@ -499,7 +503,7 @@ class AppStrings {
 
   // ── Checkout extras ─────────────────────────────────────────────────────────
   String get subtotalLabel     => isAr ? 'المجموع الفرعي'          : 'Subtotal';
-  String get shippingCost      => isAr ? 'الشحن'                   : 'Shipping';
+  String get shippingCost      => isAr ? 'التوصيل'                : 'Delivery';
   String get couponDiscount    => isAr ? 'خصم الكوبون'             : 'Coupon Discount';
   String get orderTotal        => isAr ? 'الإجمالي'                : 'Total';
   String get freeText          => isAr ? 'مجاني'                   : 'Free';

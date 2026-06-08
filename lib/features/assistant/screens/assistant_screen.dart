@@ -580,11 +580,11 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
               ),
               TextSpan(
                 text: 'أهلين $firstName',
-                style: const TextStyle(
+                style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.ink0),
+                    color: context.col.ink0),
               ),
             ]),
             textAlign: TextAlign.center,
@@ -766,11 +766,14 @@ class _InlineInput extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
-        Container(
+        Builder(builder: (context) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? context.col.surfaceSoft : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
+            border: isDark ? Border.all(color: context.col.border) : null,
+            boxShadow: isDark ? null : const [
               BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 2)),
               BoxShadow(color: Color(0x08000000), blurRadius: 4, offset: Offset(0, 1)),
             ],
@@ -813,14 +816,14 @@ class _InlineInput extends StatelessWidget {
                     maxLines: 1,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => onSend(),
-                    style: const TextStyle(
-                        fontFamily: 'Cairo', fontSize: 14, color: AppColors.ink0),
-                    decoration: const InputDecoration(
+                    style: TextStyle(
+                        fontFamily: 'Cairo', fontSize: 14, color: context.col.ink0),
+                    decoration: InputDecoration(
                       hintText: 'اسأل عن منتج، هدية، مقاس، طلب...',
                       hintStyle: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 13,
-                          color: AppColors.ink3),
+                          color: context.col.ink3),
                       filled: true,
                       fillColor: Colors.transparent,
                       border: InputBorder.none,
@@ -840,7 +843,8 @@ class _InlineInput extends StatelessWidget {
                 ),
               ],
             ),
-          ),
+          );
+        }),
       ],
     );
   }
@@ -887,10 +891,10 @@ class _SuggestionCard extends StatelessWidget {
                     data.subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontFamily: 'Cairo',
                         fontSize: 10,
-                        color: AppColors.ink3),
+                        color: context.col.ink3),
                   ),
                 ],
               ),
@@ -900,10 +904,10 @@ class _SuggestionCard extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: data.iconBg,
+                color: AppColors.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(data.icon, color: data.iconColor, size: 19),
+              child: Icon(data.icon, color: AppColors.primary, size: 19),
             ),
           ],
         ),
@@ -1521,7 +1525,8 @@ class _InputBar extends StatelessWidget {
                         fontFamily: 'Cairo',
                         fontSize: 14,
                         color: context.col.ink3),
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? context.col.surfaceSoft : Colors.white,
                     filled: true,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 10),

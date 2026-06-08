@@ -36,22 +36,23 @@ class ProductCard extends ConsumerWidget {
     return BoxFit.contain;
   }
 
-  static Widget _buildProductImage(Product p, Color bgColor) {
+  static Widget _buildProductImage(Product p, Color bgColor, {Color? placeholderColor}) {
     final fit = _imageFit(p);
+    final ph = placeholderColor ?? bgColor;
     Widget img = p.firstImage != null
         ? CachedNetworkImage(
             imageUrl: p.firstImage!,
             fit: fit,
             memCacheWidth: 400,
-            placeholder: (_, __) => Container(color: bgColor),
+            placeholder: (_, __) => Container(color: ph),
             errorWidget: (_, __, ___) => Container(
-              color: bgColor,
-              child: Icon(Icons.image_not_supported_outlined, color: bgColor, size: 28),
+              color: ph,
+              child: Icon(Icons.image_not_supported_outlined, color: ph, size: 28),
             ),
           )
         : Container(
-            color: bgColor,
-            child: Icon(Icons.image_outlined, color: bgColor),
+            color: ph,
+            child: Icon(Icons.image_outlined, color: ph),
           );
     img = ColorFiltered(
       colorFilter: ColorFilter.mode(bgColor, BlendMode.multiply),
@@ -76,6 +77,8 @@ class ProductCard extends ConsumerWidget {
             : null;
     final name = rawBrand != null ? '$rawBrand $rawName' : rawName;
     final inWishlist = ref.watch(wishlistProvider).contains(product.id);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final imagePlaceholder = isDark ? context.col.surfaceSoft : context.col.cardImageBg;
 
     return GestureDetector(
       onTap: () => safePush(context, '/product/${product.id}'),
@@ -97,10 +100,11 @@ class ProductCard extends ConsumerWidget {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
                   child: Container(
-                    color: context.col.cardImageBg,
+                    color: imagePlaceholder,
                     child: AspectRatio(
                       aspectRatio: 0.8,
-                      child: _buildProductImage(product, context.col.cardImageBg),
+                      child: _buildProductImage(product, context.col.cardImageBg,
+                          placeholderColor: imagePlaceholder),
                     ),
                   ),
                 ),
@@ -178,7 +182,8 @@ class ProductCard extends ConsumerWidget {
                   const SizedBox(height: 5),
                   Row(
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
                         '${fmtPrice(product.displayPrice)} ${context.s.lydUnit}',

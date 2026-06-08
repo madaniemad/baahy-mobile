@@ -179,6 +179,7 @@ class CartNotifier extends StateNotifier<CartState> {
                   'product_id': i.productId,
                   if (i.variationId != null) 'variation_id': i.variationId,
                   'quantity': i.quantity,
+                  'price': i.unitPrice, // lets backend detect price changes
                 })
             .toList(),
       });

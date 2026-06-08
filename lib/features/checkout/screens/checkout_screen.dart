@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/shipping_rate.dart';
-import '../../../core/models/app_config.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
@@ -15,6 +15,22 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/widgets/app_button.dart';
 
+const _kLastPaymentKey = 'baahy_last_payment';
+
+Color _accent(BuildContext context) => AppColors.adaptive(context);
+
+Color _cardFill(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark ? Colors.transparent : context.col.surface;
+
+Color _softFill(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark ? Colors.transparent : context.col.surfaceSoft;
+
+// Selected card/radio border: full tiffany in dark (pops on dark bg), softer in light
+Color _selBorder(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? AppColors.primary
+        : AppColors.primary.withValues(alpha: 0.50);
+
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
 
@@ -23,7 +39,6 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  int _step = 1;
   final _notesCtrl = TextEditingController();
   String _paymentMethod = 'cash_on_delivery';
   Map<String, dynamic>? _selectedAddress;
@@ -32,12 +47,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   double _walletBalance = 0;
   bool _useWallet = false;
   bool _walletLoading = false;
+  bool _paymentExpanded = false;
+  bool _itemsExpanded = false;
 
   @override
   void initState() {
     super.initState();
     _loadAddresses();
     _loadWallet();
+    _loadSavedPayment();
   }
 
   Future<void> _loadAddresses() async {
@@ -45,11 +63,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final res = await ApiClient.instance.dio.get('/addresses');
       final list = (res.data['data'] as List?)
           ?.map((a) => Map<String, dynamic>.from(a)).toList() ?? [];
-      setState(() {
-        _addresses = list;
-        _selectedAddress = list.firstWhere(
-          (a) => a['is_default'] == true, orElse: () => list.isNotEmpty ? list.first : {});
-      });
+      if (mounted) {
+        setState(() {
+          _addresses = list;
+          _selectedAddress = list.firstWhere(
+            (a) => a['is_default'] == true, orElse: () => list.isNotEmpty ? list.first : {});
+        });
+      }
     } catch (_) {}
   }
 
@@ -58,9 +78,66 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     try {
       final res = await ApiClient.instance.dio.get('/wallet');
       final balance = (res.data['data']?['balance'] as num?)?.toDouble() ?? 0.0;
-      setState(() => _walletBalance = balance);
+      if (mounted) setState(() => _walletBalance = balance);
     } catch (_) {}
-    setState(() => _walletLoading = false);
+    if (mounted) setState(() => _walletLoading = false);
+  }
+
+  Future<void> _loadSavedPayment() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_kLastPaymentKey);
+    if (saved != null && mounted) setState(() => _paymentMethod = saved);
+  }
+
+  void _setPaymentMethod(String method) {
+    setState(() => _paymentMethod = method);
+    SharedPreferences.getInstance().then((p) => p.setString(_kLastPaymentKey, method));
+  }
+
+  void _selectAddress(Map<String, dynamic> addr) {
+    setState(() => _selectedAddress = addr);
+    // Auto-switch away from COD if the new city doesn't allow it
+    final city = addr['city']?.toString() ?? '';
+    if (city.isNotEmpty && _paymentMethod == 'cash_on_delivery') {
+      final rates = ref.read(shippingRatesProvider).valueOrNull ?? [];
+      bool codAllowed = true;
+      try {
+        final rate = rates.firstWhere(
+          (r) => r.cityAr == city || r.city.toLowerCase() == city.toLowerCase());
+        codAllowed = rate.codAllowed;
+      } catch (_) {
+        codAllowed = city.contains('طرابلس') || city.toLowerCase().contains('tripoli');
+      }
+      if (!codAllowed) {
+        final altMethods = (ref.read(appConfigProvider).paymentMethods as List)
+            .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet' && m.id != 'cash_on_delivery')
+            .toList();
+        if (altMethods.isNotEmpty) _setPaymentMethod(altMethods.first.id);
+      }
+    }
+  }
+
+  void _showAddressSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.col.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _AddressSheet(
+        addresses: _addresses,
+        selected: _selectedAddress,
+        onSelect: (addr) {
+          Navigator.pop(context);
+          _selectAddress(addr);
+        },
+        onAddNew: () async {
+          Navigator.pop(context);
+          await safePush(context, '/addresses/edit');
+          await _loadAddresses();
+        },
+      ),
+    );
   }
 
   Future<void> _placeOrder() async {
@@ -69,6 +146,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           SnackBar(content: Text(context.s.pleaseSelectAddr)));
       return;
     }
+
+    // Pre-flight: variable items without a chosen variation
+    final unresolved = ref.read(cartProvider).items.where((i) =>
+      i.variationId == null &&
+      (i.product.productType == 'variable' || i.product.variations.isNotEmpty)
+    ).toList();
+    if (unresolved.isNotEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('بعض المنتجات تحتاج لاختيار المقاس أو اللون'),
+          action: SnackBarAction(label: 'مراجعة السلة', onPressed: () => context.pop()),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+      return;
+    }
+
     setState(() => _loading = true);
 
     final validationError = await ref.read(cartProvider.notifier).validate();
@@ -86,7 +180,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final addr = _selectedAddress!;
       final walletActive = _useWallet && _walletBalance > 0;
       final walletCoversAll = walletActive && _walletBalance >= cart.total;
-      final walletDeduct = walletActive ? (_walletBalance < cart.total ? _walletBalance : cart.total) : 0.0;
+      final walletDeduct = walletActive
+          ? (_walletBalance < cart.total ? _walletBalance : cart.total)
+          : 0.0;
 
       final res = await ApiClient.instance.dio.post('/orders', data: {
         'items': cart.items.map((i) => {
@@ -106,23 +202,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         if (cart.couponCode != null) 'coupon_code': cart.couponCode,
         if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
       });
+
+      SharedPreferences.getInstance().then((p) => p.setString(_kLastPaymentKey, _paymentMethod));
       await ref.read(cartProvider.notifier).clear();
-      if (mounted) {
-        context.pushReplacement('/order-confirmed', extra: res.data['data']);
-      }
+      if (mounted) context.pushReplacement('/order-confirmed', extra: res.data['data']);
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
         String msg = context.s.orderError;
         if (e is DioException) {
           final data = e.response?.data;
-          if (data is Map && data['message'] != null) {
-            msg = data['message'].toString();
-          }
+          if (data is Map && data['message'] != null) msg = data['message'].toString();
         }
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(msg),
-            backgroundColor: AppColors.danger));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg), backgroundColor: AppColors.danger));
       }
     }
   }
@@ -143,6 +236,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (_) { return null; }
   }
 
+  String _paymentMethodLabel(BuildContext context, List methods) {
+    final isAr = context.isAr;
+    try {
+      final m = methods.firstWhere((m) => m.id == _paymentMethod);
+      return isAr ? m.labelAr : (m.labelEn.isNotEmpty ? m.labelEn : m.labelAr);
+    } catch (_) {
+      return _paymentMethod;
+    }
+  }
+
   bool get _codAllowedForAddress {
     final city = (_selectedAddress?['city'] ?? '').toString();
     if (city.isEmpty) return true;
@@ -152,44 +255,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         (r) => r.cityAr == city || r.city.toLowerCase() == city.toLowerCase());
       return rate.codAllowed;
     } catch (_) {
-      // City not in rates — fallback to Tripoli check
       return city.contains('طرابلس') || city.toLowerCase().contains('tripoli');
-    }
-  }
-
-  void _next() {
-    if (_step == 1) {
-      // Auto-switch away from COD if address city doesn't allow it
-      if (!_codAllowedForAddress && _paymentMethod == 'cash_on_delivery') {
-        final methods = (ref.read(appConfigProvider).paymentMethods as List)
-            .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet' && m.id != 'cash_on_delivery')
-            .toList();
-        if (methods.isNotEmpty) {
-          setState(() => _paymentMethod = methods.first.id);
-        }
-      }
-      setState(() => _step++);
-    } else if (_step == 2) {
-      final walletCoversAll = _useWallet && _walletBalance > 0 &&
-          _walletBalance >= ref.read(cartProvider).total;
-      if (!walletCoversAll && _paymentMethod.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.s.pleaseSelectPayment)));
-        return;
-      }
-      setState(() => _step++);
-    } else if (_step < 3) {
-      setState(() => _step++);
-    } else {
-      _placeOrder();
-    }
-  }
-
-  void _back() {
-    if (_step > 1) {
-      setState(() => _step--);
-    } else {
-      context.pop();
     }
   }
 
@@ -197,124 +263,454 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
     final config = ref.watch(appConfigProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = _accent(context);
+
+    final allMethods = (config.paymentMethods as List)
+        .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet')
+        .toList();
+    final methods = _codAllowedForAddress
+        ? allMethods
+        : allMethods.where((m) => m.id != 'cash_on_delivery').toList();
+
+    final walletActive = _useWallet && _walletBalance > 0;
+    final walletCoversAll = walletActive && _walletBalance >= cart.total;
+    final walletDeduct = walletActive
+        ? (_walletBalance < cart.total ? _walletBalance : cart.total)
+        : 0.0;
+    final amountDue = walletActive ? (cart.total - walletDeduct).clamp(0.0, cart.total) : cart.total;
+    final isAr = context.isAr;
 
     return Scaffold(
       backgroundColor: context.col.bg,
       body: SafeArea(
         child: Column(
           children: [
-            // Header with step counter
+            // ── Header ───────────────────────────────────────────────────────
             Container(
               color: context.col.surface,
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 8, 16, 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: Row(children: [
                       IconButton(
-                        onPressed: _back,
-                        icon: Icon(Icons.arrow_back, color: context.col.ink0)),
-                      Expanded(
-                        child: Text(context.s.checkout,
-                          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
-                            fontSize: 17)),
+                        onPressed: () => context.pop(),
+                        icon: Icon(Icons.arrow_back_ios_new_rounded,
+                          color: context.col.ink0, size: 20),
                       ),
-                      Text('$_step/3',
-                        style: TextStyle(fontFamily: 'PlusJakartaSans',
-                          fontSize: 13, color: context.col.ink3)),
+                      Text(context.s.cartTitle,
+                        style: TextStyle(
+                          fontFamily: 'Cairo', fontWeight: FontWeight.w600,
+                          fontSize: 15, color: context.col.ink2)),
                     ]),
-                  ),
-                  // Step indicator
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                    child: Row(
-                      children: [
-                        for (int i = 1; i <= 3; i++) ...[
-                          _StepCircle(number: i, current: _step),
-                          if (i < 3)
-                            Expanded(
-                              child: Container(
-                                height: 2,
-                                color: _step > i ? context.col.ink0 : context.col.border,
-                              ),
-                            ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(context.s.address,
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                            color: _step == 1 ? context.col.ink0 : context.col.ink3)),
-                        Text(context.s.payment,
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                            color: _step == 2 ? context.col.ink0 : context.col.ink3)),
-                        Text(context.s.review,
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                            color: _step == 3 ? context.col.ink0 : context.col.ink3)),
-                      ],
-                    ),
                   ),
                   Divider(height: 1, color: context.col.border),
                 ],
               ),
             ),
 
-            // Step content
+            // ── Scrollable content ────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: KeyedSubtree(
-                    key: ValueKey(_step),
-                    child: _step == 1
-                        ? _StepAddress(
-                            addresses: _addresses,
-                            selected: _selectedAddress,
-                            onSelect: (a) => setState(() => _selectedAddress = a),
-                            onAddNew: () async {
-                              await safePush(context, '/addresses/edit');
-                              await _loadAddresses();
-                            },
-                            deliveryPromise: context.isAr ? config.deliveryPromiseAr : config.deliveryPromiseEn,
-                            selectedRate: _selectedRate,
-                          )
-                        : _step == 2
-                            ? _StepPayment(
-                                selected: _paymentMethod,
-                                onChanged: (v) => setState(() => _paymentMethod = v),
-                                notesCtrl: _notesCtrl,
-                                config: config,
-                                walletBalance: _walletBalance,
-                                walletLoading: _walletLoading,
-                                useWallet: _useWallet,
-                                onWalletToggle: () => setState(() => _useWallet = !_useWallet),
-                                onChargeWallet: () async {
-                                  await safePush(context, '/wallet');
-                                  _loadWallet();
-                                },
-                                total: ref.read(cartProvider).total,
-                                codAllowed: _codAllowedForAddress,
-                              )
-                            : _StepReview(
-                                cart: cart,
-                                address: _selectedAddress,
-                                paymentMethod: _paymentMethod,
-                                onChangeAddress: () => setState(() => _step = 1),
-                                onChangePayment: () => setState(() => _step = 2),
-                                config: config,
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+
+                    // ── Delivery address ──────────────────────────────────
+                    _SectionLabel(context.s.shippingAddr),
+                    const SizedBox(height: 8),
+                    _selectedAddress == null || _selectedAddress!.isEmpty
+                        ? GestureDetector(
+                            onTap: _showAddressSheet,
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: _cardFill(context),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: accent, width: 1.5),
                               ),
-                  ),
+                              child: Row(children: [
+                                Icon(Icons.add_location_alt_outlined, color: accent, size: 18),
+                                const SizedBox(width: 10),
+                                Text(context.s.addNewAddress,
+                                  style: TextStyle(color: accent, fontWeight: FontWeight.w600)),
+                              ]),
+                            ),
+                          )
+                        : GestureDetector(
+                            onTap: _showAddressSheet,
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: _cardFill(context),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: context.col.border),
+                                boxShadow: isDark ? null : AppShadows.shadowCard,
+                              ),
+                              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 1),
+                                  child: Icon(Icons.location_on_outlined, size: 18, color: accent),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text(
+                                    context.s.translateAddrLabel(_selectedAddress!['label'] as String? ?? ''),
+                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    [context.s.translateCity(_selectedAddress!['city']?.toString() ?? ''),
+                                      _selectedAddress!['address']]
+                                        .where((v) => v != null && v.toString().isNotEmpty)
+                                        .join('، '),
+                                    style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
+                                  if (_selectedRate != null) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${fmtPrice(_selectedRate!.rate)} ${context.s.lydUnit} · ${_selectedRate!.deliveryDays} ${context.s.daysLabel}',
+                                      style: TextStyle(
+                                        fontSize: 11.5, color: context.col.ink2, fontWeight: FontWeight.w600)),
+                                  ],
+                                ])),
+                                Icon(Icons.keyboard_arrow_down_rounded, size: 22, color: context.col.ink2),
+                              ]),
+                            ),
+                          ),
+                    const SizedBox(height: 24),
+
+                    // ── Payment (collapsible) ─────────────────────────────
+                    _CollapsibleHeader(
+                      title: context.s.paymentMethod,
+                      subtitle: walletCoversAll
+                          ? context.s.walletTitle
+                          : (walletActive
+                              ? '${context.s.walletTitle} + ${_paymentMethodLabel(context, methods)}'
+                              : _paymentMethodLabel(context, methods)),
+                      expanded: _paymentExpanded,
+                      onTap: () => setState(() => _paymentExpanded = !_paymentExpanded),
+                    ),
+                    if (_paymentExpanded) ...[
+                      const SizedBox(height: 8),
+                      if (!_codAllowedForAddress) ...[
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.warn.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.warn.withValues(alpha: 0.4)),
+                          ),
+                          child: Row(children: [
+                            const Icon(Icons.info_outline_rounded, size: 15, color: AppColors.warn),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(context.s.codTripiliOnly,
+                              style: const TextStyle(fontSize: 12, color: AppColors.warn, height: 1.4))),
+                          ]),
+                        ),
+                      ],
+                      // Wallet card
+                      GestureDetector(
+                        onTap: _walletBalance > 0
+                            ? () => setState(() => _useWallet = !_useWallet)
+                            : null,
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: _cardFill(context),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: walletActive ? _selBorder(context) : context.col.border,
+                              width: walletActive ? 1.5 : 1),
+                            boxShadow: isDark ? null : AppShadows.shadowCard,
+                          ),
+                          child: Row(children: [
+                            _RadioDot(selected: walletActive),
+                            const SizedBox(width: 12),
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Row(children: [
+                                Text(context.s.walletTitle,
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: () async {
+                                    await safePush(context, '/wallet');
+                                    _loadWallet();
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: Colors.transparent,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: context.col.borderStrong),
+                                    ),
+                                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                      Icon(Icons.add, size: 10, color: context.col.ink2),
+                                      const SizedBox(width: 2),
+                                      Text(context.s.topUpShort,
+                                        style: TextStyle(fontFamily: 'Cairo', fontSize: 10,
+                                          fontWeight: FontWeight.w700, color: context.col.ink2)),
+                                    ]),
+                                  ),
+                                ),
+                              ]),
+                              const SizedBox(height: 2),
+                              _walletLoading
+                                  ? Text(context.s.loading,
+                                      style: TextStyle(fontSize: 11.5, color: context.col.ink3))
+                                  : Text(
+                                      _walletBalance > 0
+                                          ? context.s.walletBalanceLabel(fmtPrice(_walletBalance))
+                                          : context.s.walletEmpty,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: _walletBalance > 0 ? AppColors.success : context.col.ink3)),
+                            ])),
+                            const SizedBox(width: 10),
+                            Container(
+                              width: 36, height: 36,
+                              decoration: BoxDecoration(
+                                color: _softFill(context),
+                                borderRadius: BorderRadius.circular(10),
+                                border: isDark ? Border.all(color: context.col.border) : null,
+                              ),
+                              child: Icon(Icons.account_balance_wallet_outlined, size: 18,
+                                color: walletActive ? accent : context.col.ink3),
+                            ),
+                          ]),
+                        ),
+                      ),
+                      if (walletActive) ...[
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: walletCoversAll
+                                ? AppColors.success.withValues(alpha: isDark ? 0.15 : 0.10)
+                                : AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.10),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: walletCoversAll ? AppColors.success : accent, width: 1),
+                          ),
+                          child: Text(
+                            walletCoversAll
+                                ? context.s.walletCoversAll(fmtPrice(walletDeduct))
+                                : context.s.walletPartial(fmtPrice(walletDeduct), fmtPrice(amountDue)),
+                            style: TextStyle(
+                              fontSize: 12.5, fontWeight: FontWeight.w600,
+                              color: walletCoversAll ? AppColors.success : accent)),
+                        ),
+                      ],
+                      if (!walletCoversAll) ...[
+                        ...methods.map((m) => GestureDetector(
+                          onTap: () => _setPaymentMethod(m.id),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: _cardFill(context),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: _paymentMethod == m.id ? _selBorder(context) : context.col.border,
+                                width: _paymentMethod == m.id ? 1.5 : 1),
+                              boxShadow: isDark ? null : AppShadows.shadowCard,
+                            ),
+                            child: Row(children: [
+                              _RadioDot(selected: _paymentMethod == m.id),
+                              const SizedBox(width: 12),
+                              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text(isAr ? m.labelAr : (m.labelEn.isNotEmpty ? m.labelEn : m.labelAr),
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                                Text(
+                                  isAr
+                                      ? (m.descriptionAr.isNotEmpty ? m.descriptionAr
+                                          : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees))
+                                      : (m.descriptionEn.isNotEmpty ? m.descriptionEn
+                                          : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees)),
+                                  style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
+                              ])),
+                              const SizedBox(width: 10),
+                              Container(
+                                width: 36, height: 36,
+                                decoration: BoxDecoration(
+                                  color: _softFill(context),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: isDark ? Border.all(color: context.col.border) : null,
+                                ),
+                                child: Icon(
+                                  m.id == 'cash_on_delivery' ? Icons.payments_outlined
+                                      : m.id == 'card' ? Icons.credit_card_outlined
+                                      : Icons.receipt_long_outlined,
+                                  size: 18,
+                                  color: _paymentMethod == m.id ? accent : context.col.ink3),
+                              ),
+                            ]),
+                          ),
+                        )),
+                      ],
+                    ],
+                    const SizedBox(height: 16),
+
+                    // ── Order items (collapsible) ─────────────────────────
+                    _CollapsibleHeader(
+                      title: context.s.productsCountN(cart.items.length),
+                      subtitle: '${fmtPrice(cart.subtotal)} ${context.s.lydUnit}',
+                      expanded: _itemsExpanded,
+                      onTap: () => setState(() => _itemsExpanded = !_itemsExpanded),
+                    ),
+                    if (_itemsExpanded) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: _cardFill(context),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: context.col.border),
+                          boxShadow: isDark ? null : AppShadows.shadowCard,
+                        ),
+                        child: Column(
+                          children: cart.items.map((item) {
+                            final variationLabel = item.variation?.attributes
+                                .map((a) => isAr ? a.valueAr : a.value)
+                                .where((v) => v.isNotEmpty)
+                                .join(' · ');
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: item.image != null
+                                      ? CachedNetworkImage(
+                                          imageUrl: item.image!, width: 52, height: 52,
+                                          fit: BoxFit.cover,
+                                          errorWidget: (_, __, ___) => _ImagePlaceholder(size: 52),
+                                        )
+                                      : _ImagePlaceholder(size: 52),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text(isAr ? item.product.nameAr : item.product.name,
+                                    maxLines: 2, overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                  if (variationLabel != null && variationLabel.isNotEmpty)
+                                    Text(variationLabel,
+                                      style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
+                                  const SizedBox(height: 3),
+                                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                                    Text('× ${item.quantity}',
+                                      style: TextStyle(fontSize: 12, color: context.col.ink2,
+                                        fontFamily: 'PlusJakartaSans')),
+                                    Text('${fmtPrice(item.total)} ${context.s.lydUnit}',
+                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                                        fontFamily: 'PlusJakartaSans')),
+                                  ]),
+                                ])),
+                              ]),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+
+                    // ── Price summary ─────────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: _cardFill(context),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: context.col.border),
+                        boxShadow: isDark ? null : AppShadows.shadowCard,
+                      ),
+                      child: Column(children: [
+                        _SummaryRow(context.s.subtotalLabel,
+                          '${fmtPrice(cart.subtotal)} ${context.s.lydUnit}', ctx: context),
+                        if (cart.discountAmount > 0)
+                          _SummaryRow(context.s.couponDiscount,
+                            '− ${fmtPrice(cart.discountAmount)} ${context.s.lydUnit}',
+                            color: AppColors.success, ctx: context),
+                        _SummaryRow(
+                          context.s.shippingCost,
+                          cart.deliveryFee == 0
+                              ? context.s.freeText
+                              : '${fmtPrice(cart.deliveryFee)} ${context.s.lydUnit}',
+                          color: cart.deliveryFee == 0 ? AppColors.success : null,
+                          ctx: context),
+                        Divider(height: 20, color: context.col.border),
+                        _SummaryRow(context.s.orderTotal,
+                          '${fmtPrice(cart.total)} ${context.s.lydUnit}',
+                          bold: true, ctx: context),
+                      ]),
+                    ),
+                    // Cashback earned on this order
+                    if (cart.subtotal >= config.cashbackMinOrder && config.cashbackRate > 0)
+                      Container(
+                        margin: const EdgeInsets.only(top: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.transparent : AppColors.success.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.success.withValues(alpha: isDark ? 0.45 : 0.35)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.stars_rounded, size: 18, color: AppColors.success),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(
+                            context.s.orderCashbackEarn(
+                              fmtPrice(cart.subtotal * config.cashbackRate / 100),
+                              (cart.subtotal * config.cashbackRate / 10).round().clamp(1, 9999).toString()),
+                            style: const TextStyle(
+                              fontFamily: 'Cairo', fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.success))),
+                        ]),
+                      ),
+                    const SizedBox(height: 16),
+
+                    // ── Notes ─────────────────────────────────────────────
+                    _SectionLabel(context.s.notesOptional),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _cardFill(context),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: context.col.border),
+                      ),
+                      child: TextField(
+                        controller: _notesCtrl,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          filled: false,
+                          hintText: context.s.notesHint,
+                          hintStyle: TextStyle(color: context.col.ink3, fontSize: 13.5),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.all(14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // ── Trust badges in a card ─────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: _cardFill(context),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.col.border),
+                        boxShadow: isDark ? null : AppShadows.shadowCard,
+                      ),
+                      child: const _TrustRow(),
+                    ),
+                  ],
                 ),
               ),
             ),
 
-            // Bottom bar
+            // ── Bottom bar ────────────────────────────────────────────────
             Container(
               padding: EdgeInsets.fromLTRB(16, 12, 16,
                 MediaQuery.of(context).padding.bottom + 12),
@@ -322,29 +718,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 color: context.col.surface,
                 boxShadow: AppShadows.shadowPop,
               ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(context.s.total,
-                        style: TextStyle(fontSize: 13, color: context.col.ink2)),
-                      Text('${fmtPrice(cart.total)} ${context.s.lydUnit}',
-                        style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                          fontSize: 18, fontWeight: FontWeight.w800)),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  AppButton(
-                    label: _step < 3 ? context.s.continueBtn : context.s.placeOrder,
-                    icon: _step < 3
-                        ? Icon(context.isAr ? Icons.arrow_back_ios_new_rounded : Icons.arrow_forward_ios_rounded, size: 14, color: context.col.ink0)
-                        : Icon(Icons.check_rounded, size: 16, color: context.col.ink0),
-                    onTap: _next,
-                    loading: _loading,
-                  ),
-                ],
-              ),
+              child: Column(children: [
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text(context.s.total,
+                    style: TextStyle(fontSize: 13, color: context.col.ink2)),
+                  Text('${fmtPrice(cart.total)} ${context.s.lydUnit}',
+                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 18, fontWeight: FontWeight.w800)),
+                ]),
+                const SizedBox(height: 10),
+                AppButton(
+                  label: context.s.placeOrder,
+                  icon: const Icon(Icons.check_rounded, size: 16, color: Color(0xFFF0F0F0)),
+                  onTap: _placeOrder,
+                  loading: _loading,
+                ),
+              ]),
             ),
           ],
         ),
@@ -353,635 +742,232 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 }
 
-class _StepCircle extends StatelessWidget {
-  final int number;
-  final int current;
-  const _StepCircle({required this.number, required this.current});
+// ── Address picker bottom sheet ───────────────────────────────────────────────
+
+class _AddressSheet extends StatelessWidget {
+  final List<Map<String, dynamic>> addresses;
+  final Map<String, dynamic>? selected;
+  final void Function(Map<String, dynamic>) onSelect;
+  final VoidCallback onAddNew;
+  const _AddressSheet({required this.addresses, required this.selected,
+    required this.onSelect, required this.onAddNew});
 
   @override
   Widget build(BuildContext context) {
-    final isDone = current > number;
-    final isActive = current == number;
-    return Container(
-      width: 26, height: 26,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: (isDone || isActive) ? context.col.ink0 : context.col.surfaceSoft,
-      ),
-      child: Center(
-        child: isDone
-            ? Icon(Icons.check, size: 14, color: context.col.bg)
-            : Text('$number',
-                style: TextStyle(
-                  fontFamily: 'PlusJakartaSans',
-                  fontSize: 12, fontWeight: FontWeight.w700,
-                  color: isActive ? context.col.bg : context.col.ink3)),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: context.col.border,
+              borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(height: 16),
+          Text(context.s.shippingAddr,
+            style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 16),
+          ...addresses.map((addr) {
+            final isSelected = selected?['id'] == addr['id'];
+            return GestureDetector(
+              onTap: () => onSelect(addr),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: _cardFill(context),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? _selBorder(context) : context.col.border,
+                    width: isSelected ? 1.5 : 1),
+                  boxShadow: isDark ? null : AppShadows.shadowCard,
+                ),
+                child: Row(children: [
+                  _RadioDot(selected: isSelected),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(context.s.translateAddrLabel(addr['label'] as String? ?? ''),
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                    const SizedBox(height: 2),
+                    Text(
+                      [context.s.translateCity(addr['city']?.toString() ?? ''), addr['address']]
+                        .where((v) => v != null && v.toString().isNotEmpty)
+                        .join('، '),
+                      style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
+                  ])),
+                ]),
+              ),
+            );
+          }),
+          OutlinedButton.icon(
+            onPressed: onAddNew,
+            icon: const Icon(Icons.add, size: 16),
+            label: Text(context.s.addNewAddress),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 44),
+              side: BorderSide(color: context.col.border),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ]),
       ),
     );
   }
 }
 
-// ── Step 1: Address ───────────────────────────────────────────────────────────
+// ── Trust badges row ──────────────────────────────────────────────────────────
 
-class _StepAddress extends StatelessWidget {
-  final List<Map<String, dynamic>> addresses;
-  final Map<String, dynamic>? selected;
-  final void Function(Map<String, dynamic>) onSelect;
-  final VoidCallback onAddNew;
-  final String deliveryPromise;
-  final ShippingRate? selectedRate;
-  const _StepAddress({required this.addresses, required this.selected,
-    required this.onSelect, required this.onAddNew, required this.deliveryPromise,
-    this.selectedRate});
+class _TrustRow extends StatelessWidget {
+  const _TrustRow();
 
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(context.s.shippingAddr,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-      const SizedBox(height: 4),
-      Text(context.s.whereToDeliver,
-        style: TextStyle(fontSize: 13, color: context.col.ink2)),
-      const SizedBox(height: 16),
-
-      ...addresses.map((addr) => GestureDetector(
-        onTap: () => onSelect(addr),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: context.col.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: selected?['id'] == addr['id'] ? AppColors.primary : context.col.border,
-              width: selected?['id'] == addr['id'] ? 1.5 : 1),
-            boxShadow: AppShadows.shadowCard,
-          ),
-          child: Row(children: [
-            Container(
-              width: 18, height: 18,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: selected?['id'] == addr['id']
-                    ? null
-                    : Border.all(color: context.col.borderStrong, width: 1.5),
-                color: selected?['id'] == addr['id']
-                    ? AppColors.primary : Colors.transparent,
-              ),
-              child: selected?['id'] == addr['id']
-                  ? Icon(Icons.circle, size: 8, color: context.col.ink0)
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${context.s.translateAddrLabel(addr['label'] as String? ?? '')} · ',
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              Text(
-                [context.s.translateCity(addr['city']?.toString() ?? ''), addr['address']]
-                  .where((v) => v.isNotEmpty)
-                  .join('، '),
-                style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
-            ])),
-          ]),
-        ),
-      )),
-
-      if (addresses.isEmpty)
-        GestureDetector(
-          onTap: onAddNew,
-          child: Container(
-            padding: const EdgeInsets.all(14),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final items = [
+      (Icons.verified_outlined,        context.s.trustAuthentic,  const Color(0xFFD4A82E)),
+      (Icons.local_shipping_outlined,  context.s.trustDelivery,   AppColors.primary),
+      (Icons.security_rounded,         context.s.trustPayment,    AppColors.success),
+      (Icons.replay_rounded,           context.s.trustReturn,     AppColors.warn),
+    ];
+    final dimColor = _accent(context);
+    return Row(
+      children: items.map((item) => Expanded(
+        child: Column(children: [
+          Container(
+            width: 38, height: 38,
             decoration: BoxDecoration(
-              color: context.col.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.primary, width: 1.5),
+              shape: BoxShape.circle,
+              color: isDark ? Colors.transparent : item.$3.withValues(alpha: 0.10),
+              border: Border.all(
+                color: isDark ? dimColor.withValues(alpha: 0.55) : item.$3.withValues(alpha: 0.35)),
             ),
-            child: Row(children: [
-              const Icon(Icons.add, color: AppColors.primary, size: 18),
-              const SizedBox(width: 8),
-              Text(context.s.addNewAddress,
-                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
-            ]),
+            child: Icon(item.$1, size: 17, color: isDark ? dimColor : item.$3),
           ),
-        ),
-
-      if (addresses.isNotEmpty) ...[
-        OutlinedButton.icon(
-          onPressed: onAddNew,
-          icon: const Icon(Icons.add, size: 16),
-          label: Text(context.s.addNewAddress),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 44),
-            side: BorderSide(color: context.col.border),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        ),
-        const SizedBox(height: 12),
-      ],
-
-      // Delivery estimate for selected city
-      if (selected != null && selected!.isNotEmpty && selectedRate != null) ...[
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
-          ),
-          child: Row(children: [
-            const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.primary),
-            const SizedBox(width: 10),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(
-                context.s.deliveryToCity(selected!['city']?.toString() ?? ''),
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-              Text(
-                '${fmtPrice(selectedRate!.rate)} ${context.s.lydUnit} · ${selectedRate!.deliveryDays} ${context.s.daysLabel}',
-                style: TextStyle(fontSize: 12, color: context.col.ink2)),
-            ])),
-          ]),
-        ),
-        const SizedBox(height: 12),
-      ],
-
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: context.col.surfaceSoft,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(children: [
-          const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.primary),
-          const SizedBox(width: 8),
-          Expanded(child: Text(deliveryPromise,
-            style: TextStyle(fontSize: 12.5, color: context.col.ink1))),
+          const SizedBox(height: 6),
+          Text(item.$2,
+            textAlign: TextAlign.center, maxLines: 2,
+            style: TextStyle(fontFamily: 'Cairo', fontSize: 10.5,
+              fontWeight: FontWeight.w600, color: context.col.ink2)),
         ]),
-      ),
-    ]);
+      )).toList(),
+    );
   }
 }
 
-// ── Step 2: Payment ───────────────────────────────────────────────────────────
+// ── Shared small widgets ──────────────────────────────────────────────────────
 
-class _StepPayment extends StatelessWidget {
-  final String selected;
-  final void Function(String) onChanged;
-  final TextEditingController notesCtrl;
-  final dynamic config;
-  final double walletBalance;
-  final bool walletLoading;
-  final bool useWallet;
-  final VoidCallback onWalletToggle;
-  final VoidCallback onChargeWallet;
-  final double total;
-  final bool codAllowed;
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+  @override
+  Widget build(BuildContext context) => Text(text,
+    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700));
+}
 
-  const _StepPayment({
-    required this.selected, required this.onChanged,
-    required this.notesCtrl, required this.config,
-    required this.walletBalance, required this.walletLoading,
-    required this.useWallet, required this.onWalletToggle,
-    required this.onChargeWallet,
-    required this.total, required this.codAllowed,
+class _RadioDot extends StatelessWidget {
+  final bool selected;
+  const _RadioDot({required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = _accent(context);
+    return Container(
+      width: 20, height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: selected ? null : Border.all(color: context.col.borderStrong, width: 1.5),
+        color: selected ? accent : Colors.transparent,
+      ),
+      child: selected
+          ? Center(child: Container(
+              width: 8, height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDark ? Colors.black87 : Colors.white,
+              ),
+            ))
+          : null,
+    );
+  }
+}
+
+class _ImagePlaceholder extends StatelessWidget {
+  final double size;
+  const _ImagePlaceholder({this.size = 56});
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size, height: size,
+    color: context.col.surfaceSoft,
+    child: Icon(Icons.image_not_supported_outlined, size: size * 0.36, color: context.col.ink3),
+  );
+}
+
+Widget _SummaryRow(String label, String value,
+    {Color? color, bool bold = false, required BuildContext ctx}) =>
+  Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Text(label, style: const TextStyle(fontSize: 14)),
+      Text(value, style: TextStyle(
+        fontFamily: 'PlusJakartaSans', fontSize: 14,
+        fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+        color: color ?? ctx.col.ink0)),
+    ]),
+  );
+
+// ── Collapsible section header ────────────────────────────────────────────────
+
+class _CollapsibleHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  const _CollapsibleHeader({
+    required this.title,
+    required this.subtitle,
+    required this.expanded,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Sadad and wallet removed from radio list; COD only when allowed by zone policy
-    final allMethods = (config.paymentMethods as List)
-        .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet')
-        .toList();
-    final methods = codAllowed
-        ? allMethods
-        : allMethods.where((m) => m.id != 'cash_on_delivery').toList();
-
-    final walletActive = useWallet && walletBalance > 0;
-    final walletCoversAll = walletActive && walletBalance >= total;
-    final walletDeduct = walletActive ? (walletBalance < total ? walletBalance : total) : 0.0;
-    final amountDue = walletActive ? (total - walletDeduct).clamp(0.0, total) : total;
-
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(context.s.paymentMethod,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-      const SizedBox(height: 16),
-
-      // COD warning when not allowed by zone policy
-      if (!codAllowed) ...[
-        Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.warn.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.warn.withValues(alpha: 0.4)),
-          ),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Icon(Icons.payments_outlined, size: 16, color: AppColors.warn),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                context.s.codTripiliOnly,
-                style: const TextStyle(fontSize: 12.5, color: AppColors.warn, height: 1.5)),
-            ),
-          ]),
-        ),
-      ],
-
-      // ── Wallet card ───────────────────────────────────────────────────────
-      GestureDetector(
-        onTap: walletBalance > 0 ? onWalletToggle : null,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(
-            color: walletActive ? context.col.hilite : context.col.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: walletActive ? AppColors.primary : context.col.border,
-              width: walletActive ? 1.5 : 1),
-          ),
-          child: Row(children: [
-            Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(
-                color: walletActive ? AppColors.primary.withValues(alpha: 0.1) : context.col.surfaceSoft,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.account_balance_wallet_outlined, size: 18,
-                color: walletActive ? AppColors.primary : context.col.ink3),
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(context.s.walletTitle,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              walletLoading
-                  ? Text(context.s.loading,
-                      style: TextStyle(fontSize: 11.5, color: context.col.ink3))
-                  : Row(children: [
-                      Text(
-                        walletBalance > 0
-                            ? context.s.walletBalanceLabel(fmtPrice(walletBalance))
-                            : context.s.walletEmpty,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: walletBalance > 0 ? AppColors.success : context.col.ink3)),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: onChargeWallet,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            const Icon(Icons.add, size: 10, color: AppColors.primary),
-                            const SizedBox(width: 2),
-                            Text(context.s.topUpShort, style: const TextStyle(
-                              fontSize: 10.5, fontWeight: FontWeight.w700,
-                              color: AppColors.primary)),
-                          ]),
-                        ),
-                      ),
-                    ]),
-            ])),
-            // Toggle only shown when there's a balance to use
-            if (walletBalance > 0)
-              Container(
-                width: 44, height: 24,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
-                  color: walletActive ? AppColors.primary : context.col.ink4,
-                ),
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 150),
-                  alignment: walletActive ? Alignment.centerLeft : Alignment.centerRight,
-                  child: Container(
-                    width: 18, height: 18,
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle, color: Colors.white),
-                  ),
-                ),
-              ),
-          ]),
-        ),
-      ),
-
-      // Wallet coverage info
-      if (walletActive) ...[
-        Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: walletCoversAll ? AppColors.success.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: walletCoversAll ? AppColors.success : AppColors.primary,
-              width: 1),
-          ),
-          child: Text(
-            walletCoversAll
-                ? context.s.walletCoversAll(fmtPrice(walletDeduct))
-                : context.s.walletPartial(fmtPrice(walletDeduct), fmtPrice(amountDue)),
-            style: TextStyle(
-              fontSize: 12.5, fontWeight: FontWeight.w600,
-              color: walletCoversAll ? AppColors.success : AppColors.primary),
-          ),
-        ),
-      ],
-
-      // Payment method radios — hidden if wallet covers all
-      if (!walletCoversAll) ...[
-        ...methods.map((m) => GestureDetector(
-          onTap: () => onChanged(m.id),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: selected == m.id ? context.col.surfaceSoft : context.col.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: selected == m.id ? AppColors.primary : context.col.border,
-                width: selected == m.id ? 1.5 : 1),
-            ),
-            child: Row(children: [
-              Container(
-                width: 18, height: 18,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: selected == m.id
-                      ? null
-                      : Border.all(color: context.col.borderStrong, width: 1.5),
-                  color: selected == m.id ? AppColors.primary : Colors.transparent,
-                ),
-                child: selected == m.id
-                    ? Icon(Icons.circle, size: 8, color: context.col.ink0)
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(context.isAr ? m.labelAr : (m.labelEn.isNotEmpty ? m.labelEn : m.labelAr),
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                Text(
-                  context.isAr
-                      ? (m.descriptionAr.isNotEmpty ? m.descriptionAr
-                          : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees))
-                      : (m.descriptionEn.isNotEmpty ? m.descriptionEn
-                          : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees)),
-                  style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
-              ])),
-            ]),
-          ),
-        )),
-      ],
-
-      const SizedBox(height: 16),
-      Text(context.s.notesOptional,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-      const SizedBox(height: 8),
-      Container(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: context.col.surface,
+          color: _cardFill(context),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: context.col.border),
-        ),
-        child: TextField(
-          controller: notesCtrl,
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: context.s.notesHint,
-            hintStyle: TextStyle(color: context.col.ink3, fontSize: 14),
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.all(14),
-          ),
-        ),
-      ),
-    ]);
-  }
-}
-
-// ── Step 3: Review ────────────────────────────────────────────────────────────
-
-class _StepReview extends StatelessWidget {
-  final CartState cart;
-  final Map<String, dynamic>? address;
-  final String paymentMethod;
-  final VoidCallback onChangeAddress;
-  final VoidCallback onChangePayment;
-  final dynamic config; // AppConfig
-  const _StepReview({required this.cart, required this.address,
-    required this.paymentMethod, required this.onChangeAddress,
-    required this.onChangePayment, required this.config});
-
-  String _paymentLabel(BuildContext context) {
-    final match = (config.paymentMethods as List<PaymentMethod>)
-        .where((m) => m.id == paymentMethod)
-        .firstOrNull;
-    if (match == null) return paymentMethod;
-    return context.isAr ? match.labelAr : (match.labelEn.isNotEmpty ? match.labelEn : match.labelAr);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final addr = address;
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
-
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(context.s.reviewOrderTitle,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-      const SizedBox(height: 16),
-
-      // Address card
-      Container(
-        padding: const EdgeInsets.all(14),
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: context.col.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: context.col.border),
-        ),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Padding(
-            padding: EdgeInsets.only(top: 2),
-            child: Icon(Icons.location_on_outlined, size: 18, color: context.col.ink2),
-          ),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text(context.s.deliverTo,
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
-                  color: context.col.ink2, letterSpacing: 0.3)),
-              GestureDetector(
-                onTap: onChangeAddress,
-                child: Text(context.s.change,
-                  style: const TextStyle(fontSize: 12, color: AppColors.primary,
-                    fontWeight: FontWeight.w600)),
-              ),
-            ]),
-            const SizedBox(height: 6),
-            if (addr != null) ...[
-              if ((addr['name'] as String?)?.isNotEmpty == true)
-                Text(addr['name'] as String,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
-              if ((addr['phone'] as String?)?.isNotEmpty == true)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(addr['phone'] as String,
-                    style: TextStyle(fontSize: 12.5, color: context.col.ink2,
-                      fontFamily: 'PlusJakartaSans')),
-                ),
-              const SizedBox(height: 3),
-              Text(
-                [context.s.translateAddrLabel((addr['label'] as String?) ?? ''), context.s.translateCity(addr['city']?.toString() ?? ''), addr['address']]
-                  .where((v) => v != null && v.toString().isNotEmpty)
-                  .join(' · '),
-                style: TextStyle(fontSize: 12.5, color: context.col.ink1)),
-            ],
-          ])),
-        ]),
-      ),
-
-      // Payment card
-      Container(
-        padding: const EdgeInsets.all(14),
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: context.col.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: context.col.border),
+          boxShadow: isDark ? null : AppShadows.shadowCard,
         ),
         child: Row(children: [
-          Icon(Icons.credit_card_outlined, size: 18, color: context.col.ink2),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text(context.s.payment,
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
-                  color: context.col.ink2, letterSpacing: 0.3)),
-              GestureDetector(
-                onTap: onChangePayment,
-                child: Text(context.s.change,
-                  style: const TextStyle(fontSize: 12, color: AppColors.primary,
-                    fontWeight: FontWeight.w600)),
-              ),
-            ]),
-            const SizedBox(height: 4),
-            Text(_paymentLabel(context), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-          ])),
-        ]),
-      ),
-
-      // Product list
-      Container(
-        padding: const EdgeInsets.all(14),
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: context.col.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: context.col.border),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(context.s.productsCountN(cart.items.length),
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12,
-              color: context.col.ink2, letterSpacing: 0.3)),
-          const SizedBox(height: 10),
-          ...cart.items.map((item) {
-            final variationLabel = item.variation?.attributes
-                .map((a) => isAr ? a.valueAr : a.value)
-                .where((v) => v.isNotEmpty)
-                .join(' · ');
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: item.image != null
-                      ? CachedNetworkImage(
-                          imageUrl: item.image!,
-                          width: 56, height: 56,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(
-                            width: 56, height: 56,
-                            color: context.col.surfaceSoft,
-                            child: Icon(Icons.image_not_supported_outlined,
-                              size: 20, color: context.col.ink3),
-                          ),
-                        )
-                      : Container(
-                          width: 56, height: 56,
-                          color: context.col.surfaceSoft,
-                          child: Icon(Icons.image_not_supported_outlined,
-                            size: 20, color: context.col.ink3),
-                        ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(isAr ? item.product.nameAr : item.product.name,
-                    maxLines: 2, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  if (variationLabel != null && variationLabel.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(variationLabel,
-                        style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
-                    ),
-                  const SizedBox(height: 4),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('× ${item.quantity}',
-                      style: TextStyle(fontSize: 12, color: context.col.ink2,
-                        fontFamily: 'PlusJakartaSans')),
-                    Text('${fmtPrice(item.total)} ${context.s.lydUnit}',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                        fontFamily: 'PlusJakartaSans')),
-                  ]),
-                ])),
-              ]),
-            );
-          }),
-        ]),
-      ),
-
-      // Order summary
-      Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: context.col.surface,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: AppShadows.shadowCard,
-        ),
-        child: Column(children: [
-          _SummaryRow(context.s.subtotalLabel, '${fmtPrice(cart.subtotal)} ${context.s.lydUnit}', ctx: context),
-          if (cart.discountAmount > 0)
-            _SummaryRow(context.s.couponDiscount, '− ${fmtPrice(cart.discountAmount)} ${context.s.lydUnit}',
-              color: AppColors.success, ctx: context),
-          _SummaryRow(
-            context.s.shippingCost,
-            cart.deliveryFee == 0 ? context.s.freeText : '${fmtPrice(cart.deliveryFee)} ${context.s.lydUnit}',
-            color: cart.deliveryFee == 0 ? AppColors.success : null,
-            ctx: context,
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 2),
+              Text(subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
+            ],
+          )),
+          AnimatedRotation(
+            turns: expanded ? 0.5 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Icon(Icons.keyboard_arrow_down_rounded,
+              size: 22, color: context.col.ink2),
           ),
-          Divider(height: 20, color: context.col.border),
-          _SummaryRow(context.s.orderTotal, '${fmtPrice(cart.total)} ${context.s.lydUnit}', bold: true, ctx: context),
         ]),
       ),
-    ]);
+    );
   }
 }
-
-Widget _SummaryRow(String label, String value, {Color? color, bool bold = false, required BuildContext ctx}) =>
-  Padding(
-    padding: const EdgeInsets.symmetric(vertical: 3),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 14)),
-        Text(value, style: TextStyle(
-          fontFamily: 'PlusJakartaSans',
-          fontSize: 14,
-          fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-          color: color ?? ctx.col.ink0)),
-      ],
-    ),
-  );

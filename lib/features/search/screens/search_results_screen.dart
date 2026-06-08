@@ -489,7 +489,7 @@ class _Tab extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? context.col.ink0 : context.col.surfaceSoft,
+          color: selected ? AppColors.adaptive(context) : context.col.surfaceSoft,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(label,
@@ -497,7 +497,7 @@ class _Tab extends StatelessWidget {
             fontFamily: 'Cairo',
             fontSize: 13,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? Colors.white : context.col.ink1,
+            color: selected ? const Color(0xFFF0F0F0) : context.col.ink1,
           )),
       ),
     );
@@ -879,15 +879,15 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 12, vertical: 7),
                                         decoration: BoxDecoration(
-                                          color: sel ? context.col.ink0 : context.col.surface,
+                                          color: sel ? AppColors.adaptive(context) : context.col.surface,
                                           borderRadius: BorderRadius.circular(10),
                                           border: Border.all(
-                                            color: sel ? context.col.ink0 : context.col.border,
+                                            color: sel ? AppColors.adaptive(context) : context.col.border,
                                             width: 1.5)),
                                         child: Text(valLabel,
                                           style: TextStyle(
                                             fontSize: 12, fontWeight: FontWeight.w600,
-                                            color: sel ? Colors.white : context.col.ink1)),
+                                            color: sel ? const Color(0xFFF0F0F0) : context.col.ink1)),
                                       ),
                                     );
                                   }).toList(),
@@ -1156,17 +1156,17 @@ class _CatChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? context.col.ink0 : context.col.surface,
+          color: selected ? AppColors.adaptive(context) : context.col.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? context.col.ink0 : context.col.border,
+            color: selected ? AppColors.adaptive(context) : context.col.border,
             width: 1.5),
         ),
         child: Text(label,
           style: TextStyle(
             fontSize: 12.5,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? Colors.white : context.col.ink1,
+            color: selected ? const Color(0xFFF0F0F0) : context.col.ink1,
           )),
       ),
     );

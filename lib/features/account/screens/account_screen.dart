@@ -522,7 +522,9 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
 
         GestureDetector(
           onTap: widget.onEdit,
-          child: Icon(Icons.chevron_right, color: context.col.ink3),
+          child: Icon(Icons.chevron_right,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white.withValues(alpha: 0.45) : context.col.ink3),
         ),
       ]),
     );
@@ -544,7 +546,9 @@ class _StatTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Expanded(
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Expanded(
     child: GestureDetector(
       onTap: onTap,
       child: Container(
@@ -557,7 +561,11 @@ class _StatTile extends StatelessWidget {
         child: Row(children: [
           Container(
             width: 36, height: 36,
-            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: isDark ? iconColor.withValues(alpha: 0.15) : iconBg,
+              borderRadius: BorderRadius.circular(10),
+              border: isDark ? Border.all(color: iconColor.withValues(alpha: 0.3)) : null,
+            ),
             child: Icon(icon, size: 18, color: iconColor),
           ),
           const SizedBox(width: 8),
@@ -576,6 +584,7 @@ class _StatTile extends StatelessWidget {
       ),
     ),
   );
+  }
 }
 
 // ── Wallet card ───────────────────────────────────────────────────────────────
@@ -586,37 +595,38 @@ class _WalletCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = AppColors.adaptive(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.07),
+        color: isDark ? Colors.transparent : AppColors.primary.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35), width: 0.8),
+        border: Border.all(
+          color: isDark ? accent.withValues(alpha: 0.30) : AppColors.primary.withValues(alpha: 0.35),
+          width: 0.8),
       ),
       child: Row(children: [
-        // Icon
         Container(
-          width: 48, height: 48,
+          width: 44, height: 44,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.12),
+            color: isDark ? Colors.transparent : AppColors.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
+            border: isDark ? Border.all(color: accent.withValues(alpha: 0.35)) : null,
           ),
-          child: const Icon(Icons.account_balance_wallet_outlined,
-            color: AppColors.primary, size: 24),
+          child: Icon(Icons.account_balance_wallet_outlined, color: accent, size: 22),
         ),
         const SizedBox(width: 12),
-        // Balance info
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(context.s.myWallet,
               style: TextStyle(fontSize: 12, color: context.col.ink2, fontFamily: 'Cairo')),
             Text('${balance.toStringAsFixed(0)} ${context.s.lyd}',
-              style: const TextStyle(fontFamily: 'PlusJakartaSans',
+              style: TextStyle(fontFamily: 'PlusJakartaSans',
                 fontSize: 22, fontWeight: FontWeight.w800,
-                color: Color(0xFF0A1A1A), height: 1.1)),
+                color: context.col.ink0, height: 1.1)),
           ]),
         ),
-        // Buttons
         Row(mainAxisSize: MainAxisSize.min, children: [
           GestureDetector(
             onTap: () => safePush(context, '/wallet'),
@@ -625,7 +635,7 @@ class _WalletCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: context.col.border, width: 1.2),
+                border: Border.all(color: context.col.borderStrong, width: 1.2),
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Text(context.tr('تحويل', 'Transfer'),
@@ -642,15 +652,15 @@ class _WalletCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: accent,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Text(context.s.chargeWallet,
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                    color: Color(0xFFE8FFFE), fontFamily: 'Cairo')),
+                    color: Color(0xFFF0F0F0), fontFamily: 'Cairo')),
                 const SizedBox(width: 4),
-                const Icon(Icons.add, size: 12, color: Color(0xFFE8FFFE)),
+                const Icon(Icons.add, size: 12, color: Color(0xFFF0F0F0)),
               ]),
             ),
           ),
@@ -742,7 +752,9 @@ class _TierCard extends ConsumerWidget {
                         color: tierColor, fontFamily: 'Cairo')),
                   ]),
                 ),
-                Icon(Icons.chevron_right, color: context.col.ink3),
+                Icon(Icons.chevron_right,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withValues(alpha: 0.45) : context.col.ink3),
               ]),
 
               const SizedBox(height: 10),
@@ -807,9 +819,17 @@ class _ReferralCard extends ConsumerWidget {
           boxShadow: AppShadows.shadowCard,
         ),
         child: Row(children: [
-          // Illustration
-          Image.asset('assets/images/referral_illustration.png',
-            width: 72, height: 72, fit: BoxFit.contain),
+          // Illustration — multiply-blend in dark to suppress white background
+          Builder(builder: (ctx) {
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset('assets/images/referral_illustration.png',
+                width: 68, height: 68, fit: BoxFit.contain,
+                color: isDark ? ctx.col.surface : null,
+                colorBlendMode: isDark ? BlendMode.multiply : null),
+            );
+          }),
           const SizedBox(width: 12),
 
           Expanded(
@@ -870,7 +890,11 @@ class _MenuGroup extends StatelessWidget {
         for (int i = 0; i < rows.length; i++) ...[
           rows[i],
           if (i < rows.length - 1)
-            Divider(height: 1, color: context.col.border, indent: 58, endIndent: 0),
+            Divider(height: 1,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withValues(alpha: 0.07)
+                  : context.col.border,
+              indent: 58, endIndent: 0),
         ],
       ],
     ),
@@ -917,7 +941,10 @@ class _MenuRow extends StatelessWidget {
           ),
           const SizedBox(width: 6),
         ],
-        Icon(Icons.arrow_forward_ios, size: 13, color: context.col.ink4),
+        Icon(Icons.arrow_forward_ios, size: 13,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white.withValues(alpha: 0.45)
+              : context.col.ink4),
       ]),
     ),
   );

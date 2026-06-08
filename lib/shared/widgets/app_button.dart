@@ -45,11 +45,10 @@ class _AppButtonState extends State<AppButton> {
     final isDanger = widget.variant == AppButtonVariant.danger;
     final isOutline = widget.variant == AppButtonVariant.outline;
 
-    final bg = isPrimary ? AppColors.primary
+    final bg = isPrimary ? AppColors.adaptive(context)
         : isDanger ? AppColors.danger
         : Colors.transparent;
-    final fg = isDanger ? Colors.white
-        : isPrimary ? Colors.black87
+    final fg = (isDanger || isPrimary) ? const Color(0xFFF0F0F0)
         : isOutline ? AppColors.primary
         : context.col.ink1;
     final border = isOutline ? Border.all(color: AppColors.primary, width: 1.5) : null;

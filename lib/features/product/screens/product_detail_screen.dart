@@ -1432,7 +1432,7 @@ class _QtyBtn extends StatelessWidget {
     child: Padding(
       padding: const EdgeInsets.all(10),
       child: Icon(icon, size: 18,
-        color: onTap != null ? context.col.ink0 : context.col.border),
+        color: onTap != null ? AppColors.adaptive(context) : context.col.border),
     ),
   );
 }
