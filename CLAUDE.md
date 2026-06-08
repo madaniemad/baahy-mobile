@@ -201,9 +201,17 @@ The booted simulator UDID as of last session: `B764355C-AE75-49CC-8E30-8B5089A32
 - **Subcategory grid**: 2 columns, `childAspectRatio: 0.88` (calibrated for 600×600 square images)
 - **Search bar margin**: `fromLTRB(12, 10, 12, 12)` — 12px below for breathing room
 
+## Cart Screen (`cart_screen.dart`)
+- **Item card layout**: horizontal Row — image (78×78, RIGHT in RTL) + Expanded column (name/price + action row). Action row: stepper (RIGHT) · Spacer · احفظ لاحقاً bookmark · trash icon (LEFT)
+- **Variable product guard**: `_RecommendedCard` checks `product.productType == 'variable' || product.variations.isNotEmpty` before adding — navigates to product detail instead. Variations may be empty from the recommended API even for variable products; `productType` is always returned.
+- **Free shipping achieved banner**: green `Color(0xFF2E8B57)`, padding `vertical:9`, icon 26×26 circle / truck 20px
+- **AppBar**: `leading` = back arrow (RIGHT in RTL), `actions` = "مسح الكل" TextButton (LEFT in RTL)
+- **Delivery section**: truck circle icon is FIRST child (RIGHT in RTL), text Expanded is second
+
 ## Product Detail Screen (`product_detail_screen.dart`)
 - **Section order**: Price → Variations/Size → Quantity+Trust+Delivery → Description → Vendor → Similar products
 - **Grid**: LayoutBuilder dynamic `mainAxisExtent` (no hardcoded height, adapts to screen width)
+- **`_trySelectVariation`**: returns `null` (not `variations.first`) when no full attribute match; `_addToCart` guard uses `product.variations.isNotEmpty` (not `productType == 'variable'`)
 
 ## Wallet Screen (`wallet_screen.dart`)
 - Full redesign: teal gradient hero card (`Color(0xFF32DDE5)` → `Color(0xFF08AAAC)`), 4-stat row, tier progress, earn-more horizontal scroll, last-5 transactions
