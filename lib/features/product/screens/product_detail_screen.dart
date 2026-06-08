@@ -77,11 +77,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   void _trySelectVariation(Product product) {
     if (product.variations.isEmpty) return;
     final attrCount = product.variations.first.attributes.length;
-    if (_selections.length < attrCount) return;
-    _selectedVariation = product.variations.firstWhere(
-      (v) => v.attributes.every((a) => _selections[a.typeName] == a.value),
-      orElse: () => product.variations.first,
+    if (_selections.length < attrCount) {
+      _selectedVariation = null;
+      setState(() {});
+      return;
+    }
+    final match = product.variations.cast<ProductVariation?>().firstWhere(
+      (v) => v!.attributes.every((a) => _selections[a.typeName] == a.value),
+      orElse: () => null,
     );
+    _selectedVariation = match;
     setState(() {});
   }
 
@@ -95,7 +100,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 
   Future<void> _addToCart(Product product, {bool goToCart = false}) async {
-    if (product.productType == 'variable' && _selectedVariation == null) {
+    if (product.variations.isNotEmpty && _selectedVariation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.s.selectOptions)));
       return;

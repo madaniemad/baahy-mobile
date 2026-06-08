@@ -1197,14 +1197,14 @@ class _CategoriesGridState extends State<_CategoriesGrid> {
                   width: 64, height: 64,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: item.color.withValues(alpha: 0.12),
+                    color: context.col.surfaceSoft,
                   ),
                   child: ClipOval(
                     child: item.cat.image != null
                         ? CachedNetworkImage(imageUrl: item.cat.image!, fit: BoxFit.cover,
                             errorWidget: (_, __, ___) => Center(
-                              child: Icon(icon, size: 26, color: item.color)))
-                        : Center(child: Icon(icon, size: 20, color: item.color)),
+                              child: Icon(icon, size: 26, color: context.col.ink3)))
+                        : Center(child: Icon(icon, size: 20, color: context.col.ink3)),
                   ),
                 ),
                 const SizedBox(height: 3),
