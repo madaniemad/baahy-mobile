@@ -162,7 +162,8 @@ class AccountScreen extends ConsumerWidget {
           const SizedBox(height: 12),
 
           // ── Stats row ─────────────────────────────────────────────────────
-          Row(children: [
+          IntrinsicHeight(
+           child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             _StatTile(
               icon: Icons.favorite_rounded,
               iconColor: const Color(0xFFE11D48),
@@ -189,7 +190,7 @@ class AccountScreen extends ConsumerWidget {
               label: context.tr('طلباتي', 'My Orders'),
               onTap: () => safePush(context, '/orders'),
             ),
-          ]),
+          ])),
 
           const SizedBox(height: 12),
 
@@ -526,42 +527,49 @@ class _StatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
-    child: GestureDetector(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 78),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        decoration: BoxDecoration(
-          color: context.col.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(color: context.col.border),
-          boxShadow: AppShadows.shadowLifted,
-        ),
-        child: Row(children: [
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: isDark ? context.col.surfaceSoft : iconBg,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(icon, size: 18, color: isDark ? context.col.ink2 : iconColor),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: context.col.surface,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(color: context.col.border),
+            boxShadow: AppShadows.shadowLifted,
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
               Text(value, style: TextStyle(
                 fontFamily: 'PlusJakartaSans',
                 fontSize: 20, fontWeight: FontWeight.w800,
                 color: context.col.ink0, height: 1.1)),
-              const SizedBox(height: 2),
-              Text(label, style: TextStyle(fontSize: 10.5, color: context.col.ink2),
-                maxLines: 2, overflow: TextOverflow.ellipsis),
-            ]),
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(label,
+                      style: TextStyle(fontSize: 10.5, color: context.col.ink2),
+                      maxLines: 2),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 34, height: 34,
+                    decoration: BoxDecoration(
+                      color: isDark ? context.col.surfaceSoft : iconBg,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(icon, size: 17, color: isDark ? context.col.ink2 : iconColor),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ]),
+        ),
       ),
-    ),
-  );
+    );
   }
 }
 
