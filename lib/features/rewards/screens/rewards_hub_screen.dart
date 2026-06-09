@@ -48,12 +48,12 @@ String _fmtRate(double r) {
 }
 
 const _palettes = <String, _TierPalette>{
-  'bronze':   _TierPalette(nameAr: 'برونزي',  gradA: Color(0xFFD4913A), gradB: Color(0xFF3B1A07), accent: Color(0xFFE8B464)),
+  'bronze':   _TierPalette(nameAr: 'برونزي',  gradA: Color(0xFF5C2E10), gradB: Color(0xFF140704), accent: Color(0xFFC07832)),
   'silver':   _TierPalette(nameAr: 'فضي',     gradA: Color(0xFF9E9E9E), gradB: Color(0xFF616161), accent: Color(0xFFBDBDBD)),
   'gold':     _TierPalette(nameAr: 'ذهبي',    gradA: Color(0xFFD4A82E), gradB: Color(0xFFA07010), accent: Color(0xFFFFD54F)),
   'platinum': _TierPalette(nameAr: 'بلاتيني', gradA: Color(0xFF26C5F3), gradB: Color(0xFF0A8EC0), accent: Color(0xFFB3E5FC)),
 };
-const _bronzePalette = _TierPalette(nameAr: 'برونزي', gradA: Color(0xFFD4913A), gradB: Color(0xFF3B1A07), accent: Color(0xFFE8B464));
+const _bronzePalette = _TierPalette(nameAr: 'برونزي', gradA: Color(0xFF5C2E10), gradB: Color(0xFF140704), accent: Color(0xFFC07832));
 _TierPalette _pal(String? t) => _palettes[t?.toLowerCase()] ?? _bronzePalette;
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -169,36 +169,36 @@ class _HeroCard extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [
-            Color.lerp(palette.gradA, Colors.white, 0.28)!,
-            palette.gradA,
-            palette.gradB,
-          ],
-          stops: const [0.0, 0.38, 1.0],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [palette.gradA, palette.gradB],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: palette.gradB.withValues(alpha: 0.45),
-            blurRadius: 24, offset: const Offset(0, 10)),
+            color: palette.gradB.withValues(alpha: 0.60),
+            blurRadius: 26, offset: const Offset(0, 10)),
         ],
       ),
       child: Stack(children: [
-        // Subtle metallic sheen at top edge
-        Positioned(
-          top: 0, left: 0, right: 0, height: 60,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white.withValues(alpha: 0.14),
-                  Colors.transparent,
-                ],
+        // Diagonal mirror reflection band — simulates polished metal surface
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: const Alignment(-1.4, -1.0),
+                  end: const Alignment(0.6, 1.0),
+                  colors: [
+                    Colors.transparent,
+                    Colors.white.withValues(alpha: 0.0),
+                    Colors.white.withValues(alpha: 0.28),
+                    Colors.white.withValues(alpha: 0.10),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.30, 0.48, 0.62, 0.80],
+                ),
               ),
             ),
           ),
