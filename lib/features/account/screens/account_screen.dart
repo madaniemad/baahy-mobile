@@ -529,6 +529,7 @@ class _StatTile extends StatelessWidget {
     child: GestureDetector(
       onTap: onTap,
       child: Container(
+        constraints: const BoxConstraints(minHeight: 78),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
           color: context.col.surface,
