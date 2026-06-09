@@ -162,36 +162,34 @@ class AccountScreen extends ConsumerWidget {
           const SizedBox(height: 12),
 
           // ── Stats row ─────────────────────────────────────────────────────
-          IntrinsicHeight(
-            child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              _StatTile(
-                icon: Icons.inventory_2_outlined,
-                iconColor: const Color(0xFF7C3AED),
-                iconBg: const Color(0xFFEDE9FE),
-                value: counts == null ? '—' : '${counts.total}',
-                label: context.tr('طلباتي', 'My Orders'),
-                onTap: () => safePush(context, '/orders'),
-              ),
-              const SizedBox(width: 10),
-              _StatTile(
-                icon: Icons.local_shipping_outlined,
-                iconColor: const Color(0xFF0891B2),
-                iconBg: const Color(0xFFE0F7FA),
-                value: counts == null ? '—' : '${counts.active}',
-                label: context.tr('قيد التوصيل', 'In Delivery'),
-                onTap: () => safePush(context, '/orders'),
-              ),
-              const SizedBox(width: 10),
-              _StatTile(
-                icon: Icons.favorite_rounded,
-                iconColor: const Color(0xFFE11D48),
-                iconBg: const Color(0xFFFFE4E8),
-                value: '$wishlistCount',
-                label: context.tr('المفضلة', 'Saved'),
-                onTap: () => safePush(context, '/wishlist'),
-              ),
-            ]),
-          ),
+          Row(children: [
+            _StatTile(
+              icon: Icons.favorite_rounded,
+              iconColor: const Color(0xFFE11D48),
+              iconBg: const Color(0xFFFFE4E8),
+              value: '$wishlistCount',
+              label: context.tr('المفضلة', 'Saved'),
+              onTap: () => safePush(context, '/wishlist'),
+            ),
+            const SizedBox(width: 10),
+            _StatTile(
+              icon: Icons.local_shipping_outlined,
+              iconColor: const Color(0xFF0891B2),
+              iconBg: const Color(0xFFE0F7FA),
+              value: counts == null ? '—' : '${counts.active}',
+              label: context.tr('قيد التوصيل', 'Delivery'),
+              onTap: () => safePush(context, '/orders'),
+            ),
+            const SizedBox(width: 10),
+            _StatTile(
+              icon: Icons.inventory_2_outlined,
+              iconColor: const Color(0xFF7C3AED),
+              iconBg: const Color(0xFFEDE9FE),
+              value: counts == null ? '—' : '${counts.total}',
+              label: context.tr('طلباتي', 'My Orders'),
+              onTap: () => safePush(context, '/orders'),
+            ),
+          ]),
 
           const SizedBox(height: 12),
 
@@ -527,52 +525,43 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? iconColor.withValues(alpha: 0.14) : iconBg;
-    final icColor = isDark ? iconColor.withValues(alpha: 0.9) : iconColor;
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: context.col.surface,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: context.col.border),
-            boxShadow: AppShadows.shadowLifted,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(value, style: TextStyle(
-                      fontFamily: 'PlusJakartaSans',
-                      fontSize: 26, fontWeight: FontWeight.w800,
-                      color: context.col.ink0, height: 1.1)),
-                    const SizedBox(height: 4),
-                    Text(label,
-                      style: TextStyle(fontSize: 11, color: context.col.ink2, height: 1.3),
-                      maxLines: 2),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 22, color: icColor),
-              ),
-            ],
-          ),
+    child: GestureDetector(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 78),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: context.col.surface,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: context.col.border),
+          boxShadow: AppShadows.shadowLifted,
         ),
+        child: Row(children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: isDark ? context.col.surfaceSoft : iconBg,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(icon, size: 18, color: isDark ? context.col.ink2 : iconColor),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(value, style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontSize: 20, fontWeight: FontWeight.w800,
+                color: context.col.ink0, height: 1.1)),
+              const SizedBox(height: 2),
+              Text(label, style: TextStyle(fontSize: 10.5, color: context.col.ink2),
+                maxLines: 2, overflow: TextOverflow.ellipsis),
+            ]),
+          ),
+        ]),
       ),
-    );
+    ),
+  );
   }
 }
 
