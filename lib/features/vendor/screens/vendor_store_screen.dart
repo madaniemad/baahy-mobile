@@ -112,12 +112,12 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                     width: 64, height: 64,
                     decoration: BoxDecoration(
                       color: context.col.surfaceSoft,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: context.col.border),
                     ),
                     child: _vendor!.logo != null
                         ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                             child: CachedNetworkImage(imageUrl: _vendor!.logo!, fit: BoxFit.cover))
                         : Icon(Icons.store_outlined, size: 30, color: context.col.ink2),
                   ),
@@ -187,7 +187,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 44),
                           side: BorderSide(color: context.col.border),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         ),
                         child: Text(context.s.viewMore,
                           style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,

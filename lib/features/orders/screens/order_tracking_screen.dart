@@ -89,7 +89,7 @@ class _OrderBody extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: context.col.surface,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: context.col.border),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -115,7 +115,7 @@ class _OrderBody extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 color: context.col.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: context.col.border),
               ),
               child: Column(
@@ -136,7 +136,7 @@ class _OrderBody extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: context.col.surface,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: context.col.border),
           ),
           child: Column(children: [
@@ -163,7 +163,7 @@ class _OrderBody extends StatelessWidget {
                 style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 side: BorderSide(color: context.col.border),
               ),
             ),
@@ -179,7 +179,7 @@ class _OrderBody extends StatelessWidget {
               style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 13),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               side: BorderSide(color: context.col.border),
             ),
           ),
@@ -199,7 +199,7 @@ class _HeroCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: context.col.ink0,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Stack(children: [
         Positioned(
@@ -359,7 +359,7 @@ class _OrderItemRow extends StatelessWidget {
       ),
       child: Row(children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           child: SizedBox(
             width: 44, height: 44,
             child: item.productImage != null

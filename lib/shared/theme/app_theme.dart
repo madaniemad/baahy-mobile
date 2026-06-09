@@ -105,7 +105,7 @@ class BaahyColors extends ThemeExtension<BaahyColors> {
 // ── Baahy design tokens ───────────────────────────────────────────────────────
 class AppColors {
   // Brand primary — tiffany cyan for buttons/CTAs
-  static const primary     = Color(0xFF32DDE5);
+  static const primary     = Color(0xFF1FD7E2);
   // Slightly muted tiffany for use on dark backgrounds (text/icons on dark bg)
   static const primaryDim  = Color(0xFF26C0C7);
 
@@ -147,13 +147,13 @@ class AppColors {
 }
 
 class AppRadius {
-  static const sm  = Radius.circular(10);
-  static const md  = Radius.circular(10);
-  static const lg  = Radius.circular(10);
-  static const xl  = Radius.circular(10);
+  static const sm  = Radius.circular(6);
+  static const md  = Radius.circular(6);
+  static const lg  = Radius.circular(6);
+  static const xl  = Radius.circular(6);
   static const pill= Radius.circular(9999);
 
-  static const double card = 10; // used as double in ClipRRect
+  static const double card = 6; // used as double in ClipRRect
   static const cardRadius  = BorderRadius.all(Radius.circular(card));
 
   static const smBorder  = BorderRadius.all(sm);
@@ -176,6 +176,13 @@ class AppShadows {
   static const shadowPop = [
     BoxShadow(color: Color(0x140F1E1E), blurRadius: 30, offset: Offset(0, -8)),
   ];
+  // Lifted card shadow — 3D depth effect used across all main page cards
+  static const shadowLifted = [
+    BoxShadow(color: Color(0x11000000), blurRadius: 16, offset: Offset(0, 5), spreadRadius: -1),
+    BoxShadow(color: Color(0x07000000), blurRadius:  4, offset: Offset(0, 1)),
+  ];
+  // Matching border for lifted cards (lighter than theme border)
+  static const liftedBorderColor = Color(0xFFF1F3F3);
 }
 
 ThemeData buildAppTheme() {
@@ -184,7 +191,7 @@ ThemeData buildAppTheme() {
     extensions: const [BaahyColors.light],
     colorScheme: ColorScheme.light(
       primary: AppColors.primary,
-      onPrimary: AppColors.ink0,
+      onPrimary: Colors.white,
       secondary: AppColors.ink0,
       onSecondary: Colors.white,
       surface: AppColors.surface,
@@ -273,7 +280,7 @@ ThemeData buildDarkTheme() {
     extensions: const [BaahyColors.dark],
     colorScheme: ColorScheme.dark(
       primary: AppColors.primary,
-      onPrimary: AppColors.ink0,
+      onPrimary: Colors.white,
       secondary: d.ink0,
       onSecondary: d.surface,
       surface: d.surface,
@@ -296,7 +303,7 @@ ThemeData buildDarkTheme() {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.ink0,
+        foregroundColor: Colors.white,
         shape: const StadiumBorder(),
         textStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w700),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),

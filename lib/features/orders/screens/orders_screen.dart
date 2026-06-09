@@ -122,7 +122,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                         decoration: BoxDecoration(
                           color: isActive ? AppColors.primary : context.col.surfaceSoft,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(t.$2,
                           style: TextStyle(
@@ -236,7 +236,7 @@ class _OrderCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: context.col.surface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: _isActive ? AppColors.primary.withValues(alpha: 0.4) : context.col.border),
           boxShadow: _isActive ? AppShadows.shadowCard : null,
@@ -244,7 +244,7 @@ class _OrderCard extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(6),
               child: SizedBox(
                 width: 56, height: 56,
                 child: firstImage != null
@@ -267,7 +267,7 @@ class _OrderCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: statusBg,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(_statusLabel(context, order.status),
                       style: TextStyle(color: statusColor,
@@ -305,7 +305,7 @@ class _OrderCard extends StatelessWidget {
                 label: Text(context.s.reorder,
                   style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 13)),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: context.col.ink0,
+                  foregroundColor: Colors.white,
                   side: BorderSide(color: context.col.border),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),

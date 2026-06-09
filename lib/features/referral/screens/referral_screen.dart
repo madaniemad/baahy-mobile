@@ -170,8 +170,9 @@ class _CodeCardState extends State<_CodeCard> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: AppShadows.shadowCard,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: context.col.border),
+        boxShadow: AppShadows.shadowLifted,
       ),
       child: Column(children: [
         Text(context.s.yourCode,
@@ -186,7 +187,7 @@ class _CodeCardState extends State<_CodeCard> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: context.col.surfaceSoft,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(
                   color: context.col.borderStrong,
                   style: BorderStyle.solid),
@@ -204,7 +205,7 @@ class _CodeCardState extends State<_CodeCard> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: _copied ? AppColors.success.withValues(alpha: 0.1) : context.col.surfaceSoft,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: context.col.border),
               ),
               child: Row(children: [
@@ -249,7 +250,7 @@ class _CodeCardState extends State<_CodeCard> {
           Container(
             decoration: BoxDecoration(
               border: Border.all(color: context.col.border),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Row(children: [
               _StatCell('${widget.invited}', context.s.statInvited),

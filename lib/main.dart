@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/utils/router.dart';
 import 'core/utils/l10n.dart';
+import 'core/services/deep_link_service.dart';
 import 'core/services/push_notification_service.dart';
 import 'shared/theme/app_theme.dart';
 
@@ -37,6 +38,9 @@ Future<void> main() async {
     statusBarIconBrightness: Brightness.dark,
   ));
 
+  // Deep links — init early so cold-start URIs are captured before runApp.
+  DeepLinkService.instance.init();
+
   // Firebase init — fire-and-forget so runApp() is not blocked.
   // FCM wiring happens in BaahyApp once this future settles.
   _firebaseInit = Firebase.initializeApp()
@@ -45,7 +49,9 @@ Future<void> main() async {
         debugPrint('[Firebase] Not initialized — add config files to enable: $e');
       });
 
-  runApp(const ProviderScope(child: BaahyApp()));
+  final container = ProviderContainer();
+  DeepLinkService.instance.setContainer(container);
+  runApp(UncontrolledProviderScope(container: container, child: const BaahyApp()));
 }
 
 class BaahyApp extends ConsumerWidget {

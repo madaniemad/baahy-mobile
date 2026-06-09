@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/deep_link_service.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -67,6 +68,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     try {
       await ref.read(authProvider.notifier).verifyOtp(
         widget.phone, _code, referralCode: widget.referralCode);
+      await DeepLinkService.consumePendingCode(); // clear after successful signup
       if (mounted) context.go('/home');
     } catch (_) {
       HapticFeedback.mediumImpact();
@@ -94,7 +96,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             width: 56, height: 56,
             decoration: BoxDecoration(
               color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: const Icon(Icons.check_rounded, color: AppColors.primary, size: 28),
           ),
@@ -158,7 +160,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: context.col.surfaceSoft,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             width: 1.5,
                             color: _hasError
@@ -221,7 +223,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: context.col.surfaceSoft,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(Icons.info_outline_rounded, size: 16, color: context.col.ink3),
@@ -244,7 +246,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 backgroundColor: AppColors.primary,
                 disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
               child: _loading
                   ? const SizedBox(width: 20, height: 20,

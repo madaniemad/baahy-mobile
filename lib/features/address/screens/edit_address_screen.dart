@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -168,7 +167,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                                   ? AppColors.primary.withValues(alpha: 0.12)
                                   : const Color(0xFFF5F5F5))
                               : context.col.surface,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: isSelected ? AppColors.primary : context.col.border,
                             width: isSelected ? 1.5 : 1),
@@ -196,7 +195,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                   Container(
                     decoration: BoxDecoration(
                       color: context.col.bg,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: context.col.border),
                     ),
                     child: Directionality(
@@ -221,22 +220,6 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               // ── City — GPS + tap to pick ───────────────────────────────────
               const _FieldLabel('المدينة'),
               Row(children: [
-                // GPS button hidden in release — requires Google Maps key
-                if (kDebugMode)
-                  GestureDetector(
-                    onTap: _openMapPicker,
-                    child: Container(
-                      width: 46, height: 46,
-                      margin: const EdgeInsets.only(left: 8),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1AC5CD), AppColors.primary]),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.my_location_rounded,
-                        color: Colors.white, size: 20),
-                    ),
-                  ),
                 // City display / picker
                 Expanded(
                   child: GestureDetector(
@@ -246,7 +229,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                         horizontal: 14, vertical: 13),
                       decoration: BoxDecoration(
                         color: context.col.bg,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: _city != null ? AppColors.primary : context.col.border,
                           width: _city != null ? 1.5 : 1),
@@ -278,7 +261,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: context.col.bg,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: context.col.border),
                 ),
                 child: TextField(
@@ -367,7 +350,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
     return Container(
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
       ),
       padding: EdgeInsets.fromLTRB(16, 12, 16, bottom + 16),
       height: MediaQuery.of(context).size.height * 0.75,
@@ -387,7 +370,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
         Container(
           decoration: BoxDecoration(
             color: context.col.surfaceSoft,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(color: context.col.border),
           ),
           child: TextField(
@@ -434,7 +417,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
                     decoration: BoxDecoration(
                       color: selected
                           ? Color(0xFFF5F5F5) : context.col.surfaceSoft,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: selected ? AppColors.primary : context.col.border,
                         width: selected ? 1.5 : 1),
@@ -484,7 +467,7 @@ class _TextField extends StatelessWidget {
       Container(
         decoration: BoxDecoration(
           color: context.col.bg,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: context.col.border),
         ),
         child: TextField(

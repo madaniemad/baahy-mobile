@@ -122,7 +122,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: isDark ? context.col.surfaceSoft : context.col.surface,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: context.col.border),
                   boxShadow: isDark ? null : AppShadows.shadowCard,
                 ),
@@ -360,7 +360,7 @@ class _SubTile extends StatelessWidget {
         children: [
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(6),
               child: image != null
                   ? CachedNetworkImage(
                       imageUrl: image!, fit: BoxFit.cover,

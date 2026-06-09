@@ -64,7 +64,7 @@ class AddressesScreen extends ConsumerWidget {
               await safePush(context, '/addresses/edit');
               ref.read(_addressesProvider.notifier).load();
             },
-            icon: Icon(Icons.arrow_forward_ios_rounded, size: 18, color: context.col.ink0)),
+            icon: Icon(Icons.add_rounded, size: 22, color: context.col.ink0)),
         ],
       ),
       body: addressesAsync.when(
@@ -277,7 +277,7 @@ class _AddressCard extends StatelessWidget {
                             width: 44, height: 44,
                             decoration: BoxDecoration(
                               color: context.col.surfaceSoft,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Icon(_labelIcon(rawLabel), size: 22,
                               color: isDefault ? AppColors.primary : context.col.ink2),
@@ -478,7 +478,7 @@ class _DeliveryTipCard extends StatelessWidget {
           width: 56, height: 56,
           decoration: BoxDecoration(
             color: context.col.surfaceSoft,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(Icons.local_shipping_outlined, size: 30, color: context.col.ink2),
         ),

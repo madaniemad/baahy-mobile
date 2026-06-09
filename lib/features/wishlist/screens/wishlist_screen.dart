@@ -126,7 +126,7 @@ class WishlistScreen extends ConsumerWidget {
                     margin: const EdgeInsets.only(bottom: 14),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFF1EB),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: AppColors.warn.withValues(alpha: 0.35)),
                     ),
                     child: Row(children: [
@@ -179,7 +179,7 @@ class _WishlistCard extends ConsumerWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: context.col.surface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: context.col.border),
           boxShadow: AppShadows.shadowCard,
         ),
@@ -188,7 +188,7 @@ class _WishlistCard extends ConsumerWidget {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 child: SizedBox(
                   width: 82, height: 82,
                   child: product.firstImage != null
@@ -213,7 +213,7 @@ class _WishlistCard extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.success,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                         '−${((1 - salePrice / product.price) * 100).round()}%',
@@ -328,7 +328,7 @@ class _ActionChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: context.col.ink2, width: 1.0),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [

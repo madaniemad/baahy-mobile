@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -7,11 +8,30 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
-class QrProfileScreen extends ConsumerWidget {
+class QrProfileScreen extends ConsumerStatefulWidget {
   const QrProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<QrProfileScreen> createState() => _QrProfileScreenState();
+}
+
+class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
+  Future<void> _share(String username) async {
+    final text = 'أضفني على تطبيق باهي 👋\nhttps://baahy-web.vercel.app/u/$username';
+    try {
+      await Share.share(text);
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: text));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم نسخ الرابط', style: TextStyle(fontFamily: 'Cairo'))),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final username = user?.username ?? '';
 
@@ -46,7 +66,7 @@ class QrProfileScreen extends ConsumerWidget {
                   onPressed: () => context.push('/username-setup'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary, foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   ),
                   child: Text(context.tr('اختر اسم مستخدم', 'Set Username'),
@@ -57,11 +77,12 @@ class QrProfileScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: AppShadows.shadowCard,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: context.col.border),
+                    boxShadow: AppShadows.shadowLifted,
                   ),
                   child: QrImageView(
-                    data: 'baahy://user/$username',
+                    data: 'https://baahy-web.vercel.app/u/$username',
                     version: QrVersions.auto,
                     size: 220,
                   ),
@@ -80,11 +101,11 @@ class QrProfileScreen extends ConsumerWidget {
                   icon: const Icon(Icons.share_outlined),
                   label: Text(context.tr('مشاركة', 'Share'),
                     style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
-                  onPressed: () => Share.share('أضفني على تطبيق باهي: baahy://user/$username'),
+                  onPressed: () => _share(username),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   ),
                 ),

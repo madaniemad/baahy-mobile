@@ -328,7 +328,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: _cardFill(context),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(6),
                                 border: Border.all(color: accent, width: 1.5),
                               ),
                               child: Row(children: [
@@ -345,7 +345,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: _cardFill(context),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(6),
                                 border: Border.all(color: context.col.border),
                                 boxShadow: isDark ? null : AppShadows.shadowCard,
                               ),
@@ -400,7 +400,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
                             color: AppColors.warn.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(6),
                             border: Border.all(color: AppColors.warn.withValues(alpha: 0.4)),
                           ),
                           child: Row(children: [
@@ -421,7 +421,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
                             color: _cardFill(context),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(6),
                             border: Border.all(
                               color: walletActive ? _selBorder(context) : context.col.border,
                               width: walletActive ? 1.5 : 1),
@@ -474,7 +474,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               width: 36, height: 36,
                               decoration: BoxDecoration(
                                 color: _softFill(context),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(6),
                                 border: isDark ? Border.all(color: context.col.border) : null,
                               ),
                               child: Icon(Icons.account_balance_wallet_outlined, size: 18,
@@ -491,7 +491,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             color: walletCoversAll
                                 ? AppColors.success.withValues(alpha: isDark ? 0.15 : 0.10)
                                 : AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.10),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(6),
                             border: Border.all(
                               color: walletCoversAll ? AppColors.success : accent, width: 1),
                           ),
@@ -512,7 +512,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: _cardFill(context),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: _paymentMethod == m.id ? _selBorder(context) : context.col.border,
                                 width: _paymentMethod == m.id ? 1.5 : 1),
@@ -537,7 +537,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 width: 36, height: 36,
                                 decoration: BoxDecoration(
                                   color: _softFill(context),
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(6),
                                   border: isDark ? Border.all(color: context.col.border) : null,
                                 ),
                                 child: Icon(
@@ -567,7 +567,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: _cardFill(context),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: context.col.border),
                           boxShadow: isDark ? null : AppShadows.shadowCard,
                         ),
@@ -621,7 +621,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: _cardFill(context),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: context.col.border),
                         boxShadow: isDark ? null : AppShadows.shadowCard,
                       ),
@@ -652,7 +652,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.transparent : AppColors.success.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: AppColors.success.withValues(alpha: isDark ? 0.45 : 0.35)),
                         ),
@@ -677,7 +677,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     Container(
                       decoration: BoxDecoration(
                         color: _cardFill(context),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: context.col.border),
                       ),
                       child: TextField(
@@ -699,7 +699,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                       decoration: BoxDecoration(
                         color: _cardFill(context),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: context.col.border),
                         boxShadow: isDark ? null : AppShadows.shadowCard,
                       ),
@@ -778,7 +778,7 @@ class _AddressSheet extends StatelessWidget {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: _cardFill(context),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: isSelected ? _selBorder(context) : context.col.border,
                     width: isSelected ? 1.5 : 1),
@@ -808,7 +808,7 @@ class _AddressSheet extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 44),
               side: BorderSide(color: context.col.border),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
           ),
           const SizedBox(height: 8),
@@ -943,7 +943,7 @@ class _CollapsibleHeader extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: _cardFill(context),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: context.col.border),
           boxShadow: isDark ? null : AppShadows.shadowCard,
         ),

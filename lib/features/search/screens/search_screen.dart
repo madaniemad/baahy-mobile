@@ -100,7 +100,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     height: 44,
                     decoration: BoxDecoration(
                       color: context.col.surfaceSoft,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: context.col.border, width: 1.2),
                     ),
                     child: Row(children: [
@@ -207,7 +207,7 @@ class _LiveResults extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                       child: SizedBox(
                         width: 48, height: 48,
                         child: p.firstImage != null
@@ -309,7 +309,7 @@ class _EmptyState extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                   decoration: BoxDecoration(
                     color: context.col.surfaceSoft,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: context.col.border),
                   ),
                   child: Text(c, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),

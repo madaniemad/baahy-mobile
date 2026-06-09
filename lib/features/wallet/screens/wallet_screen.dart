@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/app_config_provider.dart';
@@ -54,43 +55,15 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       appBar: AppBar(
         backgroundColor: context.col.surface,
         elevation: 0,
+        scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
-        automaticallyImplyLeading: false,
-        leading: Padding(
-          padding: const EdgeInsets.all(10),
-          child: GestureDetector(
-            onTap: () => context.pop(),
-            child: Container(
-              decoration: BoxDecoration(
-                color: context.col.surfaceSoft,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.qr_code_2_rounded, size: 20, color: context.col.ink0),
-            ),
-          ),
-        ),
-        title: const Text('محفظة باهي',
-          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: GestureDetector(
-              onTap: () => context.pop(),
-              child: Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(
-                  color: context.col.surfaceSoft,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.close_rounded, size: 18, color: context.col.ink0),
-              ),
-            ),
-          ),
-        ],
+        automaticallyImplyLeading: true,
+        title: Text(context.s.myWallet,
+          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
       ),
       body: RefreshIndicator(
-        color: const Color(0xFF32DDE5),
+        color: const Color(0xFF1FD7E2),
         onRefresh: () async {
           ref.invalidate(_walletProvider);
           ref.invalidate(tierProvider);
@@ -100,10 +73,13 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
               child: _HeroBalanceCard(
                 balance: balance,
+                user: user,
                 onTopUp: () => _showTopUpSheet(context, ref),
+                onSend: () => _showTransferSheet(context, ref),
+                onQr: () => _showQrSheet(context, user),
               ),
             ),
             const SizedBox(height: 16),
@@ -136,7 +112,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               loading: () => const Center(
                 child: Padding(
                   padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(color: Color(0xFF32DDE5)))),
+                  child: CircularProgressIndicator(color: Color(0xFF1FD7E2)))),
               error: (_, __) => const SizedBox.shrink(),
               data: (txns) => _TransactionsSection(txns: txns),
             ),
@@ -146,8 +122,8 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Icon(Icons.shield_outlined, size: 13, color: context.col.ink3),
                 const SizedBox(width: 6),
-                Text('رصيدك آمن 100% ويمكنك استخدامه في أي وقت',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5, color: context.col.ink3)),
+                Text('رصيدك آمن ١٠٠٪ ويمكنك استخدامه في أي وقت',
+                  style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5, color: context.col.ink2)),
               ]),
             ),
           ]),
@@ -167,118 +143,174 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       }),
     );
   }
+
+  void _showTransferSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _TransferSheet(onSuccess: () {
+        ref.invalidate(_walletProvider);
+        ref.read(authProvider.notifier).refreshProfile();
+      }),
+    );
+  }
+
+  void _showQrSheet(BuildContext context, dynamic user) {
+    if (user == null) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _WalletQrSheet(phone: user.phone, name: user.name),
+    );
+  }
 }
 
 // ── Hero balance card ─────────────────────────────────────────────────────────
 
 class _HeroBalanceCard extends StatelessWidget {
   final double balance;
+  final dynamic user;
   final VoidCallback onTopUp;
-  const _HeroBalanceCard({required this.balance, required this.onTopUp});
+  final VoidCallback onSend;
+  final VoidCallback onQr;
+  const _HeroBalanceCard({required this.balance, required this.user, required this.onTopUp, required this.onSend, required this.onQr});
+
+  static const _tiffany = Color(0xFF1FD7E2);
+  static const _tiffanyDeep = Color(0xFF12AEBA);
+  static const _tiffanyMid = Color(0xFF28CAD2);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         gradient: const LinearGradient(
-          colors: [Color(0xFF32DDE5), Color(0xFF08AAAC)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          colors: [_tiffany, _tiffanyMid, _tiffanyDeep],
+          stops: [0.0, 0.55, 1.0],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: _tiffany.withValues(alpha: 0.38),
+            blurRadius: 16,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
-      child: Stack(children: [
-        Positioned.fill(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(children: [
+          // Pattern
+          Positioned.fill(
             child: Opacity(
-              opacity: 0.12,
+              opacity: 0.09,
               child: Image.asset('assets/images/onb-pattern.png', fit: BoxFit.cover),
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Container(
-                width: 32, height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.qr_code_2_rounded, size: 18, color: Colors.white),
+          // Subtle diagonal shine stripe
+          Positioned(
+            top: -30, right: -20,
+            child: Container(
+              width: 120, height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.10),
               ),
-              const SizedBox(width: 10),
+            ),
+          ),
+          // QR code button
+          Positioned(
+            top: 12, right: 12,
+            child: GestureDetector(
+              onTap: onQr,
+              child: Container(
+                width: 30, height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: const Icon(Icons.qr_code_2_rounded, size: 16, color: Colors.white),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+              const SizedBox(height: 18),
               const Text('رصيدك المتاح',
+                textAlign: TextAlign.center,
                 style: TextStyle(fontFamily: 'Cairo', fontSize: 13, fontWeight: FontWeight.w500,
                   color: Colors.white)),
-              const Spacer(),
-              Icon(Icons.account_balance_wallet_rounded, size: 52,
-                color: Colors.white.withValues(alpha: 0.22)),
-            ]),
-            const SizedBox(height: 12),
-            Row(crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic, children: [
-              Text(fmtPrice(balance),
-                style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                  fontSize: 44, fontWeight: FontWeight.w800, color: Colors.white,
-                  letterSpacing: -1, height: 1)),
-              const SizedBox(width: 8),
-              const Text('د.ل',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w600,
-                  color: Colors.white)),
-            ]),
-            const SizedBox(height: 6),
-            Row(children: const [
-              Text('✦  ', style: TextStyle(fontSize: 11, color: Colors.white)),
-              Text('أنت تكسب مع كل طلب',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 12.5, color: Colors.white,
+              const SizedBox(height: 6),
+              Row(mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic, children: [
+                Text(fmtPrice(balance),
+                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                    fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white,
+                    letterSpacing: -1, height: 1)),
+                const SizedBox(width: 7),
+                const Text('د.ل',
+                  style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w600,
+                    color: Colors.white)),
+              ]),
+              const SizedBox(height: 5),
+              const Text('✦  أنت تكسب مع كل طلب',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Colors.white,
                   fontWeight: FontWeight.w500)),
+              const SizedBox(height: 14),
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                _CardButton(
+                  label: 'شحن', icon: Icons.add_rounded,
+                  outlined: true, onTap: onTopUp),
+                const SizedBox(width: 10),
+                _CardButton(
+                  label: 'إرسال', icon: Icons.upload_outlined,
+                  outlined: false, onTap: onSend),
+              ]),
             ]),
-            const SizedBox(height: 18),
-            Row(children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: onTopUp,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 11),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Icon(Icons.add_rounded, size: 15, color: Color(0xFF08AAAC)),
-                      SizedBox(width: 5),
-                      Text('شحن',
-                        style: TextStyle(fontFamily: 'Cairo', fontSize: 13.5,
-                          fontWeight: FontWeight.w800, color: Color(0xFF08AAAC))),
-                    ]),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 11),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.75), width: 1.5),
-                  ),
-                  child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(Icons.upload_outlined, size: 15, color: Colors.white),
-                    SizedBox(width: 5),
-                    Text('إرسال',
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 13.5,
-                        fontWeight: FontWeight.w800, color: Colors.white)),
-                  ]),
-                ),
-              ),
-            ]),
-          ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _CardButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool outlined;
+  final VoidCallback onTap;
+  const _CardButton({required this.label, required this.icon,
+    required this.outlined, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    const tiffanyDeep = Color(0xFF18B8C0);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 8),
+        decoration: BoxDecoration(
+          color: outlined ? Colors.transparent : Colors.white,
+          borderRadius: BorderRadius.circular(9),
+          border: outlined
+              ? Border.all(color: Colors.white.withValues(alpha: 0.80), width: 1.5)
+              : null,
         ),
-      ]),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 13, color: outlined ? Colors.white : tiffanyDeep),
+          const SizedBox(width: 5),
+          Text(label,
+            style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: outlined ? Colors.white : tiffanyDeep)),
+        ]),
+      ),
     );
   }
 }
@@ -309,39 +341,39 @@ class _StatsRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
           color: context.col.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: context.col.border),
         ),
         child: Row(children: [
           _StatItem(
-            label: 'كاش باك\nمكتسب',
+            label: 'كاش باك مكتسب',
             amount: cashbackEarned,
-            iconBg: const Color(0xFFE8F8F0),
-            iconColor: const Color(0xFF1F8A5B),
-            icon: Icons.trending_up_rounded,
+            iconBg: const Color(0xFFE0F9F9),
+            iconColor: const Color(0xFF08AAAC),
+            icon: Icons.attach_money_rounded,
           ),
           _StatDivider(),
           _StatItem(
-            label: 'استرداد\nمعلق',
+            label: 'استرداد معلق',
             amount: pendingRefunds,
             iconBg: const Color(0xFFFFF3E0),
             iconColor: const Color(0xFFE65100),
-            icon: Icons.hourglass_empty_rounded,
+            icon: Icons.schedule_rounded,
           ),
           _StatDivider(),
           _StatItem(
-            label: 'مكافآت\nالدعوات',
+            label: 'مكافآت الدعوات',
             amount: referralRewards,
             iconBg: const Color(0xFFF3E5F5),
             iconColor: const Color(0xFF7B1FA2),
-            icon: Icons.people_alt_outlined,
+            icon: Icons.card_giftcard_outlined,
           ),
           _StatDivider(),
           _StatItem(
-            label: 'رصيد\nمتاح',
+            label: 'رصيد متاح',
             amount: balance,
             iconBg: const Color(0xFFE3F2FD),
             iconColor: const Color(0xFF1565C0),
@@ -368,23 +400,25 @@ class _StatItem extends StatelessWidget {
     return Expanded(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(
-          width: 36, height: 36,
+          width: 38, height: 38,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isDark ? Colors.transparent : iconBg,
             border: isDark ? Border.all(color: iconColor.withValues(alpha: 0.5)) : null,
           ),
-          child: Icon(icon, size: 16, color: iconColor),
+          child: Icon(icon, size: 17, color: iconColor),
         ),
-        const SizedBox(height: 6),
-        Text(fmtPrice(amount),
-          style: TextStyle(fontFamily: 'PlusJakartaSans',
-            fontSize: 13, fontWeight: FontWeight.w800, color: context.col.ink0)),
-        const SizedBox(height: 2),
+        const SizedBox(height: 7),
         Text(label,
           textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(fontFamily: 'Cairo',
-            fontSize: 9.5, color: isDark ? context.col.ink2 : context.col.ink3, height: 1.3)),
+            fontSize: 9.5, color: context.col.ink2, height: 1.3)),
+        const SizedBox(height: 3),
+        Text('${fmtPrice(amount)} د.ل',
+          style: TextStyle(fontFamily: 'PlusJakartaSans',
+            fontSize: 12.5, fontWeight: FontWeight.w800, color: context.col.ink0)),
       ]),
     );
   }
@@ -393,7 +427,7 @@ class _StatItem extends StatelessWidget {
 class _StatDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 44, color: context.col.border);
+    return Container(width: 1, height: 50, color: context.col.border);
   }
 }
 
@@ -408,6 +442,12 @@ class _TierProgressCard extends StatelessWidget {
   static const _tierColors = [
     Color(0xFFCD7F32), Color(0xFF9E9E9E), Color(0xFFD4A82E), Color(0xFF4FC3F7),
   ];
+  static const _tierIcons = [
+    Icons.military_tech_rounded,
+    Icons.military_tech_rounded,
+    Icons.military_tech_rounded,
+    Icons.auto_awesome_rounded,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -416,90 +456,163 @@ class _TierProgressCard extends StatelessWidget {
     final nextTier = tier.nextTier;
     final nextIndex = nextTier != null ? _tiers.indexOf(nextTier).clamp(0, 3) : null;
 
-    final totalNeeded = tier.spendAmount + tier.spendRemaining;
-    final progress = totalNeeded > 0
-        ? (tier.spendAmount / totalNeeded).clamp(0.0, 1.0)
-        : 0.0;
+    final totalSpendNeeded = tier.spendAmount + tier.spendRemaining;
+    final spendProgress = totalSpendNeeded > 0
+        ? (tier.spendAmount / totalSpendNeeded).clamp(0.0, 1.0) : 0.0;
+
+    final totalOrdersNeeded = tier.ordersCount + tier.ordersRemaining;
+    final ordersProgress = totalOrdersNeeded > 0
+        ? (tier.ordersCount / totalOrdersNeeded).clamp(0.0, 1.0) : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: context.col.border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
+        // Top row: medal | tier info | tier dots
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
-            width: 42, height: 42,
+            width: 54, height: 54,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _tierColors[currentIndex].withValues(alpha: 0.12),
             ),
-            child: Icon(Icons.workspace_premium_rounded,
-              size: 22, color: _tierColors[currentIndex]),
+            child: Icon(Icons.military_tech_rounded,
+              size: 30, color: _tierColors[currentIndex]),
           ),
           const SizedBox(width: 12),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('المستوى الحالي',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: context.col.ink3)),
-            Text(_tierLabels[currentIndex],
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800,
-                color: _tierColors[currentIndex])),
-          ]),
-          const Spacer(),
-          GestureDetector(
-            onTap: () => safePush(context, '/rewards'),
-            child: const Text('عرض جميع المزايا <',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5, color: Color(0xFF32DDE5),
-                fontWeight: FontWeight.w600)),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('المستوى الحالي',
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: context.col.ink2)),
+              const SizedBox(height: 2),
+              Text(_tierLabels[currentIndex],
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 20, fontWeight: FontWeight.w800,
+                  color: _tierColors[currentIndex], height: 1.1)),
+              if (nextIndex != null)
+                Text('استمر للتقدم للمستوى ${_tierLabels[nextIndex]}',
+                  style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: context.col.ink2)),
+            ]),
           ),
-        ]),
-        const SizedBox(height: 16),
-
-        Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(4, (i) {
+          const SizedBox(width: 8),
+          // Tier dots
+          Row(children: List.generate(4, (i) {
             final active = i <= currentIndex;
-            return Column(mainAxisSize: MainAxisSize.min, children: [
-              Container(
-                width: 38, height: 38,
+            return Padding(
+              padding: EdgeInsets.only(right: i > 0 ? 6 : 0),
+              child: Container(
+                width: 30, height: 30,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: active
                       ? _tierColors[i].withValues(alpha: 0.15)
                       : context.col.surfaceSoft,
                 ),
-                child: Icon(Icons.workspace_premium_rounded, size: 18,
+                child: Icon(_tierIcons[i], size: 15,
                   color: active ? _tierColors[i] : context.col.ink4),
               ),
-              const SizedBox(height: 4),
-              Text(_tierLabels[i],
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 9.5,
-                  color: active ? _tierColors[i] : context.col.ink4,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w400)),
-            ]);
-          }),
-        ),
-        const SizedBox(height: 14),
+            );
+          })),
+        ]),
 
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 7,
-            backgroundColor: context.col.surfaceSoft,
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF32DDE5)),
-          ),
-        ),
-        const SizedBox(height: 10),
+        if (nextIndex != null) ...[
+          const SizedBox(height: 14),
 
-        if (nextIndex != null && tier.spendRemaining > 0)
-          Text(
-            'تبقى ${fmtPrice(tier.spendRemaining)} د.ل للوصول إلى ${_tierLabels[nextIndex]}',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: context.col.ink2),
+          // Orders progress
+          _DualProgressRow(
+            icon: Icons.receipt_long_outlined,
+            label: 'الطلبات',
+            current: tier.ordersCount,
+            needed: tier.ordersNeeded,
+            remaining: tier.ordersRemaining,
+            unit: 'طلب',
+            progress: ordersProgress,
+            color: AppColors.primary,
           ),
+          const SizedBox(height: 10),
+
+          // Spend progress
+          _DualProgressRow(
+            icon: Icons.payments_outlined,
+            label: 'المبلغ',
+            current: tier.spendAmount.toInt(),
+            needed: tier.spendNeeded.toInt(),
+            remaining: tier.spendRemaining.toInt(),
+            unit: 'د.ل',
+            progress: spendProgress,
+            color: const Color(0xFF0AABB3),
+          ),
+        ],
+
+        const SizedBox(height: 12),
+
+        GestureDetector(
+          onTap: () => safePush(context, '/rewards-hub'),
+          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.chevron_left_rounded, size: 16, color: Color(0xFF1FD7E2)),
+            Text('عرض جميع المزايا',
+              style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Color(0xFF1FD7E2),
+                fontWeight: FontWeight.w600)),
+          ]),
+        ),
       ]),
     );
+  }
+}
+
+// ── Dual progress row ─────────────────────────────────────────────────────────
+
+class _DualProgressRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int current;
+  final int needed;
+  final int remaining;
+  final String unit;
+  final double progress;
+  final Color color;
+  const _DualProgressRow({required this.icon, required this.label,
+    required this.current, required this.needed, required this.remaining,
+    required this.unit, required this.progress, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final done = remaining <= 0;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Icon(icon, size: 13, color: color),
+        const SizedBox(width: 5),
+        Text(label,
+          style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5,
+            fontWeight: FontWeight.w600, color: context.col.ink1)),
+        const Spacer(),
+        if (done)
+          const Row(children: [
+            Icon(Icons.check_circle_rounded, size: 14, color: AppColors.success),
+            SizedBox(width: 3),
+            Text('مكتمل',
+              style: TextStyle(fontFamily: 'Cairo', fontSize: 11,
+                color: AppColors.success, fontWeight: FontWeight.w700)),
+          ])
+        else
+          Text('$current / $needed $unit',
+            style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 11,
+              color: context.col.ink2, fontWeight: FontWeight.w600)),
+      ]),
+      const SizedBox(height: 5),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(3),
+        child: LinearProgressIndicator(
+          value: progress,
+          minHeight: 6,
+          backgroundColor: context.col.surfaceSoft,
+          valueColor: AlwaysStoppedAnimation<Color>(done ? AppColors.success : color),
+        ),
+      ),
+    ]);
   }
 }
 
@@ -515,42 +628,44 @@ class _EarnMoreSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         child: Text('اكسب أكثر',
           style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800,
             color: context.col.ink0)),
       ),
-      SizedBox(
-        height: 128,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          children: [
-            _EarnCard(
-              onTap: onShop,
-              icon: Icons.shopping_bag_outlined,
-              iconBg: const Color(0xFFE8F8F0),
-              iconColor: const Color(0xFF1F8A5B),
-              title: 'تسوق واحصل على كاش باك',
-            ),
-            const SizedBox(width: 10),
-            _EarnCard(
-              onTap: onInvite,
-              icon: Icons.person_add_alt_1_outlined,
-              iconBg: const Color(0xFFF3E5F5),
-              iconColor: const Color(0xFF7B1FA2),
-              title: 'ادعُ أصدقاءك واكسب مكافآت',
-            ),
-            const SizedBox(width: 10),
-            _EarnCard(
-              onTap: onDeals,
-              icon: Icons.local_offer_outlined,
-              iconBg: const Color(0xFFFFF3E0),
-              iconColor: const Color(0xFFE65100),
-              title: 'عروض حصرية بخصومات مميزة',
-            ),
-          ],
-        ),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Expanded(child: _EarnCard(
+            onTap: onShop,
+            icon: Icons.shopping_bag_outlined,
+            iconColor: const Color(0xFF08AAAC),
+            cardBg: const Color(0xFFE2F9FA),
+            title: 'تسوق لتحصل على كاش باك',
+            subtitle: 'اكسب كاش باك على كل طلب تقوم به',
+            actionLabel: 'تسوق الآن',
+          )),
+          const SizedBox(width: 8),
+          Expanded(child: _EarnCard(
+            onTap: onInvite,
+            icon: Icons.group_outlined,
+            iconColor: const Color(0xFF7B1FA2),
+            cardBg: const Color(0xFFF0E8FB),
+            title: 'دعوة الأصدقاء',
+            subtitle: 'ادع أصدقائك واكسب مكافآت عند كل دعوة',
+            actionLabel: 'دعوة الآن',
+          )),
+          const SizedBox(width: 8),
+          Expanded(child: _EarnCard(
+            onTap: onDeals,
+            icon: Icons.local_offer_outlined,
+            iconColor: const Color(0xFFD4A82E),
+            cardBg: const Color(0xFFFFF8E1),
+            title: 'عروض حصرية',
+            subtitle: 'اكتشف عروض ومكافآت خاصة للأعضاء',
+            actionLabel: 'اكتشف',
+          )),
+        ])),
       ),
     ]);
   }
@@ -559,39 +674,52 @@ class _EarnMoreSection extends StatelessWidget {
 class _EarnCard extends StatelessWidget {
   final VoidCallback onTap;
   final IconData icon;
-  final Color iconBg;
   final Color iconColor;
+  final Color cardBg;
   final String title;
-  const _EarnCard({required this.onTap, required this.icon,
-    required this.iconBg, required this.iconColor, required this.title});
+  final String subtitle;
+  final String actionLabel;
+  const _EarnCard({required this.onTap, required this.icon, required this.iconColor,
+    required this.cardBg, required this.title, required this.subtitle,
+    required this.actionLabel});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? context.col.surface : cardBg;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 128,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
-          color: context.col.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: context.col.border),
+          color: bg,
+          borderRadius: BorderRadius.circular(8),
+          border: isDark ? Border.all(color: context.col.border) : null,
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
-            width: 38, height: 38,
+            width: 34, height: 34,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDark ? Colors.transparent : iconBg,
-              border: isDark ? Border.all(color: iconColor.withValues(alpha: 0.5)) : null,
+              color: iconColor.withValues(alpha: isDark ? 0.15 : 0.18),
             ),
-            child: Icon(icon, size: 18, color: iconColor),
+            child: Icon(icon, size: 17, color: iconColor),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(title,
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.w700,
-              color: context.col.ink0, height: 1.4)),
+            style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5, fontWeight: FontWeight.w800,
+              color: context.col.ink0, height: 1.3)),
+          const SizedBox(height: 3),
+          Text(subtitle,
+            style: TextStyle(fontFamily: 'Cairo', fontSize: 9.5, color: context.col.ink2,
+              height: 1.35)),
+          const SizedBox(height: 8),
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.chevron_left_rounded, size: 13, color: iconColor),
+            Text(actionLabel,
+              style: TextStyle(fontFamily: 'Cairo', fontSize: 10.5,
+                fontWeight: FontWeight.w700, color: iconColor)),
+          ]),
         ]),
       ),
     );
@@ -615,11 +743,14 @@ class _TransactionsSection extends StatelessWidget {
               color: context.col.ink0)),
           const Spacer(),
           if (txns.isNotEmpty)
-            const Text('عرض الكل <',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Color(0xFF32DDE5),
-                fontWeight: FontWeight.w600)),
+            const Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.chevron_left_rounded, size: 15, color: Color(0xFF1FD7E2)),
+              Text('عرض الكل',
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Color(0xFF1FD7E2),
+                  fontWeight: FontWeight.w600)),
+            ]),
         ]),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         if (txns.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 40),
@@ -636,7 +767,7 @@ class _TransactionsSection extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: context.col.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: context.col.border),
             ),
             child: Column(
@@ -793,7 +924,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: const BorderRadius.all(Radius.circular(10)),
+        borderRadius: const BorderRadius.all(Radius.circular(6)),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -831,7 +962,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: context.col.bg,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Row(mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic,
@@ -859,7 +990,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
                         color: isSelected ? context.col.ink0 : context.col.surface,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: isSelected ? context.col.ink0 : context.col.border, width: 1.5)),
                       child: Center(child: Text('$amt',
@@ -876,7 +1007,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
             Container(
               decoration: BoxDecoration(
                 color: context.col.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(
                   color: _customCtrl.text.trim().isNotEmpty ? AppColors.primary : context.col.border,
                   width: _customCtrl.text.trim().isNotEmpty ? 1.5 : 1)),
@@ -907,7 +1038,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isSelected ? context.col.surfaceSoft : context.col.surface,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: isSelected ? AppColors.primary : context.col.border,
                       width: isSelected ? 1.5 : 1)),
@@ -941,7 +1072,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
             Container(
               decoration: BoxDecoration(
                 color: context.col.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _cardCtrl,
@@ -966,7 +1097,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
             Container(
               decoration: BoxDecoration(
                 color: context.col.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _otpCtrl,
@@ -998,18 +1129,18 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
               child: _loading
                   ? SizedBox(width: 20, height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: context.col.ink0))
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : Text(
                       _step == 0
                           ? (_amount > 0 ? 'متابعة · ${fmtPrice(_amount)} د.ل' : 'متابعة')
                           : _step == 1 ? 'إرسال OTP'
                           : 'تأكيد الشحن',
                       style: TextStyle(fontFamily: 'Cairo',
-                        fontWeight: FontWeight.w800, fontSize: 15, color: context.col.ink0)),
+                        fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
             ),
           ),
         ],
@@ -1025,11 +1156,63 @@ class _TransactionRow extends StatelessWidget {
   final bool hasBorder;
   const _TransactionRow({required this.tx, required this.hasBorder});
 
+  static const _arMonths = [
+    'يناير','فبراير','مارس','أبريل','مايو','يونيو',
+    'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر',
+  ];
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return '';
+    final dt = DateTime.tryParse(dateStr);
+    if (dt == null) return '';
+    final hour = dt.toLocal().hour;
+    final amPm = hour < 12 ? 'ص' : 'م';
+    final h = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    final min = dt.minute.toString().padLeft(2, '0');
+    return '${dt.day} ${_arMonths[dt.month - 1]} ${dt.year} - $h:$min $amPm';
+  }
+
   @override
   Widget build(BuildContext context) {
     final rawAmt = tx['amount'];
     final amount = rawAmt is num ? rawAmt.toDouble() : double.tryParse(rawAmt?.toString() ?? '') ?? 0.0;
-    final isCredit = tx['type'] == 'credit' || amount > 0;
+    final type = (tx['type'] as String? ?? '').toLowerCase();
+    final direction = (tx['direction'] as String? ?? '').toLowerCase();
+    final isCredit = direction == 'credit' || type == 'cashback' || type == 'referral'
+        || type == 'refund' || type == 'transfer_in';
+
+    final IconData iconData;
+    final Color iconBg;
+    final Color iconColor;
+    switch (type) {
+      case 'cashback':
+        iconData = Icons.shopping_bag_outlined;
+        iconBg = const Color(0xFF1FD7E2).withValues(alpha: 0.12);
+        iconColor = const Color(0xFF08AAAC);
+      case 'referral':
+        iconData = Icons.group_outlined;
+        iconBg = const Color(0xFF7B1FA2).withValues(alpha: 0.10);
+        iconColor = const Color(0xFF7B1FA2);
+      case 'refund':
+        iconData = Icons.assignment_return_outlined;
+        iconBg = const Color(0xFFE65100).withValues(alpha: 0.10);
+        iconColor = const Color(0xFFE65100);
+      case 'transfer_out':
+        iconData = Icons.upload_outlined;
+        iconBg = AppColors.primary.withValues(alpha: 0.10);
+        iconColor = AppColors.primary;
+      case 'transfer_in':
+        iconData = Icons.download_outlined;
+        iconBg = AppColors.success.withValues(alpha: 0.10);
+        iconColor = AppColors.success;
+      default:
+        iconData = isCredit ? Icons.add_rounded : Icons.remove_rounded;
+        iconBg = isCredit
+            ? const Color(0xFF1FD7E2).withValues(alpha: 0.12)
+            : context.col.surfaceSoft;
+        iconColor = isCredit ? const Color(0xFF08AAAC) : context.col.ink2;
+    }
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1039,39 +1222,406 @@ class _TransactionRow extends StatelessWidget {
       ),
       child: Row(children: [
         Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isCredit
-                ? const Color(0xFF32DDE5).withValues(alpha: 0.12)
-                : context.col.surfaceSoft,
-          ),
-          child: Icon(
-            isCredit ? Icons.add_rounded : Icons.remove_rounded,
-            color: isCredit ? const Color(0xFF08AAAC) : context.col.ink2, size: 16),
+          width: 38, height: 38,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: iconBg),
+          child: Icon(iconData, color: iconColor, size: 18),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(tx['description'] ?? (isCredit ? 'إيداع' : 'سحب'),
-              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, height: 1.3)),
+              style: const TextStyle(fontFamily: 'Cairo',
+                fontSize: 13.5, fontWeight: FontWeight.w600, height: 1.3)),
             if (tx['created_at'] != null)
               Text(
-                () {
-                  final dt = DateTime.tryParse(tx['created_at']);
-                  return dt != null ? '${dt.day}/${dt.month}/${dt.year}' : '';
-                }(),
-                style: TextStyle(fontFamily: 'PlusJakartaSans',
-                  fontSize: 11, color: context.col.ink3),
+                _formatDate(tx['created_at']),
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: context.col.ink3),
               ),
           ]),
         ),
         Text(
-          '${isCredit ? '+' : ''}${fmtPrice(amount)} د.ل',
+          '${isCredit ? '' : '-'}${fmtPrice(amount)} د.ل',
           style: TextStyle(
             fontFamily: 'PlusJakartaSans',
             fontWeight: FontWeight.w800, fontSize: 14,
             color: isCredit ? const Color(0xFF08AAAC) : context.col.ink0)),
+      ]),
+    );
+  }
+}
+
+// ── Wallet QR sheet ───────────────────────────────────────────────────────────
+
+class _WalletQrSheet extends StatelessWidget {
+  final String phone;
+  final String name;
+  const _WalletQrSheet({required this.phone, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(20)),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Center(child: Container(width: 40, height: 4,
+          decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+        const SizedBox(height: 20),
+        const Text('كود QR محفظتك',
+          style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 4),
+        Text('يمكن لأي شخص مسح هذا الكود لإرسال مبلغ لمحفظتك',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontFamily: 'Cairo', fontSize: 12.5, color: Colors.grey.shade600)),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4))],
+          ),
+          child: QrImageView(
+            data: phone,
+            version: QrVersions.auto,
+            size: 200,
+            backgroundColor: Colors.white,
+            eyeStyle: const QrEyeStyle(
+              eyeShape: QrEyeShape.square,
+              color: Color(0xFF12AEBA),
+            ),
+            dataModuleStyle: const QrDataModuleStyle(
+              dataModuleShape: QrDataModuleShape.square,
+              color: Color(0xFF1A1A2E),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(name,
+          style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(phone,
+          textDirection: TextDirection.ltr,
+          style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 14, color: Colors.grey.shade500)),
+      ]),
+    );
+  }
+}
+
+// ── Transfer sheet ────────────────────────────────────────────────────────────
+
+class _TransferSheet extends ConsumerStatefulWidget {
+  final VoidCallback onSuccess;
+  const _TransferSheet({required this.onSuccess});
+
+  @override
+  ConsumerState<_TransferSheet> createState() => _TransferSheetState();
+}
+
+class _TransferSheetState extends ConsumerState<_TransferSheet> {
+  // Step 0: phone lookup, Step 1: amount + note, Step 2: confirm
+  int _step = 0;
+  bool _loading = false;
+  String? _error;
+
+  final _phoneCtrl = TextEditingController();
+  final _amountCtrl = TextEditingController();
+  final _noteCtrl = TextEditingController();
+
+  String? _recipientName;
+  String? _recipientPhoneMasked;
+
+  @override
+  void dispose() {
+    _phoneCtrl.dispose();
+    _amountCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  double get _amount => double.tryParse(_amountCtrl.text.trim()) ?? 0;
+
+  Future<void> _lookup() async {
+    final phone = _phoneCtrl.text.trim();
+    if (phone.isEmpty) {
+      setState(() => _error = 'يرجى إدخال رقم الهاتف');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      final res = await ApiClient.instance.dio.get('/wallet/lookup', queryParameters: {'phone': phone});
+      final data = res.data as Map<String, dynamic>;
+      if (data['found'] == true) {
+        setState(() {
+          _recipientName = data['name'] as String;
+          _recipientPhoneMasked = data['phone_masked'] as String;
+          _step = 1;
+          _loading = false;
+        });
+      } else {
+        setState(() { _loading = false; _error = 'لم يتم العثور على مستخدم بهذا الرقم'; });
+      }
+    } catch (e) {
+      final msg = _extractError(e);
+      setState(() { _loading = false; _error = msg; });
+    }
+  }
+
+  Future<void> _confirm() async {
+    if (_amount <= 0) {
+      setState(() => _error = 'يرجى إدخال مبلغ صحيح');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      await ApiClient.instance.dio.post('/wallet/transfer', data: {
+        'recipient_phone': _phoneCtrl.text.trim(),
+        'amount': _amount,
+        if (_noteCtrl.text.trim().isNotEmpty) 'note': _noteCtrl.text.trim(),
+      });
+      if (mounted) {
+        Navigator.of(context).pop();
+        widget.onSuccess();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم تحويل ${fmtPrice(_amount)} د.ل إلى $_recipientName'),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      final msg = _extractError(e);
+      setState(() { _loading = false; _error = msg; });
+    }
+  }
+
+  String _extractError(dynamic e) {
+    try {
+      final data = (e as dynamic).response?.data;
+      if (data is Map && data['message'] != null) return data['message'].toString();
+    } catch (_) {}
+    return 'حدث خطأ، حاول مجدداً';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final balance = ref.watch(currentUserProvider)?.walletBalance ?? 0.0;
+
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Center(child: Container(width: 40, height: 4,
+            decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+          const SizedBox(height: 16),
+
+          Row(children: [
+            if (_step > 0)
+              GestureDetector(
+                onTap: () => setState(() { _step--; _error = null; }),
+                child: const Padding(
+                  padding: EdgeInsets.only(left: 12),
+                  child: Icon(Icons.arrow_back, size: 20)),
+              ),
+            Expanded(
+              child: Text(
+                _step == 0 ? 'إرسال رصيد'
+                    : _step == 1 ? 'المبلغ والملاحظة'
+                    : 'تأكيد التحويل',
+                style: const TextStyle(fontFamily: 'Cairo', fontSize: 20, fontWeight: FontWeight.w800)),
+            ),
+          ]),
+          const SizedBox(height: 4),
+          Text(
+            _step == 0 ? 'أدخل رقم هاتف المستلم'
+                : _step == 1 ? 'رصيدك المتاح: ${fmtPrice(balance)} د.ل'
+                : 'راجع التفاصيل قبل التأكيد',
+            style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: Colors.grey.shade600)),
+          const SizedBox(height: 20),
+
+          if (_step == 0) ...[
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.grey.shade200)),
+              child: TextField(
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'رقم الهاتف (مثال: 0912345678)',
+                  hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: Colors.grey.shade400),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(14),
+                  prefixIcon: Icon(Icons.phone_outlined, size: 18, color: Colors.grey.shade500),
+                ),
+              ),
+            ),
+          ],
+
+          if (_step == 1) ...[
+            // Recipient info chip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0F9F9),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(children: [
+                const Icon(Icons.person_outline_rounded, size: 18, color: Color(0xFF08AAAC)),
+                const SizedBox(width: 10),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(_recipientName ?? '',
+                    style: const TextStyle(fontFamily: 'Cairo', fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF08AAAC))),
+                  Text(_recipientPhoneMasked ?? '',
+                    style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 11.5, color: Colors.grey.shade600)),
+                ]),
+              ]),
+            ),
+            const SizedBox(height: 14),
+
+            // Amount field
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.grey.shade200)),
+              child: TextField(
+                controller: _amountCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                autofocus: true,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 28, fontWeight: FontWeight.w800),
+                decoration: InputDecoration(
+                  hintText: '0',
+                  hintStyle: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 28,
+                    fontWeight: FontWeight.w800, color: Colors.grey.shade300),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                  suffixText: 'د.ل',
+                  suffixStyle: TextStyle(fontFamily: 'Cairo', fontSize: 16,
+                    fontWeight: FontWeight.w600, color: Colors.grey.shade500),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Note field
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.grey.shade200)),
+              child: TextField(
+                controller: _noteCtrl,
+                maxLength: 200,
+                decoration: InputDecoration(
+                  hintText: 'ملاحظة (اختياري)',
+                  hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: Colors.grey.shade400),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(14),
+                  counterText: '',
+                ),
+              ),
+            ),
+          ],
+
+          if (_step == 2) ...[
+            // Confirm summary card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(children: [
+                _ConfirmRow(label: 'إلى', value: _recipientName ?? ''),
+                _ConfirmRow(label: 'رقم الهاتف', value: _recipientPhoneMasked ?? ''),
+                _ConfirmRow(label: 'المبلغ', value: '${fmtPrice(_amount)} د.ل', highlight: true),
+                if (_noteCtrl.text.trim().isNotEmpty)
+                  _ConfirmRow(label: 'ملاحظة', value: _noteCtrl.text.trim()),
+                _ConfirmRow(label: 'رصيدك بعد التحويل',
+                  value: '${fmtPrice((balance - _amount).clamp(0, double.infinity))} د.ل'),
+              ]),
+            ),
+          ],
+
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: const TextStyle(fontFamily: 'Cairo', color: AppColors.danger, fontSize: 13)),
+          ],
+          const SizedBox(height: 16),
+
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _loading ? null : () {
+                if (_step == 0) {
+                  _lookup();
+                } else if (_step == 1) {
+                  if (_amount <= 0) { setState(() => _error = 'يرجى إدخال مبلغ صحيح'); return; }
+                  if (_amount > balance) { setState(() => _error = 'الرصيد غير كافٍ'); return; }
+                  setState(() { _step = 2; _error = null; });
+                } else {
+                  _confirm();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1FD7E2),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+              child: _loading
+                  ? const SizedBox(width: 20, height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text(
+                      _step == 0 ? 'بحث عن المستلم'
+                          : _step == 1 ? 'متابعة'
+                          : 'تأكيد التحويل',
+                      style: const TextStyle(fontFamily: 'Cairo',
+                        fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _ConfirmRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool highlight;
+  const _ConfirmRow({required this.label, required this.value, this.highlight = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(children: [
+        Text(label,
+          style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: Colors.grey.shade600)),
+        const Spacer(),
+        Text(value,
+          style: TextStyle(fontFamily: 'Cairo', fontSize: 13.5,
+            fontWeight: highlight ? FontWeight.w800 : FontWeight.w600,
+            color: highlight ? const Color(0xFF08AAAC) : Colors.black87)),
       ]),
     );
   }

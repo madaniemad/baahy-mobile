@@ -53,6 +53,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final res = await _api.dio.get('/auth/me',
           options: Options(extra: {'silent401': true}));
       final userJson = res.data['user'] as Map<String, dynamic>;
+      // Preserve locally-saved avatar if the API returns null (e.g. CDN lag or missing field).
+      if (userJson['avatar'] == null && state.user?.avatar != null) {
+        userJson['avatar'] = state.user!.avatar;
+      }
       await prefs.setString(_kCachedUser, jsonEncode(userJson));
       state = AuthState(user: User.fromJson(userJson));
     } on DioException catch (e) {
@@ -98,6 +102,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final res = await _api.dio.get('/auth/me');
       final userJson = res.data['user'] as Map<String, dynamic>;
+      if (userJson['avatar'] == null && state.user?.avatar != null) {
+        userJson['avatar'] = state.user!.avatar;
+      }
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kCachedUser, jsonEncode(userJson));
       state = AuthState(user: User.fromJson(userJson));

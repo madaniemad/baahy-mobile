@@ -257,7 +257,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       context: context,
       backgroundColor: context.col.surface,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(10))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(6))),
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -562,7 +562,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
             height: 56,
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.auto_awesome_rounded,
                 color: AppColors.primary, size: 26),
@@ -676,7 +676,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
           Container(
             decoration: BoxDecoration(
               color: context.col.surface,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(6),
               border: Border.all(color: context.col.border),
             ),
             child: Column(
@@ -739,7 +739,7 @@ class _InlineInput extends StatelessWidget {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 child: Image.file(
                   File(imageFile!.path),
                   height: 70,
@@ -771,7 +771,7 @@ class _InlineInput extends StatelessWidget {
           return Container(
           decoration: BoxDecoration(
             color: isDark ? context.col.surfaceSoft : Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
             border: isDark ? Border.all(color: context.col.border) : null,
             boxShadow: isDark ? null : const [
               BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 2)),
@@ -865,9 +865,9 @@ class _SuggestionCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: context.col.surface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: context.col.border),
-          boxShadow: AppShadows.shadowCard,
+          boxShadow: AppShadows.shadowLifted,
         ),
         child: Row(
           children: [
@@ -905,7 +905,7 @@ class _SuggestionCard extends StatelessWidget {
               height: 38,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Icon(data.icon, color: AppColors.primary, size: 19),
             ),
@@ -950,7 +950,7 @@ class _HistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(6),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
@@ -1040,7 +1040,7 @@ class _UserBubble extends StatelessWidget {
           children: [
             if (msg.imageBase64 != null) ...[
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 child: Image.memory(
                   base64Decode(msg.imageBase64!),
                   width: 140,
@@ -1095,7 +1095,7 @@ class _AssistantBubble extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: context.col.surface,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: context.col.border),
               ),
               child: Text(msg.content,
@@ -1184,7 +1184,7 @@ class _LimitHitBubble extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.warn.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: AppColors.warn.withValues(alpha: 0.4)),
         ),
         child: Column(
@@ -1215,7 +1215,7 @@ class _LimitHitBubble extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(6)),
                   elevation: 0,
                 ),
                 icon: const Icon(Icons.chat_rounded, size: 16),
@@ -1265,16 +1265,16 @@ class _AssistantProductCard extends StatelessWidget {
         margin: const EdgeInsets.only(left: 8),
         decoration: BoxDecoration(
           color: context.col.surface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: context.col.border),
-          boxShadow: AppShadows.shadowCard,
+          boxShadow: AppShadows.shadowLifted,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
               borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(10)),
+                  const BorderRadius.vertical(top: Radius.circular(6)),
               child: img.isNotEmpty
                   ? CachedNetworkImage(
                       imageUrl: img,
@@ -1373,7 +1373,7 @@ class _TypingIndicator extends AnimatedWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: context.col.surface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: context.col.border),
         ),
         child: Row(
@@ -1449,7 +1449,7 @@ class _InputBar extends StatelessWidget {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(6),
                   child: Image.file(
                     File(imageFile!.path),
                     height: 80,
@@ -1494,7 +1494,7 @@ class _InputBar extends StatelessWidget {
                         color: canSend
                             ? AppColors.primary
                             : context.col.surfaceSoft,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
                         Icons.send_rounded,
@@ -1531,13 +1531,13 @@ class _InputBar extends StatelessWidget {
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 10),
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
                         borderSide: BorderSide(color: context.col.border)),
                     enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
                         borderSide: BorderSide(color: context.col.border)),
                     focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(6),
                         borderSide:
                             const BorderSide(color: AppColors.primary)),
                   ),

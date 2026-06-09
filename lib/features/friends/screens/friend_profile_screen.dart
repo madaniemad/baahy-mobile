@@ -166,7 +166,7 @@ class _PendingBanner extends ConsumerWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Row(children: [
@@ -222,7 +222,7 @@ class _AddFriendSectionState extends ConsumerState<_AddFriendSection> {
           style: ElevatedButton.styleFrom(
             backgroundColor: isPending ? context.col.surfaceSoft : AppColors.primary,
             foregroundColor: isPending ? context.col.ink2 : Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             padding: const EdgeInsets.symmetric(vertical: 12),
           ),
         ),
@@ -263,12 +263,13 @@ class _WishlistSection extends StatelessWidget {
                 margin: const EdgeInsets.only(right: 10),
                 decoration: BoxDecoration(
                   color: context.col.surface,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: AppShadows.shadowCard,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: context.col.border),
+                  boxShadow: AppShadows.shadowLifted,
                 ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                     child: images.isNotEmpty
                         ? CachedNetworkImage(imageUrl: images.first, width: 120, height: 100, fit: BoxFit.cover)
                         : Container(width: 120, height: 100, color: context.col.surfaceSoft),

@@ -20,7 +20,7 @@ const _fallbackCities = [
 
 // ── Colors ──────────────────────────────────────────────────────────────────────
 const _navy     = Color(0xFF0E3C46);
-const _teal     = AppColors.primary; // #32DDE5
+const _teal     = AppColors.primary; // #1FD7E2
 const _cityBase = Color(0xFF38D1E2);
 
 class CityScreen extends ConsumerStatefulWidget {
@@ -167,7 +167,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.92),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(10),
                               boxShadow: [BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.07),
                                 blurRadius: 12, offset: const Offset(0, 4))],
@@ -274,7 +274,7 @@ class _CityRow extends StatelessWidget {
           border: Border.all(
             color: selected ? teal : Colors.white.withValues(alpha: 0.35),
             width: selected ? 2 : 1.5),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: selected
               ? [const BoxShadow(color: Color(0x280E3C46), blurRadius: 20, offset: Offset(0, 8))]
               : [],

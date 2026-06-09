@@ -30,7 +30,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
       isScrollControlled: true,
       backgroundColor: context.col.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(10))),
       builder: (_) => _WriteReviewSheet(
         productId: widget.productId,
         onSubmitted: () => ref.refresh(_reviewsProvider(widget.productId)),
@@ -104,7 +104,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: context.col.surfaceSoft,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +243,7 @@ class _ReviewCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: context.col.border),
       ),
       child: Column(
@@ -287,7 +287,7 @@ class _ReviewCard extends StatelessWidget {
                 itemCount: review.photos.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (_, i) => ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(6),
                   child: Image.network(review.photos[i],
                     width: 72, height: 72, fit: BoxFit.cover),
                 ),
@@ -389,13 +389,13 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
               filled: true,
               fillColor: context.col.bg,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 borderSide: BorderSide(color: context.col.border)),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 borderSide: BorderSide(color: context.col.border)),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 borderSide: const BorderSide(color: AppColors.primary, width: 2)),
               contentPadding: const EdgeInsets.all(14),
             ),
@@ -410,7 +410,7 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
                 backgroundColor: context.col.ink0,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
               child: _loading
                 ? const SizedBox(width: 20, height: 20,

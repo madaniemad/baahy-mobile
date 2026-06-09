@@ -323,7 +323,7 @@ class _StepReason extends StatelessWidget {
                     color: reason == r
                         ? AppColors.primary.withValues(alpha: 0.08)
                         : context.col.surface,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: reason == r ? AppColors.primary : context.col.border,
                       width: reason == r ? 2 : 1),
@@ -350,13 +350,13 @@ class _StepReason extends StatelessWidget {
                   hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink3),
                   filled: true, fillColor: context.col.bg,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(6),
                     borderSide: BorderSide(color: context.col.border)),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(6),
                     borderSide: BorderSide(color: context.col.border)),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(6),
                     borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                   contentPadding: const EdgeInsets.all(14),
                 ),
@@ -385,7 +385,7 @@ class _StepReason extends StatelessWidget {
                         margin: const EdgeInsets.only(left: 8),
                         decoration: BoxDecoration(
                           color: context.col.bg,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: context.col.border, style: BorderStyle.solid),
                         ),
                         child: Column(
@@ -404,9 +404,9 @@ class _StepReason extends StatelessWidget {
                         Container(
                           width: 80, height: 80,
                           margin: const EdgeInsets.only(left: 8),
-                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(6),
                             child: Image.file(File(e.value.path), fit: BoxFit.cover),
                           ),
                         ),
@@ -486,7 +486,7 @@ class _StepDone extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: context.col.surface,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(6),
               border: Border.all(color: context.col.border),
             ),
             child: Column(children: [

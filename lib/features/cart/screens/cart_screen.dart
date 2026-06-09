@@ -141,7 +141,7 @@ class _EmptyCart extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
           decoration: BoxDecoration(
             color: AppColors.primary,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Text(context.s.shopNow,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
@@ -368,7 +368,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
             height: 52,
             decoration: BoxDecoration(
               color: AppColors.primary,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(Icons.lock_outline_rounded, size: 18,
@@ -406,7 +406,7 @@ class _FreeShippingProgressBanner extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
         color: context.col.surfaceSoft,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: context.col.border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -453,7 +453,7 @@ class _FreeShippingAchievedBanner extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
     decoration: BoxDecoration(
       color: _green.withValues(alpha: 0.07),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(6),
       border: Border.all(color: _green.withValues(alpha: 0.25)),
     ),
     child: Row(children: [
@@ -521,9 +521,9 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
     return Container(
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: context.col.border),
-        boxShadow: AppShadows.shadowCard,
+        boxShadow: AppShadows.shadowLifted,
       ),
       child: Column(children: [
         // Header row — always visible
@@ -657,9 +657,9 @@ class _CartItemCard extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: context.col.border),
-        boxShadow: AppShadows.shadowCard,
+        boxShadow: AppShadows.shadowLifted,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -828,7 +828,7 @@ class _LoyaltyPointsBanner extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
         color: isDark ? Colors.transparent : AppColors.success.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: AppColors.success.withValues(alpha: isDark ? 0.4 : 0.25)),
       ),
       child: Row(children: [
@@ -846,7 +846,7 @@ class _LoyaltyPointsBanner extends ConsumerWidget {
         Expanded(
           child: Text(
             context.s.orderCashbackEarn(
-              cashback.toStringAsFixed(cashback.truncateToDouble() == cashback ? 0 : 1),
+              cashback.round().toString(),
               points.toString()),
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
               color: AppColors.success, fontFamily: 'Cairo')),
@@ -922,7 +922,7 @@ class _RecommendedCard extends ConsumerWidget {
         width: 120,
         decoration: BoxDecoration(
           color: context.col.surface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: context.col.border),
         ),
         child: Stack(children: [
@@ -998,7 +998,7 @@ class _TrustBadges extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: isDark ? Colors.transparent : context.col.surfaceSoft,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: isDark ? Border.all(color: context.col.border) : null,
       ),
       child: Row(
@@ -1040,9 +1040,9 @@ class _OrderSummary extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: context.col.border),
-        boxShadow: AppShadows.shadowCard,
+        boxShadow: AppShadows.shadowLifted,
       ),
       child: Column(children: [
         _Row(context.tr('المجموع الجزئي', 'Subtotal'),

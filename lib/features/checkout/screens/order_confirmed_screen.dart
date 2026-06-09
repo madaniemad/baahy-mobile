@@ -39,7 +39,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
     final rawSubtotal = data['subtotal'];
     final subtotal = rawSubtotal is num ? rawSubtotal.toDouble() : (total ?? 0.0);
     final cashbackAmount = subtotal >= config.cashbackMinOrder
-        ? (subtotal * config.cashbackRate / 100).toStringAsFixed(2)
+        ? (subtotal * config.cashbackRate / 100).round().toString()
         : null;
 
     return Scaffold(
@@ -80,7 +80,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: context.col.surface,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: context.col.border),
                         ),
                         child: Column(
@@ -117,7 +117,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: AppColors.success.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                         ),
                         child: Row(children: [
@@ -146,7 +146,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: AppColors.success.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
                         ),
                         child: Row(children: [
@@ -179,7 +179,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 50),
                       side: BorderSide(color: context.col.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     child: Text(context.s.continueShopping,
                       style: TextStyle(fontFamily: 'Cairo',
@@ -201,7 +201,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
                       backgroundColor: context.col.ink0,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     child: Text(context.s.trackOrder,
                       style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),

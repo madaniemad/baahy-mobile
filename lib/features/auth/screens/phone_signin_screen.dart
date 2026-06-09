@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/deep_link_service.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -18,8 +19,20 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
   final _refCtrl = TextEditingController();
   bool _loading = false;
   String? _error;
+  bool _showRefField = false; // hidden by default; shown when deep-linked or manually expanded
 
   bool get _valid => _ctrl.text.replaceAll(RegExp(r'\D'), '').length >= 9;
+
+  @override
+  void initState() {
+    super.initState();
+    DeepLinkService.peekPendingCode().then((code) {
+      if (code != null && mounted) {
+        _refCtrl.text = code;
+        setState(() => _showRefField = true); // auto-expand only when invited
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -66,7 +79,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               width: 56, height: 56,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: const Icon(Icons.phone_outlined,
                 color: AppColors.primary, size: 26),
@@ -88,7 +101,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                   decoration: BoxDecoration(
                     color: context.col.surfaceSoft,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(children: [
                     Text('LY', style: TextStyle(
@@ -106,7 +119,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: context.col.bg,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: _error != null ? AppColors.danger : context.col.border),
                     ),
@@ -137,32 +150,45 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 style: const TextStyle(color: AppColors.danger, fontSize: 13)),
             ],
 
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                color: context.col.bg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: context.col.border),
-              ),
-              child: TextField(
-                controller: _refCtrl,
-                textDirection: TextDirection.ltr,
-                textCapitalization: TextCapitalization.characters,
-                style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                  fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 1),
-                decoration: InputDecoration(
-                  hintText: 'كود الإحالة (اختياري)',
-                  hintStyle: TextStyle(
-                    fontFamily: 'Cairo', fontSize: 13,
-                    color: context.col.ink4, fontWeight: FontWeight.w400,
-                    letterSpacing: 0),
-                  prefixIcon: Icon(Icons.card_giftcard_outlined,
-                    size: 18, color: context.col.ink3),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            const SizedBox(height: 14),
+            if (!_showRefField)
+              GestureDetector(
+                onTap: () => setState(() => _showRefField = true),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.card_giftcard_outlined, size: 15, color: context.col.ink3),
+                  const SizedBox(width: 5),
+                  Text('لديك كود دعوة؟',
+                    style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                      color: context.col.ink3, fontWeight: FontWeight.w600)),
+                ]),
+              )
+            else
+              Container(
+                decoration: BoxDecoration(
+                  color: context.col.bg,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: context.col.border),
+                ),
+                child: TextField(
+                  controller: _refCtrl,
+                  autofocus: _refCtrl.text.isEmpty,
+                  textDirection: TextDirection.ltr,
+                  textCapitalization: TextCapitalization.characters,
+                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                    fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 1),
+                  decoration: InputDecoration(
+                    hintText: 'كود الدعوة',
+                    hintStyle: TextStyle(
+                      fontFamily: 'Cairo', fontSize: 13,
+                      color: context.col.ink4, fontWeight: FontWeight.w400,
+                      letterSpacing: 0),
+                    prefixIcon: Icon(Icons.card_giftcard_outlined,
+                      size: 18, color: context.col.ink3),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  ),
                 ),
               ),
-            ),
 
                 ],
               ),
@@ -187,7 +213,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                     backgroundColor: AppColors.primary,
                     disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
                 ),
               ),
@@ -203,7 +229,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                       fontWeight: FontWeight.w700, color: context.col.ink0)),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: context.col.border),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
                 ),
               ),

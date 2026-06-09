@@ -48,7 +48,7 @@ class _AppButtonState extends State<AppButton> {
     final bg = isPrimary ? AppColors.adaptive(context)
         : isDanger ? AppColors.danger
         : Colors.transparent;
-    final fg = (isDanger || isPrimary) ? const Color(0xFFF0F0F0)
+    final fg = (isDanger || isPrimary) ? Colors.white
         : isOutline ? AppColors.primary
         : context.col.ink1;
     final border = isOutline ? Border.all(color: AppColors.primary, width: 1.5) : null;
@@ -61,7 +61,7 @@ class _AppButtonState extends State<AppButton> {
         height: widget.height,
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(6),
           border: border,
         ),
         child: Center(

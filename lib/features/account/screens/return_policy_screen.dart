@@ -62,9 +62,9 @@ class ReturnPolicyScreen extends StatelessWidget {
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: context.col.ink0,
+              foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(50),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             icon: const Icon(Icons.shopping_bag_outlined, size: 18),
             label: Text(
@@ -91,7 +91,7 @@ class _PolicyCard extends StatelessWidget {
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: context.col.surface,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
       border: Border.all(color: context.col.border),
     ),
     child: Row(
@@ -101,7 +101,7 @@ class _PolicyCard extends StatelessWidget {
           width: 36, height: 36,
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(icon, size: 18, color: AppColors.primary),
         ),

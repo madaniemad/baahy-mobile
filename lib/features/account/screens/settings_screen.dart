@@ -135,7 +135,7 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
       color: context.col.surface,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(6),
       border: Border.all(color: context.col.border),
     ),
     child: Column(children: [
@@ -180,10 +180,14 @@ class _AppVersionBadge extends StatelessWidget {
   const _AppVersionBadge();
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(children: [
-      Image.asset('assets/images/logo.png', height: 28, errorBuilder: (_, __, ___) =>
-        const Text('baahy', style: TextStyle(fontFamily: 'Cairo',
-          fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary))),
+      Image.asset(
+        isDark ? 'assets/images/logo_white.png' : 'assets/images/logo.png',
+        height: 32,
+        errorBuilder: (_, __, ___) => const Text('baahy', style: TextStyle(
+          fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary)),
+      ),
       const SizedBox(height: 6),
       Text(context.s.versionN('1.0.0'),
         style: TextStyle(fontSize: 11, color: context.col.ink4)),

@@ -53,7 +53,7 @@ class _FaqTileState extends State<_FaqTile> {
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: _open ? context.col.borderStrong : context.col.border),
       ),
       child: Column(

@@ -20,6 +20,7 @@ const _kActiveStatuses = [
   'processing', 'fulfilled', 'shipped', 'out_for_delivery',
 ];
 
+
 final _ordersCountsProvider = FutureProvider<({int active, int total})>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/orders', queryParameters: {'per_page': 50});
@@ -100,7 +101,8 @@ class AccountScreen extends ConsumerWidget {
     }
 
     final user          = auth.user!;
-    final wishlistCount = ref.watch(wishlistProvider).length;
+    final wishlistCount = ref.watch(wishlistProductsProvider).valueOrNull?.length
+        ?? ref.watch(wishlistProvider).length;
     final counts        = ref.watch(_ordersCountsProvider).value;
     final freshWallet   = ref.watch(_freshWalletBalanceProvider);
     final walletDisplay = freshWallet.valueOrNull ?? user.walletBalance;
@@ -149,7 +151,7 @@ class AccountScreen extends ConsumerWidget {
               isScrollControlled: true,
               backgroundColor: context.col.surface,
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(10))),
               builder: (_) => _EditProfileSheet(
                 currentName: user.name,
                 onSaved: () => ref.read(authProvider.notifier).refreshProfile(),
@@ -338,7 +340,7 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
       context: context,
       backgroundColor: context.col.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(10))),
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const SizedBox(height: 8),
@@ -411,7 +413,8 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        boxShadow: AppShadows.shadowCard,
+        border: Border.all(color: context.col.border),
+        boxShadow: AppShadows.shadowLifted,
       ),
       child: Row(children: [
         // Avatar
@@ -482,39 +485,19 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
                   fontSize: 13, color: context.col.ink2)),
               const SizedBox(height: 8),
               Row(children: [
-                // Verified badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.success),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.check_rounded, size: 10, color: AppColors.success),
-                    const SizedBox(width: 3),
-                    Text(context.s.verified,
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                        color: AppColors.success, fontFamily: 'Cairo')),
-                  ]),
-                ),
-                const SizedBox(width: 6),
-                // Tier badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: _tierColor(tier?.tier)),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(_tierIcon(tier?.tier), size: 10, color: _tierColor(tier?.tier)),
-                    const SizedBox(width: 3),
-                    Text(_tierName(context, tier?.tier),
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                        color: _tierColor(tier?.tier), fontFamily: 'Cairo')),
-                  ]),
-                ),
+                // Verified — icon + text, no border
+                Icon(Icons.verified_rounded, size: 14, color: AppColors.success),
+                const SizedBox(width: 4),
+                Text(context.s.verified,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                    color: AppColors.success, fontFamily: 'Cairo')),
+                const SizedBox(width: 12),
+                // Tier — icon + text, no border
+                Icon(_tierIcon(tier?.tier), size: 14, color: _tierColor(tier?.tier)),
+                const SizedBox(width: 4),
+                Text(_tierName(context, tier?.tier),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                    color: _tierColor(tier?.tier), fontFamily: 'Cairo')),
               ]),
             ],
           ),
@@ -556,14 +539,15 @@ class _StatTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.col.surface,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          boxShadow: AppShadows.shadowCard,
+          border: Border.all(color: context.col.border),
+          boxShadow: AppShadows.shadowLifted,
         ),
         child: Row(children: [
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
               color: isDark ? iconColor.withValues(alpha: 0.15) : iconBg,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(6),
               border: isDark ? Border.all(color: iconColor.withValues(alpha: 0.3)) : null,
             ),
             child: Icon(icon, size: 18, color: iconColor),
@@ -577,7 +561,7 @@ class _StatTile extends StatelessWidget {
                 color: context.col.ink0, height: 1.1)),
               const SizedBox(height: 2),
               Text(label, style: TextStyle(fontSize: 10.5, color: context.col.ink2),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
+                maxLines: 2, overflow: TextOverflow.ellipsis),
             ]),
           ),
         ]),
@@ -597,7 +581,9 @@ class _WalletCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = AppColors.adaptive(context);
-    return Container(
+    return GestureDetector(
+      onTap: () => safePush(context, '/wallet'),
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: isDark ? Colors.transparent : AppColors.primary.withValues(alpha: 0.07),
@@ -611,7 +597,7 @@ class _WalletCard extends StatelessWidget {
           width: 44, height: 44,
           decoration: BoxDecoration(
             color: isDark ? Colors.transparent : AppColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: isDark ? Border.all(color: accent.withValues(alpha: 0.35)) : null,
           ),
           child: Icon(Icons.account_balance_wallet_outlined, color: accent, size: 22),
@@ -666,7 +652,7 @@ class _WalletCard extends StatelessWidget {
           ),
         ]),
       ]),
-    );
+    ));
   }
 }
 
@@ -726,7 +712,8 @@ class _TierCard extends ConsumerWidget {
           decoration: BoxDecoration(
             color: context.col.surface,
             borderRadius: BorderRadius.circular(AppRadius.card),
-            boxShadow: AppShadows.shadowCard,
+            border: Border.all(color: context.col.border),
+            boxShadow: AppShadows.shadowLifted,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -810,13 +797,14 @@ class _ReferralCard extends ConsumerWidget {
     final count = ref.watch(_referralCountProvider).valueOrNull ?? 0;
 
     return GestureDetector(
-      onTap: () => safePush(context, '/referral'),
+      onTap: () => safePush(context, '/friends'),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: context.col.surface,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          boxShadow: AppShadows.shadowCard,
+          border: Border.all(color: context.col.border),
+          boxShadow: AppShadows.shadowLifted,
         ),
         child: Row(children: [
           // Illustration — multiply-blend in dark to suppress white background
@@ -883,7 +871,8 @@ class _MenuGroup extends StatelessWidget {
     decoration: BoxDecoration(
       color: context.col.surface,
       borderRadius: BorderRadius.circular(AppRadius.card),
-      boxShadow: AppShadows.shadowCard,
+      border: Border.all(color: context.col.border),
+      boxShadow: AppShadows.shadowLifted,
     ),
     child: Column(
       children: [
@@ -1010,7 +999,8 @@ class _BirthdayRowState extends ConsumerState<_BirthdayRow> {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        boxShadow: AppShadows.shadowCard,
+        border: Border.all(color: context.col.border),
+        boxShadow: AppShadows.shadowLifted,
       ),
       child: GestureDetector(
         onTap: _birthday == null && !_saving ? _pickDate : null,
@@ -1139,13 +1129,13 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               filled: true,
               fillColor: context.col.bg,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 borderSide: BorderSide(color: context.col.border)),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 borderSide: BorderSide(color: context.col.border)),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
                 borderSide: const BorderSide(color: AppColors.primary, width: 2)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             ),
@@ -1160,7 +1150,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 backgroundColor: AppColors.ink0,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               ),
               child: _loading
                 ? const SizedBox(width: 20, height: 20,
