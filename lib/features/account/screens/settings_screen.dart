@@ -184,7 +184,7 @@ class _AppVersionBadge extends StatelessWidget {
     return Column(children: [
       Image.asset(
         isDark ? 'assets/images/logo_white.png' : 'assets/images/logo.png',
-        height: 32,
+        height: 56,
         errorBuilder: (_, __, ___) => const Text('baahy', style: TextStyle(
           fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary)),
       ),

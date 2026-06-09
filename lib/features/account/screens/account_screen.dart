@@ -228,12 +228,6 @@ class AccountScreen extends ConsumerWidget {
               label: context.tr('الإرجاعات والاسترداد', 'Returns & Refunds'),
               onTap: () => safePush(context, '/return-policy'),
             ),
-            _MenuRow(
-              icon: Icons.auto_awesome_outlined,
-              label: context.s.inviteFriends,
-              onTap: () => safePush(context, '/referral'),
-              badge: context.s.inviteEarnBadge,
-            ),
           ]),
 
           // ── Birthday row ──────────────────────────────────────────────────
@@ -546,11 +540,10 @@ class _StatTile extends StatelessWidget {
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
-              color: isDark ? iconColor.withValues(alpha: 0.15) : iconBg,
+              color: isDark ? context.col.surfaceSoft : iconBg,
               borderRadius: BorderRadius.circular(6),
-              border: isDark ? Border.all(color: iconColor.withValues(alpha: 0.3)) : null,
             ),
-            child: Icon(icon, size: 18, color: iconColor),
+            child: Icon(icon, size: 18, color: isDark ? context.col.ink2 : iconColor),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -807,15 +800,22 @@ class _ReferralCard extends ConsumerWidget {
           boxShadow: AppShadows.shadowLifted,
         ),
         child: Row(children: [
-          // Illustration — multiply-blend in dark to suppress white background
           Builder(builder: (ctx) {
             final isDark = Theme.of(ctx).brightness == Brightness.dark;
+            if (isDark) {
+              return Container(
+                width: 68, height: 68,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.group_rounded, size: 34, color: AppColors.primary),
+              );
+            }
             return ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.asset('assets/images/referral_illustration.png',
-                width: 68, height: 68, fit: BoxFit.contain,
-                color: isDark ? ctx.col.surface : null,
-                colorBlendMode: isDark ? BlendMode.multiply : null),
+                width: 68, height: 68, fit: BoxFit.contain),
             );
           }),
           const SizedBox(width: 12),
