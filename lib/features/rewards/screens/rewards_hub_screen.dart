@@ -48,12 +48,12 @@ String _fmtRate(double r) {
 }
 
 const _palettes = <String, _TierPalette>{
-  'bronze':   _TierPalette(nameAr: 'برونزي',  gradA: Color(0xFF5C2E10), gradB: Color(0xFF140704), accent: Color(0xFFC07832)),
+  'bronze':   _TierPalette(nameAr: 'برونزي',  gradA: Color(0xFFC07A3E), gradB: Color(0xFF8C4E14), accent: Color(0xFFCD7F32)),
   'silver':   _TierPalette(nameAr: 'فضي',     gradA: Color(0xFF9E9E9E), gradB: Color(0xFF616161), accent: Color(0xFFBDBDBD)),
   'gold':     _TierPalette(nameAr: 'ذهبي',    gradA: Color(0xFFD4A82E), gradB: Color(0xFFA07010), accent: Color(0xFFFFD54F)),
   'platinum': _TierPalette(nameAr: 'بلاتيني', gradA: Color(0xFF26C5F3), gradB: Color(0xFF0A8EC0), accent: Color(0xFFB3E5FC)),
 };
-const _bronzePalette = _TierPalette(nameAr: 'برونزي', gradA: Color(0xFF5C2E10), gradB: Color(0xFF140704), accent: Color(0xFFC07832));
+const _bronzePalette = _TierPalette(nameAr: 'برونزي', gradA: Color(0xFFC07A3E), gradB: Color(0xFF8C4E14), accent: Color(0xFFCD7F32));
 _TierPalette _pal(String? t) => _palettes[t?.toLowerCase()] ?? _bronzePalette;
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -169,41 +169,18 @@ class _HeroCard extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
           colors: [palette.gradA, palette.gradB],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: palette.gradB.withValues(alpha: 0.60),
-            blurRadius: 26, offset: const Offset(0, 10)),
+            color: palette.gradB.withValues(alpha: 0.40),
+            blurRadius: 20, offset: const Offset(0, 8)),
         ],
       ),
-      child: Stack(children: [
-        // Diagonal mirror reflection band — simulates polished metal surface
-        Positioned.fill(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: const Alignment(-1.4, -1.0),
-                  end: const Alignment(0.6, 1.0),
-                  colors: [
-                    Colors.transparent,
-                    Colors.white.withValues(alpha: 0.0),
-                    Colors.white.withValues(alpha: 0.28),
-                    Colors.white.withValues(alpha: 0.10),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.30, 0.48, 0.62, 0.80],
-                ),
-              ),
-            ),
-          ),
-        ),
-        Padding(
+      child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
         child: Column(children: [
 
@@ -313,8 +290,7 @@ class _HeroCard extends StatelessWidget {
             ),
           ),
         ]),
-        ),
-      ]),
+      ),
     );
   }
 }
