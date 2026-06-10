@@ -122,13 +122,17 @@ class AppStrings {
 
   String statusLabel(String s) {
     switch (s) {
-      case 'pending':    return isAr ? 'قيد الانتظار' : 'Pending';
-      case 'confirmed':  return isAr ? 'مؤكد'          : 'Confirmed';
-      case 'processing': return isAr ? 'قيد التجهيز'  : 'Processing';
-      case 'shipped':    return isAr ? 'في الطريق'     : 'Shipped';
-      case 'delivered':  return isAr ? 'تم التسليم'    : 'Delivered';
-      case 'cancelled':  return isAr ? 'ملغي'          : 'Cancelled';
-      case 'returned':   return isAr ? 'مُرجَع'        : 'Returned';
+      case 'pending_confirmation': return isAr ? 'بانتظار التأكيد' : 'Pending Confirmation';
+      case 'pending':              return isAr ? 'قيد الانتظار'    : 'Pending';
+      case 'confirmed':            return isAr ? 'مؤكد'            : 'Confirmed';
+      case 'processing':           return isAr ? 'قيد التجهيز'    : 'Processing';
+      case 'fulfilled':            return isAr ? 'جاهز للشحن'     : 'Fulfilled';
+      case 'shipped':              return isAr ? 'في الطريق'       : 'Shipped';
+      case 'out_for_delivery':     return isAr ? 'قيد التوصيل'    : 'Out for Delivery';
+      case 'delivered':            return isAr ? 'تم التسليم'      : 'Delivered';
+      case 'cancelled':            return isAr ? 'ملغي'            : 'Cancelled';
+      case 'returned':             return isAr ? 'مُرجَع'          : 'Returned';
+      case 'refunded':             return isAr ? 'مُسترد'          : 'Refunded';
       default: return s;
     }
   }
@@ -245,7 +249,7 @@ class AppStrings {
   String get notesOptional     => isAr ? 'ملاحظات (اختياري)'     : 'Notes (optional)';
   String get codTripiliOnly    => isAr ? 'الدفع عند الاستلام متاح فقط لمناطق طرابلس. يرجى اختيار طريقة دفع إلكترونية.' : 'Cash on delivery is available for Tripoli area only. Please choose an electronic payment method.';
   String walletCoversAll(String amt) => isAr ? 'محفظتك تغطي كامل الطلب ($amt د.ل)' : 'Your wallet covers the full order ($amt LD)';
-  String walletPartial(String w, String d) => isAr ? 'محفظة: $w د.ل  +  $d د.ل عبر:' : 'Wallet: $w LD  +  $d LD via:';
+  String walletPartial(String w, String d) => isAr ? 'محفظة: $w د.ل  +  $d د.ل' : 'Wallet: $w LD  +  $d LD';
   String walletBalanceLabel(String amt) => isAr ? 'رصيدك: $amt د.ل' : 'Balance: $amt LD';
   String get walletEmpty       => isAr ? 'رصيدك فارغ'             : 'Your wallet is empty';
   String serviceFeeN(String n) => isAr ? 'رسوم خدمة $n د.ل'      : 'Service fee $n LD';

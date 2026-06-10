@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/app_pages_provider.dart';
@@ -59,13 +60,48 @@ class _TextBody extends StatelessWidget {
   final String content;
   const _TextBody({required this.content});
 
+  static List<Map<String, dynamic>>? _tryParseJson(String s) {
+    try {
+      final v = jsonDecode(s);
+      if (v is List && v.isNotEmpty && v.first is Map) {
+        return v.cast<Map<String, dynamic>>();
+      }
+    } catch (_) {}
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (content.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+
+    final sections = _tryParseJson(content);
+    if (sections != null) {
+      return ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+        itemCount: sections.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 14),
+        itemBuilder: (_, i) {
+          final s = sections[i];
+          final title = s['title']?.toString() ?? '';
+          final body  = (s['body'] ?? s['content'] ?? '').toString()
+              .replaceAll('\\n', '\n');
+          return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (title.isNotEmpty) ...[
+              Text(title, style: TextStyle(
+                fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w700,
+                color: context.col.ink0)),
+              const SizedBox(height: 6),
+            ],
+            Text(body, style: TextStyle(
+              fontFamily: 'Cairo', fontSize: 13.5,
+              color: context.col.ink1, height: 1.7)),
+          ]);
+        },
       );
     }
+
     final paragraphs = content.split('\n\n').where((p) => p.trim().isNotEmpty).toList();
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
@@ -75,16 +111,13 @@ class _TextBody extends StatelessWidget {
         final isHeader = !para.startsWith('•') && para.length < 60 && !para.contains('\n');
         return Padding(
           padding: const EdgeInsets.only(bottom: 14),
-          child: Text(
-            para,
-            style: TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: isHeader ? 15 : 13.5,
-              fontWeight: isHeader ? FontWeight.w700 : FontWeight.w400,
-              color: isHeader ? context.col.ink0 : context.col.ink1,
-              height: 1.7,
-            ),
-          ),
+          child: Text(para, style: TextStyle(
+            fontFamily: 'Cairo',
+            fontSize: isHeader ? 15 : 13.5,
+            fontWeight: isHeader ? FontWeight.w700 : FontWeight.w400,
+            color: isHeader ? context.col.ink0 : context.col.ink1,
+            height: 1.7,
+          )),
         );
       },
     );

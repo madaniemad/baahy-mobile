@@ -106,6 +106,10 @@ class RewardsHubScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 40),
             child: Column(children: [
 
+              // ── 0. Pending rewards banner ──────────────────────────────
+              if (tier.pendingTotal > 0)
+                _PendingRewardsBanner(tier: tier),
+
               // ── 1. Hero card ───────────────────────────────────────────
               _HeroCard(tier: tier, palette: palette,
                 walletBalance: user?.walletBalance ?? 0),
@@ -241,16 +245,9 @@ class _HeroCard extends StatelessWidget {
               const SizedBox(width: 16),
 
               // Medal icon (left in RTL = last child)
-              Container(
-                width: 80, height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.15),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.30), width: 1.5),
-                ),
-                child: const Icon(Icons.military_tech_rounded,
-                  size: 46, color: Colors.white),
+              Image.asset(
+                'assets/images/tier_${tier.tier?.toLowerCase() ?? 'bronze'}.png',
+                width: 90, height: 90, fit: BoxFit.contain,
               ),
             ],
           ),
@@ -391,14 +388,9 @@ class _ProgressCard extends StatelessWidget {
             ]),
           ),
           const SizedBox(width: 12),
-          Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              color: nextPal.gradA.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: nextPal.gradA.withValues(alpha: 0.25)),
-            ),
-            child: Icon(Icons.military_tech_rounded, color: nextPal.gradA, size: 24),
+          Image.asset(
+            'assets/images/tier_${tier.nextTier?.toLowerCase() ?? 'bronze'}.png',
+            width: 44, height: 44, fit: BoxFit.contain,
           ),
         ]),
 
@@ -732,17 +724,10 @@ class _ReferralCardState extends ConsumerState<_ReferralCard> {
             ]),
           ),
           const SizedBox(width: 12),
-          // Gift icon box
-          Container(
-            width: 64, height: 64,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F9FB),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(
-              child: Icon(Icons.card_giftcard_rounded,
-                size: 32, color: AppColors.primary),
-            ),
+          // Gift icon
+          Image.asset(
+            'assets/images/referral_gift.png',
+            width: 80, height: 80, fit: BoxFit.contain,
           ),
         ]),
 
@@ -1109,6 +1094,71 @@ class _FaqSection extends StatelessWidget {
             ]),
           ),
         ),
+      ]),
+    );
+  }
+}
+
+// ── Pending rewards banner ─────────────────────────────────────────────────────
+class _PendingRewardsBanner extends StatelessWidget {
+  final TierStatus tier;
+  const _PendingRewardsBanner({required this.tier});
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = <String>[];
+    for (final m in tier.pendingMilestones) {
+      final n = m['order_number'];
+      final a = (m['amount'] as num).toStringAsFixed(0);
+      lines.add('مكافأة الطلب رقم $n: $a د.ل');
+    }
+    if (tier.pendingReferralCount > 0) {
+      lines.add('${tier.pendingReferralCount} دعوة بانتظار التسليم');
+    }
+    if (tier.pendingReceiverReward) {
+      lines.add('مكافأة ترحيب بانتظار تسليم طلبك');
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFD54F)),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: 40, height: 40,
+          decoration: const BoxDecoration(
+            color: Color(0xFFFFEE58),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.hourglass_top_rounded,
+              size: 20, color: Color(0xFFF57F17)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Text(
+                '${tier.pendingTotal.toStringAsFixed(0)} د.ل بانتظار التسليم',
+                style: const TextStyle(
+                  fontFamily: 'Cairo', fontSize: 14,
+                  fontWeight: FontWeight.w800, color: Color(0xFFF57F17)),
+              ),
+            ]),
+            const SizedBox(height: 4),
+            ...lines.map((l) => Text('• $l',
+              style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                color: context.col.ink2))),
+            const SizedBox(height: 4),
+            Text('ستُضاف تلقائياً لمحفظتك عند استلام طلبك',
+              style: TextStyle(fontFamily: 'Cairo', fontSize: 11,
+                color: context.col.ink3)),
+          ],
+        )),
       ]),
     );
   }

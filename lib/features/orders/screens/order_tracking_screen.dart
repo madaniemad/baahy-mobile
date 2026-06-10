@@ -1,14 +1,48 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/order.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
+
+Future<void> _shareOrderPdf(BuildContext context, Order order) async {
+  try {
+    final response = await ApiClient.instance.dio.get(
+      '/orders/${order.id}/invoice',
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(seconds: 30),
+      ),
+    );
+
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/invoice_${order.orderNumber}.pdf');
+    await file.writeAsBytes(response.data as List<int>);
+
+    if (!context.mounted) return;
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+    await Share.shareXFiles(
+      [XFile(file.path, mimeType: 'application/pdf')],
+      subject: 'فاتورة ${order.orderNumber}',
+      sharePositionOrigin: origin,
+    );
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تحميل الفاتورة، حاول مجدداً')),
+      );
+    }
+  }
+}
 
 final _orderDetailProvider = FutureProvider.family<Order, int>((ref, id) async {
   final res = await ApiClient.instance.dio.get('/orders/$id');
@@ -38,20 +72,26 @@ class OrderTrackingScreen extends ConsumerWidget {
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.auto_awesome_outlined, size: 22),
-            tooltip: 'اسأل عن طلبك',
-            onPressed: () => safePush(context, '/assistant'),
-          ),
           orderAsync.maybeWhen(
             data: (o) => IconButton(
-              icon: Icon(Icons.download_outlined, size: 22, color: context.col.ink0),
-              tooltip: context.s.downloadInvoice,
-              onPressed: () async {
-                final url = Uri.parse(
-                    '${ApiClient.instance.dio.options.baseUrl}/orders/${o.id}/invoice');
-                if (await canLaunchUrl(url)) await launchUrl(url);
-              },
+              icon: const Icon(Icons.auto_awesome_outlined, size: 22),
+              tooltip: 'اسأل عن طلبك',
+              onPressed: () => context.push('/chat',
+                  extra: 'أحتاج مساعدة بخصوص طلب رقم ${o.orderNumber}'),
+            ),
+            orElse: () => IconButton(
+              icon: const Icon(Icons.auto_awesome_outlined, size: 22),
+              tooltip: 'اسأل عن طلبك',
+              onPressed: () => context.push('/chat'),
+            ),
+          ),
+          orderAsync.maybeWhen(
+            data: (o) => Builder(
+              builder: (btnCtx) => IconButton(
+                icon: Icon(Icons.download_outlined, size: 22, color: context.col.ink0),
+                tooltip: context.s.downloadInvoice,
+                onPressed: () => _shareOrderPdf(btnCtx, o),
+              ),
             ),
             orElse: () => const SizedBox.shrink(),
           ),
@@ -173,7 +213,8 @@ class _OrderBody extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () => context.push('/chat',
+                extra: 'أحتاج مساعدة بخصوص طلب رقم ${order.orderNumber}'),
             icon: const Icon(Icons.help_outline_rounded, size: 16),
             label: Text(context.s.orderHelp,
               style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
@@ -193,8 +234,44 @@ class _HeroCard extends StatelessWidget {
   final Order order;
   const _HeroCard({required this.order});
 
+  _HeroInfo _info(BuildContext context) {
+    final s = order.status;
+    if (s == 'pending_confirmation') {
+      return _HeroInfo(
+        icon: Icons.hourglass_empty_rounded,
+        badge: context.s.isAr ? 'بانتظار التأكيد' : 'Pending Confirmation',
+        title: context.s.isAr ? 'تم استلام طلبك' : 'Order Received',
+        subtitle: context.s.isAr ? 'سيتم مراجعة طلبك قريباً' : 'We\'ll review your order soon',
+      );
+    }
+    if (s == 'confirmed' || s == 'pending') {
+      return _HeroInfo(
+        icon: Icons.check_circle_outline_rounded,
+        badge: context.s.isAr ? 'مؤكد' : 'Confirmed',
+        title: context.s.isAr ? 'تم تأكيد طلبك' : 'Order Confirmed',
+        subtitle: context.s.isAr ? 'سيبدأ تجهيز طلبك قريباً' : 'Preparing soon',
+      );
+    }
+    if (s == 'processing' || s == 'fulfilled') {
+      return _HeroInfo(
+        icon: Icons.inventory_2_outlined,
+        badge: context.s.isAr ? 'قيد التجهيز' : 'Processing',
+        title: context.s.isAr ? 'جارٍ تجهيز طلبك' : 'Preparing Your Order',
+        subtitle: context.s.isAr ? 'طلبك على وشك الشحن' : 'Getting ready to ship',
+      );
+    }
+    // shipped / out_for_delivery
+    return _HeroInfo(
+      icon: Icons.local_shipping_outlined,
+      badge: context.s.onTheWay,
+      title: context.s.inDelivery,
+      subtitle: context.s.deliveryPromise,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final info = _info(context);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -212,23 +289,31 @@ class _HeroCard extends StatelessWidget {
         ),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const Icon(Icons.local_shipping_outlined, color: AppColors.primary, size: 14),
+            Icon(info.icon, color: AppColors.primary, size: 14),
             const SizedBox(width: 5),
-            Text(context.s.onTheWay,
+            Text(info.badge,
               style: const TextStyle(fontFamily: 'Cairo', color: AppColors.primary,
                 fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1)),
           ]),
           const SizedBox(height: 8),
-          Text(context.s.inDelivery,
+          Text(info.title,
             style: const TextStyle(color: Colors.white,
               fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
-          Text(context.s.deliveryPromise,
+          Text(info.subtitle,
             style: const TextStyle(color: Colors.white70, fontSize: 13)),
         ]),
       ]),
     );
   }
+}
+
+class _HeroInfo {
+  final IconData icon;
+  final String badge;
+  final String title;
+  final String subtitle;
+  const _HeroInfo({required this.icon, required this.badge, required this.title, required this.subtitle});
 }
 
 class _Timeline extends StatelessWidget {

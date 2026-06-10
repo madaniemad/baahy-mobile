@@ -53,9 +53,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final res = await _api.dio.get('/auth/me',
           options: Options(extra: {'silent401': true}));
       final userJson = res.data['user'] as Map<String, dynamic>;
-      // Preserve locally-saved avatar if the API returns null (e.g. CDN lag or missing field).
-      if (userJson['avatar'] == null && state.user?.avatar != null) {
-        userJson['avatar'] = state.user!.avatar;
+      // Preserve locally-saved avatar if API returns null or empty string.
+      final apiAvatar = userJson['avatar'];
+      final cachedAvatar = state.user?.avatar;
+      if ((apiAvatar == null || (apiAvatar is String && apiAvatar.isEmpty)) &&
+          cachedAvatar != null && cachedAvatar.isNotEmpty) {
+        userJson['avatar'] = cachedAvatar;
       }
       await prefs.setString(_kCachedUser, jsonEncode(userJson));
       state = AuthState(user: User.fromJson(userJson));
@@ -102,8 +105,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final res = await _api.dio.get('/auth/me');
       final userJson = res.data['user'] as Map<String, dynamic>;
-      if (userJson['avatar'] == null && state.user?.avatar != null) {
-        userJson['avatar'] = state.user!.avatar;
+      final apiAvatar = userJson['avatar'];
+      final cachedAvatar = state.user?.avatar;
+      if ((apiAvatar == null || (apiAvatar is String && apiAvatar.isEmpty)) &&
+          cachedAvatar != null && cachedAvatar.isNotEmpty) {
+        userJson['avatar'] = cachedAvatar;
       }
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kCachedUser, jsonEncode(userJson));
@@ -111,18 +117,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (_) {}
   }
 
-  void updateAvatar(String url) {
+  Future<void> updateAvatar(String url) async {
     final user = state.user;
     if (user == null) return;
+    // Write to cache first so a fast restart doesn't lose the avatar.
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString(_kCachedUser);
+    if (cached != null) {
+      final json = jsonDecode(cached) as Map<String, dynamic>;
+      json['avatar'] = url;
+      await prefs.setString(_kCachedUser, jsonEncode(json));
+    }
     state = state.copyWith(user: user.copyWith(avatar: url));
-    SharedPreferences.getInstance().then((prefs) {
-      final cached = prefs.getString(_kCachedUser);
-      if (cached != null) {
-        final json = jsonDecode(cached) as Map<String, dynamic>;
-        json['avatar'] = url;
-        prefs.setString(_kCachedUser, jsonEncode(json));
-      }
-    });
   }
 }
 

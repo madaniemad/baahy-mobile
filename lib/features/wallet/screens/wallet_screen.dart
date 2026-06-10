@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -221,6 +223,15 @@ class _HeroBalanceCard extends StatelessWidget {
               ),
             ),
           ),
+          // Wallet icon — top left
+          Positioned(
+            top: 12, left: 12,
+            child: ColorFiltered(
+              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+              child: Image.asset('assets/images/wallet_icon.png',
+                width: 28, height: 28, fit: BoxFit.contain),
+            ),
+          ),
           // QR code button
           Positioned(
             top: 12, right: 12,
@@ -269,7 +280,7 @@ class _HeroBalanceCard extends StatelessWidget {
                   outlined: true, onTap: onTopUp),
                 const SizedBox(width: 10),
                 _CardButton(
-                  label: 'إرسال', icon: Icons.upload_outlined,
+                  label: 'تحويل', icon: Icons.upload_outlined,
                   outlined: false, onTap: onSend),
               ]),
             ]),
@@ -377,7 +388,7 @@ class _StatsRow extends StatelessWidget {
             amount: balance,
             iconBg: const Color(0xFFE3F2FD),
             iconColor: const Color(0xFF1565C0),
-            icon: Icons.account_balance_wallet_outlined,
+            iconAsset: 'assets/images/wallet_icon.png',
           ),
         ]),
       ),
@@ -390,9 +401,10 @@ class _StatItem extends StatelessWidget {
   final double amount;
   final Color iconBg;
   final Color iconColor;
-  final IconData icon;
+  final IconData? icon;
+  final String? iconAsset;
   const _StatItem({required this.label, required this.amount,
-    required this.iconBg, required this.iconColor, required this.icon});
+    required this.iconBg, required this.iconColor, this.icon, this.iconAsset});
 
   @override
   Widget build(BuildContext context) {
@@ -404,9 +416,15 @@ class _StatItem extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isDark ? Colors.transparent : iconBg,
-            border: isDark ? Border.all(color: iconColor.withValues(alpha: 0.5)) : null,
+            border: isDark ? Border.all(color: Colors.white.withValues(alpha: 0.55)) : null,
           ),
-          child: Icon(icon, size: 17, color: iconColor),
+          child: iconAsset != null
+            ? Center(child: ColorFiltered(
+                colorFilter: ColorFilter.mode(
+                  isDark ? Colors.white : iconColor, BlendMode.srcIn),
+                child: Image.asset(iconAsset!, width: 20, height: 20, fit: BoxFit.contain),
+              ))
+            : Icon(icon!, size: 17, color: isDark ? Colors.white : iconColor),
         ),
         const SizedBox(height: 7),
         Text(label,
@@ -442,12 +460,6 @@ class _TierProgressCard extends StatelessWidget {
   static const _tierColors = [
     Color(0xFFCD7F32), Color(0xFF9E9E9E), Color(0xFFD4A82E), Color(0xFF4FC3F7),
   ];
-  static const _tierIcons = [
-    Icons.military_tech_rounded,
-    Icons.military_tech_rounded,
-    Icons.military_tech_rounded,
-    Icons.auto_awesome_rounded,
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -474,14 +486,9 @@ class _TierProgressCard extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Top row: medal | tier info | tier dots
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: 54, height: 54,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _tierColors[currentIndex].withValues(alpha: 0.12),
-            ),
-            child: Icon(Icons.military_tech_rounded,
-              size: 30, color: _tierColors[currentIndex]),
+          Image.asset(
+            'assets/images/tier_$currentTier.png',
+            width: 54, height: 54, fit: BoxFit.contain,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -503,16 +510,12 @@ class _TierProgressCard extends StatelessWidget {
             final active = i <= currentIndex;
             return Padding(
               padding: EdgeInsets.only(right: i > 0 ? 6 : 0),
-              child: Container(
-                width: 30, height: 30,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: active
-                      ? _tierColors[i].withValues(alpha: 0.15)
-                      : context.col.surfaceSoft,
+              child: Opacity(
+                opacity: active ? 1.0 : 0.30,
+                child: Image.asset(
+                  'assets/images/tier_${_tiers[i]}.png',
+                  width: 30, height: 30, fit: BoxFit.contain,
                 ),
-                child: Icon(_tierIcons[i], size: 15,
-                  color: active ? _tierColors[i] : context.col.ink4),
               ),
             );
           })),
@@ -648,7 +651,7 @@ class _EarnMoreSection extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(child: _EarnCard(
             onTap: onInvite,
-            icon: Icons.group_outlined,
+            iconAsset: 'assets/images/referral_gift.png',
             iconColor: const Color(0xFF7B1FA2),
             cardBg: const Color(0xFFF0E8FB),
             title: 'دعوة الأصدقاء',
@@ -673,13 +676,14 @@ class _EarnMoreSection extends StatelessWidget {
 
 class _EarnCard extends StatelessWidget {
   final VoidCallback onTap;
-  final IconData icon;
+  final IconData? icon;
+  final String? iconAsset;
   final Color iconColor;
   final Color cardBg;
   final String title;
   final String subtitle;
   final String actionLabel;
-  const _EarnCard({required this.onTap, required this.icon, required this.iconColor,
+  const _EarnCard({required this.onTap, this.icon, this.iconAsset, required this.iconColor,
     required this.cardBg, required this.title, required this.subtitle,
     required this.actionLabel});
 
@@ -703,7 +707,9 @@ class _EarnCard extends StatelessWidget {
               shape: BoxShape.circle,
               color: iconColor.withValues(alpha: isDark ? 0.15 : 0.18),
             ),
-            child: Icon(icon, size: 17, color: iconColor),
+            child: iconAsset != null
+              ? Image.asset(iconAsset!, width: 20, height: 20, fit: BoxFit.contain)
+              : Icon(icon!, size: 17, color: iconColor),
           ),
           const SizedBox(height: 8),
           Text(title,
@@ -989,10 +995,10 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        color: isSelected ? context.col.ink0 : context.col.surface,
+                        color: isSelected ? AppColors.primary : context.col.surface,
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: isSelected ? context.col.ink0 : context.col.border, width: 1.5)),
+                          color: isSelected ? AppColors.primary : context.col.border, width: 1.5)),
                       child: Center(child: Text('$amt',
                         style: TextStyle(fontFamily: 'PlusJakartaSans',
                           fontWeight: FontWeight.w800, fontSize: 14,
@@ -1172,6 +1178,40 @@ class _TransactionRow extends StatelessWidget {
     return '${dt.day} ${_arMonths[dt.month - 1]} ${dt.year} - $h:$min $amPm';
   }
 
+  String _buildDescription(String type, bool isCredit) {
+    final raw = (tx['description'] as String? ?? '').trim();
+    final gateway = (tx['gateway'] as String? ?? '').toLowerCase();
+    final senderName = tx['sender_name'] as String?;
+    final recipientName = tx['recipient_name'] as String?;
+
+    // If backend provided a meaningful non-generic description, use it
+    final generics = {'إيداع', 'سحب', 'deposit', 'withdrawal', 'topup', 'top up', 'top-up'};
+    if (raw.isNotEmpty && !generics.contains(raw.toLowerCase())) return raw;
+
+    switch (type) {
+      case 'cashback': return 'كاش باك على طلبك';
+      case 'referral': return 'مكافأة إحالة';
+      case 'refund': return 'استرداد مبلغ';
+      case 'transfer_in':
+        if (senderName != null && senderName.isNotEmpty) return 'تحويل من $senderName';
+        return 'تحويل وارد';
+      case 'transfer_out':
+        if (recipientName != null && recipientName.isNotEmpty) return 'تحويل إلى $recipientName';
+        return 'تحويل صادر';
+      case 'topup':
+      case 'deposit':
+        if (gateway == 'tadawel' || gateway == 'tadawul') return 'إيداع عبر تداول';
+        if (gateway == 'moamlat') return 'إيداع عبر معاملات';
+        if (gateway == 'mobicash') return 'إيداع عبر موبيكاش';
+        if (gateway == 'admin' || gateway == 'manual' || gateway == 'baahy') return 'إيداع بواسطة باهي';
+        if (raw.isNotEmpty) return raw;
+        return 'إيداع في المحفظة';
+      default:
+        if (raw.isNotEmpty) return raw;
+        return isCredit ? 'إيداع' : 'سحب';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final rawAmt = tx['amount'];
@@ -1187,20 +1227,20 @@ class _TransactionRow extends StatelessWidget {
     switch (type) {
       case 'cashback':
         iconData = Icons.shopping_bag_outlined;
-        iconBg = const Color(0xFF1FD7E2).withValues(alpha: 0.12);
-        iconColor = const Color(0xFF08AAAC);
+        iconBg = AppColors.success.withValues(alpha: 0.12);
+        iconColor = AppColors.success;
       case 'referral':
         iconData = Icons.group_outlined;
         iconBg = const Color(0xFF7B1FA2).withValues(alpha: 0.10);
         iconColor = const Color(0xFF7B1FA2);
       case 'refund':
         iconData = Icons.assignment_return_outlined;
-        iconBg = const Color(0xFFE65100).withValues(alpha: 0.10);
-        iconColor = const Color(0xFFE65100);
+        iconBg = AppColors.success.withValues(alpha: 0.12);
+        iconColor = AppColors.success;
       case 'transfer_out':
         iconData = Icons.upload_outlined;
-        iconBg = AppColors.primary.withValues(alpha: 0.10);
-        iconColor = AppColors.primary;
+        iconBg = AppColors.danger.withValues(alpha: 0.10);
+        iconColor = AppColors.danger;
       case 'transfer_in':
         iconData = Icons.download_outlined;
         iconBg = AppColors.success.withValues(alpha: 0.10);
@@ -1208,10 +1248,12 @@ class _TransactionRow extends StatelessWidget {
       default:
         iconData = isCredit ? Icons.add_rounded : Icons.remove_rounded;
         iconBg = isCredit
-            ? const Color(0xFF1FD7E2).withValues(alpha: 0.12)
-            : context.col.surfaceSoft;
-        iconColor = isCredit ? const Color(0xFF08AAAC) : context.col.ink2;
+            ? AppColors.success.withValues(alpha: 0.10)
+            : AppColors.danger.withValues(alpha: 0.10);
+        iconColor = isCredit ? AppColors.success : AppColors.danger;
     }
+
+    final amountColor = isCredit ? AppColors.success : AppColors.danger;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1229,7 +1271,7 @@ class _TransactionRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(tx['description'] ?? (isCredit ? 'إيداع' : 'سحب'),
+            Text(_buildDescription(type, isCredit),
               style: const TextStyle(fontFamily: 'Cairo',
                 fontSize: 13.5, fontWeight: FontWeight.w600, height: 1.3)),
             if (tx['created_at'] != null)
@@ -1240,11 +1282,11 @@ class _TransactionRow extends StatelessWidget {
           ]),
         ),
         Text(
-          '${isCredit ? '' : '-'}${fmtPrice(amount)} د.ل',
+          '${isCredit ? '+' : '-'}${fmtPrice(amount)} د.ل',
           style: TextStyle(
             fontFamily: 'PlusJakartaSans',
             fontWeight: FontWeight.w800, fontSize: 14,
-            color: isCredit ? const Color(0xFF08AAAC) : context.col.ink0)),
+            color: amountColor)),
       ]),
     );
   }
@@ -1262,13 +1304,13 @@ class _WalletQrSheet extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.all(Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: context.col.surface,
+        borderRadius: const BorderRadius.all(Radius.circular(20)),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Center(child: Container(width: 40, height: 4,
-          decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+          decoration: BoxDecoration(color: context.col.border, borderRadius: BorderRadius.circular(2)))),
         const SizedBox(height: 20),
         const Text('كود QR محفظتك',
           style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
@@ -1285,7 +1327,7 @@ class _WalletQrSheet extends StatelessWidget {
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4))],
           ),
           child: QrImageView(
-            data: phone,
+            data: 'https://baahy-web.vercel.app/wallet/send?phone=${Uri.encodeComponent(phone)}',
             version: QrVersions.auto,
             size: 200,
             backgroundColor: Colors.white,
@@ -1311,7 +1353,7 @@ class _WalletQrSheet extends StatelessWidget {
   }
 }
 
-// ── Transfer sheet ────────────────────────────────────────────────────────────
+// ── Transfer sheet ───────────────────────────────────────────────────────────
 
 class _TransferSheet extends ConsumerStatefulWidget {
   final VoidCallback onSuccess;
@@ -1322,10 +1364,11 @@ class _TransferSheet extends ConsumerStatefulWidget {
 }
 
 class _TransferSheetState extends ConsumerState<_TransferSheet> {
-  // Step 0: phone lookup, Step 1: amount + note, Step 2: confirm
   int _step = 0;
   bool _loading = false;
   String? _error;
+  bool _saveContact = false;
+  List<Map<String, dynamic>> _savedContacts = [];
 
   final _phoneCtrl = TextEditingController();
   final _amountCtrl = TextEditingController();
@@ -1335,11 +1378,47 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
   String? _recipientPhoneMasked;
 
   @override
+  void initState() {
+    super.initState();
+    _loadSavedContacts();
+  }
+
+  @override
   void dispose() {
     _phoneCtrl.dispose();
     _amountCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSavedContacts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList('wallet_saved_contacts') ?? [];
+    if (!mounted) return;
+    setState(() {
+      _savedContacts = raw.map((e) => Map<String, dynamic>.from(json.decode(e) as Map)).toList();
+    });
+  }
+
+  Future<void> _saveContactNow() async {
+    if (_recipientName == null) return;
+    final contact = <String, dynamic>{
+      'name': _recipientName!,
+      'phone': _phoneCtrl.text.trim(),
+      'phone_masked': _recipientPhoneMasked ?? _phoneCtrl.text.trim(),
+    };
+    final existing = _savedContacts.indexWhere((c) => c['phone'] == contact['phone']);
+    if (existing >= 0) {
+      _savedContacts[existing] = contact;
+    } else {
+      _savedContacts.insert(0, contact);
+      if (_savedContacts.length > 10) _savedContacts = _savedContacts.sublist(0, 10);
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      'wallet_saved_contacts',
+      _savedContacts.map((e) => json.encode(e)).toList(),
+    );
   }
 
   double get _amount => double.tryParse(_amountCtrl.text.trim()) ?? 0;
@@ -1382,6 +1461,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
         'amount': _amount,
         if (_noteCtrl.text.trim().isNotEmpty) 'note': _noteCtrl.text.trim(),
       });
+      if (_saveContact) await _saveContactNow();
       if (mounted) {
         Navigator.of(context).pop();
         widget.onSuccess();
@@ -1418,9 +1498,9 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
       child: Container(
         margin: const EdgeInsets.all(12),
         padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.all(Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: context.col.surface,
+          borderRadius: const BorderRadius.all(Radius.circular(20)),
         ),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Center(child: Container(width: 40, height: 4,
@@ -1437,10 +1517,11 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
               ),
             Expanded(
               child: Text(
-                _step == 0 ? 'إرسال رصيد'
+                _step == 0 ? 'تحويل رصيد'
                     : _step == 1 ? 'المبلغ والملاحظة'
                     : 'تأكيد التحويل',
-                style: const TextStyle(fontFamily: 'Cairo', fontSize: 20, fontWeight: FontWeight.w800)),
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 20, fontWeight: FontWeight.w800,
+                  color: context.col.ink0)),
             ),
           ]),
           const SizedBox(height: 4),
@@ -1448,32 +1529,60 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
             _step == 0 ? 'أدخل رقم هاتف المستلم'
                 : _step == 1 ? 'رصيدك المتاح: ${fmtPrice(balance)} د.ل'
                 : 'راجع التفاصيل قبل التأكيد',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: Colors.grey.shade600)),
+            style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink2)),
           const SizedBox(height: 20),
 
           if (_step == 0) ...[
+            if (_savedContacts.isNotEmpty) ...[
+              Wrap(spacing: 8, runSpacing: 6, children: _savedContacts.map((c) {
+                return GestureDetector(
+                  onTap: () {
+                    _phoneCtrl.text = c['phone'] as String? ?? '';
+                    _lookup();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE0F9F9),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF08AAAC).withValues(alpha: 0.4)),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.person_outline_rounded, size: 13, color: Color(0xFF08AAAC)),
+                      const SizedBox(width: 5),
+                      Text(c['name'] as String? ?? '',
+                        style: const TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                          fontWeight: FontWeight.w600, color: Color(0xFF08AAAC))),
+                    ]),
+                  ),
+                );
+              }).toList()),
+              const SizedBox(height: 12),
+            ],
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.grey.shade200)),
+                border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
                 autofocus: true,
+                textDirection: TextDirection.ltr,
+                style: TextStyle(fontFamily: 'PlusJakartaSans', color: context.col.ink0),
                 decoration: InputDecoration(
-                  hintText: 'رقم الهاتف (مثال: 0912345678)',
-                  hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: Colors.grey.shade400),
+                  hintText: '0912345678',
+                  hintTextDirection: TextDirection.ltr,
+                  hintStyle: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 13, color: context.col.ink3),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(14),
-                  prefixIcon: Icon(Icons.phone_outlined, size: 18, color: Colors.grey.shade500),
+                  prefixIcon: Icon(Icons.phone_outlined, size: 18, color: context.col.ink2),
                 ),
               ),
             ),
           ],
 
           if (_step == 1) ...[
-            // Recipient info chip
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
@@ -1487,32 +1596,32 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                   Text(_recipientName ?? '',
                     style: const TextStyle(fontFamily: 'Cairo', fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF08AAAC))),
                   Text(_recipientPhoneMasked ?? '',
+                    textDirection: TextDirection.ltr,
                     style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 11.5, color: Colors.grey.shade600)),
                 ]),
               ]),
             ),
             const SizedBox(height: 14),
 
-            // Amount field
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.grey.shade200)),
+                border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _amountCtrl,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 autofocus: true,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 28, fontWeight: FontWeight.w800),
+                style: const TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 24, fontWeight: FontWeight.w800),
                 decoration: InputDecoration(
                   hintText: '0',
-                  hintStyle: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 28,
+                  hintStyle: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 24,
                     fontWeight: FontWeight.w800, color: Colors.grey.shade300),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   suffixText: 'د.ل',
-                  suffixStyle: TextStyle(fontFamily: 'Cairo', fontSize: 16,
+                  suffixStyle: TextStyle(fontFamily: 'Cairo', fontSize: 14,
                     fontWeight: FontWeight.w600, color: Colors.grey.shade500),
                 ),
                 onChanged: (_) => setState(() {}),
@@ -1520,12 +1629,11 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
             ),
             const SizedBox(height: 10),
 
-            // Note field
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.grey.shade200)),
+                border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _noteCtrl,
                 maxLength: 200,
@@ -1538,10 +1646,30 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                 ),
               ),
             ),
+            const SizedBox(height: 10),
+
+            GestureDetector(
+              onTap: () => setState(() => _saveContact = !_saveContact),
+              child: Row(children: [
+                SizedBox(
+                  width: 20, height: 20,
+                  child: Checkbox(
+                    value: _saveContact,
+                    onChanged: (v) => setState(() => _saveContact = v ?? false),
+                    activeColor: const Color(0xFF1FD7E2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text('حفظ المستلم للتحويل السريع لاحقاً',
+                  style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink1)),
+              ]),
+            ),
           ],
 
           if (_step == 2) ...[
-            // Confirm summary card
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1551,7 +1679,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
               ),
               child: Column(children: [
                 _ConfirmRow(label: 'إلى', value: _recipientName ?? ''),
-                _ConfirmRow(label: 'رقم الهاتف', value: _recipientPhoneMasked ?? ''),
+                _ConfirmRow(label: 'رقم الهاتف', value: _recipientPhoneMasked ?? '', ltr: true),
                 _ConfirmRow(label: 'المبلغ', value: '${fmtPrice(_amount)} د.ل', highlight: true),
                 if (_noteCtrl.text.trim().isNotEmpty)
                   _ConfirmRow(label: 'ملاحظة', value: _noteCtrl.text.trim()),
@@ -1608,7 +1736,8 @@ class _ConfirmRow extends StatelessWidget {
   final String label;
   final String value;
   final bool highlight;
-  const _ConfirmRow({required this.label, required this.value, this.highlight = false});
+  final bool ltr;
+  const _ConfirmRow({required this.label, required this.value, this.highlight = false, this.ltr = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1619,7 +1748,10 @@ class _ConfirmRow extends StatelessWidget {
           style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: Colors.grey.shade600)),
         const Spacer(),
         Text(value,
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 13.5,
+          textDirection: ltr ? TextDirection.ltr : null,
+          style: TextStyle(
+            fontFamily: ltr ? 'PlusJakartaSans' : 'Cairo',
+            fontSize: 13.5,
             fontWeight: highlight ? FontWeight.w800 : FontWeight.w600,
             color: highlight ? const Color(0xFF08AAAC) : Colors.black87)),
       ]),

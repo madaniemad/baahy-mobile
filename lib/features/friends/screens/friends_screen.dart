@@ -286,15 +286,8 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
         // Top row: gift + text
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // Gift box illustration
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              width: 76, height: 76,
-              color: const Color(0xFFE2F9FA),
-              child: Image.asset('assets/images/referral_illustration.png',
-                fit: BoxFit.contain),
-            ),
-          ),
+          Image.asset('assets/images/referral_gift.png',
+            width: 80, height: 80, fit: BoxFit.contain),
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

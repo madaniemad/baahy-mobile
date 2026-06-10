@@ -19,7 +19,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
   final _refCtrl = TextEditingController();
   bool _loading = false;
   String? _error;
-  bool _showRefField = false; // hidden by default; shown when deep-linked or manually expanded
+  bool _showRefField = false;
 
   bool get _valid => _ctrl.text.replaceAll(RegExp(r'\D'), '').length >= 9;
 
@@ -29,7 +29,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
     DeepLinkService.peekPendingCode().then((code) {
       if (code != null && mounted) {
         _refCtrl.text = code;
-        setState(() => _showRefField = true); // auto-expand only when invited
+        setState(() => _showRefField = true);
       }
     });
   }
@@ -108,8 +108,8 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                       fontFamily: 'PlusJakartaSans',
                       fontSize: 12, fontWeight: FontWeight.w700,
                       color: context.col.ink2)),
-                    SizedBox(width: 6),
-                    Text('+218',
+                    const SizedBox(width: 6),
+                    const Text('+218',
                       style: TextStyle(fontFamily: 'PlusJakartaSans',
                         fontSize: 15, fontWeight: FontWeight.w600)),
                   ]),
@@ -135,7 +135,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                         hintText: '91 234 5678',
                         hintStyle: TextStyle(color: context.col.ink4, fontWeight: FontWeight.w400),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       ),
                       onSubmitted: (_) => _send(),
                     ),

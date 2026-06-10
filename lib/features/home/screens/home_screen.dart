@@ -40,7 +40,10 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: context.col.bg,
       body: RefreshIndicator(
         color: AppColors.primary,
-        onRefresh: () => ref.read(homeProvider.notifier).fetch(),
+        onRefresh: () async {
+          ref.invalidate(_activeOrderProvider);
+          await ref.read(homeProvider.notifier).fetch();
+        },
         child: CustomScrollView(
           slivers: [
             SliverAppBar(
@@ -111,11 +114,8 @@ class HomeScreen extends ConsumerWidget {
               // One-time rewards modal (invisible trigger)
               const SliverToBoxAdapter(child: _RewardsModalTrigger()),
 
-              // Active order strip — shows when user has a live order
+              // Active order strip + rewards nudge carousel
               const SliverToBoxAdapter(child: _ActiveOrderStrip()),
-
-              // Contextual rewards nudge
-              const SliverToBoxAdapter(child: _RewardsNudgeCard()),
 
               // Hero banner slider (real data from /api/content/banners)
               SliverToBoxAdapter(
@@ -395,59 +395,203 @@ class _SearchHintText extends StatelessWidget {
     style: TextStyle(color: context.col.ink3, fontSize: 14));
 }
 
-// ── Active order strip ────────────────────────────────────────────────────────
+// ── Active order strip + rewards nudge carousel ───────────────────────────────
 
-final _activeOrderProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
+final _activeOrderProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/orders',
-      queryParameters: {'status': 'shipped,confirmed,processing', 'per_page': 1});
-    final list = res.data['data']['data'] as List?;
+      queryParameters: {
+        'status': 'pending_confirmation,pending,confirmed,processing,fulfilled,shipped,out_for_delivery',
+        'per_page': 1,
+      });
+    final d = res.data['data'];
+    List? list;
+    if (d is Map) list = d['data'] as List?;
+    else if (d is List) list = d;
     if (list != null && list.isNotEmpty) return Map<String, dynamic>.from(list.first);
     return null;
   } catch (_) { return null; }
 });
 
-class _ActiveOrderStrip extends ConsumerWidget {
+String _orderStripLabel(BuildContext context, String status) {
+  switch (status) {
+    case 'pending_confirmation': return context.s.isAr ? 'بانتظار التأكيد' : 'Pending Confirmation';
+    case 'pending':
+    case 'confirmed':            return context.s.isAr ? 'تم تأكيد طلبك'  : 'Order Confirmed';
+    case 'processing':
+    case 'fulfilled':            return context.s.isAr ? 'قيد التجهيز'    : 'Processing';
+    case 'shipped':
+    case 'out_for_delivery':     return context.s.isAr ? 'في الطريق'      : 'On the Way';
+    default:                     return context.s.isAr ? 'طلب نشط'        : 'Active Order';
+  }
+}
+
+// Combines active order + rewards nudge into a carousel (1–2 strips)
+class _ActiveOrderStrip extends ConsumerStatefulWidget {
   const _ActiveOrderStrip();
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ActiveOrderStrip> createState() => _ActiveOrderStripState();
+}
+
+class _ActiveOrderStripState extends ConsumerState<_ActiveOrderStrip> {
+  final _ctrl = PageController();
+  int _page = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted || !_ctrl.hasClients) return;
+      final next = (_page + 1) % 2;
+      _ctrl.animateToPage(next,
+          duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final orderAsync = ref.watch(_activeOrderProvider);
-    return orderAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (order) {
-        if (order == null) return const SizedBox.shrink();
-        final orderId = order['id'];
+    final tierAsync  = ref.watch(tierProvider);
+
+    final strips = <Widget>[];
+
+    // Strip 1: active order (if any)
+    orderAsync.whenData((order) {
+      if (order != null) {
+        final orderId  = order['id'];
         final orderNum = order['order_number'] ?? '#$orderId';
-        return GestureDetector(
+        final status   = (order['status'] as String?) ?? '';
+        strips.add(_StripTile(
+          icon: status.contains('delivery') || status == 'shipped'
+              ? Icons.local_shipping_outlined : Icons.receipt_long_outlined,
+          label: _orderStripLabel(context, status),
+          sub: orderNum,
           onTap: () => safePush(context, '/orders/$orderId'),
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        ));
+      }
+    });
+
+    // Strip 2: rewards nudge (if any)
+    tierAsync.whenData((tier) {
+      if (!identical(tier, TierStatus.empty)) {
+        final remaining = tier.nextMilestoneRemaining;
+        final reward    = tier.nextMilestoneReward;
+        String? msg;
+        if (remaining != null && remaining <= 2 && reward != null) {
+          msg = remaining == 1
+              ? context.s.nudgeMilestone1(reward.toStringAsFixed(0))
+              : context.s.nudgeMilestone2(reward.toStringAsFixed(0));
+        } else if (tier.tier == null && tier.ordersRemaining <= 3) {
+          msg = context.s.nudgeNoTier(tier.ordersRemaining, tier.spendRemaining.toStringAsFixed(0));
+        }
+        if (msg != null) {
+          strips.add(_StripTile(
+            icon: Icons.card_giftcard_rounded,
+            label: msg,
+            sub: null,
+            onTap: () => safePush(context, '/rewards-hub'),
+            iconColor: AppColors.success,
+          ));
+        }
+      }
+    });
+
+    if (strips.isEmpty) return const SizedBox.shrink();
+    if (strips.length == 1) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        child: strips.first,
+      );
+    }
+
+    // Carousel for 2 strips
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      SizedBox(
+        height: 44,
+        child: PageView(
+          controller: _ctrl,
+          onPageChanged: (p) => setState(() => _page = p),
+          children: strips.map((s) => Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: s,
+          )).toList(),
+        ),
+      ),
+      const SizedBox(height: 4),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        for (int i = 0; i < strips.length; i++)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: i == _page ? 14 : 5,
+            height: 5,
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F8F8),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: const Color(0xFFE0E0E0)),
+              color: i == _page
+                  ? AppColors.primary
+                  : AppColors.primary.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(99),
             ),
-            child: Row(children: [
-              const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text.rich(TextSpan(
-                  style: const TextStyle(fontSize: 12.5),
-                  children: [
-                    TextSpan(text: context.s.onTheWay,
-                      style: TextStyle(fontWeight: FontWeight.w700, color: context.col.ink0)),
-                    TextSpan(text: ' · $orderNum',
-                      style: TextStyle(color: context.col.ink3)),
-                  ],
-                )),
-              ),
-              Icon(Icons.arrow_forward_ios, size: 12, color: context.col.ink3),
-            ]),
           ),
+      ]),
+    ]);
+  }
+}
+
+class _StripTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? sub;
+  final VoidCallback onTap;
+  final Color iconColor;
+  const _StripTile({
+    required this.icon, required this.label,
+    required this.sub, required this.onTap,
+    this.iconColor = AppColors.primary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Builder(builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.transparent : const Color(0xFFE8F8F8),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isDark ? AppColors.teal : const Color(0xFFE0E0E0),
+              width: isDark ? 1.4 : 1,
+            ),
+          ),
+          child: Row(children: [
+            Icon(icon, size: 16, color: iconColor),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text.rich(TextSpan(
+                style: const TextStyle(fontSize: 12.5),
+                children: [
+                  TextSpan(text: label,
+                    style: TextStyle(fontWeight: FontWeight.w700, color: context.col.ink0)),
+                  if (sub != null)
+                    TextSpan(text: ' · $sub',
+                      style: TextStyle(color: context.col.ink3)),
+                ],
+              )),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 12, color: context.col.ink3),
+          ]),
         );
-      },
+      }),
     );
   }
 }
@@ -1146,9 +1290,11 @@ class _CategoriesGridState extends State<_CategoriesGrid> {
   @override
   void didUpdateWidget(_CategoriesGrid oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.categories.length != widget.categories.length) {
-      _buildAndShuffle(widget.categories);
-    }
+    // Compare total child count — cache may have categories without children,
+    // fresh fetch populates them. Root count stays same (8) so must check deeper.
+    final oldChildCount = oldWidget.categories.fold(0, (s, c) => s + c.children.length);
+    final newChildCount = widget.categories.fold(0, (s, c) => s + c.children.length);
+    if (oldChildCount != newChildCount) _buildAndShuffle(widget.categories);
   }
 
   static IconData _iconFor(String name) {
@@ -1182,6 +1328,7 @@ class _CategoriesGridState extends State<_CategoriesGrid> {
 
   @override
   Widget build(BuildContext context) {
+    if (_items.isEmpty) return const SizedBox.shrink();
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     return SizedBox(

@@ -149,12 +149,12 @@ class ContactScreen extends ConsumerWidget {
               border: Border.all(color: AppColors.primary.withValues(alpha: 0.20)),
             ),
             child: Row(children: [
-              const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 17),
+              const Icon(Icons.info_outline_rounded, color: Colors.white, size: 17),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   context.s.orderComplaintTip,
-                  style: const TextStyle(fontSize: 12, color: AppColors.primary, height: 1.5),
+                  style: const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
                 ),
               ),
             ]),
@@ -220,12 +220,14 @@ class _ContactCard extends StatelessWidget {
               Text(subtitle, style: TextStyle(
                   fontSize: 11.5, color: context.col.ink3)),
               const SizedBox(height: 3),
-              Text(value, style: TextStyle(
+              Text(value,
+                textDirection: TextDirection.ltr,
+                style: TextStyle(
                   fontFamily: 'PlusJakartaSans', fontSize: 12.5,
                   color: color, fontWeight: FontWeight.w600)),
             ],
           )),
-          Icon(Icons.arrow_forward_ios_rounded, size: 14, color: context.col.ink4),
+          Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: context.col.ink4),
         ]),
       ),
     );

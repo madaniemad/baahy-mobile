@@ -14,6 +14,10 @@ class TierStatus {
   final double cashbackRate;
   final double freeShippingThreshold;
   final int returnDays;
+  final double pendingTotal;
+  final List<Map<String, dynamic>> pendingMilestones;
+  final int pendingReferralCount;
+  final bool pendingReceiverReward;
 
   const TierStatus({
     required this.tier,
@@ -31,6 +35,10 @@ class TierStatus {
     required this.cashbackRate,
     required this.freeShippingThreshold,
     required this.returnDays,
+    this.pendingTotal = 0.0,
+    this.pendingMilestones = const [],
+    this.pendingReferralCount = 0,
+    this.pendingReceiverReward = false,
   });
 
   factory TierStatus.fromJson(Map<String, dynamic> j) {
@@ -54,6 +62,11 @@ class TierStatus {
       cashbackRate: (benefits['cashback_rate'] as num?)?.toDouble() ?? 2.0,
       freeShippingThreshold: (benefits['free_shipping_threshold'] as num?)?.toDouble() ?? 150.0,
       returnDays: (benefits['return_days'] as num?)?.toInt() ?? 7,
+      pendingTotal: ((j['pending_rewards'] as Map?)?['total'] as num?)?.toDouble() ?? 0.0,
+      pendingMilestones: ((j['pending_rewards'] as Map?)?['milestones'] as List?)
+          ?.cast<Map<String, dynamic>>() ?? [],
+      pendingReferralCount: ((j['pending_rewards'] as Map?)?['referral_count'] as num?)?.toInt() ?? 0,
+      pendingReceiverReward: (j['pending_rewards'] as Map?)?['receiver_pending'] == true,
     );
   }
 

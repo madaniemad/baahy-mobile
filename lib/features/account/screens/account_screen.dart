@@ -55,11 +55,39 @@ final _referralCountProvider = FutureProvider<int>((ref) async {
   }
 });
 
-class AccountScreen extends ConsumerWidget {
+class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends ConsumerState<AccountScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.invalidate(_freshWalletBalanceProvider);
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      ref.invalidate(_freshWalletBalanceProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final auth   = ref.watch(authProvider);
     final config = ref.watch(appConfigProvider);
     final unread = ref.watch(unreadNotificationCountProvider);
@@ -101,6 +129,13 @@ class AccountScreen extends ConsumerWidget {
     }
 
     final user          = auth.user!;
+
+    // Re-fetch wallet when authProvider's balance changes (e.g. after wallet top-up)
+    ref.listen(
+      authProvider.select((a) => a.user?.walletBalance),
+      (_, __) => ref.invalidate(_freshWalletBalanceProvider),
+    );
+
     final wishlistCount = ref.watch(wishlistProductsProvider).valueOrNull?.length
         ?? ref.watch(wishlistProvider).length;
     final counts        = ref.watch(_ordersCountsProvider).value;
@@ -178,7 +213,7 @@ class AccountScreen extends ConsumerWidget {
               iconColor: const Color(0xFF0891B2),
               iconBg: const Color(0xFFE0F7FA),
               value: counts == null ? '—' : '${counts.active}',
-              label: context.tr('قيد التوصيل', 'Delivery'),
+              label: context.tr('نشطة', 'Active'),
               onTap: () => safePush(context, '/orders'),
             ),
             const SizedBox(width: 10),
@@ -379,7 +414,7 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
       final res = await ApiClient.instance.dio.post('/auth/profile/avatar', data: formData);
       final newUrl = res.data['avatar'] as String?;
       if (newUrl != null) {
-        ref.read(authProvider.notifier).updateAvatar(newUrl);
+        await ref.read(authProvider.notifier).updateAvatar(newUrl);
       } else {
         ref.read(authProvider.notifier).refreshProfile();
       }
@@ -721,13 +756,9 @@ class _TierCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
-                Container(
-                  width: 42, height: 42,
-                  decoration: BoxDecoration(
-                    color: tierColor.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.workspace_premium_rounded, size: 24, color: tierColor),
+                Image.asset(
+                  'assets/images/tier_${tier.tier?.toLowerCase() ?? 'bronze'}.png',
+                  width: 42, height: 42, fit: BoxFit.contain,
                 ),
                 const SizedBox(width: 10),
                 Expanded(

@@ -98,7 +98,8 @@ class _SuggestionData {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 class AssistantScreen extends ConsumerStatefulWidget {
-  const AssistantScreen({super.key});
+  final String? initialMessage;
+  const AssistantScreen({super.key, this.initialMessage});
 
   @override
   ConsumerState<AssistantScreen> createState() => _AssistantScreenState();
@@ -125,6 +126,11 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       duration: const Duration(milliseconds: 1200),
     )..repeat();
     _loadHistory();
+    if (widget.initialMessage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _send(overrideText: widget.initialMessage);
+      });
+    }
   }
 
   @override
@@ -555,48 +561,17 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        // ── Hero icon ──
-        Center(
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.auto_awesome_rounded,
-                color: AppColors.primary, size: 26),
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // ── Greeting + title ──
-        if (firstName.isNotEmpty) ...[
-          Text.rich(
-            TextSpan(children: [
-              const TextSpan(
-                text: '👋 ',
-                style: TextStyle(fontSize: 18),
-              ),
-              TextSpan(
-                text: 'أهلين $firstName',
-                style: TextStyle(
-                    fontFamily: 'Cairo',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: context.col.ink0),
-              ),
-            ]),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-        ],
+        // ── Greeting ──
         Text(
-          'كيف أقدر أساعدك؟',
+          firstName.isNotEmpty
+              ? '👋 أهلين $firstName، كيف أقدر أساعدك؟'
+              : 'كيف أقدر أساعدك؟',
           textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
               fontFamily: 'Cairo',
-              fontSize: firstName.isEmpty ? 20 : 18,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
               color: context.col.ink0),
         ),

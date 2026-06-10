@@ -19,6 +19,16 @@ const _kLastPaymentKey = 'baahy_last_payment';
 
 Color _accent(BuildContext context) => AppColors.adaptive(context);
 
+// Normalizes Libyan phone numbers to display format (0XXXXXXXXX)
+String _fmtPhone(String phone) {
+  final p = phone.trim();
+  if (p.isEmpty) return p;
+  if (p.startsWith('+')) return p;          // already international
+  if (p.startsWith('00')) return '+${p.substring(2)}'; // 00218...
+  if (p.startsWith('0')) return p;           // already 09x...
+  return '0$p';                              // raw 9x... → 09x...
+}
+
 Color _cardFill(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark ? Colors.transparent : context.col.surface;
 
@@ -40,6 +50,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _notesCtrl = TextEditingController();
+  final _walletAmountCtrl = TextEditingController();
   String _paymentMethod = 'cash_on_delivery';
   Map<String, dynamic>? _selectedAddress;
   bool _loading = false;
@@ -47,7 +58,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   double _walletBalance = 0;
   bool _useWallet = false;
   bool _walletLoading = false;
-  bool _paymentExpanded = false;
   bool _itemsExpanded = false;
 
   @override
@@ -117,6 +127,38 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
+  void _showPaymentSheet(List methods, double cartTotal) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.col.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _PaymentSheet(
+        initialUseWallet: _useWallet,
+        initialWalletAmount: _walletAmountCtrl.text,
+        initialPaymentMethod: _paymentMethod,
+        walletBalance: _walletBalance,
+        walletLoading: _walletLoading,
+        cartTotal: cartTotal,
+        codAllowed: _codAllowedForAddress,
+        methods: methods,
+        onTopUp: () {
+          Navigator.of(context).pop();
+          safePush(context, '/wallet').then((_) => _loadWallet());
+        },
+        onConfirm: (bool useWallet, String walletAmount, String paymentMethod) {
+          Navigator.of(context).pop();
+          setState(() {
+            _useWallet = useWallet;
+            _walletAmountCtrl.text = walletAmount;
+          });
+          if (paymentMethod != _paymentMethod) _setPaymentMethod(paymentMethod);
+        },
+      ),
+    );
+  }
+
   void _showAddressSheet() {
     showModalBottomSheet(
       context: context,
@@ -179,10 +221,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final cart = ref.read(cartProvider);
       final addr = _selectedAddress!;
       final walletActive = _useWallet && _walletBalance > 0;
-      final walletCoversAll = walletActive && _walletBalance >= cart.total;
-      final walletDeduct = walletActive
+      final maxUse = walletActive
           ? (_walletBalance < cart.total ? _walletBalance : cart.total)
           : 0.0;
+      final walletDeduct = walletActive
+          ? (double.tryParse(_walletAmountCtrl.text) ?? maxUse).clamp(0.0, maxUse)
+          : 0.0;
+      final walletCoversAll = walletActive && walletDeduct >= cart.total;
 
       final res = await ApiClient.instance.dio.post('/orders', data: {
         'items': cart.items.map((i) => {
@@ -223,6 +268,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void dispose() {
     _notesCtrl.dispose();
+    _walletAmountCtrl.dispose();
     super.dispose();
   }
 
@@ -274,10 +320,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         : allMethods.where((m) => m.id != 'cash_on_delivery').toList();
 
     final walletActive = _useWallet && _walletBalance > 0;
-    final walletCoversAll = walletActive && _walletBalance >= cart.total;
-    final walletDeduct = walletActive
+    final maxWalletUse = walletActive
         ? (_walletBalance < cart.total ? _walletBalance : cart.total)
         : 0.0;
+    final parsedWalletInput = double.tryParse(_walletAmountCtrl.text) ?? 0.0;
+    final walletDeduct = walletActive
+        ? parsedWalletInput.clamp(0.0, maxWalletUse)
+        : 0.0;
+    final walletCoversAll = walletActive && walletDeduct >= cart.total;
     final amountDue = walletActive ? (cart.total - walletDeduct).clamp(0.0, cart.total) : cart.total;
     final isAr = context.isAr;
 
@@ -362,10 +412,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                                   const SizedBox(height: 2),
                                   Text(
-                                    [context.s.translateCity(_selectedAddress!['city']?.toString() ?? ''),
-                                      _selectedAddress!['address']]
-                                        .where((v) => v != null && v.toString().isNotEmpty)
-                                        .join('، '),
+                                    [
+                                      context.s.translateCity(_selectedAddress!['city']?.toString() ?? ''),
+                                      _selectedAddress!['address'],
+                                      if ((_selectedAddress!['phone'] as String?)?.isNotEmpty == true)
+                                        _fmtPhone(_selectedAddress!['phone'].toString()),
+                                    ].where((v) => v.isNotEmpty).join('  ·  '),
                                     style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
                                   if (_selectedRate != null) ...[
                                     const SizedBox(height: 4),
@@ -381,180 +433,50 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ),
                     const SizedBox(height: 24),
 
-                    // ── Payment (collapsible) ─────────────────────────────
-                    _CollapsibleHeader(
-                      title: context.s.paymentMethod,
-                      subtitle: walletCoversAll
-                          ? context.s.walletTitle
-                          : (walletActive
-                              ? '${context.s.walletTitle} + ${_paymentMethodLabel(context, methods)}'
-                              : _paymentMethodLabel(context, methods)),
-                      expanded: _paymentExpanded,
-                      onTap: () => setState(() => _paymentExpanded = !_paymentExpanded),
-                    ),
-                    if (_paymentExpanded) ...[
-                      const SizedBox(height: 8),
-                      if (!_codAllowedForAddress) ...[
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: AppColors.warn.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: AppColors.warn.withValues(alpha: 0.4)),
-                          ),
-                          child: Row(children: [
-                            const Icon(Icons.info_outline_rounded, size: 15, color: AppColors.warn),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(context.s.codTripiliOnly,
-                              style: const TextStyle(fontSize: 12, color: AppColors.warn, height: 1.4))),
-                          ]),
+                    // ── Payment method ────────────────────────────────────
+                    _SectionLabel(context.s.paymentMethod),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () => _showPaymentSheet(methods, cart.total),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: _cardFill(context),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: context.col.border),
+                          boxShadow: isDark ? null : AppShadows.shadowCard,
                         ),
-                      ],
-                      // Wallet card
-                      GestureDetector(
-                        onTap: _walletBalance > 0
-                            ? () => setState(() => _useWallet = !_useWallet)
-                            : null,
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            color: _cardFill(context),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: walletActive ? _selBorder(context) : context.col.border,
-                              width: walletActive ? 1.5 : 1),
-                            boxShadow: isDark ? null : AppShadows.shadowCard,
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 1),
+                            child: Icon(Icons.payment_outlined, size: 18, color: accent),
                           ),
-                          child: Row(children: [
-                            _RadioDot(selected: walletActive),
-                            const SizedBox(width: 12),
-                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Row(children: [
-                                Text(context.s.walletTitle,
-                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: () async {
-                                    await safePush(context, '/wallet');
-                                    _loadWallet();
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.transparent,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: context.col.borderStrong),
-                                    ),
-                                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                      Icon(Icons.add, size: 10, color: context.col.ink2),
-                                      const SizedBox(width: 2),
-                                      Text(context.s.topUpShort,
-                                        style: TextStyle(fontFamily: 'Cairo', fontSize: 10,
-                                          fontWeight: FontWeight.w700, color: context.col.ink2)),
-                                    ]),
-                                  ),
-                                ),
-                              ]),
+                          const SizedBox(width: 10),
+                          Expanded(child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(
+                              walletCoversAll
+                                  ? context.s.walletTitle
+                                  : (walletActive
+                                      ? '${context.s.walletTitle} + ${_paymentMethodLabel(context, methods)}'
+                                      : _paymentMethodLabel(context, methods)),
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                            if (walletActive && walletDeduct > 0) ...[
                               const SizedBox(height: 2),
-                              _walletLoading
-                                  ? Text(context.s.loading,
-                                      style: TextStyle(fontSize: 11.5, color: context.col.ink3))
-                                  : Text(
-                                      _walletBalance > 0
-                                          ? context.s.walletBalanceLabel(fmtPrice(_walletBalance))
-                                          : context.s.walletEmpty,
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        color: _walletBalance > 0 ? AppColors.success : context.col.ink3)),
-                            ])),
-                            const SizedBox(width: 10),
-                            Container(
-                              width: 36, height: 36,
-                              decoration: BoxDecoration(
-                                color: _softFill(context),
-                                borderRadius: BorderRadius.circular(6),
-                                border: isDark ? Border.all(color: context.col.border) : null,
-                              ),
-                              child: Icon(Icons.account_balance_wallet_outlined, size: 18,
-                                color: walletActive ? accent : context.col.ink3),
-                            ),
-                          ]),
-                        ),
+                              Text(
+                                walletCoversAll
+                                    ? context.s.walletCoversAll(fmtPrice(walletDeduct))
+                                    : context.s.walletPartial(fmtPrice(walletDeduct), fmtPrice(amountDue)),
+                                style: TextStyle(fontSize: 12.5, color: accent)),
+                            ],
+                          ])),
+                          Icon(Icons.keyboard_arrow_down_rounded, size: 22, color: context.col.ink2),
+                        ]),
                       ),
-                      if (walletActive) ...[
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: walletCoversAll
-                                ? AppColors.success.withValues(alpha: isDark ? 0.15 : 0.10)
-                                : AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.10),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: walletCoversAll ? AppColors.success : accent, width: 1),
-                          ),
-                          child: Text(
-                            walletCoversAll
-                                ? context.s.walletCoversAll(fmtPrice(walletDeduct))
-                                : context.s.walletPartial(fmtPrice(walletDeduct), fmtPrice(amountDue)),
-                            style: TextStyle(
-                              fontSize: 12.5, fontWeight: FontWeight.w600,
-                              color: walletCoversAll ? AppColors.success : accent)),
-                        ),
-                      ],
-                      if (!walletCoversAll) ...[
-                        ...methods.map((m) => GestureDetector(
-                          onTap: () => _setPaymentMethod(m.id),
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: _cardFill(context),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: _paymentMethod == m.id ? _selBorder(context) : context.col.border,
-                                width: _paymentMethod == m.id ? 1.5 : 1),
-                              boxShadow: isDark ? null : AppShadows.shadowCard,
-                            ),
-                            child: Row(children: [
-                              _RadioDot(selected: _paymentMethod == m.id),
-                              const SizedBox(width: 12),
-                              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(isAr ? m.labelAr : (m.labelEn.isNotEmpty ? m.labelEn : m.labelAr),
-                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                                Text(
-                                  isAr
-                                      ? (m.descriptionAr.isNotEmpty ? m.descriptionAr
-                                          : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees))
-                                      : (m.descriptionEn.isNotEmpty ? m.descriptionEn
-                                          : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees)),
-                                  style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
-                              ])),
-                              const SizedBox(width: 10),
-                              Container(
-                                width: 36, height: 36,
-                                decoration: BoxDecoration(
-                                  color: _softFill(context),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: isDark ? Border.all(color: context.col.border) : null,
-                                ),
-                                child: Icon(
-                                  m.id == 'cash_on_delivery' ? Icons.payments_outlined
-                                      : m.id == 'card' ? Icons.credit_card_outlined
-                                      : Icons.receipt_long_outlined,
-                                  size: 18,
-                                  color: _paymentMethod == m.id ? accent : context.col.ink3),
-                              ),
-                            ]),
-                          ),
-                        )),
-                      ],
-                    ],
+                    ),
                     const SizedBox(height: 16),
 
-                    // ── Order items (collapsible) ─────────────────────────
+                                        // ── Order items (collapsible) ─────────────────────────
                     _CollapsibleHeader(
                       title: context.s.productsCountN(cart.items.length),
                       subtitle: '${fmtPrice(cart.subtotal)} ${context.s.lydUnit}',
@@ -671,6 +593,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     const SizedBox(height: 16),
 
+                    // ── Trust badges ───────────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: _cardFill(context),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: context.col.border),
+                        boxShadow: isDark ? null : AppShadows.shadowCard,
+                      ),
+                      child: const _TrustRow(),
+                    ),
+                    const SizedBox(height: 16),
+
                     // ── Notes ─────────────────────────────────────────────
                     _SectionLabel(context.s.notesOptional),
                     const SizedBox(height: 8),
@@ -691,19 +626,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           contentPadding: const EdgeInsets.all(14),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // ── Trust badges in a card ─────────────────────────────
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: _cardFill(context),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: context.col.border),
-                        boxShadow: isDark ? null : AppShadows.shadowCard,
-                      ),
-                      child: const _TrustRow(),
                     ),
                   ],
                 ),
@@ -737,6 +659,320 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+// ── Payment picker bottom sheet ───────────────────────────────────────────────
+
+class _PaymentSheet extends StatefulWidget {
+  final bool initialUseWallet;
+  final String initialWalletAmount;
+  final String initialPaymentMethod;
+  final double walletBalance;
+  final bool walletLoading;
+  final double cartTotal;
+  final bool codAllowed;
+  final List methods;
+  final VoidCallback onTopUp;
+  final void Function(bool useWallet, String walletAmount, String paymentMethod) onConfirm;
+
+  const _PaymentSheet({
+    required this.initialUseWallet,
+    required this.initialWalletAmount,
+    required this.initialPaymentMethod,
+    required this.walletBalance,
+    required this.walletLoading,
+    required this.cartTotal,
+    required this.codAllowed,
+    required this.methods,
+    required this.onTopUp,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_PaymentSheet> createState() => _PaymentSheetState();
+}
+
+class _PaymentSheetState extends State<_PaymentSheet> {
+  late bool _useWallet;
+  late String _paymentMethod;
+  late final TextEditingController _walletAmountCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _useWallet = widget.initialUseWallet;
+    _paymentMethod = widget.initialPaymentMethod;
+    _walletAmountCtrl = TextEditingController(text: widget.initialWalletAmount);
+  }
+
+  @override
+  void dispose() {
+    _walletAmountCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onAmountChanged(String val) {
+    final parsed = double.tryParse(val) ?? 0.0;
+    final maxUse = widget.walletBalance < widget.cartTotal
+        ? widget.walletBalance : widget.cartTotal;
+    if (parsed > maxUse && maxUse > 0) {
+      final clamped = maxUse.toStringAsFixed(0);
+      _walletAmountCtrl.value = TextEditingValue(
+        text: clamped,
+        selection: TextSelection.collapsed(offset: clamped.length),
+      );
+    }
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = _accent(context);
+    final walletActive = _useWallet && widget.walletBalance > 0;
+    final maxWalletUse = walletActive
+        ? (widget.walletBalance < widget.cartTotal ? widget.walletBalance : widget.cartTotal)
+        : 0.0;
+    final parsedAmount = double.tryParse(_walletAmountCtrl.text) ?? 0.0;
+    final walletDeduct = walletActive ? parsedAmount.clamp(0.0, maxWalletUse) : 0.0;
+    final walletCoversAll = walletDeduct >= widget.cartTotal;
+    final amountDue = (widget.cartTotal - walletDeduct).clamp(0.0, widget.cartTotal);
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(16, 8, 16,
+          MediaQuery.of(context).viewInsets.bottom + 16),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: context.col.border,
+              borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(height: 16),
+          Text(context.s.paymentMethod,
+            style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 16),
+
+          if (!widget.codAllowed) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.warn.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppColors.warn.withValues(alpha: 0.4)),
+              ),
+              child: Row(children: [
+                const Icon(Icons.info_outline_rounded, size: 15, color: AppColors.warn),
+                const SizedBox(width: 8),
+                Expanded(child: Text(context.s.codTripiliOnly,
+                  style: const TextStyle(fontSize: 12, color: AppColors.warn, height: 1.4))),
+              ]),
+            ),
+          ],
+
+          // Wallet card
+          GestureDetector(
+            onTap: widget.walletBalance > 0
+                ? () {
+                    final enabling = !_useWallet;
+                    if (enabling) {
+                      final maxUse = widget.walletBalance < widget.cartTotal
+                          ? widget.walletBalance : widget.cartTotal;
+                      _walletAmountCtrl.text = maxUse.toStringAsFixed(0);
+                    }
+                    setState(() => _useWallet = enabling);
+                  }
+                : null,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: _cardFill(context),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: walletActive ? _selBorder(context) : context.col.border,
+                  width: walletActive ? 1.5 : 1),
+                boxShadow: isDark ? null : AppShadows.shadowCard,
+              ),
+              child: Row(children: [
+                _RadioDot(selected: walletActive),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Text(context.s.walletTitle,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: widget.onTopUp,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: context.col.borderStrong),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.add, size: 10, color: context.col.ink2),
+                          const SizedBox(width: 2),
+                          Text(context.s.topUpShort,
+                            style: TextStyle(fontFamily: 'Cairo', fontSize: 10,
+                              fontWeight: FontWeight.w700, color: context.col.ink2)),
+                        ]),
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 2),
+                  widget.walletLoading
+                      ? Text(context.s.loading,
+                          style: TextStyle(fontSize: 11.5, color: context.col.ink3))
+                      : Text(
+                          widget.walletBalance > 0
+                              ? context.s.walletBalanceLabel(fmtPrice(widget.walletBalance))
+                              : context.s.walletEmpty,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: widget.walletBalance > 0 ? AppColors.success : context.col.ink3)),
+                ])),
+                const SizedBox(width: 10),
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: _softFill(context),
+                    borderRadius: BorderRadius.circular(6),
+                    border: isDark ? Border.all(color: context.col.border) : null,
+                  ),
+                  child: Icon(Icons.account_balance_wallet_outlined, size: 18,
+                    color: walletActive ? accent : context.col.ink3),
+                ),
+              ]),
+            ),
+          ),
+
+          // Combined amount input + live summary (no outline)
+          if (walletActive) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.transparent : Colors.white,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Text('استخدم',
+                    style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                      color: context.col.ink2, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _walletAmountCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      textDirection: TextDirection.ltr,
+                      onChanged: _onAmountChanged,
+                      style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                        fontSize: 16, fontWeight: FontWeight.w700),
+                      decoration: InputDecoration(
+                        hintText: '0',
+                        hintStyle: TextStyle(color: context.col.ink4),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 6),
+                      ),
+                    ),
+                  ),
+                  Text('/ ${fmtPrice(maxWalletUse)} د.ل',
+                    style: TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 11.5, color: context.col.ink3, fontWeight: FontWeight.w500)),
+                ]),
+                if (walletDeduct > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    walletCoversAll
+                        ? context.s.walletCoversAll(fmtPrice(walletDeduct))
+                        : context.s.walletPartial(fmtPrice(walletDeduct), fmtPrice(amountDue)),
+                    style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w600,
+                      color: walletCoversAll ? AppColors.success : accent)),
+                ] else ...[
+                  const SizedBox(height: 4),
+                  Text('أدخل مبلغاً للخصم من محفظتك',
+                    style: TextStyle(fontSize: 11.5, color: context.col.ink4)),
+                ],
+              ]),
+            ),
+          ],
+
+          if (!walletCoversAll) ...[
+            ...widget.methods.map((m) => GestureDetector(
+              onTap: () => setState(() => _paymentMethod = m.id),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: _cardFill(context),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: _paymentMethod == m.id ? _selBorder(context) : context.col.border,
+                    width: _paymentMethod == m.id ? 1.5 : 1),
+                  boxShadow: isDark ? null : AppShadows.shadowCard,
+                ),
+                child: Row(children: [
+                  _RadioDot(selected: _paymentMethod == m.id),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(context.isAr ? m.labelAr : (m.labelEn.isNotEmpty ? m.labelEn : m.labelAr),
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                    Text(
+                      context.isAr
+                          ? (m.descriptionAr.isNotEmpty ? m.descriptionAr
+                              : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees))
+                          : (m.descriptionEn.isNotEmpty ? m.descriptionEn
+                              : (m.fee > 0 ? context.s.serviceFeeN(fmtPrice(m.fee)) : context.s.noFees)),
+                      style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
+                  ])),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: _softFill(context),
+                      borderRadius: BorderRadius.circular(6),
+                      border: isDark ? Border.all(color: context.col.border) : null,
+                    ),
+                    child: Icon(
+                      m.id == 'cash_on_delivery' ? Icons.payments_outlined
+                          : m.id == 'card' ? Icons.credit_card_outlined
+                          : Icons.receipt_long_outlined,
+                      size: 18,
+                      color: _paymentMethod == m.id ? accent : context.col.ink3),
+                  ),
+                ]),
+              ),
+            )),
+          ],
+
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: () => widget.onConfirm(_useWallet, _walletAmountCtrl.text, _paymentMethod),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              ),
+              child: const Text('تأكيد',
+                style: TextStyle(fontFamily: 'Cairo',
+                  fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
+            ),
+          ),
+        ]),
       ),
     );
   }
@@ -792,9 +1028,12 @@ class _AddressSheet extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                     const SizedBox(height: 2),
                     Text(
-                      [context.s.translateCity(addr['city']?.toString() ?? ''), addr['address']]
-                        .where((v) => v != null && v.toString().isNotEmpty)
-                        .join('، '),
+                      [
+                        context.s.translateCity(addr['city']?.toString() ?? ''),
+                        addr['address']?.toString() ?? '',
+                        if ((addr['phone'] as String?)?.isNotEmpty == true)
+                          _fmtPhone(addr['phone'].toString()),
+                      ].where((v) => v.isNotEmpty).join('  ·  '),
                       style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
                   ])),
                 ]),
@@ -826,13 +1065,14 @@ class _TrustRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    const tiffany = AppColors.teal;
     final items = [
-      (Icons.verified_outlined,        context.s.trustAuthentic,  const Color(0xFFD4A82E)),
-      (Icons.local_shipping_outlined,  context.s.trustDelivery,   AppColors.primary),
-      (Icons.security_rounded,         context.s.trustPayment,    AppColors.success),
-      (Icons.replay_rounded,           context.s.trustReturn,     AppColors.warn),
+      (Icons.verified_outlined,        context.s.trustAuthentic,  tiffany),
+      (Icons.local_shipping_outlined,  context.s.trustDelivery,   tiffany),
+      (Icons.security_rounded,         context.s.trustPayment,    tiffany),
+      (Icons.replay_rounded,           context.s.trustReturn,     tiffany),
     ];
-    final dimColor = _accent(context);
+    final dimColor = tiffany;
     return Row(
       children: items.map((item) => Expanded(
         child: Column(children: [

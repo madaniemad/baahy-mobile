@@ -112,6 +112,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/orders',     builder: (_, __) => const OrdersScreen()),
       GoRoute(path: '/orders/:id', builder: (_, state) =>
           OrderTrackingScreen(id: int.parse(state.pathParameters['id']!))),
+      // Pushable assistant — same screen as /assistant tab but with back button
+      // Pass a String via extra to pre-fill and auto-send an initial message
+      GoRoute(path: '/chat', builder: (_, state) =>
+          AssistantScreen(initialMessage: state.extra as String?)),
       GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
       GoRoute(path: '/addresses',  builder: (_, __) => const AddressesScreen()),
       GoRoute(path: '/addresses/edit', builder: (_, state) =>

@@ -179,7 +179,7 @@ class CartNotifier extends StateNotifier<CartState> {
                   'product_id': i.productId,
                   if (i.variationId != null) 'variation_id': i.variationId,
                   'quantity': i.quantity,
-                  'price': i.unitPrice, // lets backend detect price changes
+                  'price': i.unitPrice,
                 })
             .toList(),
       });
@@ -190,8 +190,17 @@ class CartNotifier extends StateNotifier<CartState> {
         }
       }
       return 'بعض المنتجات غير متاحة';
-    } catch (_) {
-      return 'تعذر التحقق من السلة';
+    } catch (e) {
+      try {
+        final resp = (e as dynamic).response;
+        final status = resp?.statusCode as int?;
+        // Skip validation for server errors or unimplemented endpoint
+        if (status == null || status >= 500 || status == 404 || status == 405) return null;
+        // Surface meaningful 4xx messages (e.g. out of stock from backend)
+        final data = resp?.data;
+        if (data is Map && data['message'] != null) return data['message'].toString();
+      } catch (_) {}
+      return null;
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart' show Share;
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -16,8 +17,9 @@ class QrProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
-  Future<void> _share(String username) async {
-    final text = 'أضفني على تطبيق باهي 👋\nhttps://baahy-web.vercel.app/u/$username';
+  Future<void> _share(String username, int reward) async {
+    final link = 'https://baahy-web.vercel.app/u/$username?reward=$reward';
+    final text = 'أضفني على تطبيق باهي 👋\nستحصل على $reward د.ل عند إتمام أول طلب 🎁\n$link';
     try {
       await Share.share(text);
     } catch (_) {
@@ -34,6 +36,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final username = user?.username ?? '';
+    final reward = ref.watch(appConfigProvider).referralGiverAmount.toInt();
 
     return Scaffold(
       backgroundColor: context.col.bg,
@@ -82,7 +85,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
                     boxShadow: AppShadows.shadowLifted,
                   ),
                   child: QrImageView(
-                    data: 'https://baahy-web.vercel.app/u/$username',
+                    data: 'https://baahy-web.vercel.app/u/$username?reward=$reward',
                     version: QrVersions.auto,
                     size: 220,
                   ),
@@ -101,7 +104,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
                   icon: const Icon(Icons.share_outlined),
                   label: Text(context.tr('مشاركة', 'Share'),
                     style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
-                  onPressed: () => _share(username),
+                  onPressed: () => _share(username, reward),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,

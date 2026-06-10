@@ -1898,15 +1898,16 @@ class _AddedToCartSheet extends StatelessWidget {
           const SizedBox(height: 20),
           Row(children: [
             Expanded(
-              child: OutlinedButton(
+              child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                style: OutlinedButton.styleFrom(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1C1C1E),
                   padding: const EdgeInsets.symmetric(vertical: 13),
-                  side: BorderSide(color: context.col.border),
+                  elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 ),
                 child: Text(context.s.continueShopping,
-                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, color: context.col.ink0)),
+                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, color: Colors.white)),
               ),
             ),
             const SizedBox(width: 10),
