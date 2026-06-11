@@ -15,10 +15,7 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 
-const _kActiveStatuses = [
-  'pending_confirmation', 'pending', 'confirmed',
-  'processing', 'fulfilled', 'shipped', 'out_for_delivery',
-];
+const _kActiveStatuses = ['out_for_delivery'];
 
 
 final _ordersCountsProvider = FutureProvider<({int active, int total})>((ref) async {

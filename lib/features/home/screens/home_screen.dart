@@ -401,7 +401,7 @@ final _activeOrderProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/orders',
       queryParameters: {
-        'status': 'pending_confirmation,pending,confirmed,processing,fulfilled,shipped,out_for_delivery',
+        'status': 'out_for_delivery',
         'per_page': 1,
       });
     final d = res.data['data'];
@@ -421,8 +421,8 @@ String _orderStripLabel(BuildContext context, String status) {
     case 'processing':
     case 'fulfilled':            return context.s.isAr ? 'قيد التجهيز'    : 'Processing';
     case 'shipped':
-    case 'out_for_delivery':     return context.s.isAr ? 'في الطريق'      : 'On the Way';
-    default:                     return context.s.isAr ? 'طلب نشط'        : 'Active Order';
+    case 'out_for_delivery':     return context.s.isAr ? 'طلبك في الطريق' : 'On the Way';
+    default:                     return context.s.isAr ? 'طلبك في الطريق' : 'On the Way';
   }
 }
 
