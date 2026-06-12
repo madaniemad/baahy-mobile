@@ -18,6 +18,8 @@ class VendorStoreScreen extends ConsumerStatefulWidget {
 
 class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
   Vendor? _vendor;
+  List<Map<String, dynamic>> _categories = [];
+  int? _selectedCategoryId;
   List<Product> _products = [];
   bool _loadingVendor = true;
   bool _loading = true;
@@ -30,6 +32,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
   void initState() {
     super.initState();
     _loadVendor();
+    _loadCategories();
     _loadProducts(1);
   }
 
@@ -42,7 +45,15 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
     }
   }
 
-  Future<void> _loadProducts(int page) async {
+  Future<void> _loadCategories() async {
+    try {
+      final res = await ApiClient.instance.dio.get('/vendors/${widget.vendorId}/categories');
+      final list = (res.data['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      if (mounted) setState(() => _categories = list);
+    } catch (_) {}
+  }
+
+  Future<void> _loadProducts(int page, {bool resetFilter = false}) async {
     if (page == 1) {
       if (mounted) setState(() => _loading = true);
     } else {
@@ -55,6 +66,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
         'per_page': _perPage,
         'has_image': 1,
         'page': page,
+        if (_selectedCategoryId != null) 'category_id': _selectedCategoryId,
       });
       final list = (res.data['data']['data'] as List?)
           ?.map((p) => Product.fromJson(p)).toList() ?? [];
@@ -74,6 +86,12 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
     }
   }
 
+  void _selectCategory(int? catId) {
+    if (_selectedCategoryId == catId) return;
+    setState(() => _selectedCategoryId = catId);
+    _loadProducts(1);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isAr = context.isAr;
@@ -85,6 +103,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
       backgroundColor: context.col.bg,
       body: CustomScrollView(
         slivers: [
+          // ── AppBar ──────────────────────────────────────────────
           SliverAppBar(
             pinned: true,
             backgroundColor: AppColors.primary,
@@ -94,59 +113,67 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
             ),
             title: _loadingVendor
                 ? const SizedBox.shrink()
-                : Text(
-                    vendorName.isNotEmpty ? vendorName : context.s.storeLabel,
+                : Text(vendorName.isNotEmpty ? vendorName : context.s.storeLabel,
                     style: const TextStyle(color: Colors.white, fontFamily: 'Cairo',
-                      fontSize: 17, fontWeight: FontWeight.w700),
-                  ),
+                      fontSize: 17, fontWeight: FontWeight.w700)),
           ),
 
-          // Vendor header
-          if (_vendor != null)
+          // ── Banner ──────────────────────────────────────────────
+          if (_vendor?.banner != null)
             SliverToBoxAdapter(
-              child: Container(
-                color: context.col.surface,
-                padding: const EdgeInsets.all(16),
-                child: Row(children: [
-                  Container(
-                    width: 64, height: 64,
-                    decoration: BoxDecoration(
-                      color: context.col.surfaceSoft,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: context.col.border),
-                    ),
-                    child: _vendor!.logo != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: CachedNetworkImage(imageUrl: _vendor!.logo!, fit: BoxFit.cover))
-                        : Icon(Icons.store_outlined, size: 30, color: context.col.ink2),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _vendor!.storeNameAr.isNotEmpty ? _vendor!.storeNameAr : _vendor!.storeName,
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                      if (_vendor!.city != null && _vendor!.city!.isNotEmpty)
-                        Text(_vendor!.city!,
-                          style: TextStyle(fontSize: 13, color: context.col.ink3)),
-                    ],
-                  )),
-                ]),
+              child: AspectRatio(
+                aspectRatio: 3.0,
+                child: CachedNetworkImage(
+                  imageUrl: _vendor!.banner!,
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                ),
               ),
             ),
 
-          // Section header
+          // ── Category filter carousel ─────────────────────────────
+          if (_categories.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Container(
+                color: context.col.surface,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      _CatChip(
+                        label: isAr ? 'الكل' : 'All',
+                        selected: _selectedCategoryId == null,
+                        onTap: () => _selectCategory(null),
+                      ),
+                      ..._categories.map((cat) {
+                        final label = isAr
+                            ? (cat['name_ar']?.toString().isNotEmpty == true
+                                ? cat['name_ar'] : cat['name'])
+                            : cat['name'];
+                        return _CatChip(
+                          label: label ?? '',
+                          selected: _selectedCategoryId == cat['id'],
+                          onTap: () => _selectCategory(cat['id'] as int),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // ── Section header ───────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
               child: Text(context.s.storeProducts,
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             ),
           ),
 
-          // Products grid
+          // ── Products grid ────────────────────────────────────────
           if (_loading)
             const SliverToBoxAdapter(
               child: SizedBox(height: 200,
@@ -155,7 +182,8 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
             SliverToBoxAdapter(
               child: Center(child: Padding(
                 padding: const EdgeInsets.all(32),
-                child: Text(context.s.noProductsNow, style: TextStyle(color: context.col.ink3)))))
+                child: Text(context.s.noProductsNow,
+                  style: TextStyle(color: context.col.ink3)))))
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
@@ -173,7 +201,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
               ),
             ),
 
-          // Load more button
+          // ── Load more ────────────────────────────────────────────
           if (_hasMore || _loadingMore)
             SliverToBoxAdapter(
               child: Padding(
@@ -201,4 +229,33 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
       ),
     );
   }
+}
+
+class _CatChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _CatChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      margin: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: selected ? AppColors.primary : context.col.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: selected ? AppColors.primary : context.col.border,
+          width: selected ? 0 : 1),
+      ),
+      child: Text(label,
+        style: TextStyle(
+          fontFamily: 'Cairo',
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: selected ? Colors.white : context.col.ink1)),
+    ),
+  );
 }

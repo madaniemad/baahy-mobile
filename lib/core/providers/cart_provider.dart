@@ -85,6 +85,10 @@ class CartNotifier extends StateNotifier<CartState> {
 
   void updateCityRate(ShippingRate? rate) {
     state = state.copyWith(cityRate: rate, clearCityRate: rate == null);
+    // Always sync collection fee from city rate so switching cities resets it
+    if (rate != null) {
+      state = state.copyWith(collectionFee: rate.collectionFee);
+    }
   }
 
   Future<void> _load() async {

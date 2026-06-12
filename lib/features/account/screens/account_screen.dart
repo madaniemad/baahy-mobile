@@ -244,6 +244,56 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
 
           const SizedBox(height: 12),
 
+          // ── AI assistant card ─────────────────────────────────────────────
+          if (config.aiEnabled)
+            GestureDetector(
+              onTap: () => safePush(context, '/chat'),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1BBFBC), Color(0xFF32DDE5), Color(0xFF6AECF0)],
+                    stops: [0.0, 0.55, 1.0],
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [BoxShadow(
+                    color: const Color(0xFF32DDE5).withValues(alpha: 0.30),
+                    blurRadius: 12, offset: const Offset(0, 4))],
+                ),
+                child: Row(children: [
+                  Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.28),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.auto_awesome_rounded,
+                      color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('baahyAi',
+                        style: TextStyle(fontFamily: 'Cairo',
+                          fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
+                      Text(context.tr('تحتاج مساعدة اضافية؟ اسال مساعدك الذكي',
+                          'Need more help? Ask your AI assistant'),
+                        style: const TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                          color: Color(0xFF004D54))),
+                    ],
+                  )),
+                  Icon(context.isAr ? Icons.arrow_back_ios_rounded : Icons.arrow_forward_ios_rounded,
+                    size: 14, color: Colors.white.withValues(alpha: 0.80)),
+                ]),
+              ),
+            ),
+
+          const SizedBox(height: 12),
+
           // ── Menu group 1 ─────────────────────────────────────────────────
           _MenuGroup([
             _MenuRow(

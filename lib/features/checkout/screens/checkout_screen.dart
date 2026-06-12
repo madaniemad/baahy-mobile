@@ -315,9 +315,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final allMethods = (config.paymentMethods as List)
         .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet')
         .toList();
-    final methods = _codAllowedForAddress
-        ? allMethods
-        : allMethods.where((m) => m.id != 'cash_on_delivery').toList();
+    final codValueExceeded = cart.total > 5000;
+    final codItemsExceeded = cart.items.length > 20;
+    final codBlocked = !_codAllowedForAddress || codValueExceeded || codItemsExceeded;
+    final methods = codBlocked
+        ? allMethods.where((m) => m.id != 'cash_on_delivery').toList()
+        : allMethods;
 
     final walletActive = _useWallet && _walletBalance > 0;
     final maxWalletUse = walletActive
@@ -474,9 +477,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ]),
                       ),
                     ),
+                    if (codValueExceeded || codItemsExceeded) ...[
+                      const SizedBox(height: 6),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline, size: 13, color: AppColors.danger),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                codValueExceeded
+                                    ? 'الدفع عند الاستلام غير متاح — المجموع يتجاوز 5,000 د.ل'
+                                    : 'الدفع عند الاستلام غير متاح — الطلب يتجاوز 20 منتج',
+                                style: const TextStyle(fontSize: 11.5, color: AppColors.danger),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
 
-                                        // ── Order items (collapsible) ─────────────────────────
+                    // ── Order items (collapsible) ─────────────────────────
                     _CollapsibleHeader(
                       title: context.s.productsCountN(cart.items.length),
                       subtitle: '${fmtPrice(cart.subtotal)} ${context.s.lydUnit}',

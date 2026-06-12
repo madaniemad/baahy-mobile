@@ -4,19 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/address_provider.dart';
 import '../../../core/providers/app_pages_provider.dart';
+import '../../../core/providers/shipping_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
-
-// Fallback cities shown before backend data loads
-const _fallbackCities = [
-  CityEntry(ar: 'طرابلس', en: 'Tripoli'),
-  CityEntry(ar: 'بنغازي', en: 'Benghazi'),
-  CityEntry(ar: 'مصراتة', en: 'Misrata'),
-  CityEntry(ar: 'الزاوية', en: 'Zawiya'),
-  CityEntry(ar: 'سبها', en: 'Sabha'),
-  CityEntry(ar: 'الخمس', en: 'Al Khums'),
-  CityEntry(ar: 'زوارة', en: 'Zuwara'),
-];
 
 // ── Colors ──────────────────────────────────────────────────────────────────────
 const _navy     = Color(0xFF0E3C46);
@@ -83,8 +73,10 @@ class _CityScreenState extends ConsumerState<CityScreen>
   @override
   Widget build(BuildContext context) {
     final isAr      = ref.watch(localeProvider).languageCode == 'ar';
-    final pages     = ref.watch(appPagesProvider);
-    final allCities = pages.cities.isNotEmpty ? pages.cities : _fallbackCities;
+    final ratesAsync = ref.watch(shippingRatesProvider);
+    final loading   = ratesAsync.isLoading;
+    final rates     = ratesAsync.valueOrNull ?? const [];
+    final allCities = rates.map((r) => CityEntry(ar: r.cityAr, en: r.city)).toList();
     final filtered  = _filterCities(allCities);
 
     return Scaffold(
@@ -208,23 +200,29 @@ class _CityScreenState extends ConsumerState<CityScreen>
                               borderRadius: BorderRadius.circular(24),
                             ),
                             padding: const EdgeInsets.all(8),
-                            child: Column(children: [
-                              ...filtered.map((city) => _CityRow(
-                                cityAr: city.ar,
-                                cityEn: city.en,
-                                selected: _selected == city.ar,
-                                isAr: isAr,
-                                teal: _teal,
-                                onTap: () => setState(() => _selected = city.ar),
-                              )),
-                              if (filtered.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  child: Text(isAr ? 'لا توجد نتائج' : 'No results',
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(color: _navy, fontWeight: FontWeight.w700)),
-                                ),
-                            ]),
+                            child: loading
+                                ? const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 32),
+                                    child: Center(child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2.5)),
+                                  )
+                                : Column(children: [
+                                    ...filtered.map((city) => _CityRow(
+                                      cityAr: city.ar,
+                                      cityEn: city.en,
+                                      selected: _selected == city.ar,
+                                      isAr: isAr,
+                                      teal: _teal,
+                                      onTap: () => setState(() => _selected = city.ar),
+                                    )),
+                                    if (filtered.isEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                        child: Text(isAr ? 'لا توجد نتائج' : 'No results',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(color: _navy, fontWeight: FontWeight.w700)),
+                                      ),
+                                  ]),
                           ),
                         ],
                       ),

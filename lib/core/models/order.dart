@@ -33,6 +33,8 @@ class Order {
   final List<OrderStatusEntry> statusHistory;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final bool returnEligible;
+  final DateTime? returnDeadline;
 
   const Order({
     required this.id,
@@ -51,6 +53,8 @@ class Order {
     this.statusHistory = const [],
     required this.createdAt,
     this.updatedAt,
+    this.returnEligible = false,
+    this.returnDeadline,
   });
 
   List<OrderItem> get allItems =>
@@ -93,9 +97,9 @@ class Order {
     statusHistory: (j['status_history'] as List?)
         ?.map((e) => OrderStatusEntry.fromJson(e)).toList() ?? [],
     createdAt: DateTime.tryParse(j['created_at'] ?? '') ?? DateTime.now(),
-    updatedAt: j['updated_at'] != null
-        ? DateTime.tryParse(j['updated_at'])
-        : null,
+    updatedAt: j['updated_at'] != null ? DateTime.tryParse(j['updated_at']) : null,
+    returnEligible: j['return_eligible'] == true,
+    returnDeadline: j['return_deadline'] != null ? DateTime.tryParse(j['return_deadline']) : null,
   );
 }
 

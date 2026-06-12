@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/providers/address_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -63,6 +64,7 @@ class AddressesScreen extends ConsumerWidget {
             onPressed: () async {
               await safePush(context, '/addresses/edit');
               ref.read(_addressesProvider.notifier).load();
+              ref.read(cityProvider.notifier).refresh();
             },
             icon: Icon(Icons.add_rounded, size: 22, color: context.col.ink0)),
         ],
@@ -95,9 +97,12 @@ class AddressesScreen extends ConsumerWidget {
               onEdit: () async {
                 await safePush(context, '/addresses/edit', extra: addr);
                 ref.read(_addressesProvider.notifier).load();
+                ref.read(cityProvider.notifier).refresh();
               },
-              onSetDefault: addr['is_default'] == true ? null : () =>
-                ref.read(_addressesProvider.notifier).setDefault(addr['id'] as int),
+              onSetDefault: addr['is_default'] == true ? null : () async {
+                await ref.read(_addressesProvider.notifier).setDefault(addr['id'] as int);
+                ref.read(cityProvider.notifier).refresh();
+              },
               onDelete: addr['is_default'] == true ? null : () async {
                 final ok = await showDialog<bool>(
                   context: context,
@@ -115,7 +120,8 @@ class AddressesScreen extends ConsumerWidget {
                   ),
                 );
                 if (ok == true) {
-                  ref.read(_addressesProvider.notifier).delete(addr['id'] as int);
+                  await ref.read(_addressesProvider.notifier).delete(addr['id'] as int);
+                  ref.read(cityProvider.notifier).refresh();
                 }
               },
             )),
@@ -125,6 +131,7 @@ class AddressesScreen extends ConsumerWidget {
               onTap: () async {
                 await safePush(context, '/addresses/edit');
                 ref.read(_addressesProvider.notifier).load();
+                ref.read(cityProvider.notifier).refresh();
               },
               child: Container(
                 margin: const EdgeInsets.only(bottom: 20),

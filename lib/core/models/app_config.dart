@@ -41,8 +41,6 @@ class AppConfig {
   final int returnDays;
   final int deliveryCitiesCount;
   final List<PaymentMethod> paymentMethods;
-  final String deliveryPromiseAr;
-  final String deliveryPromiseEn;
   final List<String> trendingSearches;
   final double minWalletTopup;
   final int referralGiverAmount;
@@ -77,8 +75,6 @@ class AppConfig {
     this.returnDays = 7,
     this.deliveryCitiesCount = 12,
     required this.paymentMethods,
-    required this.deliveryPromiseAr,
-    this.deliveryPromiseEn = 'Most orders arrive within 1-2 days',
     required this.trendingSearches,
     required this.minWalletTopup,
     required this.referralGiverAmount,
@@ -125,7 +121,6 @@ class AppConfig {
         descriptionEn: 'Instant · No fees',
       ),
     ],
-    deliveryPromiseAr: 'معظم الطلبات تصل خلال 1-2 يوم',
     trendingSearches: ['عطور وبخور', 'سماعات لاسلكية', 'عباءات', 'كاميرات', 'ملابس رياضية'],
     minWalletTopup: 5,
     referralGiverAmount: 10,
@@ -155,7 +150,6 @@ class AppConfig {
         .toList();
     final referral  = j['referral']  as Map<String, dynamic>?;
     final rewards   = j['rewards']   as Map<String, dynamic>?;
-    final delivery  = j['delivery_promise'] as Map<String, dynamic>?;
     final tierBen   = rewards?['tier_benefits'] as Map<String, dynamic>?;
     final milRaw    = rewards?['milestones'] as List?;
 
@@ -192,8 +186,6 @@ class AppConfig {
       returnDays: platRd,
       deliveryCitiesCount: (j['delivery_cities_count'] as num?)?.toInt() ?? defaults.deliveryCitiesCount,
       paymentMethods: (methods?.isNotEmpty == true) ? methods! : defaults.paymentMethods,
-      deliveryPromiseAr: delivery?['text_ar'] as String? ?? defaults.deliveryPromiseAr,
-      deliveryPromiseEn: delivery?['text_en'] as String? ?? defaults.deliveryPromiseEn,
       trendingSearches: (j['trending_searches'] as List?)?.cast<String>() ?? defaults.trendingSearches,
       minWalletTopup: _d(j['min_wallet_topup'] ?? defaults.minWalletTopup),
       referralGiverAmount: (referral?['giver_discount'] as num?)?.toInt() ?? defaults.referralGiverAmount,

@@ -136,7 +136,7 @@ class _OrderBody extends StatelessWidget {
             Text(context.s.orderStatus,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
-            _Timeline(status: order.status, history: order.statusHistory),
+            _Timeline(status: order.status, history: order.statusHistory, orderCreatedAt: order.createdAt),
           ]),
         ),
 
@@ -194,20 +194,53 @@ class _OrderBody extends StatelessWidget {
         // Actions
         if (order.status == 'delivered') ...[
           const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => safePush(context, '/orders/${order.id}/return'),
-              icon: const Icon(Icons.assignment_return_outlined, size: 16),
-              label: Text(context.s.returnItems,
-                style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                side: BorderSide(color: context.col.border),
+          if (order.returnEligible) ...[
+            if (order.returnDeadline != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(children: [
+                  Icon(Icons.info_outline_rounded, size: 14, color: context.col.ink3),
+                  const SizedBox(width: 6),
+                  Text(
+                    context.isAr
+                      ? 'الإرجاع متاح حتى ${order.returnDeadline!.day}/${order.returnDeadline!.month}/${order.returnDeadline!.year}'
+                      : 'Returns accepted until ${order.returnDeadline!.day}/${order.returnDeadline!.month}/${order.returnDeadline!.year}',
+                    style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: context.col.ink3)),
+                ]),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => safePush(context, '/orders/${order.id}/return',
+                  extra: order.returnDeadline),
+                icon: const Icon(Icons.assignment_return_outlined, size: 16),
+                label: Text(context.s.returnItems,
+                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  side: BorderSide(color: context.col.border),
+                ),
               ),
             ),
-          ),
+          ] else ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+              decoration: BoxDecoration(
+                color: context.col.surfaceSoft,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: context.col.border),
+              ),
+              child: Row(children: [
+                Icon(Icons.block_rounded, size: 16, color: context.col.ink3),
+                const SizedBox(width: 8),
+                Text(
+                  context.isAr ? 'انتهت مدة الإرجاع' : 'Return window has closed',
+                  style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink3)),
+              ]),
+            ),
+          ],
         ],
         const SizedBox(height: 8),
         SizedBox(
@@ -319,7 +352,8 @@ class _HeroInfo {
 class _Timeline extends StatelessWidget {
   final String status;
   final List<OrderStatusEntry> history;
-  const _Timeline({required this.status, this.history = const []});
+  final DateTime orderCreatedAt;
+  const _Timeline({required this.status, this.history = const [], required this.orderCreatedAt});
 
   static const _extraMap = {
     'pending_confirmation': 0,
@@ -330,6 +364,15 @@ class _Timeline extends StatelessWidget {
     'refunded': 4,
   };
 
+  // Each step maps to one or more possible to_status values in history
+  static const _stepAliases = {
+    'pending':    ['pending', 'pending_confirmation'],
+    'confirmed':  ['confirmed'],
+    'processing': ['processing', 'fulfilled'],
+    'shipped':    ['shipped', 'out_for_delivery'],
+    'delivered':  ['delivered'],
+  };
+
   int _currentIdx(List<(String, String)> steps) {
     if (_extraMap.containsKey(status)) return _extraMap[status]!;
     for (int i = 0; i < steps.length; i++) {
@@ -338,10 +381,11 @@ class _Timeline extends StatelessWidget {
     return 0;
   }
 
-  // Find timestamp from history for a given step status
-  DateTime? _timestampFor(String stepStatus) {
+  DateTime? _timestampFor(String stepStatus, bool isFirst) {
+    if (isFirst) return orderCreatedAt;
+    final aliases = _stepAliases[stepStatus] ?? [stepStatus];
     for (final entry in history) {
-      if (entry.toStatus == stepStatus) return entry.createdAt;
+      if (aliases.contains(entry.toStatus)) return entry.createdAt;
     }
     return null;
   }
@@ -361,7 +405,7 @@ class _Timeline extends StatelessWidget {
         final isDone = i <= current;
         final isActive = i == current;
         final isLast = i == steps.length - 1;
-        final ts = isDone ? _timestampFor(steps[i].$1) : null;
+        final ts = isDone ? _timestampFor(steps[i].$1, i == 0) : null;
         return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SizedBox(
             width: 22,
@@ -435,41 +479,51 @@ class _OrderItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: hasBorder
-            ? Border(bottom: BorderSide(color: context.col.border))
-            : null,
-      ),
-      child: Row(children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: SizedBox(
-            width: 44, height: 44,
-            child: item.productImage != null
-                ? CachedNetworkImage(imageUrl: item.productImage!, fit: BoxFit.cover)
-                : Container(color: context.col.bg,
-                    child: Icon(Icons.image_outlined, color: context.col.ink4)),
+    return GestureDetector(
+      onTap: () => _navigateToProduct(context),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: hasBorder
+              ? Border(bottom: BorderSide(color: context.col.border))
+              : null,
+        ),
+        child: Row(children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              width: 44, height: 44,
+              child: item.productImage != null
+                  ? CachedNetworkImage(imageUrl: item.productImage!, fit: BoxFit.cover)
+                  : Container(color: context.col.bg,
+                      child: Icon(Icons.image_outlined, color: context.col.ink4)),
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(context.isAr ? item.productNameAr : item.productName, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, height: 1.3)),
-            if (item.variationLabel != null)
-              Text(item.variationLabel!,
-                style: TextStyle(fontSize: 11, color: context.col.ink3)),
-            Text('×${item.quantity}',
-              style: TextStyle(fontFamily: 'PlusJakartaSans',
-                fontSize: 11, color: context.col.ink2)),
-          ]),
-        ),
-        Text('${fmtPrice(item.total)} ${context.s.lydUnit}',
-          style: const TextStyle(fontFamily: 'PlusJakartaSans',
-            fontWeight: FontWeight.w700, fontSize: 13)),
-      ]),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(context.isAr ? item.productNameAr : item.productName,
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, height: 1.3)),
+              if (item.variationLabel != null)
+                Text(item.variationLabel!,
+                  style: TextStyle(fontSize: 11, color: context.col.ink3)),
+              Text('×${item.quantity}',
+                style: TextStyle(fontFamily: 'PlusJakartaSans',
+                  fontSize: 11, color: context.col.ink2)),
+            ]),
+          ),
+          Text('${fmtPrice(item.total)} ${context.s.lydUnit}',
+            style: const TextStyle(fontFamily: 'PlusJakartaSans',
+              fontWeight: FontWeight.w700, fontSize: 13)),
+          const SizedBox(width: 4),
+          Icon(Icons.chevron_right, size: 16, color: context.col.ink4),
+        ]),
+      ),
     );
+  }
+
+  void _navigateToProduct(BuildContext context) {
+    safePush(context, '/product/${item.productId}');
   }
 }

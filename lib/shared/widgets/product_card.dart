@@ -70,12 +70,13 @@ class ProductCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isAr = context.isAr;
     final rawName = isAr ? product.nameAr : product.name;
-    final rawBrand = product.brand != null && product.brand!.isNotEmpty
+    final _brandRaw = product.brand != null && product.brand!.isNotEmpty
         ? _decode(product.brand!)
         : product.vendor != null
             ? _decode(isAr ? product.vendor!.storeNameAr : product.vendor!.storeName)
             : null;
-    final name = rawBrand != null ? '$rawBrand $rawName' : rawName;
+    final rawBrand = (_brandRaw != null && _brandRaw.isNotEmpty) ? _brandRaw : null;
+    final name = rawName;
     final inWishlist = ref.watch(wishlistProvider).contains(product.id);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final imagePlaceholder = isDark ? context.col.surfaceSoft : context.col.cardImageBg;
@@ -167,11 +168,33 @@ class ProductCard extends ConsumerWidget {
                 children: [
                   SizedBox(
                     height: 34,
-                    child: Text(
-                      name,
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          if (rawBrand != null) ...[
+                            TextSpan(
+                              text: '$rawBrand ',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: context.col.ink0,
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                          TextSpan(
+                            text: name,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              color: context.col.ink1,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
                     ),
                   ),
                   const SizedBox(height: 5),

@@ -11,6 +11,7 @@ import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/home_provider.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/mic_button.dart';
 
 final _searchSuggestionsProvider = FutureProvider.family<List<Product>, String>((ref, q) async {
   if (q.length < 2) return [];
@@ -73,50 +74,51 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final categories = ref.watch(homeProvider).categories;
 
     return Scaffold(
-      backgroundColor: context.col.surface,
+      backgroundColor: context.col.bg,
       body: SafeArea(
         child: Column(
           children: [
-            // Search bar
+            // ── Search bar ────────────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-              decoration: BoxDecoration(
-                color: context.col.surface,
-                border: Border(bottom: BorderSide(color: context.col.border)),
-              ),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+              color: context.col.surface,
               child: Row(children: [
+                // Back arrow (outside the input box)
                 GestureDetector(
                   onTap: () => context.pop(),
-                  child: Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(
-                      color: context.col.surfaceSoft, shape: BoxShape.circle),
-                    child: Icon(Icons.arrow_back, size: 18, color: context.col.ink0),
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 4, right: 10),
+                    child: Icon(Icons.arrow_back_ios_new_rounded,
+                      size: 20, color: context.col.ink1),
                   ),
                 ),
-                const SizedBox(width: 10),
+                // Input box — white fill, single border, matching home screen style
                 Expanded(
                   child: Container(
-                    height: 44,
+                    height: 46,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: context.col.surfaceSoft,
-                      borderRadius: BorderRadius.circular(6),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: context.col.border, width: 1.2),
                     ),
                     child: Row(children: [
-                      const SizedBox(width: 12),
-                      Icon(Icons.search, size: 18, color: context.col.ink3),
+                      Icon(Icons.search_rounded, size: 18, color: context.col.ink3),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
                           controller: _ctrl,
                           focusNode: _focus,
-                          style: TextStyle(fontSize: 14, color: context.col.ink0),
+                          style: TextStyle(fontSize: 14, color: context.col.ink0, fontFamily: 'Cairo'),
+                          textDirection: TextDirection.rtl,
                           decoration: InputDecoration(
                             hintText: context.s.searchHint,
-                            hintStyle: TextStyle(color: context.col.ink3, fontSize: 14),
+                            hintStyle: TextStyle(color: context.col.ink3, fontSize: 14, fontFamily: 'Cairo'),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(vertical: 12),
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                            isDense: true,
                           ),
                           onChanged: _onChanged,
                           onSubmitted: _search,
@@ -124,22 +126,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                       if (_query.isNotEmpty)
                         GestureDetector(
-                          onTap: () {
-                            _ctrl.clear();
-                            setState(() { _query = ''; _debouncedQuery = ''; });
-                          },
+                          onTap: () { _ctrl.clear(); setState(() { _query = ''; _debouncedQuery = ''; }); },
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 12),
-                            child: Icon(Icons.close, size: 16, color: context.col.ink3),
+                            padding: const EdgeInsets.only(left: 4),
+                            child: Icon(Icons.close_rounded, size: 16, color: context.col.ink3),
                           ),
-                        ),
+                        )
+                      else
+                        MicButton(color: context.col.ink3, size: 18),
                     ]),
                   ),
                 ),
               ]),
             ),
 
-            // Body
+            // ── Body ──────────────────────────────────────────────────────
             Expanded(
               child: hasQuery
                   ? _LiveResults(
@@ -148,6 +149,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       onSearch: _search,
                     )
                   : _EmptyState(
+                      aiEnabled: config.aiEnabled,
                       trending: config.trendingSearches,
                       categories: categories.map((c) => context.isAr ? c.nameAr : c.name).take(8).toList(),
                       onSearch: _search,
@@ -211,12 +213,10 @@ class _LiveResults extends StatelessWidget {
                       child: SizedBox(
                         width: 48, height: 48,
                         child: p.firstImage != null
-                            ? CachedNetworkImage(
-                                imageUrl: p.firstImage!, fit: BoxFit.cover,
+                            ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover,
                                 errorWidget: (_, __, ___) => Container(
                                   color: context.col.surfaceSoft,
-                                  child: Icon(Icons.image_outlined, color: context.col.ink4, size: 20)),
-                              )
+                                  child: Icon(Icons.image_outlined, color: context.col.ink4, size: 20)))
                             : Container(color: context.col.surfaceSoft,
                                 child: Icon(Icons.image_outlined, color: context.col.ink4, size: 20)),
                       ),
@@ -244,8 +244,7 @@ class _LiveResults extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text('${context.s.seeAllResultsFor} "$query" ${context.isAr ? "←" : "→"}',
-                  style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary),
                   textAlign: TextAlign.center),
               ),
             ),
@@ -257,64 +256,121 @@ class _LiveResults extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
+  final bool aiEnabled;
   final List<String> trending;
   final List<String> categories;
   final void Function(String) onSearch;
-  const _EmptyState({required this.trending, required this.categories, required this.onSearch});
+  const _EmptyState({required this.aiEnabled, required this.trending,
+    required this.categories, required this.onSearch});
 
   @override
   Widget build(BuildContext context) {
+    final isAr = context.isAr;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Trending
-          Text(context.s.trendingNow,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-              color: context.col.ink2, letterSpacing: 0.5)),
-          const SizedBox(height: 8),
-          ...List.generate(trending.length, (i) => InkWell(
-            onTap: () => onSearch(trending[i]),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(children: [
-                SizedBox(
-                  width: 22,
-                  child: Text('0${i + 1}',
-                    style: TextStyle(fontFamily: 'PlusJakartaSans',
-                      fontWeight: FontWeight.w700, color: context.col.ink3, fontSize: 13)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(trending[i],
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                ),
-                Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
-              ]),
-            ),
-          )),
+          // ── Trending ─────────────────────────────────────────────────
+          if (trending.isNotEmpty) ...[
+            Text(context.s.trendingNow,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                color: context.col.ink2, letterSpacing: 0.6)),
+            const SizedBox(height: 6),
+            ...List.generate(trending.length, (i) => InkWell(
+              onTap: () => onSearch(trending[i]),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                child: Row(children: [
+                  SizedBox(width: 24,
+                    child: Text('${(i + 1).toString().padLeft(2, '0')}',
+                      style: TextStyle(fontFamily: 'PlusJakartaSans',
+                        fontWeight: FontWeight.w700, color: context.col.ink4, fontSize: 12))),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(trending[i],
+                    style: const TextStyle(fontFamily: 'Cairo',
+                      fontSize: 14, fontWeight: FontWeight.w500))),
+                  Icon(isAr ? Icons.arrow_back_ios_rounded : Icons.arrow_forward_ios_rounded,
+                    size: 12, color: context.col.ink3),
+                ]),
+              ),
+            )),
+          ],
 
+          // ── Categories ───────────────────────────────────────────────
           if (categories.isNotEmpty) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
             Text(context.s.categories,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                color: context.col.ink2, letterSpacing: 0.5)),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                color: context.col.ink2, letterSpacing: 0.6)),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8, runSpacing: 8,
               children: categories.map((c) => GestureDetector(
                 onTap: () => onSearch(c),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: context.col.surfaceSoft,
-                    borderRadius: BorderRadius.circular(6),
+                    color: context.col.surface,
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: context.col.border),
                   ),
-                  child: Text(c, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                  child: Text(c, style: const TextStyle(
+                    fontFamily: 'Cairo', fontSize: 13, fontWeight: FontWeight.w500)),
                 ),
               )).toList(),
+            ),
+          ],
+
+          // ── AI assistant card (bottom) ────────────────────────────────
+          if (aiEnabled) ...[
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: () => safePush(context, '/chat'),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1BBFBC), Color(0xFF32DDE5), Color(0xFF6AECF0)],
+                    stops: [0.0, 0.55, 1.0],
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [BoxShadow(
+                    color: const Color(0xFF32DDE5).withValues(alpha: 0.30),
+                    blurRadius: 12, offset: const Offset(0, 4))],
+                ),
+                child: Row(children: [
+                  Container(
+                    width: 42, height: 42,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.28),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.auto_awesome_rounded,
+                      color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('baahyAi',
+                        style: TextStyle(fontFamily: 'Cairo',
+                          fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
+                      const SizedBox(height: 2),
+                      Text(isAr
+                          ? 'تحتاج مساعدة اضافية؟ اسال مساعدك الذكي'
+                          : 'Need more help? Ask your AI assistant',
+                        style: const TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                          color: Color(0xFF004D54))),
+                    ],
+                  )),
+                  Icon(isAr ? Icons.arrow_back_ios_rounded : Icons.arrow_forward_ios_rounded,
+                    size: 14, color: Colors.white.withValues(alpha: 0.80)),
+                ]),
+              ),
             ),
           ],
         ],

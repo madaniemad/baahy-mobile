@@ -51,7 +51,9 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>باهي تحتاج الإذن لحفظ الصور في مكتبتك</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>باهي تحتاج الوصول للميكروفون عند التقاط مقاطع فيديو</string>
+	<string>باهي تحتاج الوصول للميكروفون للبحث بالصوت والتقاط مقاطع فيديو</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>باهي تستخدم التعرف على الصوت للبحث عن المنتجات بصوتك</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>باهي تحتاج موقعك لتحديد مدينة التوصيل تلقائياً</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

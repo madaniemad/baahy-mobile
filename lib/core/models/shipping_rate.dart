@@ -4,6 +4,10 @@ class ShippingRate {
   final String cityAr;
   final double rate;
   final int deliveryDays;
+  final int? etaMin;
+  final int? etaMax;
+  final double collectionFee;
+  final int? returnDays;
   final double? freeShippingThreshold;
   final bool codAllowed;
   final bool prepaidRequired;
@@ -16,6 +20,10 @@ class ShippingRate {
     required this.cityAr,
     required this.rate,
     required this.deliveryDays,
+    this.etaMin,
+    this.etaMax,
+    this.collectionFee = 0,
+    this.returnDays,
     this.freeShippingThreshold,
     this.codAllowed = true,
     this.prepaidRequired = false,
@@ -29,6 +37,10 @@ class ShippingRate {
     cityAr: j['city_ar'] ?? j['city'] ?? '',
     rate: _d(j['rate']),
     deliveryDays: (j['delivery_days'] as num?)?.toInt() ?? 3,
+    etaMin: (j['delivery_eta_min_days'] as num?)?.toInt(),
+    etaMax: (j['delivery_eta_max_days'] as num?)?.toInt(),
+    collectionFee: _d(j['collection_fee'] ?? 0),
+    returnDays: (j['return_days'] as num?)?.toInt(),
     freeShippingThreshold: j['free_shipping_threshold'] != null ? _d(j['free_shipping_threshold']) : null,
     codAllowed: j['cod_allowed'] != false,
     prepaidRequired: j['prepaid_required'] == true,

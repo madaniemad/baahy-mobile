@@ -22,6 +22,7 @@ import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
+import '../../../shared/widgets/mic_button.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/models/tier_status.dart';
@@ -95,7 +96,7 @@ class HomeScreen extends ConsumerWidget {
                         Icon(Icons.search, size: 17, color: context.col.ink3),
                         const SizedBox(width: 7),
                         Expanded(child: _SearchHintText()),
-                        Icon(Icons.mic_none_rounded, size: 17, color: context.col.ink3),
+                        const MicButton(size: 17),
                       ]),
                     ),
                   ),
@@ -332,19 +333,39 @@ class _CityLabel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cityAr = ref.watch(cityProvider);
+    final fromAddress = ref.watch(cityFromAddressProvider);
+    final address = ref.watch(primaryAddressProvider);
     final isAr = ref.watch(localeProvider).languageCode == 'ar';
     final cities = ref.watch(appPagesProvider).cities;
-    final city = isAr
-        ? cityAr
-        : (cities.firstWhere((c) => c.ar == cityAr, orElse: () => CityEntry(ar: cityAr, en: cityAr)).en);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final labelColor = isDark ? context.col.ink0 : Colors.white;
+
+    // When city is from a saved delivery address, show neighborhood if available
+    final String displayLabel;
+    if (fromAddress && address != null) {
+      final neighborhood = (address['neighborhood'] as String?)?.trim();
+      final city = (address['city'] as String?)?.trim() ?? cityAr;
+      displayLabel = isAr
+          ? (neighborhood != null && neighborhood.isNotEmpty ? neighborhood : city)
+          : (address['city_en'] as String? ?? city);
+    } else {
+      displayLabel = isAr
+          ? cityAr
+          : (cities.firstWhere((c) => c.ar == cityAr, orElse: () => CityEntry(ar: cityAr, en: cityAr)).en);
+    }
+
     return GestureDetector(
-      onTap: () => context.push('/city'),
+      onTap: () => fromAddress
+          ? safePush(context, '/addresses')
+          : context.push('/city'),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.location_on_outlined, size: 15, color: isDark ? AppColors.adaptive(context) : Colors.white),
+        Icon(
+          fromAddress ? Icons.home_outlined : Icons.location_on_outlined,
+          size: 15,
+          color: isDark ? AppColors.adaptive(context) : Colors.white,
+        ),
         const SizedBox(width: 3),
-        Text(city, style: TextStyle(
+        Text(displayLabel, style: TextStyle(
             fontSize: 13, fontWeight: FontWeight.w700,
             fontFamily: 'Cairo', color: labelColor)),
         const SizedBox(width: 2),

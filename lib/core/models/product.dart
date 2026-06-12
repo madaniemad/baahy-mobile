@@ -292,7 +292,10 @@ class Vendor {
   final String storeName;
   final String storeNameAr;
   final String? logo;
+  final String? banner;
   final String? city;
+  final String? description;
+  final String? descriptionAr;
   final double? averageRating;
   final String fulfillmentType;
 
@@ -301,7 +304,10 @@ class Vendor {
     required this.storeName,
     required this.storeNameAr,
     this.logo,
+    this.banner,
     this.city,
+    this.description,
+    this.descriptionAr,
     this.averageRating,
     this.fulfillmentType = 'vendor',
   });
@@ -313,6 +319,7 @@ class Vendor {
     'store_name': storeName,
     'store_name_ar': storeNameAr,
     'logo': logo,
+    'banner': banner,
     'city': city,
     'average_rating': averageRating,
     'fulfillment_type': fulfillmentType,
@@ -320,10 +327,13 @@ class Vendor {
 
   factory Vendor.fromJson(Map<String, dynamic> j) => Vendor(
     id: j['id'],
-    storeName: j['store_name'] ?? '',
-    storeNameAr: j['store_name_ar'] ?? j['store_name'] ?? '',
+    storeName: j['store_name'] ?? j['name'] ?? '',
+    storeNameAr: j['store_name_ar'] ?? j['store_name'] ?? j['name'] ?? '',
     logo: j['logo'],
+    banner: j['banner'],
     city: j['city'],
+    description: j['description'],
+    descriptionAr: j['description_ar'],
     averageRating: j['average_rating'] != null ? Product._d(j['average_rating']) : null,
     fulfillmentType: j['fulfillment_type'] as String? ?? 'vendor',
   );

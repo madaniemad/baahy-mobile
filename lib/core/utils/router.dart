@@ -75,16 +75,15 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Main shell (tab bar) — StatefulShellRoute keeps each tab alive in memory
       // so switching tabs never triggers a rebuild of heavy screens (e.g. home).
-      // Branch order: home=0, browse=1, assistant=2, wishlist=3, cart=4, account=5
+      // Branch order: home=0, wishlist=1, browse=2, cart=3, account=4
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => MainShell(navigationShell: navigationShell),
         branches: [
-          StatefulShellBranch(routes: [GoRoute(path: '/home',      builder: (_, __) => const HomeScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/browse',    builder: (_, state) => BrowseScreen(deepCategoryId: int.tryParse(state.uri.queryParameters['categoryId'] ?? '')))]),
-          StatefulShellBranch(routes: [GoRoute(path: '/assistant', builder: (_, __) => const AssistantScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/wishlist',  builder: (_, __) => const WishlistScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/cart',      builder: (_, __) => const CartScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/account',   builder: (_, __) => const AccountScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/home',     builder: (_, __) => const HomeScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/wishlist', builder: (_, __) => const WishlistScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/browse',   builder: (_, state) => BrowseScreen(deepCategoryId: int.tryParse(state.uri.queryParameters['categoryId'] ?? '')))]),
+          StatefulShellBranch(routes: [GoRoute(path: '/cart',     builder: (_, __) => const CartScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/account',  builder: (_, __) => const AccountScreen())]),
         ],
       ),
 
@@ -101,6 +100,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ? double.tryParse(state.uri.queryParameters['max_price']!)
                 : null,
             initialSort: state.uri.queryParameters['sort'],
+            initialBrand: state.uri.queryParameters['brand'],
           )),
       GoRoute(path: '/product/:id', builder: (_, state) =>
           ProductDetailScreen(id: int.parse(state.pathParameters['id']!))),
@@ -122,7 +122,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           EditAddressScreen(address: state.extra as Map<String, dynamic>?)),
       GoRoute(path: '/wallet',     builder: (_, __) => const WalletScreen()),
       GoRoute(path: '/orders/:id/return', builder: (_, state) =>
-          ReturnScreen(orderId: int.parse(state.pathParameters['id']!))),
+          ReturnScreen(
+            orderId: int.parse(state.pathParameters['id']!),
+            returnDeadline: state.extra is DateTime ? state.extra as DateTime : null,
+          )),
       GoRoute(path: '/referral',      builder: (_, __) => const ReferralScreen()),
       GoRoute(path: '/rewards-hub',   builder: (_, __) => const RewardsHubScreen()),
       GoRoute(path: '/settings',      builder: (_, __) => const SettingsScreen()),

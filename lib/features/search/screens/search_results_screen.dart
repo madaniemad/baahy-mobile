@@ -162,12 +162,14 @@ class SearchResultsScreen extends ConsumerStatefulWidget {
   final bool onSale;
   final double? maxPrice;
   final String? initialSort;
+  final String? initialBrand;
   const SearchResultsScreen({
     required this.query,
     this.categoryId,
     this.onSale = false,
     this.maxPrice,
     this.initialSort,
+    this.initialBrand,
     super.key,
   });
 
@@ -193,6 +195,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       categoryId: widget.categoryId,
       maxPrice: widget.maxPrice,
       inStockOnly: false,
+      brand: widget.initialBrand,
     );
     _fetch(reset: true);
     _scrollCtrl.addListener(_onScroll);

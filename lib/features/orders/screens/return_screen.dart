@@ -10,9 +10,14 @@ import '../../../shared/widgets/app_button.dart';
 
 final _orderItemsProvider = FutureProvider.family<List<Map<String, dynamic>>, int>(
   (ref, orderId) async {
-    final res = await ApiClient.instance.dio.get('/orders/$orderId');
-    final items = (res.data['data']?['items'] as List?) ?? [];
-    return items.map((i) => Map<String, dynamic>.from(i)).toList();
+    final res    = await ApiClient.instance.dio.get('/orders/$orderId');
+    final order  = res.data['data'];
+    final groups = (order?['vendor_groups'] as List?) ?? [];
+    final items  = <Map<String, dynamic>>[];
+    for (final g in groups) {
+      items.addAll(((g['items'] as List?) ?? []).map((i) => Map<String, dynamic>.from(i)));
+    }
+    return items;
   });
 
 const _kReasonsAr = [
@@ -34,7 +39,8 @@ const _kReasonsEn = [
 
 class ReturnScreen extends ConsumerStatefulWidget {
   final int orderId;
-  const ReturnScreen({required this.orderId, super.key});
+  final DateTime? returnDeadline;
+  const ReturnScreen({required this.orderId, this.returnDeadline, super.key});
 
   @override
   ConsumerState<ReturnScreen> createState() => _ReturnScreenState();
@@ -144,6 +150,10 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
               })),
             ),
 
+          if (widget.returnDeadline != null && _step < 2) ...[
+            const SizedBox(height: 8),
+            _ReturnPolicyBanner(deadline: widget.returnDeadline!),
+          ],
           const SizedBox(height: 16),
           Expanded(child: _buildStep()),
         ],
@@ -178,6 +188,39 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
       default:
         return _StepDone(orderId: widget.orderId);
     }
+  }
+}
+
+// ── Return policy banner ──────────────────────────────────────────────────────
+
+class _ReturnPolicyBanner extends StatelessWidget {
+  final DateTime deadline;
+  const _ReturnPolicyBanner({required this.deadline});
+
+  @override
+  Widget build(BuildContext context) {
+    final daysLeft = deadline.difference(DateTime.now()).inDays;
+    final label = context.isAr
+        ? 'متبقٍ ${daysLeft + 1} يوم للإرجاع — ينتهي ${deadline.day}/${deadline.month}/${deadline.year}'
+        : '${daysLeft + 1} day${daysLeft == 0 ? '' : 's'} left to return — deadline ${deadline.day}/${deadline.month}/${deadline.year}';
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Row(children: [
+        Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(label,
+            style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.w600,
+              color: AppColors.primary)),
+        ),
+      ]),
+    );
   }
 }
 

@@ -363,7 +363,7 @@ class AppStrings {
   String get stepProcessing    => isAr ? 'قيد التجهيز'            : 'Processing';
   String get stepShipped       => isAr ? 'في الطريق'              : 'On the Way';
   String get stepDelivered     => isAr ? 'تم التسليم'             : 'Delivered';
-  String get deliveryPromise   => isAr ? '1-2 يوم · طرابلس'       : '1-2 days · Tripoli';
+  String get deliveryPromise   => isAr ? 'طلبك في الطريق إليك'    : 'Your order is on the way';
   String get cartUpdateTitle   => isAr ? 'تحديث السلة'            : 'Cart Update';
   String get itemsUnavailable  => isAr ? 'المنتجات التالية غير متاحة حالياً:' : 'The following items are unavailable:';
   String get priceChangedItems => isAr ? 'تغير سعر المنتجات التالية:' : 'Prices changed for the following items:';
