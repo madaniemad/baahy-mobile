@@ -10,6 +10,20 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 
+class _SuggestedCategory {
+  final int id;
+  final String name;
+  final String nameAr;
+  final int productCount;
+  const _SuggestedCategory({required this.id, required this.name, required this.nameAr, required this.productCount});
+  factory _SuggestedCategory.fromJson(Map<String, dynamic> j) => _SuggestedCategory(
+    id: j['id'] as int,
+    name: j['name'] as String? ?? '',
+    nameAr: j['name_ar'] as String? ?? '',
+    productCount: (j['product_count'] as num?)?.toInt() ?? 0,
+  );
+}
+
 class _AttrValue {
   final int id;
   final String value;
@@ -180,6 +194,7 @@ class SearchResultsScreen extends ConsumerStatefulWidget {
 class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   final _scrollCtrl = ScrollController();
   List<Product> _products = [];
+  List<_SuggestedCategory> _suggestedCategories = [];
   bool _loading = true;
   bool _loadingMore = false;
   int _page = 1;
@@ -242,8 +257,14 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       });
       final data = res.data['data'];
       final newProducts = (data['data'] as List).map((p) => Product.fromJson(p)).toList();
+      final rawSuggestions = res.data['suggested_categories'] as List? ?? [];
       setState(() {
         _products = reset ? newProducts : [..._products, ...newProducts];
+        if (reset) {
+          _suggestedCategories = rawSuggestions
+              .map((c) => _SuggestedCategory.fromJson(c as Map<String, dynamic>))
+              .toList();
+        }
         _page++;
         _hasMore = data['current_page'] < data['last_page'];
         _loading = false;
@@ -360,6 +381,18 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             ),
           // Banner slider
           if (banners.isNotEmpty) _BannerSlider(banners: banners),
+          // Category chips — shown when search spans multiple categories and no category filter active
+          if (_suggestedCategories.length >= 2 &&
+              _filters.categoryId == null &&
+              widget.categoryId == null)
+            _CategoryChipsRow(
+              categories: _suggestedCategories,
+              isAr: Localizations.localeOf(context).languageCode == 'ar',
+              onTap: (catId, catName) {
+                setState(() => _filters = _filters.copyWith(categoryId: catId, categoryName: catName));
+                _fetch(reset: true);
+              },
+            ),
           // Products
           Expanded(
             child: _loading
@@ -1172,6 +1205,64 @@ class _CatChip extends StatelessWidget {
             color: selected ? const Color(0xFFF0F0F0) : context.col.ink1,
           )),
       ),
+    );
+  }
+}
+
+// ── Category chips row ────────────────────────────────────────────────────────
+class _CategoryChipsRow extends StatelessWidget {
+  final List<_SuggestedCategory> categories;
+  final bool isAr;
+  final void Function(int id, String name) onTap;
+  const _CategoryChipsRow({required this.categories, required this.isAr, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: Text(
+            isAr ? 'ابحث في:' : 'Browse in:',
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: context.col.ink3),
+          ),
+        ),
+        SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: categories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              final cat = categories[i];
+              final label = isAr ? cat.nameAr : cat.name;
+              return GestureDetector(
+                onTap: () => onTap(cat.id, label),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppColors.teal50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.teal, width: 1),
+                  ),
+                  child: Text(
+                    '$label  ${cat.productCount}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Cairo',
+                      color: AppColors.teal600,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 }

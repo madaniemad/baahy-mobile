@@ -143,6 +143,7 @@ class AppStrings {
   String get noResults      => isAr ? 'لا نتائج لـ'            : 'No results for';
   String get searchAnyway   => isAr ? 'ابحث على أي حال'        : 'Search anyway';
   String get trendingNow    => isAr ? 'رائج الآن'              : 'Trending Now';
+  String get recentSearches => isAr ? 'عمليات البحث الأخيرة'  : 'Recent Searches';
   String get filters        => isAr ? 'الفلاتر'                : 'Filters';
   String get resetFilters   => isAr ? 'إعادة ضبط'              : 'Reset';
   String get applyFilters   => isAr ? 'تطبيق الفلاتر'          : 'Apply Filters';
@@ -469,6 +470,10 @@ class AppStrings {
   String nudgeSilver(int orders, String spend) => isAr ? 'مستواك Silver 🥈 — $orders طلب و $spend د.ل من Gold'       : 'Silver 🥈 — $orders orders & $spend LD from Gold';
   String nudgeGold(int orders, String spend)   => isAr ? 'مستواك Gold 🥇 — $orders طلب و $spend د.ل من Platinum'    : 'Gold 🥇 — $orders orders & $spend LD from Platinum';
   String nudgePlatinum(String cashback)        => isAr ? 'أعلى مستوى 💎 — تمتع بـ $cashback% استرداد نقدي على كل طلب' : 'Top tier 💎 — enjoy $cashback% cashback on every order';
+  String nudgeCashback(String pct)             => isAr ? 'تحصل على $pct% استرداد نقدي مع كل طلب'   : 'Earn $pct% cashback on every order';
+  String nudgeReferral(String amount)          => isAr ? 'ادعُ صديقاً واكسب $amount د.ل'            : 'Invite a friend & earn $amount LD';
+  String nudgeWallet(String balance)           => isAr ? 'رصيد محفظتك $balance د.ل — استخدمه الآن' : 'You have $balance LD in wallet — use it now';
+  String nudgePending(String amount)           => isAr ? '$amount د.ل مكافآت في انتظار التأكيد'     : '$amount LD rewards pending';
 
   // ── AI Assistant ─────────────────────────────────────────────────────────────
   String get assistantTitle    => 'BaahyAi';

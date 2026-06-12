@@ -260,6 +260,22 @@ Required keys already present:
 - City screen loads cities from `shippingRatesProvider` (live API) — no hardcoded list
 - Cities available = cities with active shipping rates
 
+## Search Screen (`search_screen.dart`)
+- **Suggestions API**: `GET /api/search-suggestions?q=...` — returns `[{type, text_ar, text_en, q, category_id, product_id?, image?}]`
+- **Types**: `suggestion` ("X في Y"), `brand` (verified icon), `product` (thumbnail, direct to `/product/:id`)
+- **SKU/code search**: typing a hyphenated code like "V162-1WCL1006" returns the actual product with thumbnail in suggestions; tapping goes directly to product detail
+- **Brand phonetics**: "انكر"→Anker, "نايك"→NIKE, "شانيل"→Chanel, etc. — resolved in backend before searching
+- **Arabic plural stems**: "ساعات"→"ساعة", "حقائب"→"حقيبة" etc. — resolved in backend for both suggestions and results
+- **Trending now**: horizontal pills carousel (tiffany color: `teal50` bg, `teal100` border, `teal700` text); tapping runs text search
+- **Recent searches**: persisted to SharedPreferences under `recent_searches_v1`; max 8 entries
+- **Routing**: brand → `/search/results?q=X&brand=X`; category → `?q=X&category=ID`; product → `/product/:id`; else → `?q=X`
+
+## Backend Search Notes (Laravel — server only, no local git)
+All search logic is in `app/Http/Controllers/API/ProductController.php`:
+- **`suggestions()`**: Arabic termMap (EN→AR), brand phonetics map (AR phonetic→EN brand), `$wordGroups` AND logic, starts-with brand completion, word-boundary LIKE (`CONCAT(' ',col,' ') LIKE '% term%'`), SKU code returns `product` type with image
+- **`index()` (product listing)**: FULLTEXT AGAINST + LIKE OR fallback for Arabic; Arabic plural stem map; SKU/code queries (contains `-` + digits) bypass FULLTEXT and use exact `sku LIKE`
+- **MySQL FULLTEXT**: broken for Arabic (returns 0). LIKE fallback is the primary Arabic match path.
+
 ## Known Issues / TODO
 - Bundle ID `com.example.baahyCustomer` — should be changed to production bundle before App Store release
 - Firebase `google-services.json` and `GoogleService-Info.plist` are present but Crashlytics is commented out in pubspec
@@ -269,6 +285,6 @@ Required keys already present:
 - Map picker in address flow needs real Google Maps API key
 
 ## What This App Does NOT Own
-- Backend PHP code → edit in `baahy-web` project
+- Backend PHP code → lives only on Cloudways server (no local git); SSH: `master_eumsuzufzr@161.35.216.122`
 - Admin panel → at `https://phplaravel-1620145-6391034.cloudwaysapps.com/admin`
 - Web frontend → edit in `baahy-web` project

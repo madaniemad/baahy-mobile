@@ -457,14 +457,15 @@ class _ActiveOrderStrip extends ConsumerStatefulWidget {
 class _ActiveOrderStripState extends ConsumerState<_ActiveOrderStrip> {
   final _ctrl = PageController();
   int _page = 0;
+  int _count = 1;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!mounted || !_ctrl.hasClients) return;
-      final next = (_page + 1) % 2;
+      if (!mounted || !_ctrl.hasClients || _count <= 1) return;
+      final next = (_page + 1) % _count;
       _ctrl.animateToPage(next,
           duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
     });
@@ -479,12 +480,14 @@ class _ActiveOrderStripState extends ConsumerState<_ActiveOrderStrip> {
 
   @override
   Widget build(BuildContext context) {
-    final orderAsync = ref.watch(_activeOrderProvider);
-    final tierAsync  = ref.watch(tierProvider);
+    final orderAsync  = ref.watch(_activeOrderProvider);
+    final tierAsync   = ref.watch(tierProvider);
+    final config      = ref.watch(appConfigProvider);
+    final user        = ref.watch(currentUserProvider);
 
     final strips = <Widget>[];
 
-    // Strip 1: active order (if any)
+    // Strip 1: active order (always first if present)
     orderAsync.whenData((order) {
       if (order != null) {
         final orderId  = order['id'];
@@ -500,30 +503,88 @@ class _ActiveOrderStripState extends ConsumerState<_ActiveOrderStrip> {
       }
     });
 
-    // Strip 2: rewards nudge (if any)
+    // Strip 2: referral — shown immediately from config (no API wait)
+    final referralAmt = config?.referralGiverAmount ?? 0;
+    if (referralAmt > 0) {
+      strips.add(_StripTile(
+        icon: Icons.group,
+        label: context.s.nudgeReferral(referralAmt.toString()),
+        sub: null,
+        onTap: () => safePush(context, '/account'),
+        iconColor: AppColors.primary,
+      ));
+    }
+
+    // Strip 3+: tier-dependent strips (load after API responds)
     tierAsync.whenData((tier) {
-      if (!identical(tier, TierStatus.empty)) {
-        final remaining = tier.nextMilestoneRemaining;
-        final reward    = tier.nextMilestoneReward;
-        String? msg;
-        if (remaining != null && remaining <= 2 && reward != null) {
-          msg = remaining == 1
-              ? context.s.nudgeMilestone1(reward.toStringAsFixed(0))
-              : context.s.nudgeMilestone2(reward.toStringAsFixed(0));
-        } else if (tier.tier == null && tier.ordersRemaining <= 3) {
-          msg = context.s.nudgeNoTier(tier.ordersRemaining, tier.spendRemaining.toStringAsFixed(0));
-        }
-        if (msg != null) {
-          strips.add(_StripTile(
-            icon: Icons.card_giftcard_rounded,
-            label: msg,
-            sub: null,
-            onTap: () => safePush(context, '/rewards-hub'),
-            iconColor: AppColors.success,
-          ));
-        }
+      if (identical(tier, TierStatus.empty)) return;
+      final remaining = tier.nextMilestoneRemaining;
+      final reward    = tier.nextMilestoneReward;
+      String? nudgeMsg;
+
+      if (remaining != null && remaining <= 2 && reward != null) {
+        nudgeMsg = remaining == 1
+            ? context.s.nudgeMilestone1(reward.toStringAsFixed(0))
+            : context.s.nudgeMilestone2(reward.toStringAsFixed(0));
+      } else {
+        final t      = tier.tier?.toLowerCase();
+        final orders = tier.ordersRemaining;
+        final spend  = tier.spendRemaining.toStringAsFixed(0);
+        if (t == null || t == 'bronze') nudgeMsg = context.s.nudgeNoTier(orders, spend);
+        else if (t == 'silver')         nudgeMsg = context.s.nudgeSilver(orders, spend);
+        else if (t == 'gold')           nudgeMsg = context.s.nudgeGold(orders, spend);
+        else if (t == 'platinum')       nudgeMsg = context.s.nudgePlatinum(tier.cashbackRate.toStringAsFixed(1));
+      }
+      if (nudgeMsg != null) {
+        strips.add(_StripTile(
+          icon: Icons.card_giftcard,
+          label: nudgeMsg,
+          sub: null,
+          onTap: () => safePush(context, '/rewards-hub'),
+          iconColor: AppColors.success,
+        ));
+      }
+
+      // Cashback rate
+      if (tier.cashbackRate > 0) {
+        strips.add(_StripTile(
+          icon: Icons.local_offer,
+          label: context.s.nudgeCashback(tier.cashbackRate.toStringAsFixed(1)),
+          sub: null,
+          onTap: () => safePush(context, '/rewards-hub'),
+          iconColor: AppColors.success,
+        ));
+      }
+
+      // Pending rewards
+      if (tier.pendingTotal > 0) {
+        strips.add(_StripTile(
+          icon: Icons.hourglass_top,
+          label: context.s.nudgePending(tier.pendingTotal.toStringAsFixed(2)),
+          sub: null,
+          onTap: () => safePush(context, '/rewards-hub'),
+          iconColor: const Color(0xFFD4A82E),
+        ));
+      }
+
+      // Wallet balance
+      final walletBal = user?.walletBalance ?? 0.0;
+      if (walletBal >= 5) {
+        strips.add(_StripTile(
+          icon: Icons.account_balance_wallet,
+          label: context.s.nudgeWallet(walletBal.toStringAsFixed(2)),
+          sub: null,
+          onTap: () => safePush(context, '/wallet'),
+          iconColor: AppColors.primary,
+        ));
       }
     });
+
+    if (_count != strips.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _count = strips.length);
+      });
+    }
 
     if (strips.isEmpty) return const SizedBox.shrink();
     if (strips.length == 1) {
@@ -533,36 +594,17 @@ class _ActiveOrderStripState extends ConsumerState<_ActiveOrderStrip> {
       );
     }
 
-    // Carousel for 2 strips
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      SizedBox(
-        height: 44,
-        child: PageView(
-          controller: _ctrl,
-          onPageChanged: (p) => setState(() => _page = p),
-          children: strips.map((s) => Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: s,
-          )).toList(),
-        ),
+    return SizedBox(
+      height: 44,
+      child: PageView(
+        controller: _ctrl,
+        onPageChanged: (p) => setState(() => _page = p),
+        children: strips.map((s) => Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: s,
+        )).toList(),
       ),
-      const SizedBox(height: 4),
-      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        for (int i = 0; i < strips.length; i++)
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            width: i == _page ? 14 : 5,
-            height: 5,
-            decoration: BoxDecoration(
-              color: i == _page
-                  ? AppColors.primary
-                  : AppColors.primary.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(99),
-            ),
-          ),
-      ]),
-    ]);
+    );
   }
 }
 
@@ -585,7 +627,7 @@ class _StripTile extends StatelessWidget {
       child: Builder(builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: isDark ? Colors.transparent : const Color(0xFFE8F8F8),
             borderRadius: BorderRadius.circular(6),
@@ -598,16 +640,20 @@ class _StripTile extends StatelessWidget {
             Icon(icon, size: 16, color: iconColor),
             const SizedBox(width: 10),
             Expanded(
-              child: Text.rich(TextSpan(
-                style: const TextStyle(fontSize: 12.5),
-                children: [
-                  TextSpan(text: label,
-                    style: TextStyle(fontWeight: FontWeight.w700, color: context.col.ink0)),
-                  if (sub != null)
-                    TextSpan(text: ' · $sub',
-                      style: TextStyle(color: context.col.ink3)),
-                ],
-              )),
+              child: Text.rich(
+                TextSpan(
+                  style: const TextStyle(fontSize: 12.5),
+                  children: [
+                    TextSpan(text: label,
+                      style: TextStyle(fontWeight: FontWeight.w700, color: context.col.ink0)),
+                    if (sub != null)
+                      TextSpan(text: ' · $sub',
+                        style: TextStyle(color: context.col.ink3)),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             Icon(Icons.arrow_forward_ios, size: 12, color: context.col.ink3),
           ]),

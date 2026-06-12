@@ -253,14 +253,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF1BBFBC), Color(0xFF32DDE5), Color(0xFF6AECF0)],
+                    colors: [Color(0xFF00C4BE), Color(0xFF00DEDA), Color(0xFF4DF5EF)],
                     stops: [0.0, 0.55, 1.0],
                     begin: Alignment.centerRight,
                     end: Alignment.centerLeft,
                   ),
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [BoxShadow(
-                    color: const Color(0xFF32DDE5).withValues(alpha: 0.30),
+                    color: const Color(0xFF00DEDA).withValues(alpha: 0.30),
                     blurRadius: 12, offset: const Offset(0, 4))],
                 ),
                 child: Row(children: [
