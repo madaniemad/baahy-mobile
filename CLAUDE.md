@@ -15,6 +15,7 @@ Baahy (باهي) customer mobile app. Flutter for iOS and Android. Connects to t
 - **Storage**: SharedPreferences (general), flutter_secure_storage (tokens)
 - **Images**: cached_network_image
 - **Push notifications**: Firebase Messaging + flutter_local_notifications
+- **Voice search**: `speech_to_text ^6.6.0` — locale preference: ar_LY → ar_SA → ar_AE → ar_EG → ar
 - **Fonts**: Cairo (primary), PlusJakartaSans (numbers/monospace)
 - **Bundle ID**: `com.example.baahyCustomer`
 
@@ -90,7 +91,9 @@ All from `lib/shared/theme/app_theme.dart`:
 - `context.go('/route')` — for replace-stack navigation (e.g. after login → home)
 - Routes are defined in `lib/core/utils/router.dart`
 - Main shell routes (bottom nav): `/home`, `/wishlist`, `/browse`, `/cart`, `/account`
-- Deep routes: `/product/:id`, `/search/results`, `/orders/:id`, `/checkout`, `/notifications`, etc.
+  - Branch order (must match): home=0, wishlist=1, browse=2, cart=3, account=4
+  - No AI tab in nav bar — AI accessible via `/chat` push route and AI cards on search + account screens
+- Deep routes: `/product/:id`, `/search/results`, `/orders/:id`, `/checkout`, `/notifications`, `/chat`, etc.
 
 ## Home Screen Architecture
 `home_provider.dart` fetches everything in one `fetch()` call:
@@ -146,7 +149,8 @@ Hero images should be uploaded at **1400×480 px**. Sub-hero at any wide landsca
 - "توصيل سريع" (fast delivery) badge: solid yellow `#FFF500`, black text, `fontSize: 8`, `icon size: 9`
 - Vendor button on product detail: `AppColors.success` green border + text (not primary blue)
 - Load-more button: outlined `StadiumBorder`, compact width, black border
-- Search bar (search screen): white fill, `border: Border.all(color: AppColors.border, width: 1.2)`, radius 10
+- Search bar (search screen): white fill `Colors.white`, `border: Border.all(color: context.col.border, width: 1.2)`, radius 10. TextField must set `enabledBorder: InputBorder.none, focusedBorder: InputBorder.none, border: InputBorder.none` to avoid double-border appearance.
+- Search screen layout: `[back arrow outside] [Container: search icon | TextField | mic/clear]` — all icons inside the single white box
 - `CachedNetworkImage`: use only `memCacheWidth` — do NOT set `memCacheHeight` (forces exact pixel dimensions via ResizeImage, distorts aspect ratio)
 
 ## Product Image Fit
@@ -186,7 +190,8 @@ flutter build apk --release
 The booted simulator UDID as of last session: `B764355C-AE75-49CC-8E30-8B5089A32CAB` (iPhone 17 Pro)
 
 ## AI Assistant Screen (`assistant_screen.dart`)
-- **Route**: `/assistant` — tab index 2 in `StatefulShellRoute`
+- **Route**: `/chat` push route (no tab bar) — same `AssistantScreen` with back button. Pass `String` via `state.extra` to pre-fill and auto-send an initial message.
+- **Entry points**: search screen empty state AI card (bottom), account screen AI card — both `safePush(context, '/chat')`
 - **Chat API**: POST `/chat` with `{message, history, image?}` — `Options(receiveTimeout: Duration(seconds: 60))` required (two-pass Claude call takes 15-25s)
 - **`_ChatMessage` model**: includes `suggestedCategories: List<Map<String,dynamic>>` — rendered as `Wrap` of teal pill buttons
 - **Browse buttons**: tap → `safePush(context, '/search/results?q=&category=${cat['id']}')` — opens product listing filtered by that subcategory, NOT the categories overview page
@@ -194,6 +199,13 @@ The booted simulator UDID as of last session: `B764355C-AE75-49CC-8E30-8B5089A32
 - **Image picker**: camera + photo library enabled; iOS privacy keys in `Info.plist` (NSCamera, NSPhotoLibrary, NSPhotoLibraryAdd, NSMicro)
 - **Conversation history**: persisted to SharedPreferences as JSON list; trimmed to last 10 messages for API (4 when >10)
 - **Rate limits** (from backend): 15 msg/hr, 5 img/hr, 50 msg/day — `limit_hit:true` triggers WhatsApp fallback card
+
+## AI Cards (baahyAi branding)
+- **Design**: tiffany gradient `[Color(0xFF1BBFBC), Color(0xFF32DDE5), Color(0xFF6AECF0)]` + drop shadow
+- **Text**: "baahyAi" headline (white, w800) + "تحتاج مساعدة اضافية؟ اسال مساعدك الذكي" subtext in `Color(0xFF004D54)` (dark teal, NOT white)
+- **Icon box**: `Colors.white.withValues(alpha: 0.28)` background, `Icons.auto_awesome_rounded` white
+- **Locations**: search screen (bottom of empty state), account screen (after referral card)
+- Both conditional on `config.aiEnabled`
 
 ## Browse Screen (`browse_screen.dart`)
 - **Sidebar rail**: white background, teal left accent bar on active item, 1px right border divider, width 108px
@@ -231,8 +243,22 @@ Required keys already present:
 - `NSCameraUsageDescription` — for assistant image capture
 - `NSPhotoLibraryUsageDescription` — for assistant image picker
 - `NSPhotoLibraryAddUsageDescription` — for saving images
-- `NSMicrophoneUsageDescription` — required alongside camera
+- `NSMicrophoneUsageDescription` — required alongside camera AND for voice search
+- `NSSpeechRecognitionUsageDescription` — for voice search (added with ar-LY preference)
 - `NSLocationWhenInUseUsageDescription` / `NSLocationAlwaysAndWhenInUseUsageDescription` — city detection
+
+## Product Detail — Delivery ETA
+- Helper functions at top of `product_detail_screen.dart`: `_nextWorkingDay`, `_addWorkingDays`, `_deliveryRange`, `_formatDeliveryDay`
+- Libya working week: Sat–Thu (Friday off) — all ETA calculations skip Fridays
+- Cutoff: 4pm. Orders after 4pm or on Fridays start processing next working day
+- Day names in Arabic: الأحد/الاثنين/الثلاثاء/الأربعاء/الخميس/السبت + اليوم/غداً for today/tomorrow
+- ETA from shipping rate: `etaMin` and `etaMax` fields; fallback to `deliveryDays` if null
+
+## City / Address Sync
+- Home header city label (`_CityLabel`) reads from `cityFromAddressProvider` (if user has saved address) or falls back to `cityProvider`
+- After any address mutation (set default, delete, add, edit): call `ref.read(cityProvider.notifier).refresh()` in the UI callback
+- City screen loads cities from `shippingRatesProvider` (live API) — no hardcoded list
+- Cities available = cities with active shipping rates
 
 ## Known Issues / TODO
 - Bundle ID `com.example.baahyCustomer` — should be changed to production bundle before App Store release
