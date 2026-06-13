@@ -10,7 +10,6 @@ import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/home_provider.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/mic_button.dart';
 
 // ── Recent searches persistence ───────────────────────────────────────────────
 class _RecentSearches {
@@ -233,7 +232,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           ),
                         )
                       else
-                        MicButton(color: context.col.ink3, size: 18),
+                        GestureDetector(
+                          onTap: () => safePush(context, '/search/camera'),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: Icon(Icons.camera_alt_outlined, size: 18, color: context.col.ink3),
+                          ),
+                        ),
                     ]),
                   ),
                 ),

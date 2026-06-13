@@ -177,6 +177,8 @@ class SearchResultsScreen extends ConsumerStatefulWidget {
   final double? maxPrice;
   final String? initialSort;
   final String? initialBrand;
+  /// Pre-loaded products from baahyVision camera search — skips API fetch when provided
+  final List<Product>? visionProducts;
   const SearchResultsScreen({
     required this.query,
     this.categoryId,
@@ -184,6 +186,7 @@ class SearchResultsScreen extends ConsumerStatefulWidget {
     this.maxPrice,
     this.initialSort,
     this.initialBrand,
+    this.visionProducts,
     super.key,
   });
 
@@ -212,7 +215,14 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       inStockOnly: false,
       brand: widget.initialBrand,
     );
-    _fetch(reset: true);
+    if (widget.visionProducts != null) {
+      // Use pre-searched products from camera — skip API call
+      _products = widget.visionProducts!;
+      _loading  = false;
+      _hasMore  = false;
+    } else {
+      _fetch(reset: true);
+    }
     _scrollCtrl.addListener(_onScroll);
   }
 

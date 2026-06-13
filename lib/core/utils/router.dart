@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
+import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/city_screen.dart';
@@ -11,6 +12,7 @@ import '../../features/auth/screens/otp_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/search/screens/search_screen.dart';
 import '../../features/search/screens/search_results_screen.dart';
+import '../../features/search/screens/camera_search_screen.dart';
 import '../../features/search/screens/browse_screen.dart';
 import '../../features/product/screens/product_detail_screen.dart';
 import '../../features/cart/screens/cart_screen.dart';
@@ -89,8 +91,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Stack screens (no tab bar)
       GoRoute(path: '/search',     builder: (_, __) => const SearchScreen()),
-      GoRoute(path: '/search/results', builder: (_, state) =>
-          SearchResultsScreen(
+      GoRoute(path: '/search/results', builder: (_, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return SearchResultsScreen(
             query: state.uri.queryParameters['q'] ?? '',
             categoryId: state.uri.queryParameters['category'] != null
                 ? int.tryParse(state.uri.queryParameters['category']!)
@@ -101,7 +104,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 : null,
             initialSort: state.uri.queryParameters['sort'],
             initialBrand: state.uri.queryParameters['brand'],
-          )),
+            visionProducts: extra?['visionProducts'] as List<Product>?,
+          );
+        }),
+      GoRoute(path: '/search/camera', builder: (_, __) => const CameraSearchScreen()),
       GoRoute(path: '/product/:id', builder: (_, state) =>
           ProductDetailScreen(id: int.parse(state.pathParameters['id']!))),
       GoRoute(path: '/product/:id/reviews', builder: (_, state) =>

@@ -9,7 +9,6 @@ import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
-import '../../../shared/widgets/mic_button.dart';
 
 // Standalone categories loader — used when homeProvider hasn't populated categories yet
 final _browseCategoriesProvider = FutureProvider<List<Category>>((ref) async {
@@ -132,7 +131,13 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                   const SizedBox(width: 8),
                   Expanded(child: Text(context.s.searchHint,
                     style: TextStyle(color: context.col.ink3, fontSize: 13))),
-                  const MicButton(size: 17),
+                  GestureDetector(
+                    onTap: () => safePush(context, '/search/camera'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: Icon(Icons.camera_alt_outlined, size: 17, color: context.col.ink3),
+                    ),
+                  ),
                 ]),
               ),
             ),
