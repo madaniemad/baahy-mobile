@@ -270,6 +270,16 @@ Required keys already present:
 - **Recent searches**: persisted to SharedPreferences under `recent_searches_v1`; max 8 entries
 - **Routing**: brand → `/search/results?q=X&brand=X`; category → `?q=X&category=ID`; product → `/product/:id`; else → `?q=X`
 
+## Camera Visual Search — baahyVision (`camera_search_screen.dart`)
+- **Route**: `/search/camera` — launched from search screen camera icon
+- **States**: `loading` (spinner), `live` (viewfinder + brackets), `scanning` (frozen image + scan line), `error`
+- **Gallery tap**: sets `_CamState.loading` immediately (spinner within one frame), reverts to `live` on cancel
+- **After navigation**: auto-resets to `_CamState.live` so back button returns to fresh live camera
+- **API**: `POST /api/search-by-image` with base64 image; response: `{query, brand, category_id, products, alternative_brand}`
+- **Normal flow**: navigates to `/search/results?category=X&brand=Y&q=Z` (brand as filter param, Arabic type as text query)
+- **alternative_brand panel**: when backend returns `alternative_brand != null` (brand exists but not in scanned category) — shows bottom sheet: "لا يوجد {brand} في باهي" + "شاهد {type} مشابهة" button + "ابحث بصورة أخرى"; button navigates then resets to live camera
+- **Backend logic** (`ProductController::searchByImage`): Claude Haiku Vision picks category from 3-level tree; brand alias expansion (HUGO→Hugo Boss, ARMANI→Giorgio Armani, etc.); short-circuit returns all brand+category products when both known; fallback cascade; `alternative_brand` triggered when brand not found in scanned category
+
 ## Backend Search Notes (Laravel — server only, no local git)
 All search logic is in `app/Http/Controllers/API/ProductController.php`:
 - **`suggestions()`**: Arabic termMap (EN→AR), brand phonetics map (AR phonetic→EN brand), `$wordGroups` AND logic, starts-with brand completion, word-boundary LIKE (`CONCAT(' ',col,' ') LIKE '% term%'`), SKU code returns `product` type with image
