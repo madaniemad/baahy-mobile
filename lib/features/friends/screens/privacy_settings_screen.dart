@@ -4,6 +4,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class PrivacySettingsScreen extends ConsumerStatefulWidget {
   const PrivacySettingsScreen({super.key});
@@ -118,7 +119,8 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
             backgroundColor: AppColors.success, duration: const Duration(seconds: 2)),
         );
       }
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.tr('حدث خطأ', 'Error occurred'), style: const TextStyle(fontFamily: 'Cairo')),

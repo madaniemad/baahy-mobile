@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,6 +26,8 @@ import '../../../shared/widgets/product_card.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/models/tier_status.dart';
+import '../../../core/providers/welcome_coupon_provider.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -122,6 +125,9 @@ class HomeScreen extends ConsumerWidget {
 
               // Active order strip + rewards nudge carousel
               const SliverToBoxAdapter(child: _ActiveOrderStrip()),
+
+              // First-order welcome coupon banner (new users only)
+              const SliverToBoxAdapter(child: _WelcomeCouponBanner()),
 
               // Hero banner slider (real data from /api/content/banners)
               SliverToBoxAdapter(
@@ -436,7 +442,7 @@ final _activeOrderProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
     else if (d is List) list = d;
     if (list != null && list.isNotEmpty) return Map<String, dynamic>.from(list.first);
     return null;
-  } catch (_) { return null; }
+  } catch (e, st) { Sentry.captureException(e, stackTrace: st); return null; }
 });
 
 String _orderStripLabel(BuildContext context, String status) {
@@ -2075,7 +2081,8 @@ class _SeasonalBanner extends StatelessWidget {
       final end = DateTime.parse(endsAt);
       final diff = end.difference(DateTime.now()).inDays;
       return diff > 0 ? diff : null;
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return null;
     }
   }
@@ -2294,6 +2301,89 @@ class _RewardsModal extends StatelessWidget {
           ),
         ),
       ]),
+    );
+  }
+}
+
+// ── Welcome coupon banner (first-order users only) ────────────────────────────
+
+final _welcomeBannerDismissedProvider = StateProvider<bool>((ref) => false);
+
+class _WelcomeCouponBanner extends ConsumerWidget {
+  const _WelcomeCouponBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dismissed = ref.watch(_welcomeBannerDismissedProvider);
+    if (dismissed) return const SizedBox.shrink();
+    final auth = ref.watch(authProvider);
+    if (!auth.isLoggedIn) return const SizedBox.shrink();
+
+    final couponAsync = ref.watch(welcomeCouponProvider);
+    return couponAsync.when(
+      data: (coupon) {
+        if (coupon == null) return const SizedBox.shrink();
+        final discountLabel = coupon.type == 'percentage'
+            ? '${coupon.discount.toStringAsFixed(0)}%'
+            : '${coupon.discount.toStringAsFixed(0)} د.ل';
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+          child: GestureDetector(
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: coupon.code));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('تم نسخ الكود', style: TextStyle(fontFamily: 'Cairo')),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1BBFBC), Color(0xFF32DDE5)],
+                  begin: Alignment.centerRight,
+                  end: Alignment.centerLeft,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(children: [
+                const Text('🎁', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'خصم $discountLabel على طلبك الأول',
+                        style: const TextStyle(
+                          fontFamily: 'Cairo', fontSize: 13,
+                          fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                      Text(
+                        'استخدم كود ${coupon.code} عند الدفع',
+                        style: const TextStyle(
+                          fontFamily: 'Cairo', fontSize: 11.5,
+                          color: Color(0xFF004D54)),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 18),
+                  onPressed: () =>
+                      ref.read(_welcomeBannerDismissedProvider.notifier).state = true,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ]),
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

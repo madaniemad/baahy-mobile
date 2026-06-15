@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
 import '../models/product.dart';
@@ -154,7 +155,9 @@ class HomeNotifier extends StateNotifier<HomeData> {
     if (stale != null) {
       try {
         state = _fromCache(stale);
-      } catch (_) {}
+      } catch (e, st) {
+        Sentry.captureException(e, stackTrace: st);
+      }
     }
 
     // Skip network if cache is fresh.
@@ -187,7 +190,8 @@ class HomeNotifier extends StateNotifier<HomeData> {
       }
       final res = await _api.dio.get('/products/recommended', queryParameters: params);
       return res.data;
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return null;
     }
   }
@@ -201,7 +205,8 @@ class HomeNotifier extends StateNotifier<HomeData> {
           .map((j) => (j as Map<String, dynamic>)['product_id'] as int?)
           .whereType<int>()
           .toList();
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return [];
     }
   }
@@ -226,7 +231,8 @@ class HomeNotifier extends StateNotifier<HomeData> {
               .whereType<int>();
         });
       }).toList();
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return [];
     }
   }
@@ -246,7 +252,9 @@ class HomeNotifier extends StateNotifier<HomeData> {
           final p = Product.fromJson(jsonDecode(s) as Map<String, dynamic>);
           final id = p.category?.id;
           if (id != null) counts[id] = (counts[id] ?? 0) + 1;
-        } catch (_) {}
+        } catch (e, st) {
+          Sentry.captureException(e, stackTrace: st);
+        }
       }
 
       final raw = prefs.getString('baahy_cart');
@@ -256,7 +264,9 @@ class HomeNotifier extends StateNotifier<HomeData> {
             final p = Product.fromJson((j as Map<String, dynamic>)['product'] as Map<String, dynamic>);
             final id = p.category?.id;
             if (id != null) counts[id] = (counts[id] ?? 0) + 3;
-          } catch (_) {}
+          } catch (e, st) {
+            Sentry.captureException(e, stackTrace: st);
+          }
         }
       }
 
@@ -286,7 +296,8 @@ class HomeNotifier extends StateNotifier<HomeData> {
     try {
       final res = await _api.dio.get(path, queryParameters: params);
       return res.data;
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return null;
     }
   }
@@ -299,7 +310,8 @@ class HomeNotifier extends StateNotifier<HomeData> {
         node = node[key];
       }
       return (node as List?)?.map((p) => Product.fromJson(p)).toList() ?? [];
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return [];
     }
   }
@@ -307,7 +319,8 @@ class HomeNotifier extends StateNotifier<HomeData> {
   List<Category> _categories(dynamic data) {
     try {
       return (data?['data'] as List?)?.map((c) => Category.fromJson(c)).toList() ?? [];
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return [];
     }
   }
@@ -542,7 +555,9 @@ class HomeNotifier extends StateNotifier<HomeData> {
     if (state.featured.isNotEmpty || state.categories.isNotEmpty) {
       try {
         await CacheService.instance.set(_cacheKey, _toCache(state));
-      } catch (_) {}
+      } catch (e, st) {
+        Sentry.captureException(e, stackTrace: st);
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
 
@@ -25,7 +26,9 @@ class DeepLinkService {
     try {
       final initial = await _appLinks.getInitialLink();
       if (initial != null) await _handleUri(initial);
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
 
     // Warm start: link tapped while app is already running
     _sub = _appLinks.uriLinkStream.listen(

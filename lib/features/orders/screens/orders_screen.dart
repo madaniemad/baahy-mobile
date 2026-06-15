@@ -10,6 +10,7 @@ import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 final _ordersProvider = FutureProvider.autoDispose<List<Order>>((ref) async {
   final res = await ApiClient.instance.dio.get('/orders', queryParameters: {'per_page': 50});
@@ -69,7 +70,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         try {
           final res = await ApiClient.instance.dio.get('/products/${item.productId}');
           return (product: Product.fromJson(res.data['data']), qty: item.quantity);
-        } catch (_) {
+        } catch (e, st) {
+          Sentry.captureException(e, stackTrace: st);
           return null;
         }
       }),

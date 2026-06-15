@@ -6,6 +6,7 @@ import '../../../core/services/deep_link_service.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class PhoneSignInScreen extends ConsumerStatefulWidget {
   const PhoneSignInScreen({super.key});
@@ -50,7 +51,8 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
       await ref.read(authProvider.notifier).requestOtp(phone);
       if (mounted) await safePush(context, '/otp',
           extra: <String, dynamic>{'phone': phone, 'ref': ref2.isNotEmpty ? ref2 : null});
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       setState(() => _error = 'تعذر الإرسال، حاول مجدداً');
     } finally {
       if (mounted) setState(() => _loading = false);

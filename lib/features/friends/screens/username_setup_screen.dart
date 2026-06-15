@@ -5,6 +5,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class UsernameSetupScreen extends ConsumerStatefulWidget {
   const UsernameSetupScreen({super.key});
@@ -52,7 +53,8 @@ class _UsernameSetupScreenState extends ConsumerState<UsernameSetupScreen> {
         _available = data.isEmpty;
         _error     = data.isEmpty ? null : 'taken';
       });
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       setState(() { _checking = false; });
     }
   }
@@ -65,7 +67,8 @@ class _UsernameSetupScreenState extends ConsumerState<UsernameSetupScreen> {
       await ApiClient.instance.dio.patch('/user/username', data: {'username': username});
       await ref.read(authProvider.notifier).refreshProfile();
       if (mounted) Navigator.of(context).pop();
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       setState(() { _saving = false; _error = 'saveFailed'; });
     }
   }

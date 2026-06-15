@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../api/api_client.dart';
 import '../services/cache_service.dart';
 
@@ -105,6 +106,8 @@ class AppPagesNotifier extends StateNotifier<AppPages> {
         await CacheService.instance.set(_cacheKey, data);
         state = AppPages.fromJson(data);
       }
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 }

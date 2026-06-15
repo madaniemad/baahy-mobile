@@ -1,8 +1,45 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../shared/theme/app_theme.dart';
+
+// ─── Background widget — swaps to admin image when configured ──────────────────
+class _SplashBackground extends ConsumerWidget {
+  final Color teal;
+  final Color tealLight;
+  final Color tealDark;
+  const _SplashBackground({required this.teal, required this.tealLight, required this.tealDark});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final imageUrl = ref.watch(appConfigProvider).splashBgImageUrl;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        placeholder: (_, __) => Container(color: teal),
+        errorWidget: (_, __, ___) => _gradient(teal, tealLight, tealDark),
+      );
+    }
+    return _gradient(teal, tealLight, tealDark);
+  }
+
+  static Widget _gradient(Color teal, Color tealLight, Color tealDark) => Container(
+    decoration: BoxDecoration(
+      gradient: RadialGradient(
+        center: const Alignment(0, -0.72),
+        radius: 1.48,
+        colors: [tealLight, teal, tealDark],
+        stops: const [0.0, 0.46, 1.0],
+      ),
+    ),
+  );
+}
 
 // ─── Splash screen ─────────────────────────────────────────────────────────────
 class SplashScreen extends ConsumerStatefulWidget {
@@ -136,17 +173,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       child: Scaffold(
         backgroundColor: _teal,
         body: Stack(children: [
-          // ── Background gradient ──────────────────────────────────────────
-          Container(
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0, -0.72),
-                radius: 1.48,
-                colors: [_tealLight, _teal, _tealDark],
-                stops: [0.0, 0.46, 1.0],
-              ),
-            ),
-          ),
+          // ── Background: admin image or default teal gradient ────────────
+          _SplashBackground(teal: _teal, tealLight: _tealLight, tealDark: _tealDark),
 
           // ── Icon pattern band (top) ──────────────────────────────────────
           AnimatedBuilder(

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 const _kViewedIds      = 'viewed_product_ids';
 const _kViewedProducts = 'viewed_products_json';
@@ -25,12 +26,14 @@ class RecentlyViewedNotifier extends StateNotifier<List<Product>> {
       final products = encoded
           .map((s) {
             try { return Product.fromJson(jsonDecode(s) as Map<String, dynamic>); }
-            catch (_) { return null; }
+            catch (e, st) { Sentry.captureException(e, stackTrace: st); return null; }
           })
           .whereType<Product>()
           .toList();
       if (products.isNotEmpty && mounted) state = products;
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   void add(Product product) {

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../api/api_client.dart';
 import '../models/friend.dart';
 
@@ -41,7 +42,8 @@ class FriendsNotifier extends StateNotifier<FriendsState> {
           .map((j) => Friend.fromJson(j as Map<String, dynamic>))
           .toList();
       state = FriendsState(friends: friends, incomingRequests: incoming);
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       state = state.copyWith(loading: false);
     }
   }
@@ -50,7 +52,8 @@ class FriendsNotifier extends StateNotifier<FriendsState> {
     try {
       await ApiClient.instance.dio.post('/friends/request', data: {'username': username});
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return false;
     }
   }
@@ -60,7 +63,8 @@ class FriendsNotifier extends StateNotifier<FriendsState> {
       await ApiClient.instance.dio.post('/friends/$friendshipId/accept');
       await load();
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return false;
     }
   }
@@ -72,7 +76,8 @@ class FriendsNotifier extends StateNotifier<FriendsState> {
         incomingRequests: state.incomingRequests.where((f) => f.friendshipId != friendshipId).toList(),
       );
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return false;
     }
   }
@@ -84,7 +89,8 @@ class FriendsNotifier extends StateNotifier<FriendsState> {
         friends: state.friends.where((f) => f.friendshipId != friendshipId).toList(),
       );
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return false;
     }
   }

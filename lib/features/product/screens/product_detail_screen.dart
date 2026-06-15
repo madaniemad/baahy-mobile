@@ -20,6 +20,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 final _productDetailProvider = FutureProvider.autoDispose.family<Product, int>((ref, id) async {
   final res = await ApiClient.instance.dio.get('/products/$id');
@@ -29,6 +30,13 @@ final _productDetailProvider = FutureProvider.autoDispose.family<Product, int>((
 final _relatedProductsProvider = FutureProvider.autoDispose.family<List<Product>, int>((ref, categoryId) async {
   final res = await ApiClient.instance.dio.get('/products',
     queryParameters: {'category_id': categoryId, 'per_page': 4, 'sort': 'popular'});
+  return (res.data['data']['data'] as List?)
+      ?.map((p) => Product.fromJson(p)).toList() ?? [];
+});
+
+final _sisterProductsProvider = FutureProvider.autoDispose.family<List<Product>, int>((ref, parentCategoryId) async {
+  final res = await ApiClient.instance.dio.get('/products',
+    queryParameters: {'category_id': parentCategoryId, 'per_page': 10, 'sort': 'popular'});
   return (res.data['data']['data'] as List?)
       ?.map((p) => Product.fromJson(p)).toList() ?? [];
 });
@@ -579,8 +587,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             boxShadow: AppShadows.shadowLifted,
                           ),
                           child: Column(children: [
-                            const _TrustPills(),
-                            const SizedBox(height: 12),
                             const _DeliveryCard(),
                             const SizedBox(height: 14),
                             Divider(height: 1, color: context.col.border),
@@ -593,11 +599,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                   style: TextStyle(fontSize: 12, color: context.col.ink2, height: 1.4)),
                               ),
                             ]),
+                            const SizedBox(height: 14),
+                            Divider(height: 1, color: context.col.border),
+                            const SizedBox(height: 12),
+                            const _TrustPills(),
                           ]),
                         ),
 
-                        // ── Card 4: Description ──────────────────────
-                        if (product.description != null && product.description!.isNotEmpty) ...[
+                        // ── Card 4: Description + SKU ────────────────
+                        if ((product.description != null && product.description!.isNotEmpty) || product.sku != null) ...[
                           const SizedBox(height: 10),
                           Container(
                             margin: const EdgeInsets.symmetric(horizontal: 12),
@@ -611,16 +621,34 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Text(context.s.description,
-                                  textAlign: TextAlign.start,
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                                const SizedBox(height: 8),
-                                Text(isAr
-                                    ? (product.descriptionAr ?? product.description!)
-                                    : product.description!,
-                                  textAlign: TextAlign.start,
-                                  style: TextStyle(
-                                    fontSize: 14, color: context.col.ink2, height: 1.6)),
+                                if (product.description != null && product.description!.isNotEmpty) ...[
+                                  Text(context.s.description,
+                                    textAlign: TextAlign.start,
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                                  const SizedBox(height: 8),
+                                  Text(isAr
+                                      ? (product.descriptionAr ?? product.description!)
+                                      : product.description!,
+                                    textAlign: TextAlign.start,
+                                    style: TextStyle(
+                                      fontSize: 14, color: context.col.ink2, height: 1.6)),
+                                  if (product.sku != null) ...[
+                                    const SizedBox(height: 12),
+                                    Divider(height: 1, color: context.col.border),
+                                  ],
+                                ],
+                                if (product.sku != null) ...[
+                                  const SizedBox(height: 10),
+                                  Row(children: [
+                                    Text(isAr ? 'كود المنتج:' : 'SKU:',
+                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                                        color: context.col.ink2)),
+                                    const SizedBox(width: 8),
+                                    Text(product.sku!,
+                                      style: TextStyle(fontFamily: 'PlusJakartaSans',
+                                        fontSize: 13, color: context.col.ink3)),
+                                  ]),
+                                ],
                               ],
                             ),
                           ),
@@ -656,19 +684,19 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           child: const _CouponSection(),
                         ),
 
-                        // ── Reviews snippet ─────────────────────────
-                        _ReviewsSnippet(productId: product.id,
-                          count: product.reviewsCount ?? 0,
-                          rating: product.averageRating ?? 0,
-                          lazyLoad: _lazyTriggered),
-
-                        // ── Frequently bought together ───────────────
+                        // ── Complementary products (sister categories) ──
                         if (product.category != null)
                           _FrequentlyBoughtTogether(
                             mainProduct: product,
                             categoryId: product.category!.id,
                             lazyLoad: _lazyTriggered,
                           ),
+
+                        // ── Reviews snippet ─────────────────────────
+                        _ReviewsSnippet(productId: product.id,
+                          count: product.reviewsCount ?? 0,
+                          rating: product.averageRating ?? 0,
+                          lazyLoad: _lazyTriggered),
 
                         // ── You may also like ────────────────────────
                         _YouMayAlsoLike(
@@ -706,7 +734,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               border: Border.all(color: context.col.border),
                               boxShadow: AppShadows.shadowLifted,
                             ),
-                            child: Icon(Icons.share_outlined, size: 20, color: context.col.ink0),
+                            child: Icon(Icons.ios_share, size: 20, color: context.col.ink0),
                           ),
                         ),
                         GestureDetector(
@@ -1056,16 +1084,21 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
   @override
   Widget build(BuildContext context) {
     if (!widget.lazyLoad) return const SizedBox.shrink();
-    final relatedAsync = ref.watch(_relatedProductsProvider(widget.categoryId));
+    // Use parent category to get sister-category products; fall back to same category
+    final parentId = widget.mainProduct.category?.parentId;
+    final relatedAsync = parentId != null
+        ? ref.watch(_sisterProductsProvider(parentId))
+        : ref.watch(_relatedProductsProvider(widget.categoryId));
 
     return relatedAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (related) {
-        final others = related
-            .where((p) => p.id != widget.mainProduct.id)
-            .take(2)
-            .toList();
+        final mainCatId = widget.mainProduct.category?.id;
+        final notMain = related.where((p) => p.id != widget.mainProduct.id).toList();
+        final sisters = notMain.where((p) => p.category?.id != mainCatId).toList();
+        // Prefer sister-category products; fall back to any product in parent category
+        final others = (sisters.isNotEmpty ? sisters : notMain).take(2).toList();
         if (others.isEmpty) return const SizedBox.shrink();
 
         final all = [widget.mainProduct, ...others];
@@ -1082,7 +1115,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(context.s.frequentlyBought,
+              Text(context.isAr ? 'منتجات مكملة' : 'Complete the Look',
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
               const SizedBox(height: 12),
 
@@ -1507,7 +1540,8 @@ class _ColorSwatch extends StatelessWidget {
     try {
       final h = hex.replaceAll('#', '').padLeft(6, '0');
       return Color(int.parse('0xFF$h'));
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return Colors.grey;
     }
   }
@@ -1670,15 +1704,15 @@ class _DeliveryCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
+              const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.primary),
+              const SizedBox(width: 6),
               Text(context.s.deliveryToCity(city),
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-              const SizedBox(width: 6),
-              const Icon(Icons.local_shipping_outlined, size: 16, color: AppColors.primary),
             ],
           ),
           const SizedBox(height: 8),
@@ -1691,7 +1725,7 @@ class _DeliveryCard extends ConsumerWidget {
             child: Text(estimate,
               style: TextStyle(fontSize: 12.5,
                 fontWeight: FontWeight.w600, color: context.col.ink1),
-              textAlign: TextAlign.end),
+              textAlign: TextAlign.right),
           ),
         ],
       ),
@@ -1896,7 +1930,8 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
           _loading = false;
         });
       }
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -2058,7 +2093,7 @@ class _AddedToCartSheet extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: Text(context.s.viewCart,
-                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: Colors.black87)),
+                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: Colors.white)),
               ),
             ),
           ]),

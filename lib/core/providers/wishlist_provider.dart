@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../api/api_client.dart';
 import '../models/product.dart';
 import 'auth_provider.dart';
@@ -23,7 +24,9 @@ class WishlistNotifier extends StateNotifier<Set<int>> {
       final ids = (res.data['data'] as List?)
           ?.map((item) => item['product']['id'] as int).toSet() ?? {};
       state = ids;
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   Future<bool> toggle(int productId) async {
@@ -32,7 +35,8 @@ class WishlistNotifier extends StateNotifier<Set<int>> {
     try {
       await _api.dio.post('/wishlist/toggle', data: {'product_id': productId});
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       state = Set.from(state)..toggle(productId);
       return false;
     }

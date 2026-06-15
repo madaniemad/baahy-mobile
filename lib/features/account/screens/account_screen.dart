@@ -14,11 +14,14 @@ import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 const _kActiveStatuses = ['out_for_delivery'];
 
 
-final _ordersCountsProvider = FutureProvider<({int active, int total})>((ref) async {
+final _ordersCountsProvider = FutureProvider.autoDispose<({int active, int total})>((ref) async {
+  final isLoggedIn = ref.watch(authProvider).isLoggedIn;
+  if (!isLoggedIn) return (active: 0, total: 0);
   try {
     final res = await ApiClient.instance.dio.get('/orders', queryParameters: {'per_page': 50});
     final d = res.data['data'];
@@ -29,16 +32,20 @@ final _ordersCountsProvider = FutureProvider<({int active, int total})>((ref) as
     final total = (d is Map ? (d['total'] as num?)?.toInt() : null) ?? orders.length;
     final active = orders.where((o) => _kActiveStatuses.contains(o['status'])).length;
     return (active: active, total: total);
-  } catch (_) {
+  } catch (e, st) {
+    Sentry.captureException(e, stackTrace: st);
     return (active: 0, total: 0);
   }
 });
 
-final _freshWalletBalanceProvider = FutureProvider<double>((ref) async {
+final _freshWalletBalanceProvider = FutureProvider.autoDispose<double>((ref) async {
+  final isLoggedIn = ref.watch(authProvider).isLoggedIn;
+  if (!isLoggedIn) return 0.0;
   try {
     final res = await ApiClient.instance.dio.get('/wallet');
     return (res.data['data']?['balance'] as num?)?.toDouble() ?? 0.0;
-  } catch (_) {
+  } catch (e, st) {
+    Sentry.captureException(e, stackTrace: st);
     return 0.0;
   }
 });
@@ -47,7 +54,8 @@ final _referralCountProvider = FutureProvider<int>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/referrals');
     return (res.data['data']?['total_referrals'] as num?)?.toInt() ?? 0;
-  } catch (_) {
+  } catch (e, st) {
+    Sentry.captureException(e, stackTrace: st);
     return 0;
   }
 });
@@ -465,7 +473,8 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
       } else {
         ref.read(authProvider.notifier).refreshProfile();
       }
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       if (mounted) {
         setState(() => _localImagePath = null);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -782,14 +791,10 @@ class _TierCard extends ConsumerWidget {
         final tierColor  = _tierColor(tier.tier);
         final tierName   = _tierName(context, tier.tier);
 
-        double progress = 0.0;
-        if (!isPlatinum && tier.ordersNeeded > 0 && tier.spendNeeded > 0) {
-          final orderRatio = tier.ordersCount / tier.ordersNeeded;
-          final spendRatio = tier.spendAmount / tier.spendNeeded;
-          progress = (orderRatio < spendRatio ? orderRatio : spendRatio).clamp(0.0, 1.0);
-        } else if (isPlatinum) {
-          progress = 1.0;
-        }
+        final orderProgress = isPlatinum ? 1.0
+            : (tier.ordersNeeded > 0 ? (tier.ordersCount / tier.ordersNeeded).clamp(0.0, 1.0) : 0.0);
+        final spendProgress = isPlatinum ? 1.0
+            : (tier.spendNeeded > 0 ? (tier.spendAmount / tier.spendNeeded).clamp(0.0, 1.0) : 0.0);
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -826,38 +831,53 @@ class _TierCard extends ConsumerWidget {
 
               const SizedBox(height: 10),
 
-              // Progress bar + % + label all inline
-              Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(99),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 6,
-                      backgroundColor: context.col.surfaceSoft,
-                      valueColor: AlwaysStoppedAnimation<Color>(tierColor),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text('${(progress * 100).round()}%',
-                  style: TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontSize: 11, fontWeight: FontWeight.w700, color: context.col.ink2)),
-              ]),
-
-              const SizedBox(height: 5),
-
-              if (isPlatinum)
+              if (isPlatinum) ...[
                 Text(context.s.topTier,
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                    color: Colors.blueAccent, fontFamily: 'Cairo'))
-              else
-                Text(
-                  context.isAr
-                    ? 'متبقي ${tier.ordersRemaining} ${context.s.ordersToNextTier}'
-                    : '${tier.ordersRemaining} ${context.s.ordersToNextTier}',
-                  style: TextStyle(fontSize: 11, color: context.col.ink2, fontFamily: 'Cairo'),
-                ),
+                    color: Colors.blueAccent, fontFamily: 'Cairo')),
+              ] else ...[
+                // Orders progress row
+                Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                  Icon(Icons.receipt_long_outlined, size: 13, color: context.col.ink3),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(99),
+                      child: LinearProgressIndicator(
+                        value: orderProgress,
+                        minHeight: 5,
+                        backgroundColor: context.col.surfaceSoft,
+                        valueColor: AlwaysStoppedAnimation<Color>(tierColor),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('${tier.ordersCount}/${tier.ordersNeeded}',
+                    style: TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 10, fontWeight: FontWeight.w700, color: context.col.ink2)),
+                ]),
+                const SizedBox(height: 6),
+                // Spend progress row
+                Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                  Icon(Icons.monetization_on_outlined, size: 13, color: context.col.ink3),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(99),
+                      child: LinearProgressIndicator(
+                        value: spendProgress,
+                        minHeight: 5,
+                        backgroundColor: context.col.surfaceSoft,
+                        valueColor: AlwaysStoppedAnimation<Color>(tierColor),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('${tier.spendAmount.toStringAsFixed(0)}/${tier.spendNeeded.toStringAsFixed(0)}',
+                    style: TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 10, fontWeight: FontWeight.w700, color: context.col.ink2)),
+                ]),
+              ],
             ],
           ),
         );
@@ -1066,7 +1086,8 @@ class _BirthdayRowState extends ConsumerState<_BirthdayRow> {
     try {
       await ApiClient.instance.dio.patch('/user/profile/birthday', data: {'birthday': formatted});
       ref.read(authProvider.notifier).refreshProfile();
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.s.errorTryAgain)));
@@ -1175,7 +1196,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           SnackBar(content: Text(context.s.profileUpdated),
             backgroundColor: AppColors.success));
       }
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       setState(() => _loading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

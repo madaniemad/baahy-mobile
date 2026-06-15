@@ -7,6 +7,7 @@ import '../../../core/models/product.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class VendorStoreScreen extends ConsumerStatefulWidget {
   final int vendorId;
@@ -40,7 +41,8 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
     try {
       final res = await ApiClient.instance.dio.get('/vendors/${widget.vendorId}');
       if (mounted) setState(() { _vendor = Vendor.fromJson(res.data['data']); _loadingVendor = false; });
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       if (mounted) setState(() => _loadingVendor = false);
     }
   }
@@ -50,7 +52,9 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
       final res = await ApiClient.instance.dio.get('/vendors/${widget.vendorId}/categories');
       final list = (res.data['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
       if (mounted) setState(() => _categories = list);
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   Future<void> _loadProducts(int page, {bool resetFilter = false}) async {
@@ -81,7 +85,8 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
           _loadingMore = false;
         });
       }
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       if (mounted) setState(() { _loading = false; _loadingMore = false; });
     }
   }

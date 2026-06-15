@@ -44,7 +44,7 @@ class AppStrings {
   String get brand          => isAr ? 'الماركة'                : 'Brand';
   String get size           => isAr ? 'المقاس'                 : 'Size';
   String get color          => isAr ? 'اللون'                  : 'Color';
-  String get qty            => isAr ? 'الكمية'                 : 'Quantity';
+  String get qty            => isAr ? 'العدد:'                 : 'Qty:';
   String get inStock        => isAr ? 'متوفّر'                 : 'In Stock';
   String get outOfStock     => isAr ? 'نفدت الكمية'            : 'Out of Stock';
   String get lowStock       => isAr ? 'كمية محدودة'            : 'Low Stock';
@@ -83,7 +83,7 @@ class AppStrings {
   String get couponHint     => isAr ? 'أدخل الكوبون'           : 'Enter coupon code';
   String get apply          => isAr ? 'تطبيق'                  : 'Apply';
   String get couponApplied  => isAr ? 'تم تطبيق الكوبون'       : 'Coupon applied';
-  String get subtotal       => isAr ? 'المجموع الجزئي'         : 'Subtotal';
+  String get subtotal       => isAr ? 'المجموع'                : 'Subtotal';
   String get shipping       => isAr ? 'التوصيل'               : 'Delivery';
   String get discount       => isAr ? 'الخصم'                  : 'Discount';
   String get total          => isAr ? 'الإجمالي'               : 'Total';
@@ -461,8 +461,8 @@ class AppStrings {
   String get hubCompleted        => isAr ? 'مكتمل ✓'                       : 'Done ✓';
   String get cashbackLabel       => isAr ? 'كاش باك'                       : 'Cashback';
   String orderCashbackEarn(String cashback, String points) => isAr
-      ? 'ستكسب $cashback د.ل كاش باك + $points نقطة من هذا الطلب 🎉'
-      : "You'll earn $cashback LD cashback + $points pts on this order 🎉";
+      ? 'ستكسب $cashback د.ل كاش باك من هذا الطلب'
+      : "You'll earn $cashback LD cashback on this order";
 
   String nudgeMilestone1(String amount) => isAr ? 'طلب واحد فقط وتحصل على $amount د.ل' : '1 order away from earning $amount LD';
   String nudgeMilestone2(String amount) => isAr ? 'طلبان فقط وتحصل على $amount د.ل'    : '2 orders away from earning $amount LD';
@@ -491,6 +491,7 @@ class AppStrings {
   String get trustReturn       => isAr ? 'إرجاع واستبدال'          : 'Returns';
   String get trustPayment      => isAr ? 'الدفع عند الاستلام'      : 'Cash on Delivery';
   String get trustDelivery     => isAr ? 'توصيل سريع'              : 'Fast Delivery';
+  String get trustWarranty     => isAr ? 'ضمان المنتج'             : 'Warranty';
   String get saveAmountPrefix  => isAr ? 'وفّر'                    : 'Save';
 
   // ── Account extras ──────────────────────────────────────────────────────────

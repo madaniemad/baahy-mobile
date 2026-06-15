@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:badges/badges.dart' as badges;
+import 'package:sentry_flutter/sentry_flutter.dart';
+import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../providers/app_config_provider.dart';
+import '../api/api_client.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../core/utils/l10n.dart';
 import '../../shared/widgets/offline_banner.dart';
@@ -24,7 +27,24 @@ class _AppLifecycleRefreshState extends ConsumerState<_AppLifecycleRefresh>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) ref.read(appConfigProvider.notifier).refresh();
+    if (state == AppLifecycleState.paused) _syncCart();
   }
+
+  Future<void> _syncCart() async {
+    if (!ref.read(authProvider).isLoggedIn) return;
+    try {
+      final items = ref.read(cartProvider).items;
+      final payload = items.map((i) => {
+        'product_id':   i.productId,
+        'variation_id': i.variationId,
+        'quantity':     i.quantity,
+      }).toList();
+      await ApiClient.instance.dio.post('/cart/sync', data: {'items': payload});
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => const SizedBox.shrink();
 }

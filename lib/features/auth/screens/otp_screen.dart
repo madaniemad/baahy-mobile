@@ -7,6 +7,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/deep_link_service.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   final String phone;
@@ -70,7 +71,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         widget.phone, _code, referralCode: widget.referralCode);
       await DeepLinkService.consumePendingCode(); // clear after successful signup
       if (mounted) context.go('/home');
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       HapticFeedback.mediumImpact();
       setState(() { _hasError = true; _loading = false; });
       _ctrl.clear();

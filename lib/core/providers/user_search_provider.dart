@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../api/api_client.dart';
 import '../models/friend.dart';
 
@@ -32,7 +33,8 @@ class UserSearchNotifier extends StateNotifier<UserSearchState> {
       final res = await ApiClient.instance.dio.get('/users/search', queryParameters: {'q': q});
       final data = res.data['data'] as List? ?? [];
       state = UserSearchState(results: data.map((j) => Friend.fromJson(j as Map<String, dynamic>)).toList());
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       state = const UserSearchState();
     }
   }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
 import '../models/cart.dart';
@@ -165,7 +166,8 @@ class CartNotifier extends StateNotifier<CartState> {
       final discount = raw is num ? raw.toDouble() : double.tryParse(raw?.toString() ?? '') ?? 0.0;
       state = state.copyWith(couponCode: code.trim(), discountAmount: discount);
       return null;
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return 'الكوبون غير صالح أو منتهي الصلاحية';
     }
   }
@@ -252,7 +254,8 @@ class CartNotifier extends StateNotifier<CartState> {
             .toList();
       }
       return issues;
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       return [];
     }
   }

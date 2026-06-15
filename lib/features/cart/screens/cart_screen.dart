@@ -8,21 +8,69 @@ import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/models/cart.dart';
 import '../../../core/models/product.dart';
+import 'package:dio/dio.dart' show Response;
 import '../../../core/api/api_client.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../core/utils/navigation.dart';
+import '../../../core/providers/welcome_coupon_provider.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 // ── Recommended products provider ────────────────────────────────────────────
 
-final _cartRecommendedProvider = FutureProvider<List<Product>>((ref) async {
+final _cartRecommendedProvider = FutureProvider.autoDispose<List<Product>>((ref) async {
+  // Watch only the sorted category-ID list — rebuilds only when the set of categories changes,
+  // not on qty/coupon/price mutations.
+  final catIdsKey = ref.watch(cartProvider.select((c) {
+    final ids = c.items
+        .map((i) => i.product.category?.parentId ?? i.product.category?.id)
+        .whereType<int>()
+        .toSet()
+        .toList()..sort();
+    return ids.join(',');
+  }));
+  final catIds = catIdsKey.isEmpty
+      ? <int>[]
+      : catIdsKey.split(',').map(int.parse).toList();
   try {
-    final res = await ApiClient.instance.dio.get('/products/recommended',
-        queryParameters: {'limit': 8});
-    final list = (res.data['data'] as List?) ?? [];
+    final cartItems = ref.read(cartProvider).items;
+    final excludeIds = cartItems.map((i) => i.product.id).toSet();
+
+    if (catIds.isNotEmpty) {
+      final seen = <int>{...excludeIds};
+      final perCat = (20 / catIds.length).ceil().clamp(6, 20);
+      final futures = catIds.map((catId) => ApiClient.instance.dio
+          .get('/products', queryParameters: {
+            'category_id': catId, 'sort': 'popular', 'per_page': perCat + 4,
+          })
+          .then<dynamic>((r) => r)
+          .catchError((_) => null));
+      final responses = await Future.wait(futures);
+      final results = <Product>[];
+      for (final res in responses) {
+        if (res == null) continue;
+        final raw = res.data['data']?['data'] as List? ?? [];
+        int count = 0;
+        for (final p in raw) {
+          final product = Product.fromJson(p as Map<String, dynamic>);
+          if (!seen.contains(product.id)) {
+            seen.add(product.id);
+            results.add(product);
+            count++;
+            if (count >= perCat) break;
+          }
+        }
+      }
+      if (results.isNotEmpty) { results.shuffle(); return results.take(20).toList(); }
+    }
+
+    final fallback = await ApiClient.instance.dio.get('/products/recommended',
+        queryParameters: {'limit': 20});
+    final list = (fallback.data['data'] as List?) ?? [];
     return list.map((p) => Product.fromJson(p as Map<String, dynamic>)).toList();
-  } catch (_) {
+  } catch (e, st) {
+    Sentry.captureException(e, stackTrace: st);
     return [];
   }
 });
@@ -82,7 +130,10 @@ class CartScreen extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         // In RTL: leading = RIGHT side, actions = LEFT side
         leading: IconButton(
-          onPressed: () => safePush(context, '/checkout'),
+          onPressed: () => context.canPop() &&
+              GoRouterState.of(context).matchedLocation != '/cart'
+          ? context.pop()
+          : context.go('/home'),
           icon: Icon(Icons.arrow_forward_ios_rounded, size: 18, color: context.col.ink0)),
         title: Text(
           context.tr('السلة (${cart.count})', 'Cart (${cart.count})'),
@@ -94,14 +145,14 @@ class CartScreen extends ConsumerWidget {
               onPressed: () async {
                 final ok = await showDialog<bool>(
                   context: context,
-                  builder: (_) => AlertDialog(
+                  builder: (dlgCtx) => AlertDialog(
                     title: Text(context.s.clearCart,
                       style: const TextStyle(fontFamily: 'Cairo')),
                     content: Text(context.s.clearCartMsg),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false),
+                      TextButton(onPressed: () => Navigator.pop(dlgCtx, false),
                         child: Text(context.s.cancel)),
-                      TextButton(onPressed: () => Navigator.pop(context, true),
+                      TextButton(onPressed: () => Navigator.pop(dlgCtx, true),
                         child: Text(context.tr('مسح', 'Clear'),
                           style: const TextStyle(color: AppColors.danger))),
                     ],
@@ -164,6 +215,22 @@ class _CartBody extends ConsumerStatefulWidget {
 class _CartBodyState extends ConsumerState<_CartBody> {
   bool _checking = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (ref.read(cartProvider).couponCode != null) return;
+      try {
+        final coupon = await ref.read(welcomeCouponProvider.future);
+        if (!mounted || coupon == null) return;
+        await ref.read(cartProvider.notifier).applyCoupon(coupon.code);
+      } catch (e, st) {
+        Sentry.captureException(e, stackTrace: st);
+      }
+    });
+  }
+
   Future<void> _handleCheckout() async {
     if (!ref.read(authProvider).isLoggedIn) {
       safePush(context, '/signin');
@@ -181,7 +248,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
 
       final ok = await showDialog<bool>(
         context: context,
-        builder: (_) => AlertDialog(
+        builder: (dlgCtx) => AlertDialog(
           title: Text(context.s.cartUpdateTitle,
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
           content: Column(
@@ -249,11 +316,11 @@ class _CartBodyState extends ConsumerState<_CartBody> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(dlgCtx, false),
               child: Text(context.s.cancel,
                 style: TextStyle(fontFamily: 'Cairo', color: context.col.ink2))),
             ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.pop(dlgCtx, true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary, elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
@@ -345,6 +412,9 @@ class _CartBodyState extends ConsumerState<_CartBody> {
             _TrustBadges(),
 
             const SizedBox(height: 16),
+
+            // ── First-order coupon banner ─────────────────────────────────
+            _FirstOrderCouponBanner(),
 
             // ── Order summary ─────────────────────────────────────────────
             _OrderSummary(cart: cart),
@@ -694,7 +764,7 @@ class _CartItemCard extends ConsumerWidget {
                                 return item.product.variations
                                     .firstWhere((v) => v.id == item.variationId)
                                     .attributes;
-                              } catch (_) { return null; }
+                              } catch (e, st) { Sentry.captureException(e, stackTrace: st); return null; }
                             }()
                           : null;
                   if (attrs == null || attrs.isEmpty) return const SizedBox.shrink();
@@ -870,23 +940,9 @@ class _MayAlsoLikeSection extends ConsumerWidget {
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: Row(children: [
-              // "عرض الكل" (LEFT in RTL)
-              GestureDetector(
-                onTap: () => safePush(context, '/home'),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.chevron_left, size: 16, color: AppColors.primary),
-                  Text(context.tr('عرض الكل', 'See all'),
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                      color: AppColors.primary, fontFamily: 'Cairo')),
-                ]),
-              ),
-              const Spacer(),
-              // Title (RIGHT in RTL)
-              Text(context.tr('قد يعجبك أيضاً', 'You may also like'),
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
-                  color: context.col.ink0, fontFamily: 'Cairo')),
-            ]),
+            child: Text(context.tr('قد يعجبك أيضاً', 'You may also like'),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
+                color: context.col.ink0, fontFamily: 'Cairo')),
           ),
           SizedBox(
             height: 160,
@@ -913,7 +969,8 @@ class _RecommendedCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isAr = context.isAr;
     final name = isAr ? product.nameAr : product.name;
-    final price = product.salePrice ?? product.price;
+    final hasSale = product.salePrice != null && product.salePrice! < product.price;
+    final displayPrice = hasSale ? product.salePrice! : product.price;
     final inCart = ref.watch(cartProvider).items.any((i) => i.productId == product.id);
 
     return GestureDetector(
@@ -945,17 +1002,22 @@ class _RecommendedCard extends ConsumerWidget {
                   style: TextStyle(fontSize: 11, color: context.col.ink1,
                     fontFamily: 'Cairo')),
                 const SizedBox(height: 2),
-                Text('${fmtPrice(price)} ${context.s.lydUnit}',
+                Text('${fmtPrice(displayPrice)} ${context.s.lydUnit}',
                   style: TextStyle(fontFamily: 'PlusJakartaSans',
                     fontWeight: FontWeight.w700, fontSize: 12,
-                    color: context.col.ink0)),
+                    color: hasSale ? AppColors.danger : context.col.ink0)),
+                if (hasSale)
+                  Text('${fmtPrice(product.price)} ${context.s.lydUnit}',
+                    style: TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 10, color: context.col.ink3,
+                      decoration: TextDecoration.lineThrough)),
               ]),
             ),
           ]),
 
           // Add to cart button
           Positioned(
-            bottom: 38, left: 6,
+            bottom: 6, left: 6,
             child: GestureDetector(
               onTap: inCart ? null : () {
                 if (product.productType == 'variable' || product.variations.isNotEmpty) {
@@ -986,20 +1048,19 @@ class _RecommendedCard extends ConsumerWidget {
 class _TrustBadges extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final badges = [
-      (Icons.verified_outlined,       context.tr('منتجات أصلية\n100%', 'Authentic\n100%'), const Color(0xFFD4A82E)),
-      (Icons.local_shipping_outlined, context.tr('توصيل سريع\n1-2 يوم', 'Fast Ship\n1-2 days'), AppColors.primary),
-      (Icons.payments_outlined,       context.tr('الدفع عند\nالاستلام', 'Cash on\nDelivery'), AppColors.success),
-      (Icons.undo_rounded,            context.tr('استرجاع خلال\n3 أيام', 'Return in\n3 days'), AppColors.warn),
+      (Icons.verified_outlined,          context.s.trustAuthentic),
+      (Icons.local_shipping_outlined,    context.s.trustDelivery),
+      (Icons.workspace_premium_outlined, context.s.trustWarranty),
+      (Icons.replay_outlined,            context.s.trustReturn),
     ];
-    final dimColor = AppColors.adaptive(context);
+    const teal = AppColors.teal;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
-        color: isDark ? Colors.transparent : context.col.surfaceSoft,
-        borderRadius: BorderRadius.circular(6),
-        border: isDark ? Border.all(color: context.col.border) : null,
+        color: context.col.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: context.col.border),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1007,23 +1068,95 @@ class _TrustBadges extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 36, height: 36,
+              width: 40, height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isDark ? Colors.transparent : b.$3.withValues(alpha: 0.10),
-                border: Border.all(
-                  color: isDark ? dimColor.withValues(alpha: 0.55) : b.$3.withValues(alpha: 0.35)),
+                color: teal.withValues(alpha: 0.08),
+                border: Border.all(color: teal.withValues(alpha: 0.30)),
               ),
-              child: Icon(b.$1, size: 17, color: isDark ? dimColor : b.$3),
+              child: Icon(b.$1, size: 18, color: teal),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 6),
             Text(b.$2,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 10, color: context.col.ink2,
+              style: TextStyle(fontSize: 10, color: context.col.ink1,
                 fontFamily: 'Cairo', height: 1.3)),
           ],
         )).toList(),
       ),
+    );
+  }
+}
+
+// ── First-order coupon banner ─────────────────────────────────────────────────
+
+class _FirstOrderCouponBanner extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cart = ref.watch(cartProvider);
+    final couponAsync = ref.watch(welcomeCouponProvider);
+
+    final firstOrderApplied = cart.couponCode?.toUpperCase() == 'FIRSTORDER';
+    final coupon = couponAsync.valueOrNull;
+
+    // Nothing to show: not applied and no eligible coupon data
+    if (!firstOrderApplied && coupon == null) return const SizedBox.shrink();
+
+    // FIRSTORDER is in cart but provider still loading — show minimal strip to prevent flicker
+    if (firstOrderApplied && coupon == null) {
+      return _buildBannerShell(
+        context,
+        headline: 'تم تطبيق خصم الطلب الأول على سلتك',
+        sub: 'هذا الخصم لمرة واحدة فقط، لا تفوّته!',
+      );
+    }
+
+    final discountPct = coupon!.discount.toInt();
+    final maxDiscount = coupon.maxDiscount?.toInt() ?? 39;
+    return _buildBannerShell(
+      context,
+      headline: firstOrderApplied
+          ? 'تم تطبيق خصم $discountPct% (بحد أقصى $maxDiscount د.ل) على طلبك الأول'
+          : 'خصم $discountPct% على طلبك الأول — يتم التطبيق تلقائياً',
+      sub: 'هذا الخصم لمرة واحدة فقط، لا تفوّته!',
+    );
+  }
+
+  Widget _buildBannerShell(BuildContext context,
+      {required String headline, required String sub}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+            blurRadius: 8, offset: const Offset(0, 3)),
+        ],
+      ),
+      child: Row(children: [
+        const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 24),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(headline,
+              style: const TextStyle(
+                color: Colors.white, fontSize: 13,
+                fontWeight: FontWeight.w800, fontFamily: 'Cairo')),
+            const SizedBox(height: 2),
+            Text(sub,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontSize: 11, fontFamily: 'Cairo')),
+          ]),
+        ),
+      ]),
     );
   }
 }
@@ -1045,7 +1178,7 @@ class _OrderSummary extends StatelessWidget {
         boxShadow: AppShadows.shadowLifted,
       ),
       child: Column(children: [
-        _Row(context.tr('المجموع الجزئي', 'Subtotal'),
+        _Row(context.s.subtotal,
           '${fmtPrice(cart.subtotal)} ${context.s.lyd}'),
         if (cart.discountAmount > 0)
           _Row(context.s.discount,

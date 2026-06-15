@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../api/api_client.dart';
 import '../models/app_config.dart';
 import '../services/cache_service.dart';
@@ -39,8 +40,8 @@ class AppConfigNotifier extends StateNotifier<AppConfig> {
         await CacheService.instance.set(_cacheKey, data);
         state = AppConfig.fromJson(data);
       }
-    } catch (_) {
-      // Keep current state (stale cache or defaults).
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
     }
   }
 }

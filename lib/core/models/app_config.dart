@@ -54,6 +54,7 @@ class AppConfig {
   final double tierPlatinumCashback;
   final bool aiEnabled;
   final bool socialEnabled;
+  final String? splashBgImageUrl;
   final bool seasonalEnabled;
   final double seasonalMultiplier;
   final String? seasonalEndsAt;
@@ -88,6 +89,7 @@ class AppConfig {
     this.tierPlatinumCashback = 6.0,
     this.aiEnabled = true,
     this.socialEnabled = false,
+    this.splashBgImageUrl,
     this.seasonalEnabled = false,
     this.seasonalMultiplier = 2.0,
     this.seasonalEndsAt,
@@ -199,6 +201,7 @@ class AppConfig {
       tierPlatinumCashback: platCb,
       aiEnabled: (j['ai_chat_enabled'] as bool?) ?? true,
       socialEnabled: (j['social_enabled'] as bool?) ?? false,
+      splashBgImageUrl: j['splash_bg_image'] as String?,
       seasonalEnabled: (j['seasonal'] as Map<String, dynamic>?)?['enabled'] as bool? ?? false,
       seasonalMultiplier: ((j['seasonal'] as Map<String, dynamic>?)?['multiplier'] as num?)?.toDouble() ?? 2.0,
       seasonalEndsAt: (j['seasonal'] as Map<String, dynamic>?)?['ends_at'] as String?,

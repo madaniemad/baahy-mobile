@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../api/api_client.dart';
 import '../models/banner.dart';
 import '../services/cache_service.dart';
@@ -63,7 +64,9 @@ class BannersNotifier extends StateNotifier<BannersData> {
           .timeout(const Duration(seconds: 2), onTimeout: () {
         stream.removeListener(listener);
       });
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   Future<void> refresh() async {
@@ -74,6 +77,8 @@ class BannersNotifier extends StateNotifier<BannersData> {
         await CacheService.instance.set(_cacheKey, data);
         state = BannersData.fromJson(data);
       }
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 }

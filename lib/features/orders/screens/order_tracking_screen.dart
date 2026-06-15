@@ -12,6 +12,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> _shareOrderPdf(BuildContext context, Order order) async {
   try {
@@ -35,7 +36,8 @@ Future<void> _shareOrderPdf(BuildContext context, Order order) async {
       subject: 'فاتورة ${order.orderNumber}',
       sharePositionOrigin: origin,
     );
-  } catch (_) {
+  } catch (e, st) {
+    Sentry.captureException(e, stackTrace: st);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تعذر تحميل الفاتورة، حاول مجدداً')),
@@ -196,18 +198,38 @@ class _OrderBody extends StatelessWidget {
           const SizedBox(height: 14),
           if (order.returnEligible) ...[
             if (order.returnDeadline != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(children: [
-                  Icon(Icons.info_outline_rounded, size: 14, color: context.col.ink3),
-                  const SizedBox(width: 6),
-                  Text(
-                    context.isAr
-                      ? 'الإرجاع متاح حتى ${order.returnDeadline!.day}/${order.returnDeadline!.month}/${order.returnDeadline!.year}'
-                      : 'Returns accepted until ${order.returnDeadline!.day}/${order.returnDeadline!.month}/${order.returnDeadline!.year}',
-                    style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: context.col.ink3)),
-                ]),
-              ),
+              Builder(builder: (ctx) {
+                final today       = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+                final deadlineDay = DateTime(order.returnDeadline!.year, order.returnDeadline!.month, order.returnDeadline!.day);
+                final daysLeft    = deadlineDay.difference(today).inDays;
+                final color       = daysLeft <= 2 ? AppColors.danger : AppColors.primary;
+                final dateStr     = '${order.returnDeadline!.day}/${order.returnDeadline!.month}/${order.returnDeadline!.year}';
+                final label       = daysLeft <= 0
+                  ? (ctx.isAr ? 'آخر يوم للإرجاع — ينتهي $dateStr' : 'Last day to return — expires $dateStr')
+                  : ctx.isAr
+                    ? 'متبقٍ $daysLeft يوم للإرجاع — ينتهي $dateStr'
+                    : '$daysLeft day${daysLeft == 1 ? '' : 's'} left to return — deadline $dateStr';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: color.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(children: [
+                      Icon(daysLeft <= 2 ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
+                        size: 15, color: color),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(label,
+                        style: TextStyle(fontFamily: 'Cairo', fontSize: 12.5,
+                          fontWeight: FontWeight.w600, color: color))),
+                    ]),
+                  ),
+                );
+              }),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(

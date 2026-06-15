@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../api/api_client.dart';
 
 class AppNotification {
@@ -43,7 +44,9 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
       final res = await _api.dio.get('/notifications');
       state = (res.data['data'] as List?)
           ?.map((n) => AppNotification.fromJson(n)).toList() ?? [];
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   Future<void> markRead(int id) async {
@@ -53,7 +56,9 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
           ? AppNotification(id: n.id, title: n.title, body: n.body, type: n.type,
               data: n.data, isRead: true, createdAt: n.createdAt)
           : n).toList();
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   Future<void> markAllRead() async {
@@ -62,7 +67,9 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
       state = state.map((n) => AppNotification(
           id: n.id, title: n.title, body: n.body, type: n.type,
           data: n.data, isRead: true, createdAt: n.createdAt)).toList();
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 }
 

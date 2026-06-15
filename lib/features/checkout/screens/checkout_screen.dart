@@ -9,6 +9,7 @@ import '../../../core/models/shipping_rate.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
+import '../../../core/providers/welcome_coupon_provider.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -17,7 +18,7 @@ import '../../../shared/widgets/app_button.dart';
 
 const _kLastPaymentKey = 'baahy_last_payment';
 
-Color _accent(BuildContext context) => AppColors.adaptive(context);
+Color _accent(BuildContext context) => AppColors.teal;
 
 // Normalizes Libyan phone numbers to display format (0XXXXXXXXX)
 String _fmtPhone(String phone) {
@@ -35,11 +36,8 @@ Color _cardFill(BuildContext context) =>
 Color _softFill(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark ? Colors.transparent : context.col.surfaceSoft;
 
-// Selected card/radio border: full tiffany in dark (pops on dark bg), softer in light
-Color _selBorder(BuildContext context) =>
-    Theme.of(context).brightness == Brightness.dark
-        ? AppColors.primary
-        : AppColors.primary.withValues(alpha: 0.50);
+// Selected card/radio border
+Color _selBorder(BuildContext context) => AppColors.teal;
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -66,6 +64,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _loadAddresses();
     _loadWallet();
     _loadSavedPayment();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startCheckoutSession());
+  }
+
+  Future<void> _startCheckoutSession() async {
+    try {
+      final cart = ref.read(cartProvider);
+      await ApiClient.instance.dio.post('/checkout/session/start', data: {
+        'items': cart.items.map((i) => {
+          'product_id': i.productId,
+          if (i.variationId != null) 'variation_id': i.variationId,
+          'quantity': i.quantity,
+        }).toList(),
+        'subtotal': cart.subtotal,
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadAddresses() async {
@@ -250,6 +263,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
       SharedPreferences.getInstance().then((p) => p.setString(_kLastPaymentKey, _paymentMethod));
       await ref.read(cartProvider.notifier).clear();
+      ref.invalidate(welcomeCouponProvider);
       if (mounted) context.pushReplacement('/order-confirmed', extra: res.data['data']);
     } catch (e) {
       setState(() => _loading = false);
@@ -611,6 +625,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             style: const TextStyle(
                               fontFamily: 'Cairo', fontSize: 12.5,
                               fontWeight: FontWeight.w600,
+                              color: AppColors.success))),
+                        ]),
+                      ),
+                    // First-order coupon applied strip
+                    if (cart.couponCode?.toUpperCase() == 'FIRSTORDER')
+                      Container(
+                        margin: const EdgeInsets.only(top: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.transparent : AppColors.success.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppColors.success.withValues(alpha: isDark ? 0.45 : 0.35)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.success),
+                          const SizedBox(width: 8),
+                          const Expanded(child: Text(
+                            '✓ خصم الطلب الأول مطبّق — هذا العرض لن يتكرر',
+                            style: TextStyle(
+                              fontFamily: 'Cairo', fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
                               color: AppColors.success))),
                         ]),
                       ),
@@ -1090,10 +1126,10 @@ class _TrustRow extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     const tiffany = AppColors.teal;
     final items = [
-      (Icons.verified_outlined,        context.s.trustAuthentic,  tiffany),
-      (Icons.local_shipping_outlined,  context.s.trustDelivery,   tiffany),
-      (Icons.security_rounded,         context.s.trustPayment,    tiffany),
-      (Icons.replay_rounded,           context.s.trustReturn,     tiffany),
+      (Icons.verified_outlined,          context.s.trustAuthentic,  tiffany),
+      (Icons.local_shipping_outlined,   context.s.trustDelivery,   tiffany),
+      (Icons.workspace_premium_outlined, context.s.trustWarranty,   tiffany),
+      (Icons.replay_rounded,             context.s.trustReturn,     tiffany),
     ];
     final dimColor = tiffany;
     return Row(

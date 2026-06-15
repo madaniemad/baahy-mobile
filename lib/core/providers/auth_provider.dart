@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
 import '../models/user.dart';
@@ -73,7 +74,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       else if (state.loading) {
         state = const AuthState();
       }
-    } catch (_) {
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
       if (state.loading) state = const AuthState();
     }
   }
@@ -94,7 +96,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    try { await _api.dio.post('/auth/logout'); } catch (_) {}
+    try { await _api.dio.post('/auth/logout'); } catch (e, st) { Sentry.captureException(e, stackTrace: st); }
     await _api.clearToken();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kCachedUser);
@@ -114,7 +116,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kCachedUser, jsonEncode(userJson));
       state = AuthState(user: User.fromJson(userJson));
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   Future<void> updateAvatar(String url) async {

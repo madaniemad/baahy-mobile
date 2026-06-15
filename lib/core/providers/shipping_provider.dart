@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../api/api_client.dart';
 import '../models/shipping_rate.dart';
 import 'address_provider.dart';
@@ -9,7 +10,8 @@ final shippingRatesProvider = FutureProvider<List<ShippingRate>>((ref) async {
     final res = await ApiClient.instance.dio.get('/shipping/cities');
     final list = (res.data['data'] as List? ?? []);
     return list.map((j) => ShippingRate.fromJson(j as Map<String, dynamic>)).toList();
-  } catch (_) {
+  } catch (e, st) {
+    Sentry.captureException(e, stackTrace: st);
     return [];
   }
 });

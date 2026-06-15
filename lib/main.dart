@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'core/utils/router.dart';
 import 'core/utils/l10n.dart';
 import 'core/services/deep_link_service.dart';
@@ -31,27 +32,37 @@ bool _fcmInited = false;
 Future<void>? _firebaseInit;
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = 'https://2cec46307e2718d20887b9719687b2f5@o4511447317807104.ingest.de.sentry.io/4511453087793232';
+      options.environment = kReleaseMode ? 'production' : 'debug';
+      options.tracesSampleRate = kReleaseMode ? 0.1 : 0.0;
+      options.enableAutoSessionTracking = true;
+    },
+    appRunner: () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ));
 
-  // Deep links — init early so cold-start URIs are captured before runApp.
-  DeepLinkService.instance.init();
+      // Deep links — init early so cold-start URIs are captured before runApp.
+      DeepLinkService.instance.init();
 
-  // Firebase init — fire-and-forget so runApp() is not blocked.
-  // FCM wiring happens in BaahyApp once this future settles.
-  _firebaseInit = Firebase.initializeApp()
-      .then((_) { _firebaseReady = true; })
-      .catchError((Object e) {
-        debugPrint('[Firebase] Not initialized — add config files to enable: $e');
-      });
+      // Firebase init — fire-and-forget so runApp() is not blocked.
+      // FCM wiring happens in BaahyApp once this future settles.
+      _firebaseInit = Firebase.initializeApp()
+          .then((_) { _firebaseReady = true; })
+          .catchError((Object e) {
+            debugPrint('[Firebase] Not initialized — add config files to enable: $e');
+          });
 
-  final container = ProviderContainer();
-  DeepLinkService.instance.setContainer(container);
-  runApp(UncontrolledProviderScope(container: container, child: const BaahyApp()));
+      final container = ProviderContainer();
+      DeepLinkService.instance.setContainer(container);
+      runApp(UncontrolledProviderScope(container: container, child: const BaahyApp()));
+    },
+  );
 }
 
 class BaahyApp extends ConsumerWidget {

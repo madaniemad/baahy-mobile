@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../api/api_client.dart';
 
 // Top-level handler — must be a top-level function (not a closure or class method).
@@ -87,7 +88,9 @@ class PushNotificationService {
         final token = await _fcm.getToken();
         if (token != null) await _sendTokenToServer(token);
       }
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   // Call this after onboarding completes or after first order/login.
@@ -105,14 +108,18 @@ class PushNotificationService {
       if (settings.authorizationStatus != AuthorizationStatus.denied) {
         await _uploadToken();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   Future<void> _uploadToken() async {
     try {
       final token = await _fcm.getToken();
       if (token != null) await _sendTokenToServer(token);
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   Future<void> _sendTokenToServer(String token) async {
@@ -121,7 +128,9 @@ class PushNotificationService {
         'token': token,
         'platform': Platform.isIOS ? 'ios' : 'android',
       });
-    } catch (_) {}
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   void _onForegroundMessage(RemoteMessage message) {
@@ -174,6 +183,50 @@ class PushNotificationService {
         return '/wallet';
       case 'promotion':
         return '/home';
+      // Cart & checkout abandonment
+      case 'cart_abandoned':
+      case 'cart_low_stock':
+      case 'cart_price_drop':
+        return '/cart';
+      case 'checkout_abandoned':
+        return '/checkout';
+      // Wishlist
+      case 'wishlist_price_drop':
+      case 'wishlist_back_in_stock':
+      case 'wishlist_low_stock':
+        return '/wishlist';
+      // Re-engagement
+      case 'reengagement_7d':
+      case 'reengagement_21d':
+      case 'reengagement_45d':
+      case 'lapsed_buyer_30d':
+      case 'lapsed_buyer_60d':
+      case 'lapsed_buyer_90d':
+      case 'new_arrivals_affinity':
+        return '/home';
+      // Loyalty / rewards
+      case 'tier_upgrade_close':
+      case 'referral_reminder':
+      case 'referral_reward_earned':
+      case 'friend_joined':
+        return '/rewards';
+      case 'wallet_unused':
+        return '/wallet';
+      // Product-specific
+      case 'reorder_suggestion':
+      case 'review_reminder':
+      case 'price_watch_triggered':
+        final pid = data['product_id']?.toString();
+        return pid != null ? '/product/$pid' : '/home';
+      // Vendor
+      case 'favourite_vendor_sale':
+      case 'favourite_vendor_new_arrivals':
+        final vid = data['vendor_id']?.toString();
+        return vid != null ? '/vendor/$vid' : '/home';
+      // Delivery
+      case 'delivery_attempt_failed':
+        final oid = data['order_id']?.toString();
+        return oid != null ? '/orders/$oid' : '/orders';
       default:
         return '/notifications';
     }

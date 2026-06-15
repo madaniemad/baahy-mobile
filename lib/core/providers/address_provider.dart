@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
 
@@ -44,8 +45,9 @@ class CityNotifier extends StateNotifier<String> {
         _ref.read(primaryAddressProvider.notifier).state = def;
         _ref.read(cityFromAddressProvider.notifier).state = true;
       }
-    } catch (_) {
-      // Not logged in or network error — keep current city, no address
+    } catch (e, st) {
+      // Not logged in (401) or unexpected network error — keep current city
+      Sentry.captureException(e, stackTrace: st);
     }
   }
 
