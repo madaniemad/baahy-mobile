@@ -307,7 +307,7 @@ class _OrderCard extends StatelessWidget {
                 label: Text(context.s.reorder,
                   style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 13)),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
+                  foregroundColor: context.col.ink0,
                   side: BorderSide(color: context.col.border),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),

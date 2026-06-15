@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
@@ -45,8 +46,11 @@ import '../../features/friends/screens/privacy_settings_screen.dart';
 import '../../features/friends/screens/username_setup_screen.dart';
 import '../shell/main_shell.dart';
 
+final _rootNavKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
+    navigatorKey: _rootNavKey,
     initialLocation: '/splash',
     // Handle deep links from baahy:// scheme and https://baahy.ly/
     redirect: (context, state) {
@@ -89,9 +93,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // Stack screens (no tab bar)
-      GoRoute(path: '/search',     builder: (_, __) => const SearchScreen()),
-      GoRoute(path: '/search/results', builder: (_, state) {
+      // Stack screens (no tab bar) — parentNavigatorKey forces root navigator,
+      // preventing HeroControllerScope key conflict with StatefulShellRoute branches
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/search',     builder: (_, __) => const SearchScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/search/results', builder: (_, state) {
           final extra = state.extra as Map<String, dynamic>?;
           return SearchResultsScreen(
             query: state.uri.queryParameters['q'] ?? '',
@@ -107,50 +112,50 @@ final routerProvider = Provider<GoRouter>((ref) {
             visionProducts: extra?['visionProducts'] as List<Product>?,
           );
         }),
-      GoRoute(path: '/search/camera', builder: (_, __) => const CameraSearchScreen()),
-      GoRoute(path: '/product/:id', builder: (_, state) =>
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/search/camera', builder: (_, __) => const CameraSearchScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/product/:id', builder: (_, state) =>
           ProductDetailScreen(id: int.parse(state.pathParameters['id']!))),
-      GoRoute(path: '/product/:id/reviews', builder: (_, state) =>
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/product/:id/reviews', builder: (_, state) =>
           ReviewsScreen(productId: int.parse(state.pathParameters['id']!))),
-      GoRoute(path: '/checkout',   builder: (_, __) => const CheckoutScreen()),
-      GoRoute(path: '/order-confirmed', builder: (_, state) =>
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/checkout',   builder: (_, __) => const CheckoutScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/order-confirmed', builder: (_, state) =>
           OrderConfirmedScreen(data: state.extra as Map<String, dynamic>)),
-      GoRoute(path: '/orders',     builder: (_, __) => const OrdersScreen()),
-      GoRoute(path: '/orders/:id', builder: (_, state) =>
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/orders',     builder: (_, __) => const OrdersScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/orders/:id', builder: (_, state) =>
           OrderTrackingScreen(id: int.parse(state.pathParameters['id']!))),
-      // Pushable assistant — same screen as /assistant tab but with back button
-      // Pass a String via extra to pre-fill and auto-send an initial message
-      GoRoute(path: '/chat', builder: (_, state) =>
-          AssistantScreen(initialMessage: state.extra as String?)),
-      GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
-      GoRoute(path: '/addresses',  builder: (_, __) => const AddressesScreen()),
-      GoRoute(path: '/addresses/edit', builder: (_, state) =>
-          EditAddressScreen(address: state.extra as Map<String, dynamic>?)),
-      GoRoute(path: '/wallet',     builder: (_, __) => const WalletScreen()),
-      GoRoute(path: '/orders/:id/return', builder: (_, state) =>
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/orders/:id/return', builder: (_, state) =>
           ReturnScreen(
             orderId: int.parse(state.pathParameters['id']!),
             returnDeadline: state.extra is DateTime ? state.extra as DateTime : null,
           )),
-      GoRoute(path: '/referral',      builder: (_, __) => const ReferralScreen()),
-      GoRoute(path: '/rewards-hub',   builder: (_, __) => const RewardsHubScreen()),
-      GoRoute(path: '/settings',      builder: (_, __) => const SettingsScreen()),
-      GoRoute(path: '/return-policy', builder: (_, __) => const ReturnPolicyScreen()),
-      GoRoute(path: '/privacy',       builder: (_, __) => const PolicyScreen(type: PolicyType.privacy)),
-      GoRoute(path: '/terms',         builder: (_, __) => const PolicyScreen(type: PolicyType.terms)),
-      GoRoute(path: '/faq',           builder: (_, __) => const FaqScreen()),
-      GoRoute(path: '/contact',       builder: (_, __) => const ContactScreen()),
-      GoRoute(path: '/vendors/:id', builder: (_, state) =>
+      // Pushable assistant — same screen as /assistant tab but with back button
+      // Pass a String via extra to pre-fill and auto-send an initial message
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/chat', builder: (_, state) =>
+          AssistantScreen(initialMessage: state.extra as String?)),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/notifications', builder: (_, __) => const NotificationsScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/addresses',  builder: (_, __) => const AddressesScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/addresses/edit', builder: (_, state) =>
+          EditAddressScreen(address: state.extra as Map<String, dynamic>?)),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/wallet',     builder: (_, __) => const WalletScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/referral',      builder: (_, __) => const ReferralScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/rewards-hub',   builder: (_, __) => const RewardsHubScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/settings',      builder: (_, __) => const SettingsScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/return-policy', builder: (_, __) => const ReturnPolicyScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/privacy',       builder: (_, __) => const PolicyScreen(type: PolicyType.privacy)),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/terms',         builder: (_, __) => const PolicyScreen(type: PolicyType.terms)),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/faq',           builder: (_, __) => const FaqScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/contact',       builder: (_, __) => const ContactScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/vendors/:id', builder: (_, state) =>
         VendorStoreScreen(vendorId: int.parse(state.pathParameters['id']!))),
 
       // Friends
-      GoRoute(path: '/friends',        builder: (_, __) => const FriendsScreen()),
-      GoRoute(path: '/friends/search', builder: (_, __) => const UserSearchScreen()),
-      GoRoute(path: '/friends/qr',     builder: (_, __) => const QrProfileScreen()),
-      GoRoute(path: '/friends/:username', builder: (_, state) =>
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/friends',        builder: (_, __) => const FriendsScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/friends/search', builder: (_, __) => const UserSearchScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/friends/qr',     builder: (_, __) => const QrProfileScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/friends/:username', builder: (_, state) =>
           FriendProfileScreen(username: state.pathParameters['username']!)),
-      GoRoute(path: '/settings/privacy', builder: (_, __) => const PrivacySettingsScreen()),
-      GoRoute(path: '/username-setup',   builder: (_, __) => const UsernameSetupScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/settings/privacy', builder: (_, __) => const PrivacySettingsScreen()),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/username-setup',   builder: (_, __) => const UsernameSetupScreen()),
     ],
   );
 
