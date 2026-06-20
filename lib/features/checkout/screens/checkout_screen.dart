@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/shipping_rate.dart';
 import '../../../core/providers/cart_provider.dart';
+import '../../../core/providers/reorder_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
 import '../../../core/providers/welcome_coupon_provider.dart';
@@ -18,7 +19,7 @@ import '../../../shared/widgets/app_button.dart';
 
 const _kLastPaymentKey = 'baahy_last_payment';
 
-Color _accent(BuildContext context) => AppColors.teal;
+Color _accent(BuildContext context) => AppColors.adaptive(context);
 
 // Normalizes Libyan phone numbers to display format (0XXXXXXXXX)
 String _fmtPhone(String phone) {
@@ -30,14 +31,12 @@ String _fmtPhone(String phone) {
   return '0$p';                              // raw 9x... → 09x...
 }
 
-Color _cardFill(BuildContext context) =>
-    Theme.of(context).brightness == Brightness.dark ? Colors.transparent : context.col.surface;
+Color _cardFill(BuildContext context) => context.col.surface;
 
-Color _softFill(BuildContext context) =>
-    Theme.of(context).brightness == Brightness.dark ? Colors.transparent : context.col.surfaceSoft;
+Color _softFill(BuildContext context) => context.col.surfaceSoft;
 
 // Selected card/radio border
-Color _selBorder(BuildContext context) => AppColors.teal;
+Color _selBorder(BuildContext context) => AppColors.adaptive(context);
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -61,22 +60,54 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    _loadAddresses();
+    _initCheckout();
     _loadWallet();
-    _loadSavedPayment();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _startCheckoutSession());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startCheckoutSession();
+      // Auto-expand items in reorder mode so user sees what they're ordering
+      if (ref.read(reorderSessionProvider) != null) {
+        setState(() => _itemsExpanded = true);
+      }
+    });
+  }
+
+  // Load address + saved payment together, then validate COD for the resolved address
+  Future<void> _initCheckout() async {
+    await Future.wait([_loadAddresses(), _loadSavedPayment()]);
+    if (!mounted) return;
+    if (_paymentMethod == 'cash_on_delivery' && !_codAllowedForAddress) {
+      final altMethods = (ref.read(appConfigProvider).paymentMethods as List)
+          .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet' && m.id != 'cash_on_delivery')
+          .toList();
+      if (altMethods.isNotEmpty) _setPaymentMethod(altMethods.first.id as String);
+    }
+  }
+
+  void _updateReorderQty(String itemKey, int newQty) {
+    final session = ref.read(reorderSessionProvider);
+    if (session == null) return;
+    final updated = session.items
+        .map((i) => i.key == itemKey ? i.copyWith(quantity: newQty) : i)
+        .toList();
+    ref.read(reorderSessionProvider.notifier).state = ReorderSession(
+      items: updated,
+      address: session.address,
+      paymentMethod: session.paymentMethod,
+    );
   }
 
   Future<void> _startCheckoutSession() async {
     try {
-      final cart = ref.read(cartProvider);
+      final session = ref.read(reorderSessionProvider);
+      final items = session?.items ?? ref.read(cartProvider).items;
+      final subtotal = session?.subtotal ?? ref.read(cartProvider).subtotal;
       await ApiClient.instance.dio.post('/checkout/session/start', data: {
-        'items': cart.items.map((i) => {
+        'items': items.map((i) => {
           'product_id': i.productId,
           if (i.variationId != null) 'variation_id': i.variationId,
           'quantity': i.quantity,
         }).toList(),
-        'subtotal': cart.subtotal,
+        'subtotal': subtotal,
       });
     } catch (_) {}
   }
@@ -87,10 +118,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final list = (res.data['data'] as List?)
           ?.map((a) => Map<String, dynamic>.from(a)).toList() ?? [];
       if (mounted) {
+        final reorderAddr = ref.read(reorderSessionProvider)?.address;
         setState(() {
           _addresses = list;
-          _selectedAddress = list.firstWhere(
-            (a) => a['is_default'] == true, orElse: () => list.isNotEmpty ? list.first : {});
+          // Reorder pre-fills address from original order; otherwise use default
+          if (reorderAddr != null && reorderAddr.isNotEmpty) {
+            _selectedAddress = reorderAddr;
+          } else {
+            _selectedAddress = list.firstWhere(
+              (a) => a['is_default'] == true, orElse: () => list.isNotEmpty ? list.first : {});
+          }
         });
       }
     } catch (_) {}
@@ -107,6 +144,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Future<void> _loadSavedPayment() async {
+    // Reorder pre-fills payment method from original order
+    final reorderMethod = ref.read(reorderSessionProvider)?.paymentMethod;
+    if (reorderMethod != null) {
+      if (mounted) setState(() => _paymentMethod = reorderMethod);
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(_kLastPaymentKey);
     if (saved != null && mounted) setState(() => _paymentMethod = saved);
@@ -202,48 +245,66 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
 
-    // Pre-flight: variable items without a chosen variation
-    final unresolved = ref.read(cartProvider).items.where((i) =>
-      i.variationId == null &&
-      (i.product.productType == 'variable' || i.product.variations.isNotEmpty)
-    ).toList();
-    if (unresolved.isNotEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('بعض المنتجات تحتاج لاختيار المقاس أو اللون'),
-          action: SnackBarAction(label: 'مراجعة السلة', onPressed: () => context.pop()),
-          backgroundColor: AppColors.danger,
-        ));
+    final reorderSession = ref.read(reorderSessionProvider);
+    final isReorder = reorderSession != null;
+
+    if (!isReorder) {
+      // Pre-flight: variable items without a chosen variation.
+      // Heuristic: same productId in cart both with and without variationId → clearly variable.
+      final allItems = ref.read(cartProvider).items;
+      final productIdsWithVariations = allItems
+          .where((i) => i.variationId != null)
+          .map((i) => i.productId)
+          .toSet();
+      final unresolved = allItems.where((i) =>
+        i.variationId == null &&
+        (i.product.productType == 'variable' ||
+         i.product.variations.isNotEmpty ||
+         productIdsWithVariations.contains(i.productId))
+      ).toList();
+      if (unresolved.isNotEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Text('بعض المنتجات تحتاج لاختيار المقاس أو اللون'),
+            action: SnackBarAction(label: 'مراجعة السلة', onPressed: () => context.pop()),
+            backgroundColor: AppColors.danger,
+          ));
+        }
+        return;
       }
-      return;
     }
 
     setState(() => _loading = true);
 
-    final validationError = await ref.read(cartProvider.notifier).validate();
-    if (validationError != null) {
-      setState(() => _loading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(validationError), backgroundColor: AppColors.danger));
+    if (!isReorder) {
+      final validationError = await ref.read(cartProvider.notifier).validate();
+      if (validationError != null) {
+        setState(() => _loading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(validationError), backgroundColor: AppColors.danger));
+        }
+        return;
       }
-      return;
     }
 
     try {
+      final orderItems = isReorder ? reorderSession.items : ref.read(cartProvider).items;
+      final orderSubtotal = isReorder ? reorderSession.subtotal : ref.read(cartProvider).subtotal;
       final cart = ref.read(cartProvider);
+      final couponCode = isReorder ? null : cart.couponCode;
       final addr = _selectedAddress!;
       final walletActive = _useWallet && _walletBalance > 0;
       final maxUse = walletActive
-          ? (_walletBalance < cart.total ? _walletBalance : cart.total)
+          ? (_walletBalance < orderSubtotal ? _walletBalance : orderSubtotal)
           : 0.0;
       final walletDeduct = walletActive
           ? (double.tryParse(_walletAmountCtrl.text) ?? maxUse).clamp(0.0, maxUse)
           : 0.0;
-      final walletCoversAll = walletActive && walletDeduct >= cart.total;
+      final walletCoversAll = walletActive && walletDeduct >= orderSubtotal;
 
       final res = await ApiClient.instance.dio.post('/orders', data: {
-        'items': cart.items.map((i) => {
+        'items': orderItems.map((i) => {
           'product_id': i.productId,
           if (i.variationId != null) 'variation_id': i.variationId,
           'quantity': i.quantity,
@@ -257,12 +318,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         'shipping_phone': addr['phone'] ?? '',
         'shipping_city': addr['city'] ?? '',
         'shipping_address': addr['address'] ?? '',
-        if (cart.couponCode != null) 'coupon_code': cart.couponCode,
+        if (addr['latitude'] != null) 'shipping_lat': addr['latitude'],
+        if (addr['longitude'] != null) 'shipping_lng': addr['longitude'],
+        if (couponCode != null) 'coupon_code': couponCode,
         if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
       });
 
       SharedPreferences.getInstance().then((p) => p.setString(_kLastPaymentKey, _paymentMethod));
-      await ref.read(cartProvider.notifier).clear();
+      if (!isReorder) await ref.read(cartProvider.notifier).clear();
+      ref.read(reorderSessionProvider.notifier).state = null;
       ref.invalidate(welcomeCouponProvider);
       if (mounted) context.pushReplacement('/order-confirmed', extra: res.data['data']);
     } catch (e) {
@@ -322,15 +386,33 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
+    final reorderSession = ref.watch(reorderSessionProvider);
+    final isReorder = reorderSession != null;
     final config = ref.watch(appConfigProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = _accent(context);
 
+    // Effective items and subtotal: reorder session takes priority over cart
+    final effectiveItems = isReorder ? reorderSession.items : cart.items;
+    final effectiveSubtotal = isReorder ? reorderSession.subtotal : cart.subtotal;
+    // Watch shipping rates so delivery fee recalculates when address changes
+    ref.watch(shippingRatesProvider);
+    final selectedRate = _selectedRate;
+    final effectiveDeliveryFee = isReorder
+        ? (selectedRate != null
+            ? selectedRate.effectiveRate(effectiveSubtotal)
+            : (effectiveSubtotal >= (cart.cityRate?.freeShippingThreshold ?? 150) ? 0.0
+                : (cart.cityRate?.effectiveRate(effectiveSubtotal) ?? cart.fallbackShippingFee)))
+        : cart.deliveryFee;
+    final effectiveTotal = isReorder
+        ? effectiveSubtotal + effectiveDeliveryFee
+        : cart.total;
+
     final allMethods = (config.paymentMethods as List)
         .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet')
         .toList();
-    final codValueExceeded = cart.total > 5000;
-    final codItemsExceeded = cart.items.length > 20;
+    final codValueExceeded = effectiveTotal > 5000;
+    final codItemsExceeded = effectiveItems.length > 20;
     final codBlocked = !_codAllowedForAddress || codValueExceeded || codItemsExceeded;
     final methods = codBlocked
         ? allMethods.where((m) => m.id != 'cash_on_delivery').toList()
@@ -338,35 +420,41 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     final walletActive = _useWallet && _walletBalance > 0;
     final maxWalletUse = walletActive
-        ? (_walletBalance < cart.total ? _walletBalance : cart.total)
+        ? (_walletBalance < effectiveTotal ? _walletBalance : effectiveTotal)
         : 0.0;
     final parsedWalletInput = double.tryParse(_walletAmountCtrl.text) ?? 0.0;
     final walletDeduct = walletActive
         ? parsedWalletInput.clamp(0.0, maxWalletUse)
         : 0.0;
-    final walletCoversAll = walletActive && walletDeduct >= cart.total;
-    final amountDue = walletActive ? (cart.total - walletDeduct).clamp(0.0, cart.total) : cart.total;
+    final walletCoversAll = walletActive && walletDeduct >= effectiveTotal;
+    final amountDue = walletActive ? (effectiveTotal - walletDeduct).clamp(0.0, effectiveTotal) : effectiveTotal;
     final isAr = context.isAr;
 
+    final topPad = MediaQuery.of(context).padding.top;
     return Scaffold(
       backgroundColor: context.col.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Header ───────────────────────────────────────────────────────
+      body: Column(
+        children: [
+            // ── Header ── extends behind status bar like AppBar ──────────────
             Container(
               color: context.col.surface,
               child: Column(
                 children: [
+                  SizedBox(height: topPad),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: Row(children: [
                       IconButton(
-                        onPressed: () => context.pop(),
+                        onPressed: () {
+                          ref.read(reorderSessionProvider.notifier).state = null;
+                          context.pop();
+                        },
                         icon: Icon(Icons.arrow_back_ios_new_rounded,
                           color: context.col.ink0, size: 20),
                       ),
-                      Text(context.s.cartTitle,
+                      Text(isReorder
+                          ? (context.isAr ? 'إعادة الطلب' : 'Reorder')
+                          : context.s.cartTitle,
                         style: TextStyle(
                           fontFamily: 'Cairo', fontWeight: FontWeight.w600,
                           fontSize: 15, color: context.col.ink2)),
@@ -454,7 +542,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     _SectionLabel(context.s.paymentMethod),
                     const SizedBox(height: 8),
                     GestureDetector(
-                      onTap: () => _showPaymentSheet(methods, cart.total),
+                      onTap: () => _showPaymentSheet(methods, effectiveTotal),
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
@@ -515,8 +603,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                     // ── Order items (collapsible) ─────────────────────────
                     _CollapsibleHeader(
-                      title: context.s.productsCountN(cart.items.length),
-                      subtitle: '${fmtPrice(cart.subtotal)} ${context.s.lydUnit}',
+                      title: context.s.productsCountN(effectiveItems.length),
+                      subtitle: '${fmtPrice(effectiveSubtotal)} ${context.s.lydUnit}',
                       expanded: _itemsExpanded,
                       onTap: () => setState(() => _itemsExpanded = !_itemsExpanded),
                     ),
@@ -531,11 +619,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           boxShadow: isDark ? null : AppShadows.shadowCard,
                         ),
                         child: Column(
-                          children: cart.items.map((item) {
+                          children: effectiveItems.map((item) {
                             final variationLabel = item.variation?.attributes
                                 .map((a) => isAr ? a.valueAr : a.value)
                                 .where((v) => v.isNotEmpty)
                                 .join(' · ');
+                            final maxQty = item.variation != null
+                                ? item.variation!.stockQuantity
+                                : (item.product.stockQuantity ?? 99);
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -557,11 +648,36 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   if (variationLabel != null && variationLabel.isNotEmpty)
                                     Text(variationLabel,
                                       style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
-                                  const SizedBox(height: 3),
-                                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                                    Text('× ${item.quantity}',
-                                      style: TextStyle(fontSize: 12, color: context.col.ink2,
-                                        fontFamily: 'PlusJakartaSans')),
+                                  const SizedBox(height: 6),
+                                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                    if (isReorder) ...[
+                                      // Inline qty stepper for reorder mode
+                                      Row(children: [
+                                        _QtyBtn(
+                                          icon: Icons.remove,
+                                          enabled: item.quantity > 1,
+                                          onTap: () => _updateReorderQty(item.key, item.quantity - 1),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                                          child: Text('${item.quantity}',
+                                            style: const TextStyle(
+                                              fontSize: 14, fontWeight: FontWeight.w700,
+                                              fontFamily: 'PlusJakartaSans')),
+                                        ),
+                                        _QtyBtn(
+                                          icon: Icons.add,
+                                          enabled: item.quantity < maxQty,
+                                          onTap: () => _updateReorderQty(item.key, item.quantity + 1),
+                                        ),
+                                      ]),
+                                    ] else ...[
+                                      Text('× ${item.quantity}',
+                                        style: TextStyle(fontSize: 12, color: context.col.ink2,
+                                          fontFamily: 'PlusJakartaSans')),
+                                    ],
                                     Text('${fmtPrice(item.total)} ${context.s.lydUnit}',
                                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
                                         fontFamily: 'PlusJakartaSans')),
@@ -586,26 +702,26 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                       child: Column(children: [
                         _SummaryRow(context.s.subtotalLabel,
-                          '${fmtPrice(cart.subtotal)} ${context.s.lydUnit}', ctx: context),
-                        if (cart.discountAmount > 0)
+                          '${fmtPrice(effectiveSubtotal)} ${context.s.lydUnit}', ctx: context),
+                        if (!isReorder && cart.discountAmount > 0)
                           _SummaryRow(context.s.couponDiscount,
                             '− ${fmtPrice(cart.discountAmount)} ${context.s.lydUnit}',
                             color: AppColors.success, ctx: context),
                         _SummaryRow(
                           context.s.shippingCost,
-                          cart.deliveryFee == 0
+                          effectiveDeliveryFee == 0
                               ? context.s.freeText
-                              : '${fmtPrice(cart.deliveryFee)} ${context.s.lydUnit}',
-                          color: cart.deliveryFee == 0 ? AppColors.success : null,
+                              : '${fmtPrice(effectiveDeliveryFee)} ${context.s.lydUnit}',
+                          color: effectiveDeliveryFee == 0 ? AppColors.success : null,
                           ctx: context),
                         Divider(height: 20, color: context.col.border),
                         _SummaryRow(context.s.orderTotal,
-                          '${fmtPrice(cart.total)} ${context.s.lydUnit}',
+                          '${fmtPrice(effectiveTotal)} ${context.s.lydUnit}',
                           bold: true, ctx: context),
                       ]),
                     ),
                     // Cashback earned on this order
-                    if (cart.subtotal >= config.cashbackMinOrder && config.cashbackRate > 0)
+                    if (effectiveSubtotal >= config.cashbackMinOrder && config.cashbackRate > 0)
                       Container(
                         margin: const EdgeInsets.only(top: 10),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -620,8 +736,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           const SizedBox(width: 8),
                           Expanded(child: Text(
                             context.s.orderCashbackEarn(
-                              fmtPrice(cart.subtotal * config.cashbackRate / 100),
-                              (cart.subtotal * config.cashbackRate / 10).round().clamp(1, 9999).toString()),
+                              fmtPrice(effectiveSubtotal * config.cashbackRate / 100),
+                              (effectiveSubtotal * config.cashbackRate / 10).round().clamp(1, 9999).toString()),
                             style: const TextStyle(
                               fontFamily: 'Cairo', fontSize: 12.5,
                               fontWeight: FontWeight.w600,
@@ -629,7 +745,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ]),
                       ),
                     // First-order coupon applied strip
-                    if (cart.couponCode?.toUpperCase() == 'FIRSTORDER')
+                    if (!isReorder && cart.couponCode?.toUpperCase() == 'FIRSTORDER')
                       Container(
                         margin: const EdgeInsets.only(top: 10),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -703,7 +819,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Text(context.s.total,
                     style: TextStyle(fontSize: 13, color: context.col.ink2)),
-                  Text('${fmtPrice(cart.total)} ${context.s.lydUnit}',
+                  Text('${fmtPrice(effectiveTotal)} ${context.s.lydUnit}',
                     style: const TextStyle(fontFamily: 'PlusJakartaSans',
                       fontSize: 18, fontWeight: FontWeight.w800)),
                 ]),
@@ -718,7 +834,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 }
@@ -1124,7 +1239,7 @@ class _TrustRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const tiffany = AppColors.teal;
+    final tiffany = AppColors.adaptive(context);
     final items = [
       (Icons.verified_outlined,          context.s.trustAuthentic,  tiffany),
       (Icons.local_shipping_outlined,   context.s.trustDelivery,   tiffany),
@@ -1219,6 +1334,31 @@ Widget _SummaryRow(String label, String value,
   );
 
 // ── Collapsible section header ────────────────────────────────────────────────
+
+class _QtyBtn extends StatelessWidget {
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+  const _QtyBtn({required this.icon, required this.enabled, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 28, height: 28,
+        decoration: BoxDecoration(
+          color: enabled
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : context.col.surfaceSoft,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, size: 15,
+          color: enabled ? AppColors.primary : context.col.ink4),
+      ),
+    );
+  }
+}
 
 class _CollapsibleHeader extends StatelessWidget {
   final String title;

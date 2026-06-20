@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/shipping_rate.dart';
 import '../../../core/providers/address_provider.dart';
@@ -27,7 +28,11 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
   late final _phoneCtrl = TextEditingController(text: widget.address?['phone'] ?? '');
   late final _nameCtrl  = TextEditingController(text: widget.address?['name'] ?? '');
   late bool _isDefault  = widget.address?['is_default'] == true;
+  double? _lat;
+  double? _lng;
   bool _loading = false;
+  final _phoneFocus = FocusNode();
+  final _notesFocus = FocusNode();
 
   static const _labels = [
     ('المنزل', Icons.home_outlined),
@@ -44,22 +49,36 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
     _label = existing != null && _labels.any((l) => l.$1 == existing)
         ? existing : _labels[0].$1;
     _city = widget.address?['city'] as String?;
+    final rawLat = widget.address?['latitude'];
+    final rawLng = widget.address?['longitude'];
+    _lat = rawLat != null ? double.tryParse(rawLat.toString()) : null;
+    _lng = rawLng != null ? double.tryParse(rawLng.toString()) : null;
+    _phoneFocus.addListener(_onFocusChange);
+    _notesFocus.addListener(_onFocusChange);
   }
+
+  void _onFocusChange() { if (mounted) setState(() {}); }
 
   @override
   void dispose() {
     for (final c in [_streetCtrl, _notesCtrl, _phoneCtrl, _nameCtrl]) c.dispose();
+    _phoneFocus.dispose();
+    _notesFocus.dispose();
     super.dispose();
   }
 
   Future<void> _openMapPicker() async {
+    final initial = (_lat != null && _lng != null)
+        ? LatLng(_lat!, _lng!)
+        : null;
     final result = await Navigator.of(context).push<MapPickResult>(
-      MaterialPageRoute(builder: (_) => const MapLocationPicker()),
+      MaterialPageRoute(builder: (_) => MapLocationPicker(initial: initial)),
     );
     if (result == null || !mounted) return;
     setState(() {
       _city = result.city;
-      // Pre-fill street if empty
+      _lat  = result.lat;
+      _lng  = result.lng;
       if (_streetCtrl.text.trim().isEmpty && result.address.isNotEmpty) {
         _streetCtrl.text = result.address;
       }
@@ -74,6 +93,9 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => _CityPickerSheet(current: _city, rates: rates),
     );
+    if (!mounted) return;
+    // Clear residual keyboard focus from the sheet's search field (iOS keyboard bug)
+    FocusScope.of(context).unfocus();
     if (picked != null) setState(() => _city = picked);
   }
 
@@ -92,6 +114,8 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       'notes':      _notesCtrl.text.trim(),
       'phone':      _phoneCtrl.text.trim(),
       'is_default': _isDefault,
+      if (_lat != null) 'latitude':  _lat,
+      if (_lng != null) 'longitude': _lng,
     };
     try {
       if (_isEdit) {
@@ -135,6 +159,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: context.col.surface,
       appBar: AppBar(
         backgroundColor: context.col.surface, elevation: 0,
@@ -185,7 +210,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               }).toList()),
               const SizedBox(height: 16),
 
-              _TextField('الاسم الكامل', _nameCtrl, hint: 'محمد علي'),
+              _TextField('الاسم الكامل', _nameCtrl, hint: 'محمد علي', autofocus: true),
 
               // ── Phone ──────────────────────────────────────────────────────
               Padding(
@@ -196,19 +221,22 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                     decoration: BoxDecoration(
                       color: context.col.bg,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: context.col.border),
+                      border: Border.all(
+                        color: _phoneFocus.hasFocus ? AppColors.primary : context.col.border,
+                        width: _phoneFocus.hasFocus ? 1.5 : 1),
                     ),
                     child: Directionality(
                       textDirection: TextDirection.ltr,
                       child: TextField(
                         controller: _phoneCtrl,
+                        focusNode: _phoneFocus,
                         keyboardType: TextInputType.phone,
                         textAlign: TextAlign.right,
                         decoration: InputDecoration(
                           hintText: '+218 91 234 5678',
                           hintStyle: TextStyle(color: context.col.ink3, fontSize: 13),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
+                          contentPadding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
                         ),
                       ),
@@ -252,6 +280,62 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                   ),
                 ),
               ]),
+              const SizedBox(height: 10),
+
+              // ── Map pin ────────────────────────────────────────────────────
+              GestureDetector(
+                onTap: _openMapPicker,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: _lat != null
+                        ? AppColors.primary.withValues(alpha: 0.06)
+                        : context.col.bg,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: _lat != null ? AppColors.primary : context.col.border,
+                      width: _lat != null ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(children: [
+                    Icon(
+                      _lat != null ? Icons.location_on : Icons.add_location_alt_outlined,
+                      color: _lat != null ? AppColors.primary : context.col.ink3,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _lat != null
+                            ? 'موقع محدد على الخريطة ✓'
+                            : 'تحديد موقع التوصيل على الخريطة',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: _lat != null ? FontWeight.w600 : FontWeight.normal,
+                          color: _lat != null ? AppColors.primary : context.col.ink2,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: context.col.ink3, size: 18),
+                  ]),
+                ),
+              ),
+              if (_lat != null) ...[
+                const SizedBox(height: 4),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: TextButton(
+                    onPressed: () => setState(() { _lat = null; _lng = null; }),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text('إزالة الموقع', style: TextStyle(
+                      fontSize: 11, color: context.col.ink3)),
+                  ),
+                ),
+              ],
               const SizedBox(height: 14),
 
               _TextField('الشارع، المبنى، الشقة', _streetCtrl,
@@ -262,16 +346,19 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                 decoration: BoxDecoration(
                   color: context.col.bg,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: context.col.border),
+                  border: Border.all(
+                    color: _notesFocus.hasFocus ? AppColors.primary : context.col.border,
+                    width: _notesFocus.hasFocus ? 1.5 : 1),
                 ),
                 child: TextField(
                   controller: _notesCtrl,
+                  focusNode: _notesFocus,
                   maxLines: 3,
                   decoration: InputDecoration(
                     hintText: 'مثل: "مقابل المسجد الأبيض، بجانب مخبز المدينة"',
                     hintStyle: TextStyle(color: context.col.ink3, fontSize: 12.5),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.all(14),
+                    contentPadding: const EdgeInsets.all(14),
                   ),
                 ),
               ),
@@ -452,29 +539,61 @@ class _FieldLabel extends StatelessWidget {
   );
 }
 
-class _TextField extends StatelessWidget {
+class _TextField extends StatefulWidget {
   final String label;
   final TextEditingController controller;
   final TextInputType keyboardType;
   final String? hint;
+  final bool autofocus;
   const _TextField(this.label, this.controller,
-    {this.keyboardType = TextInputType.text, this.hint});
+    {this.keyboardType = TextInputType.text, this.hint, this.autofocus = false,
+     super.key});
+
+  @override
+  State<_TextField> createState() => _TextFieldState();
+}
+
+class _TextFieldState extends State<_TextField> {
+  late final FocusNode _focus = FocusNode();
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocus);
+  }
+
+  void _onFocus() {
+    if (mounted) setState(() => _focused = _focus.hasFocus);
+  }
+
+  @override
+  void dispose() {
+    _focus.removeListener(_onFocus);
+    _focus.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 14),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _FieldLabel(label),
+      _FieldLabel(widget.label),
       Container(
         decoration: BoxDecoration(
           color: context.col.bg,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: context.col.border),
+          border: Border.all(
+            color: _focused ? AppColors.primary : context.col.border,
+            width: _focused ? 1.5 : 1),
         ),
         child: TextField(
-          controller: controller,
-          keyboardType: keyboardType,
+          controller: widget.controller,
+          keyboardType: widget.keyboardType,
+          focusNode: _focus,
+          autofocus: widget.autofocus,
           decoration: InputDecoration(
-            hintText: hint,
+            hintText: widget.hint,
             hintStyle: TextStyle(color: context.col.ink3, fontSize: 13),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
