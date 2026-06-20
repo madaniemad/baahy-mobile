@@ -198,32 +198,12 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
 
                         // Right panel
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // "الأقسام" title
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-                                child: Text(
-                                  context.s.categories,
-                                  textAlign: TextAlign.start,
-                                  style: const TextStyle(
-                                    fontFamily: 'Cairo',
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 16,
-                                  ),
+                          child: _activeCategoryId == null || activeCategory == null
+                              ? const SizedBox.shrink()
+                              : _RightContent(
+                                  categoryId: _activeCategoryId!,
+                                  category: activeCategory,
                                 ),
-                              ),
-                              Expanded(
-                                child: _activeCategoryId == null || activeCategory == null
-                                    ? const SizedBox.shrink()
-                                    : _RightContent(
-                                        categoryId: _activeCategoryId!,
-                                        category: activeCategory,
-                                      ),
-                              ),
-                            ],
-                          ),
                         ),
                       ],
                     ),
@@ -296,7 +276,7 @@ class _RightContentState extends ConsumerState<_RightContent> {
       ),
       error: (_, __) => Center(child: Text(context.s.loadError, style: TextStyle(color: context.col.ink2))),
       data: (products) => ListView(
-        padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         children: [
           // Subcategory tiles
           if (subcats.isNotEmpty) ...[

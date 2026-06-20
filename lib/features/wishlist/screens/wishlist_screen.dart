@@ -212,11 +212,11 @@ class _WishlistCard extends ConsumerWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.success,
+                      color: AppColors.danger,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                        '−${((1 - salePrice / product.price) * 100).round()}%',
+                        '-${((1 - salePrice / product.price) * 100).round()}%',
                         style: const TextStyle(
                             fontSize: 9,
                             color: Colors.white,

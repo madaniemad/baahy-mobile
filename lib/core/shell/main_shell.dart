@@ -54,7 +54,7 @@ typedef _Tab = ({IconData icon, String labelAr, String labelEn, int branchIdx});
 
 const _Tab _tabHome     = (icon: Icons.home_outlined,          labelAr: 'الرئيسية', labelEn: 'Home',       branchIdx: 0);
 const _Tab _tabWishlist = (icon: Icons.favorite_outline,       labelAr: 'المفضلة',  labelEn: 'Wishlist',   branchIdx: 1);
-const _Tab _tabBrowse   = (icon: Icons.window_outlined,         labelAr: 'الأقسام',  labelEn: 'Categories', branchIdx: 2);
+const _Tab _tabBrowse   = (icon: Icons.grid_view_outlined,      labelAr: 'الأقسام',  labelEn: 'Categories', branchIdx: 2);
 const _Tab _tabCart     = (icon: Icons.shopping_cart_outlined, labelAr: 'السلة',    labelEn: 'Cart',       branchIdx: 3);
 const _Tab _tabAccount  = (icon: Icons.person_outline,         labelAr: 'حسابي',    labelEn: 'Me',         branchIdx: 4);
 

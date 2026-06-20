@@ -236,6 +236,28 @@ class _CartBodyState extends ConsumerState<_CartBody> {
       safePush(context, '/signin');
       return;
     }
+    // Block variable items without a variation before hitting the server
+    final cartItems = ref.read(cartProvider).items;
+    final varProductIds = cartItems
+        .where((i) => i.variationId != null)
+        .map((i) => i.productId)
+        .toSet();
+    final hasUnresolved = cartItems.any((i) =>
+      i.variationId == null &&
+      (i.product.productType == 'variable' ||
+       i.product.variations.isNotEmpty ||
+       varProductIds.contains(i.productId))
+    );
+    if (hasUnresolved) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('بعض المنتجات تحتاج لاختيار المقاس أو اللون'),
+          backgroundColor: AppColors.danger,
+        ));
+      }
+      return;
+    }
+
     setState(() => _checking = true);
     final issues = await ref.read(cartProvider.notifier).validateAndGetIssues();
     if (!mounted) return;
@@ -805,8 +827,10 @@ class _CartItemCard extends ConsumerWidget {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       _QtyBtn(
                         icon: Icons.add,
-                        onTap: (item.product.stockQuantity != null &&
-                                item.quantity >= item.product.stockQuantity!)
+                        onTap: (!item.product.manageStock
+                                ? item.quantity >= 10
+                                : item.product.stockQuantity != null &&
+                                  item.quantity >= item.product.stockQuantity!)
                             ? null
                             : () => ref.read(cartProvider.notifier)
                                 .updateQty(item.key, item.quantity + 1),

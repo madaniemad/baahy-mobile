@@ -23,6 +23,7 @@ class Product {
   final String? descriptionAr;
   final String? brand;
   final String fulfillmentType;
+  final bool manageStock;
 
   const Product({
     required this.id,
@@ -49,6 +50,7 @@ class Product {
     this.descriptionAr,
     this.brand,
     this.fulfillmentType = 'inherit',
+    this.manageStock = false,
   });
 
   double get displayPrice => currentPrice ?? salePrice ?? price;
@@ -87,6 +89,7 @@ class Product {
     'description_ar': descriptionAr,
     'brand': brand,
     'fulfillment_type': fulfillmentType,
+    'manage_stock': manageStock,
   };
 
   static double _d(dynamic v) {
@@ -103,7 +106,10 @@ class Product {
     price: _d(j['price']),
     salePrice: j['sale_price'] != null ? _d(j['sale_price']) : null,
     currentPrice: j['current_price'] != null ? _d(j['current_price']) : null,
-    inStock: j['in_stock'] == true || j['in_stock'] == 1,
+    manageStock: j['manage_stock'] == true || j['manage_stock'] == 1,
+    inStock: (j['manage_stock'] == true || j['manage_stock'] == 1)
+        ? (j['in_stock'] == true || j['in_stock'] == 1)
+        : (j['in_stock'] != false && j['in_stock'] != 0),
     stockQuantity: () {
       if ((j['product_type'] ?? 'simple') == 'variable') {
         final raw = j['variations_sum_stock_quantity'];

@@ -127,9 +127,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 
   Future<void> _addToCart(Product product, {bool goToCart = false}) async {
-    if (product.variations.isNotEmpty && _selectedVariation == null) {
+    if ((product.variations.isNotEmpty || product.productType == 'variable') && _selectedVariation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.s.selectOptions)));
+      return;
+    }
+    if (_selectedVariation != null && !_selectedVariation!.inStock) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.isAr ? 'هذا الخيار غير متوفر' : 'This option is out of stock')));
       return;
     }
     await ref.read(cartProvider.notifier).add(
@@ -234,11 +239,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               varMinPrice != null && varMaxPrice != null &&
               varMinPrice != varMaxPrice;
 
-          final lowStock = product.inStock &&
-              product.productType != 'variable' &&
-              product.stockQuantity != null &&
-              product.stockQuantity! > 0 &&
-              product.stockQuantity! <= 5;
+          final effectiveInStock = _selectedVariation != null
+              ? _selectedVariation!.inStock
+              : product.productType == 'variable' && product.variations.isNotEmpty
+                  ? product.variations.any((v) => v.inStock)
+                  : product.inStock;
+          final _effQty = _selectedVariation?.stockQuantity ?? product.stockQuantity;
+          final effectiveLowStock = effectiveInStock &&
+              product.manageStock &&
+              _effQty != null && _effQty > 0 && _effQty <= 5;
 
           return Stack(
             children: [
@@ -426,8 +435,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               Text(name, style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.w800, height: 1.3)),
                               const SizedBox(height: 10),
-                              // Full 5-star rating
-                              if (product.averageRating != null && product.reviewsCount != null)
+                              // Full 5-star rating — hide if no reviews yet
+                              if (product.averageRating != null && product.reviewsCount != null && product.reviewsCount! > 0)
                                 GestureDetector(
                                   onTap: () => safePush(context, '/product/${product.id}/reviews'),
                                   child: Row(children: [
@@ -502,20 +511,20 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 Container(
                                   width: 8, height: 8,
                                   decoration: BoxDecoration(
-                                    color: product.inStock
-                                        ? (lowStock ? AppColors.warn : AppColors.success)
+                                    color: effectiveInStock
+                                        ? (effectiveLowStock ? AppColors.warn : AppColors.success)
                                         : AppColors.danger,
                                     shape: BoxShape.circle),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  product.inStock
-                                      ? (lowStock ? context.s.lowStockN(product.stockQuantity!) : context.s.inStock)
+                                  effectiveInStock
+                                      ? (effectiveLowStock ? context.s.lowStockN(_effQty!) : context.s.inStock)
                                       : context.s.outOfStock,
                                   style: TextStyle(
                                     fontSize: 13, fontWeight: FontWeight.w600,
-                                    color: product.inStock
-                                        ? (lowStock ? AppColors.warn : AppColors.success)
+                                    color: effectiveInStock
+                                        ? (effectiveLowStock ? AppColors.warn : AppColors.success)
                                         : AppColors.danger),
                                 ),
                               ]),
@@ -563,6 +572,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                     ? (_selectedVariation?.inStock ?? false)
                                     : product.inStock,
                                 max: () {
+                                  if (!product.manageStock) return 10;
                                   if (product.variations.isNotEmpty) {
                                     final varQty = _selectedVariation?.stockQuantity;
                                     return (varQty != null && varQty > 0) ? varQty : 1;
@@ -839,6 +849,7 @@ class _StockEtaStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lowStock = product.inStock &&
+        product.manageStock &&
         product.productType != 'variable' &&
         product.stockQuantity != null &&
         product.stockQuantity! > 0 &&
@@ -1489,21 +1500,20 @@ class _VariationPicker extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: isSelected ? context.col.ink0
+                            color: isSelected ? AppColors.adaptive(context)
                                 : isOutOfStock ? context.col.surfaceSoft
                                 : context.col.surface,
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: isSelected ? context.col.ink0
-                                  : isOutOfStock ? context.col.border
+                              color: isSelected ? AppColors.adaptive(context)
                                   : context.col.border,
-                              width: 1.5),
+                              width: isSelected ? 1.5 : 1),
                           ),
                           child: Text(opt.value,
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
-                              color: isSelected ? context.col.bg
+                              color: isSelected ? Colors.white
                                   : isOutOfStock ? context.col.ink3
                                   : context.col.ink0)),
                         ),
