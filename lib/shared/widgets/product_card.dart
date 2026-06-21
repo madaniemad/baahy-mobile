@@ -141,18 +141,21 @@ class ProductCard extends ConsumerWidget {
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.card)),
                       child: Container(
-                        color: Colors.white.withValues(alpha: 0.55),
+                        color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.45),
                         alignment: Alignment.center,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.ink0,
+                            color: isDark ? context.col.surface : AppColors.ink0,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             context.tr('نفدت الكمية', 'OUT OF STOCK'),
-                            style: const TextStyle(color: Colors.white, fontSize: 10,
-                              fontWeight: FontWeight.w700, letterSpacing: 0.4),
+                            style: TextStyle(
+                              color: isDark ? context.col.ink0 : Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.4),
                           ),
                         ),
                       ),
@@ -236,31 +239,35 @@ class ProductCard extends ConsumerWidget {
                   ),
                   if (product.fulfilledByBaahy) ...[
                     const SizedBox(height: 5),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF500),
-                        border: Border.all(color: const Color(0xFFFFF500), width: 0.8),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.bolt_rounded, size: 9, color: Colors.black87),
-                          const SizedBox(width: 2),
-                          Text(
-                            context.tr('اكسبرس', 'Express'),
-                            style: const TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black87,
-                              height: 1.1,
+                    Builder(builder: (ctx) {
+                      final badgeColor = Theme.of(ctx).brightness == Brightness.dark
+                          ? const Color(0xFFFFCC00)
+                          : const Color(0xFFFFF500);
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: badgeColor,
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.bolt_rounded, size: 9, color: Colors.black87),
+                            const SizedBox(width: 2),
+                            Text(
+                              context.tr('اكسبرس', 'Express'),
+                              style: const TextStyle(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.black87,
+                                height: 1.1,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
+                          ],
+                        ),
+                      );
+                    }),
                   ] else
                     const SizedBox(height: 22),
                 ],
@@ -280,28 +287,21 @@ class _StarRating extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filled = rating != null ? rating!.round().clamp(0, 5) : 0;
+    if (rating == null || count == 0) return const SizedBox(height: 13);
+    final filled = rating!.round().clamp(0, 5);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         for (int i = 1; i <= 5; i++)
-          Icon(
-            Icons.star_rounded,
-            size: 13,
-            color: i <= filled ? const Color(0xFFFAB500) : const Color(0xFFE5E7EB),
-          ),
-        if (count > 0 && rating != null) ...[
-          const SizedBox(width: 3),
-          Text(
-            rating!.toStringAsFixed(1),
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.col.ink1, height: 1.0),
-          ),
-          const SizedBox(width: 2),
-          Text(
-            '($count)',
-            style: TextStyle(fontSize: 10, color: context.col.ink3, height: 1.0),
-          ),
-        ],
+          Icon(Icons.star_rounded, size: 13,
+            color: i <= filled ? AppColors.gold : context.col.border),
+        const SizedBox(width: 3),
+        Text(rating!.toStringAsFixed(1),
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+            color: context.col.ink1, height: 1.0)),
+        const SizedBox(width: 2),
+        Text('($count)',
+          style: TextStyle(fontSize: 10, color: context.col.ink3, height: 1.0)),
       ],
     );
   }

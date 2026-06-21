@@ -4,26 +4,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+double _d(dynamic v) {
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v) ?? 0.0;
+  return 0.0;
+}
+
 // Provider returns {items, shippingCost}
 final _orderDataProvider = FutureProvider.family<Map<String, dynamic>, int>(
   (ref, orderId) async {
-    final res   = await ApiClient.instance.dio.get('/orders/$orderId');
-    final order = res.data['data'];
-    final groups = (order?['vendor_groups'] as List?) ?? [];
-    final items  = <Map<String, dynamic>>[];
-    for (final g in groups) {
-      items.addAll(((g['items'] as List?) ?? []).map((i) => Map<String, dynamic>.from(i)));
+    try {
+      final res   = await ApiClient.instance.dio.get('/orders/$orderId');
+      final order = res.data['data'];
+      final groups = (order?['vendor_groups'] as List?) ?? [];
+      final items  = <Map<String, dynamic>>[];
+      for (final g in groups) {
+        items.addAll(((g['items'] as List?) ?? []).map((i) => Map<String, dynamic>.from(i)));
+      }
+      return {
+        'items':         items,
+        'shipping_cost': _d(order?['shipping_cost']),
+      };
+    } catch (e, st) {
+      debugPrint('[ReturnScreen] _orderDataProvider error for order $orderId: $e');
+      Sentry.captureException(e, stackTrace: st);
+      rethrow;
     }
-    return {
-      'items':         items,
-      'shipping_cost': (order?['shipping_cost'] as num?)?.toDouble() ?? 0.0,
-    };
   });
 
 // Reason key definitions — order matters (free reasons first)
@@ -78,7 +91,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
       final id  = item['id'] as int? ?? 0;
       final qty = _selected[id] ?? 0;
       if (qty > 0) {
-        total += ((item['price'] as num?)?.toDouble() ?? 0) * qty;
+        total += _d(item['price']) * qty;
       }
     }
     return total;
@@ -389,6 +402,16 @@ class _StepItems extends ConsumerWidget {
                   final id     = item['id'] as int? ?? i;
                   final maxQty = math.max(0, (item['quantity'] as int? ?? 1) - (item['returned_qty'] as int? ?? 0));
                   final qty    = selected[id] ?? 0;
+                  // Extract product image from nested product object or direct field
+                  String? imageUrl = item['product_image'] as String?;
+                  if (imageUrl == null) {
+                    final prod = item['product'] as Map<String, dynamic>?;
+                    final imgs = prod?['images'];
+                    if (imgs is List && imgs.isNotEmpty) {
+                      imageUrl = imgs.first.toString();
+                    }
+                  }
+
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     child: Row(children: [
@@ -408,7 +431,22 @@ class _StepItems extends ConsumerWidget {
                               : null,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: SizedBox(
+                          width: 48, height: 48,
+                          child: imageUrl != null
+                            ? CachedNetworkImage(imageUrl: imageUrl, fit: BoxFit.cover,
+                                memCacheWidth: 96,
+                                errorWidget: (_, __, ___) => Container(
+                                  color: context.col.surfaceSoft,
+                                  child: Icon(Icons.shopping_bag_outlined, size: 20, color: context.col.ink4)))
+                            : Container(color: context.col.surfaceSoft,
+                                child: Icon(Icons.shopping_bag_outlined, size: 20, color: context.col.ink4)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(item['product_name'] ?? item['name'] ?? '',
                           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
@@ -536,70 +574,33 @@ class _StepReason extends StatelessWidget {
                           style: const TextStyle(fontFamily: 'Cairo',
                             fontWeight: FontWeight.w600, fontSize: 14)),
                       ),
-                      if (r.isFree)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.success.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(isAr ? 'مجاني' : 'Free',
-                            style: const TextStyle(fontFamily: 'Cairo',
-                              fontSize: 11, fontWeight: FontWeight.w700,
-                              color: AppColors.success)),
-                        ),
                     ]),
                   ),
                 );
               }),
 
-              // Fee preview — only show when a reason is selected and items have value
-              if (reasonKey != null && itemsValue > 0) ...[
+              // Fee shown only after admin reviews the return request
+              if (reasonKey != null) ...[
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isBlocked
-                        ? AppColors.danger.withValues(alpha: 0.06)
-                        : context.col.surfaceSoft,
+                    color: context.col.surfaceSoft,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isBlocked ? AppColors.danger.withValues(alpha: 0.4) : context.col.border),
+                    border: Border.all(color: context.col.border),
                   ),
-                  child: Column(children: [
-                    _FeeLine(
-                      label: isAr ? 'قيمة المنتجات' : 'Items value',
-                      value: '${itemsValue.toStringAsFixed(2)} LYD',
-                    ),
-                    const SizedBox(height: 6),
-                    _FeeLine(
-                      label: isAr ? 'رسوم الاستلام' : 'Collection fee',
-                      value: isFree
-                          ? (isAr ? 'مجاني' : 'Free')
-                          : '-${collectionFee.toStringAsFixed(2)} LYD',
-                      valueColor: isFree ? AppColors.success : AppColors.danger,
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 6),
-                      child: Divider(height: 1),
-                    ),
-                    _FeeLine(
-                      label: isAr ? 'صافي الاسترداد' : 'Net refund',
-                      value: '${netRefund.toStringAsFixed(2)} LYD',
-                      bold: true,
-                      valueColor: AppColors.primary,
-                    ),
-                    if (isBlocked) ...[
-                      const SizedBox(height: 10),
-                      Text(
+                  child: Row(children: [
+                    Icon(Icons.info_outline_rounded, size: 15, color: context.col.ink2),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
                         isAr
-                            ? 'لا يمكن إنشاء طلب الإرجاع لأن قيمة المنتجات لا تتجاوز رسوم الاستلام'
-                            : 'Return cannot be created — item value does not exceed the collection fee',
-                        style: const TextStyle(fontFamily: 'Cairo',
-                          fontSize: 12, color: AppColors.danger, height: 1.4),
-                        textAlign: TextAlign.center,
+                            ? 'سيتم تحديد رسوم الاستلام وصافي الاسترداد بعد مراجعة الطلب من قِبل الفريق'
+                            : 'Collection fee and net refund will be confirmed after admin reviews your request',
+                        style: TextStyle(fontFamily: 'Cairo',
+                          fontSize: 12, color: context.col.ink2, height: 1.4),
                       ),
-                    ],
+                    ),
                   ]),
                 ),
                 const SizedBox(height: 8),

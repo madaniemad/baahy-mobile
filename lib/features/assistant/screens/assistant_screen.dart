@@ -223,7 +223,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
   }
 
   static const _storageBase =
-      'https://phplaravel-1620145-6391034.cloudwaysapps.com/storage/';
+      'https://api.baahy.com/storage/';
 
   String _imageUrl(String? path) {
     if (path == null || path.isEmpty) return '';

@@ -46,7 +46,12 @@ import '../../features/friends/screens/privacy_settings_screen.dart';
 import '../../features/friends/screens/username_setup_screen.dart';
 import '../shell/main_shell.dart';
 
-final _rootNavKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+final _rootNavKey     = GlobalKey<NavigatorState>(debugLabel: 'root');
+final _homeNavKey     = GlobalKey<NavigatorState>(debugLabel: 'home');
+final _wishlistNavKey = GlobalKey<NavigatorState>(debugLabel: 'wishlist');
+final _browseNavKey   = GlobalKey<NavigatorState>(debugLabel: 'browse');
+final _cartNavKey     = GlobalKey<NavigatorState>(debugLabel: 'cart');
+final _accountNavKey  = GlobalKey<NavigatorState>(debugLabel: 'account');
 
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -85,11 +90,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => MainShell(navigationShell: navigationShell),
         branches: [
-          StatefulShellBranch(routes: [GoRoute(path: '/home',     builder: (_, __) => const HomeScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/wishlist', builder: (_, __) => const WishlistScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/browse',   builder: (_, state) => BrowseScreen(deepCategoryId: int.tryParse(state.uri.queryParameters['categoryId'] ?? '')))]),
-          StatefulShellBranch(routes: [GoRoute(path: '/cart',     builder: (_, __) => const CartScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/account',  builder: (_, __) => const AccountScreen())]),
+          StatefulShellBranch(navigatorKey: _homeNavKey,     routes: [GoRoute(path: '/home',     builder: (_, __) => const HomeScreen())]),
+          StatefulShellBranch(navigatorKey: _wishlistNavKey, routes: [GoRoute(path: '/wishlist', builder: (_, __) => const WishlistScreen())]),
+          StatefulShellBranch(navigatorKey: _browseNavKey,   routes: [GoRoute(path: '/browse',   builder: (_, state) => BrowseScreen(deepCategoryId: int.tryParse(state.uri.queryParameters['categoryId'] ?? '')))]),
+          StatefulShellBranch(navigatorKey: _cartNavKey,     routes: [GoRoute(path: '/cart',     builder: (_, __) => const CartScreen())]),
+          StatefulShellBranch(navigatorKey: _accountNavKey,  routes: [GoRoute(path: '/account',  builder: (_, __) => const AccountScreen())]),
         ],
       ),
 

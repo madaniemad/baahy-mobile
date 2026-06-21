@@ -147,7 +147,7 @@ class Product {
     }
   }
 
-  static const _storageBase = 'https://phplaravel-1620145-6391034.cloudwaysapps.com/storage/';
+  static const _storageBase = 'https://api.baahy.com/storage/';
 
   static String _resolveImageUrl(String path) {
     final fixed = path.replaceAll('/api/storage/', '/storage/');
@@ -411,6 +411,6 @@ class Category {
     // Backend bug: sometimes generates /api/storage/ instead of /storage/
     final url = v.replaceAll('/api/storage/', '/storage/');
     if (url.startsWith('http')) return url;
-    return 'https://phplaravel-1620145-6391034.cloudwaysapps.com/storage/${url.replaceAll(RegExp(r'^/+'), '')}';
+    return 'https://api.baahy.com/storage/${url.replaceAll(RegExp(r'^/+'), '')}';
   }
 }

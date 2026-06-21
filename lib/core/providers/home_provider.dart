@@ -389,7 +389,7 @@ class HomeNotifier extends StateNotifier<HomeData> {
       ...newArrivals.map((p) => p.id),
     };
 
-    const String apiBase = 'https://phplaravel-1620145-6391034.cloudwaysapps.com';
+    const String apiBase = 'https://api.baahy.com';
     String? fullUrl(String? path) {
       if (path == null || path.isEmpty) return null;
       if (path.startsWith('http')) return path;

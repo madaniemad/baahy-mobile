@@ -20,13 +20,13 @@ Baahy (باهي) customer mobile app. Flutter for iOS and Android. Connects to t
 - **Bundle ID**: `com.example.baahyCustomer`
 
 ## Backend
-- **API base URL**: `https://phplaravel-1620145-6391034.cloudwaysapps.com/api`
+- **API base URL**: `https://api.baahy.com/api`
 - Hardcoded in `lib/core/api/api_client.dart` (can be overridden via `--dart-define=API_BASE_URL=...`)
 - Mobile hits Cloudways **directly** — no Vercel proxy (unlike web). Imunify360 can block IPs.
 - Auth token stored in `SharedPreferences` under key `auth_token`
 - OTP bypass: code `000000` always works (until WhatsApp/Sendly live)
-- Backend SSH (for emergencies): `master_eumsuzufzr@161.35.216.122` password: `UGuSKPW2nQ2y`
-- Laravel app path: `/home/1620145.cloudwaysapps.com/netgrrwnzn/public_html`
+- Backend SSH (for emergencies): `REDACTED_HOST` password: `REDACTED`
+- Laravel app path: `/home/REDACTED_PATH`
 
 ## Key Files
 ```
@@ -295,6 +295,6 @@ All search logic is in `app/Http/Controllers/API/ProductController.php`:
 - Map picker in address flow needs real Google Maps API key
 
 ## What This App Does NOT Own
-- Backend PHP code → lives only on Cloudways server (no local git); SSH: `master_eumsuzufzr@161.35.216.122`
-- Admin panel → at `https://phplaravel-1620145-6391034.cloudwaysapps.com/admin`
+- Backend PHP code → lives only on Cloudways server (no local git); SSH: `REDACTED_HOST`
+- Admin panel → at `https://api.baahy.com/admin`
 - Web frontend → edit in `baahy-web` project

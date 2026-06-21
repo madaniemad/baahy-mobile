@@ -827,10 +827,17 @@ class _CartItemCard extends ConsumerWidget {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       _QtyBtn(
                         icon: Icons.add,
-                        onTap: (!item.product.manageStock
-                                ? item.quantity >= 10
-                                : item.product.stockQuantity != null &&
-                                  item.quantity >= item.product.stockQuantity!)
+                        onTap: (() {
+                          if (item.variationId != null) {
+                            final v = item.variation;
+                            if (v == null) return item.quantity >= 10;
+                            if (!v.isActive || !v.inStock || v.stockQuantity <= 0) return true;
+                            return item.quantity >= v.stockQuantity;
+                          }
+                          if (!item.product.manageStock) return item.quantity >= 10;
+                          return item.product.stockQuantity != null &&
+                              item.quantity >= item.product.stockQuantity!;
+                        })()
                             ? null
                             : () => ref.read(cartProvider.notifier)
                                 .updateQty(item.key, item.quantity + 1),

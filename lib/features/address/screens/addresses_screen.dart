@@ -75,21 +75,6 @@ class AddressesScreen extends ConsumerWidget {
         data: (addresses) => ListView(
           padding: const EdgeInsets.fromLTRB(14, 14, 14, 32),
           children: [
-            // ── Info banner ───────────────────────────────────────────────
-            _InfoBanner(),
-
-            const SizedBox(height: 20),
-
-            // ── Section title ─────────────────────────────────────────────
-            if (addresses.isNotEmpty) ...[
-              Text(
-                context.tr('عناويني المحفوظة', 'Saved Addresses'),
-                textAlign: TextAlign.right,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800,
-                  color: context.col.ink0, fontFamily: 'Cairo'),
-              ),
-              const SizedBox(height: 12),
-            ],
 
             // ── Address cards ─────────────────────────────────────────────
             ...addresses.map((addr) => _AddressCard(
@@ -151,8 +136,6 @@ class AddressesScreen extends ConsumerWidget {
               ),
             ),
 
-            // ── Delivery tip card ─────────────────────────────────────────
-            _DeliveryTipCard(),
           ],
         ),
       ),
@@ -175,15 +158,11 @@ class _InfoBanner extends StatelessWidget {
         // Text (first child = RIGHT in RTL)
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-              Text(
-                context.tr('اختر عنواناً سريعاً عند الطلب', 'Choose an address at checkout'),
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
-                  color: context.col.ink0, fontFamily: 'Cairo'),
-              ),
-              const SizedBox(width: 4),
-              Icon(Icons.info_outline_rounded, size: 14, color: AppColors.primary),
-            ]),
+            Text(
+              context.tr('اختر عنواناً سريعاً عند الطلب', 'Choose an address at checkout'),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
+                color: context.col.ink0, fontFamily: 'Cairo'),
+            ),
             const SizedBox(height: 4),
             Text(
               context.tr(
@@ -197,7 +176,7 @@ class _InfoBanner extends StatelessWidget {
         ),
         const SizedBox(width: 14),
         // Pin icon only (second child = LEFT in RTL)
-        Icon(Icons.location_on_rounded, size: 44, color: context.col.ink2),
+        Icon(Icons.location_on_outlined, size: 44, color: AppColors.primary),
       ]),
     );
   }

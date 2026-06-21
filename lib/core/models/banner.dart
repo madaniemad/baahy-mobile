@@ -50,7 +50,7 @@ class AppBanner {
   static String? _resolveUrl(String? v) {
     if (v == null || v.isEmpty) return null;
     if (v.startsWith('http')) return v;
-    return 'https://phplaravel-1620145-6391034.cloudwaysapps.com/api/storage/${v.replaceFirst(RegExp(r'^/?storage/'), '')}';
+    return 'https://api.baahy.com/api/storage/${v.replaceFirst(RegExp(r'^/?storage/'), '')}';
   }
 }
 

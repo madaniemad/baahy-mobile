@@ -21,8 +21,15 @@ class WishlistNotifier extends StateNotifier<Set<int>> {
     if (!await _api.isLoggedIn) return;
     try {
       final res = await _api.dio.get('/wishlist');
-      final ids = (res.data['data'] as List?)
-          ?.map((item) => item['product']['id'] as int).toSet() ?? {};
+      final ids = <int>{};
+      for (final item in (res.data['data'] as List? ?? [])) {
+        final product = item['product'];
+        if (product == null) continue;
+        final id = product['id'];
+        if (id is int) ids.add(id);
+        else if (id is num) ids.add(id.toInt());
+        else if (id is String) { final n = int.tryParse(id); if (n != null) ids.add(n); }
+      }
       state = ids;
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);

@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _baseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'https://phplaravel-1620145-6391034.cloudwaysapps.com/api',
+  defaultValue: 'https://api.baahy.com/api',
 );
 
 const _kToken = 'auth_token';

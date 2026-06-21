@@ -30,6 +30,7 @@ class AppButton extends StatefulWidget {
 
 class _AppButtonState extends State<AppButton> {
   static DateTime? _lastTap; // static — survives widget rebuilds during navigation
+  bool _pressed = false;
 
   void _handleTap() {
     if (widget.onTap == null || widget.loading) return;
@@ -52,10 +53,18 @@ class _AppButtonState extends State<AppButton> {
         : isOutline ? AppColors.primary
         : context.col.ink1;
     final border = isOutline ? Border.all(color: AppColors.primary, width: 1.5) : null;
+    final canPress = widget.onTap != null && !widget.loading;
 
     return GestureDetector(
       onTap: _handleTap,
-      child: AnimatedContainer(
+      onTapDown: canPress ? (_) => setState(() => _pressed = true) : null,
+      onTapUp: canPress ? (_) => setState(() => _pressed = false) : null,
+      onTapCancel: canPress ? () => setState(() => _pressed = false) : null,
+      child: AnimatedScale(
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 80),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         width: widget.width ?? double.infinity,
         height: widget.height,
@@ -90,7 +99,8 @@ class _AppButtonState extends State<AppButton> {
                   ],
                 ),
         ),
-      ),
+        ), // AnimatedContainer
+      ), // AnimatedScale
     );
   }
 }

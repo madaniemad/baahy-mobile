@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/shipping_rate.dart';
 import '../../../core/providers/address_provider.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../features/map/map_location_picker.dart';
@@ -27,7 +28,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
   late final _notesCtrl = TextEditingController(text: widget.address?['notes'] ?? '');
   late final _phoneCtrl = TextEditingController(text: widget.address?['phone'] ?? '');
   late final _nameCtrl  = TextEditingController(text: widget.address?['name'] ?? '');
-  late bool _isDefault  = widget.address?['is_default'] == true;
+  late bool _isDefault  = widget.address == null ? true : widget.address?['is_default'] == true;
   double? _lat;
   double? _lng;
   bool _loading = false;
@@ -55,6 +56,19 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
     _lng = rawLng != null ? double.tryParse(rawLng.toString()) : null;
     _phoneFocus.addListener(_onFocusChange);
     _notesFocus.addListener(_onFocusChange);
+
+    if (!_isEdit) {
+      // Pre-fill name + phone from user profile
+      final user = ref.read(currentUserProvider);
+      if (user != null) {
+        if (_nameCtrl.text.isEmpty) _nameCtrl.text = user.name;
+        if (_phoneCtrl.text.isEmpty) _phoneCtrl.text = user.phone;
+      }
+      // Auto-open map picker so the customer sets their pin first
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openMapPicker();
+      });
+    }
   }
 
   void _onFocusChange() { if (mounted) setState(() {}); }
@@ -368,30 +382,6 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                 style: TextStyle(fontSize: 11, color: context.col.ink3, height: 1.4)),
               const SizedBox(height: 16),
 
-              // ── Default checkbox ───────────────────────────────────────────
-              GestureDetector(
-                onTap: () => setState(() => _isDefault = !_isDefault),
-                child: Row(children: [
-                  Container(
-                    width: 20, height: 20,
-                    decoration: BoxDecoration(
-                      color: _isDefault ? AppColors.primary : Colors.transparent,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: _isDefault
-                            ? AppColors.primary : context.col.borderStrong,
-                        width: 1.5),
-                    ),
-                    child: _isDefault
-                        ? Icon(Icons.check_rounded,
-                            size: 13, color: context.col.ink0)
-                        : null,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(context.s.setAsDefault,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                ]),
-              ),
               const SizedBox(height: 80),
             ]),
           ),
