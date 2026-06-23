@@ -366,7 +366,7 @@ class AppStrings {
   String get stepDelivered     => isAr ? 'تم التسليم'             : 'Delivered';
   String get deliveryPromise   => isAr ? 'طلبك في الطريق إليك'    : 'Your order is on the way';
   String get cartUpdateTitle   => isAr ? 'تحديث السلة'            : 'Cart Update';
-  String get itemsUnavailable  => isAr ? 'المنتجات التالية غير متاحة حالياً:' : 'The following items are unavailable:';
+  String get itemsUnavailable  => isAr ? 'المنتجات التالية نفدت من المخزون:' : 'The following items are sold out:';
   String get priceChangedItems => isAr ? 'تغير سعر المنتجات التالية:' : 'Prices changed for the following items:';
   String get removeAndContinue => isAr ? 'إزالة والمتابعة'        : 'Remove & Continue';
   String get willRemoveUnavailable => isAr ? 'سيتم إزالة المنتجات غير المتاحة والمتابعة.' : 'Unavailable items will be removed before continuing.';

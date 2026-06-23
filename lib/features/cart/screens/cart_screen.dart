@@ -282,15 +282,31 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                   style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
                     fontWeight: FontWeight.w600, color: AppColors.danger)),
                 const SizedBox(height: 8),
-                ...unavailable.map((u) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Icon(Icons.remove_circle_outline_rounded, size: 14, color: AppColors.danger),
-                    const SizedBox(width: 6),
-                    Expanded(child: Text(isAr ? u.item.product.nameAr : u.item.product.name,
-                      style: const TextStyle(fontFamily: 'Cairo', fontSize: 13))),
-                  ]),
-                )),
+                ...unavailable.map((u) {
+                  final attrs = u.item.variation?.attributes ?? [];
+                  final varLabel = attrs.isNotEmpty
+                      ? attrs.map((a) => isAr ? a.valueAr : a.value).join(' · ')
+                      : null;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Icon(Icons.remove_circle_outline_rounded, size: 14, color: AppColors.danger),
+                      const SizedBox(width: 6),
+                      Expanded(child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(isAr ? u.item.product.nameAr : u.item.product.name,
+                            style: const TextStyle(fontFamily: 'Cairo', fontSize: 13)),
+                          if (varLabel != null)
+                            Text(varLabel,
+                              style: const TextStyle(
+                                fontFamily: 'Cairo', fontSize: 11.5,
+                                color: AppColors.danger, fontWeight: FontWeight.w500)),
+                        ],
+                      )),
+                    ]),
+                  );
+                }),
               ],
               if (priceChanged.isNotEmpty) ...[
                 if (unavailable.isNotEmpty) const SizedBox(height: 12),
