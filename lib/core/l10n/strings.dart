@@ -184,6 +184,9 @@ class AppStrings {
   String get wishlistSub    => isAr ? 'اضغط على القلب لحفظ المنتج للوقت لاحق.' : 'Tap the heart to save products for later.';
   String get priceDrops     => isAr ? 'تخفيضات الأسعار'        : 'Price Drops';
   String get priceDropBanner=> isAr ? 'انخفض سعره — أضفه قبل نفاد الكمية' : 'dropped in price — add before it sells out';
+  String priceDropSavings(int count, String saved) => isAr
+      ? '$count منتجات انخفضت سعرها  •  وفر حتى $saved'
+      : '$count items on sale  •  Save up to $saved';
   String get choose         => isAr ? 'اختر'                   : 'Pick';
   String get add            => isAr ? 'أضف'                    : 'Add';
   String get soldOut        => isAr ? 'نفد'                    : 'Sold Out';

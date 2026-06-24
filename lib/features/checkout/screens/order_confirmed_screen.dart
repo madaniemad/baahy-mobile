@@ -11,20 +11,16 @@ class OrderConfirmedScreen extends ConsumerWidget {
   final Map<String, dynamic> data;
   const OrderConfirmedScreen({required this.data, super.key});
 
-  String _deliveryLabel(BuildContext context) {
-    final s = context.s;
-    // Derive from shipping_rate if present, otherwise fall back to city-based estimate.
+  String _deliveryDays(BuildContext context) {
     final rate = data['shipping_rate'];
     if (rate is Map) {
       final days = rate['estimated_days'];
-      final city = rate['city_name'] ?? rate['city'] ?? '';
-      if (days != null && city.isNotEmpty) return '${s.daysUnit(days.toString())} · $city';
-      if (days != null) return s.daysUnit(days.toString());
+      if (days != null) return days.toString();
     }
     final city = (data['city'] ?? data['shipping_city'] ?? '').toString();
-    final isTripoli = city.toLowerCase().contains('طرابلس') || city.toLowerCase().contains('tripoli');
-    final days = isTripoli ? '1-2' : '2-5';
-    return '${s.daysUnit(days)}${city.isNotEmpty ? ' · $city' : ''}';
+    final isTripoli = city.toLowerCase().contains('طرابلس') ||
+        city.toLowerCase().contains('tripoli');
+    return isTripoli ? '1 - 2' : '2 - 5';
   }
 
   @override
@@ -32,186 +28,536 @@ class OrderConfirmedScreen extends ConsumerWidget {
     final orderNumber = data['order_number'] ?? '#${data['id']}';
     final orderId = data['id'];
     final rawTotal = data['total'];
-    final total = rawTotal is num ? rawTotal.toDouble() : double.tryParse(rawTotal?.toString() ?? '');
+    final total = rawTotal is num
+        ? rawTotal.toDouble()
+        : double.tryParse(rawTotal?.toString() ?? '');
     final config = ref.watch(appConfigProvider);
     final tierAsync = ref.watch(tierProvider);
     final tier = tierAsync.valueOrNull;
     final rawSubtotal = data['subtotal'];
-    final subtotal = rawSubtotal is num ? rawSubtotal.toDouble() : (total ?? 0.0);
+    final subtotal =
+        rawSubtotal is num ? rawSubtotal.toDouble() : (total ?? 0.0);
     final cashbackAmount = subtotal >= config.cashbackMinOrder
-        ? (subtotal * config.cashbackRate / 100).round().toString()
+        ? (subtotal * config.cashbackRate / 100).round()
         : null;
+    final loyaltyRemaining = tier?.nextMilestoneRemaining;
+    final loyaltyReward = tier?.nextMilestoneReward;
+    final isAr = context.isAr;
+    final deliveryDays = _deliveryDays(context);
 
     return Scaffold(
-      backgroundColor: context.col.bg,
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 96, height: 96,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        border: Border.all(color: AppColors.primary, width: 3),
+        child: Column(children: [
+          // ── scrollable body ──────────────────────────────────────────────
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: Column(children: [
+                // drag handle
+                Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDDE1E7),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── hero bag + confetti ──────────────────────────────────
+                SizedBox(
+                  height: 230,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // confetti decorations
+                      _Sparkle(top: 18, right: 30, size: 14),
+                      _Dash(top: 30, right: 80, angle: 0.4),
+                      _Sparkle(top: 10, left: 60, size: 10),
+                      _Dash(top: 55, left: 28, angle: -0.5),
+                      _Dot(top: 70, left: 48, size: 8),
+                      _GoldDot(top: 105, left: 18),
+                      _Dash(bottom: 60, left: 50, angle: 0.3),
+                      _Dot(bottom: 45, left: 80, size: 6, color: AppColors.primary.withValues(alpha: 0.5)),
+                      _Sparkle(bottom: 30, right: 40, size: 12),
+                      _Dash(bottom: 55, right: 25, angle: -0.3),
+                      _Dot(top: 40, right: 55, size: 6, color: AppColors.primary.withValues(alpha: 0.4)),
+                      _Sparkle(bottom: 80, left: 30, size: 9),
+                      _Dot(top: 20, right: 110, size: 10),
+                      _Dash(top: 15, left: 100, angle: 0.6),
+
+                      // bag image
+                      Image.asset(
+                        'assets/images/order_success_bag.png',
+                        width: 190,
+                        height: 190,
+                        fit: BoxFit.contain,
                       ),
-                      child: const Icon(Icons.check_rounded,
-                        color: AppColors.primary, size: 48),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(context.s.orderDone,
-                      style: const TextStyle(fontFamily: 'Cairo',
-                        fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
-                    const SizedBox(height: 8),
-                    Text(
-                      context.s.confirmSent(orderNumber.toString()),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14, color: context.col.ink2, height: 1.5),
-                    ),
-                    const SizedBox(height: 24),
-                    if (total != null)
-                      Container(
-                        constraints: const BoxConstraints(maxWidth: 320),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: context.col.surface,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: context.col.border),
+                    ],
+                  ),
+                ),
+
+                // ── title ────────────────────────────────────────────────
+                Text(
+                  isAr ? 'تم تسجيل الطلب' : 'Order Placed!',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF111827),
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isAr
+                      ? 'تم حفظ طلبك بنجاح في حسابك'
+                      : 'Your order has been saved successfully',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 14,
+                    color: Color(0xFF6B7280),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── order number pill ─────────────────────────────────────
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                        width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        orderNumber.toString(),
+                        style: const TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary,
                         ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        isAr ? 'رقم الطلب' : 'Order #',
+                        style: const TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF374151),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // thin divider
+                Container(height: 1, color: const Color(0xFFE5E7EB)),
+                const SizedBox(height: 16),
+
+                // ── delivery card ─────────────────────────────────────────
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // text on right (first in RTL)
+                      Expanded(
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(context.s.deliveryLabel,
-                                  style: TextStyle(fontSize: 13, color: context.col.ink2)),
-                                Text(_deliveryLabel(context),
-                                  style: const TextStyle(fontSize: 13.5,
-                                    fontWeight: FontWeight.w600)),
-                              ],
+                            Text(
+                              isAr ? 'موعد التوصيل المتوقع' : 'Expected Delivery',
+                              style: const TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111827),
+                              ),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(context.s.paidLabel,
-                                  style: TextStyle(fontSize: 13, color: context.col.ink2)),
-                                Text('${fmtPrice(total)} ${context.s.lydUnit}',
-                                  style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                                    fontSize: 15, fontWeight: FontWeight.w800,
-                                    color: AppColors.primary)),
-                              ],
+                            const SizedBox(height: 4),
+                            Text(
+                              isAr ? '$deliveryDays يوم' : '$deliveryDays days',
+                              style: const TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isAr
+                                  ? 'سنوافيك بتحديثات الطلب'
+                                  : "We'll keep you updated",
+                              style: const TextStyle(
+                                fontFamily: 'Cairo',
+                                fontSize: 12,
+                                color: Color(0xFF9CA3AF),
+                              ),
                             ),
                           ],
                         ),
                       ),
-                    if (cashbackAmount != null) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(width: 14),
+                      // calendar icon on left
                       Container(
-                        constraints: const BoxConstraints(maxWidth: 320),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        width: 48, height: 48,
                         decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                          color: AppColors.primary.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Row(children: [
-                          const Icon(Icons.savings_outlined, color: AppColors.success, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              context.isAr
-                                ? 'ستحصل على $cashbackAmount ${context.s.lydUnit} استرداد عند التوصيل'
-                                : 'You\'ll earn $cashbackAmount ${context.s.lydUnit} cashback on delivery',
-                              style: const TextStyle(fontSize: 13, color: AppColors.success,
-                                fontWeight: FontWeight.w600, height: 1.4),
-                            ),
-                          ),
-                        ]),
+                        child: const Icon(Icons.calendar_today_rounded,
+                            color: AppColors.primary, size: 22),
                       ),
                     ],
-                    if (tier != null &&
-                        tier.nextMilestoneOrder != null &&
-                        tier.nextMilestoneRemaining != null &&
-                        tier.nextMilestoneRemaining! > 0 &&
-                        tier.nextMilestoneReward != null) ...[
-                      const SizedBox(height: 10),
-                      Container(
-                        constraints: const BoxConstraints(maxWidth: 320),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
-                        ),
-                        child: Row(children: [
-                          const Icon(Icons.emoji_events_outlined, color: AppColors.success, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              context.isAr
-                                ? '${tier.nextMilestoneRemaining} طلب أكثر ليصلك ${tier.nextMilestoneReward!.toStringAsFixed(0)} ${context.s.lydUnit}'
-                                : '${tier.nextMilestoneRemaining} more order${tier.nextMilestoneRemaining! > 1 ? "s" : ""} to earn ${tier.nextMilestoneReward!.toStringAsFixed(0)} ${context.s.lydUnit}',
-                              style: const TextStyle(fontSize: 12.5, color: AppColors.success,
-                                fontWeight: FontWeight.w600, height: 1.4),
-                            ),
-                          ),
-                        ]),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-
-            Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16,
-                MediaQuery.of(context).padding.bottom + 16),
-              child: Row(children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.go('/home'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 50),
-                      side: BorderSide(color: context.col.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                    child: Text(context.s.continueShopping,
-                      style: TextStyle(fontFamily: 'Cairo',
-                        fontWeight: FontWeight.w700, color: context.col.ink0)),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (orderId != null) {
-                        context.go('/orders/$orderId');
-                      } else {
-                        context.go('/orders');
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(0, 50),
-                      backgroundColor: context.col.ink0,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                const SizedBox(height: 10),
+
+                // ── rewards two-column card ───────────────────────────────
+                if (loyaltyRemaining != null || cashbackAmount != null)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
                     ),
-                    child: Text(context.s.trackOrder,
-                      style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        children: [
+                          // loyalty column (RIGHT in RTL = first)
+                          if (loyaltyRemaining != null && loyaltyReward != null)
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 40, height: 40,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.10),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(Icons.star_outline_rounded,
+                                          color: AppColors.primary, size: 20),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      isAr ? 'نقاط الولاء' : 'Loyalty',
+                                      style: const TextStyle(
+                                        fontFamily: 'Cairo',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF111827),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      isAr
+                                          ? '$loyaltyRemaining طلب أكثر'
+                                          : '$loyaltyRemaining more order',
+                                      style: const TextStyle(
+                                        fontFamily: 'Cairo',
+                                        fontSize: 12,
+                                        color: Color(0xFF6B7280),
+                                      ),
+                                    ),
+                                    Text(
+                                      isAr
+                                          ? 'لتحصل على ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit}'
+                                          : 'to earn ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit}',
+                                      style: const TextStyle(
+                                        fontFamily: 'Cairo',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                          // vertical divider
+                          if ((loyaltyRemaining != null && loyaltyReward != null) &&
+                              cashbackAmount != null)
+                            Container(
+                              width: 1,
+                              color: const Color(0xFFE5E7EB),
+                            ),
+
+                          // cashback column (LEFT in RTL = last)
+                          if (cashbackAmount != null)
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 40, height: 40,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.10),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(Icons.savings_outlined,
+                                          color: AppColors.primary, size: 20),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      isAr ? 'كاش باك' : 'Cashback',
+                                      style: const TextStyle(
+                                        fontFamily: 'Cairo',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF111827),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      isAr ? 'ستحصل على' : "You'll receive",
+                                      style: const TextStyle(
+                                        fontFamily: 'Cairo',
+                                        fontSize: 12,
+                                        color: Color(0xFF6B7280),
+                                      ),
+                                    ),
+                                    Text(
+                                      isAr
+                                          ? '$cashbackAmount ${context.s.lydUnit} عند التوصيل'
+                                          : '$cashbackAmount ${context.s.lydUnit} on delivery',
+                                      style: const TextStyle(
+                                        fontFamily: 'Cairo',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: 10),
+
+                // ── notification banner ───────────────────────────────────
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      // text on right (first in RTL)
+                      Expanded(
+                        child: Text(
+                          isAr
+                              ? 'سيُخبرك عند تجهيز طلبك والشحن والتوصيل'
+                              : "We'll notify you when your order is prepared, shipped and delivered",
+                          textAlign: TextAlign.start,
+                          style: const TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF374151),
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // bell icon on left
+                      Container(
+                        width: 44, height: 44,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.notifications_rounded,
+                            color: Colors.white, size: 22),
+                      ),
+                    ],
                   ),
                 ),
               ]),
             ),
-          ],
-        ),
+          ),
+
+          // ── bottom buttons ────────────────────────────────────────────────
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+                20, 8, 20, MediaQuery.of(context).padding.bottom + 16),
+            child: Row(children: [
+              // track order — RIGHT (first in RTL) = dark fill
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (orderId != null) {
+                      context.go('/orders/$orderId');
+                    } else {
+                      context.go('/orders');
+                    }
+                  },
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF111827),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          isAr ? 'تتبع الطلب' : 'Track Order',
+                          style: const TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.location_on_outlined,
+                            color: Colors.white, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              // continue shopping — LEFT (last in RTL) = outlined
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => context.go('/home'),
+                  child: Container(
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: const Color(0xFFD1D5DB), width: 1.2),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          isAr ? 'مواصلة التسوق' : 'Keep Shopping',
+                          style: const TextStyle(
+                            fontFamily: 'Cairo',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF111827),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.shopping_bag_outlined,
+                            color: Color(0xFF111827), size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        ]),
       ),
     );
   }
+}
+
+// ── confetti decorations ──────────────────────────────────────────────────────
+
+class _Sparkle extends StatelessWidget {
+  final double? top, bottom, left, right;
+  final double size;
+  const _Sparkle({this.top, this.bottom, this.left, this.right, this.size = 12});
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    top: top, bottom: bottom, left: left, right: right,
+    child: Icon(Icons.star_rate_rounded,
+        size: size, color: AppColors.primary.withValues(alpha: 0.7)),
+  );
+}
+
+class _Dash extends StatelessWidget {
+  final double? top, bottom, left, right;
+  final double angle;
+  const _Dash({this.top, this.bottom, this.left, this.right, this.angle = 0});
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    top: top, bottom: bottom, left: left, right: right,
+    child: Transform.rotate(
+      angle: angle,
+      child: Container(
+        width: 18, height: 4,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    ),
+  );
+}
+
+class _Dot extends StatelessWidget {
+  final double? top, bottom, left, right;
+  final double size;
+  final Color? color;
+  const _Dot({this.top, this.bottom, this.left, this.right,
+      this.size = 8, this.color});
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    top: top, bottom: bottom, left: left, right: right,
+    child: Container(
+      width: size, height: size,
+      decoration: BoxDecoration(
+        color: color ?? AppColors.primary.withValues(alpha: 0.5),
+        shape: BoxShape.circle,
+      ),
+    ),
+  );
+}
+
+class _GoldDot extends StatelessWidget {
+  final double? top, bottom, left, right;
+  const _GoldDot({this.top, this.bottom, this.left, this.right});
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    top: top, bottom: bottom, left: left, right: right,
+    child: Container(
+      width: 20, height: 20,
+      decoration: const BoxDecoration(
+        color: Color(0xFFFBBF24),
+        shape: BoxShape.circle,
+      ),
+    ),
+  );
 }

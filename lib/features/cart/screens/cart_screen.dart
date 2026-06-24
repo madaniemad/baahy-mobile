@@ -15,6 +15,7 @@ import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../core/providers/welcome_coupon_provider.dart';
+import '../../../core/providers/shipping_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 // ── Recommended products provider ────────────────────────────────────────────
@@ -128,13 +129,13 @@ class CartScreen extends ConsumerWidget {
         backgroundColor: context.col.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        // In RTL: leading = RIGHT side, actions = LEFT side
-        leading: IconButton(
-          onPressed: () => context.canPop() &&
-              GoRouterState.of(context).matchedLocation != '/cart'
-          ? context.pop()
-          : context.go('/home'),
-          icon: Icon(Icons.arrow_forward_ios_rounded, size: 18, color: context.col.ink0)),
+        automaticallyImplyLeading: false,
+        // Only show back arrow when cart was pushed (not opened from bottom nav)
+        leading: GoRouterState.of(context).matchedLocation != '/cart' && context.canPop()
+            ? IconButton(
+                onPressed: () => context.pop(),
+                icon: Icon(Icons.arrow_forward_ios_rounded, size: 18, color: context.col.ink0))
+            : null,
         title: Text(
           context.tr('السلة (${cart.count})', 'Cart (${cart.count})'),
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17),
@@ -396,35 +397,78 @@ class _CartBodyState extends ConsumerState<_CartBody> {
               _FreeShippingAchievedBanner(saved: cart.deliveryFee),
 
             // ── Delivery header ───────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.only(top: 16, bottom: 12),
-              child: Row(children: [
-                // Truck icon (first = RIGHT in RTL)
-                Container(
-                  width: 38, height: 38,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary, shape: BoxShape.circle),
-                  child: const Icon(Icons.local_shipping_rounded,
-                    size: 20, color: Colors.white),
-                ),
-                const SizedBox(width: 10),
-                // Text (LEFT in RTL)
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(context.s.deliveryBy,
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
-                        color: context.col.ink0, fontFamily: 'Cairo')),
-                    const SizedBox(height: 3),
-                    Text(
-                      context.tr(
-                        'توصيل خلال 1-2 يوم  •  شحنة واحدة  •  الدفع عند الاستلام متاح',
-                        'Delivery in 1-2 days  •  One shipment  •  COD available'),
+            Builder(builder: (_) {
+              final rate = ref.watch(cityShippingRateProvider);
+              final etaMin = rate?.etaMin ?? rate?.deliveryDays ?? 1;
+              final etaMax = rate?.etaMax ?? (etaMin + 1);
+              final codOk = rate?.codAllowed ?? false;
+              final etaStr = context.s.isAr
+                  ? 'توصيل خلال $etaMin-$etaMax يوم  •  شحنة واحدة${codOk ? '  •  الدفع عند الاستلام متاح' : ''}'
+                  : 'Delivery in $etaMin-$etaMax days  •  One shipment${codOk ? '  •  COD available' : ''}';
+              return Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 8),
+                child: Row(children: [
+                  Container(
+                    width: 38, height: 38,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary, shape: BoxShape.circle),
+                    child: const Icon(Icons.local_shipping_rounded,
+                      size: 20, color: Colors.white),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(etaStr,
                       style: TextStyle(fontSize: 11, color: context.col.ink2,
                         fontFamily: 'Cairo', height: 1.4)),
+                  ),
+                ]),
+              );
+            }),
+
+            // ── Price drop banner ─────────────────────────────────────────
+            Builder(builder: (ctx) {
+              final saleItems = cart.items.where((i) =>
+                  i.product.salePrice != null && i.product.salePrice! < i.product.price);
+              final saleCount = saleItems.length;
+              if (saleCount == 0) return const SizedBox.shrink();
+              final totalSavings = saleItems.fold<double>(0, (sum, i) =>
+                  sum + (i.product.price - i.product.salePrice!) * i.quantity);
+              final savedStr = '${fmtPrice(totalSavings)} ${context.s.lydUnit}';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF1EB),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.warn.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.local_fire_department_rounded, color: AppColors.warn, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, height: 1.4),
+                          children: [
+                            TextSpan(
+                              text: context.s.isAr
+                                  ? '$saleCount منتجات انخفضت سعرها  '
+                                  : '$saleCount items on sale  ',
+                              style: TextStyle(color: context.col.ink1, fontWeight: FontWeight.w600),
+                            ),
+                            TextSpan(
+                              text: context.s.isAr ? '•  وفر حتى $savedStr' : '•  Save up to $savedStr',
+                              style: const TextStyle(color: AppColors.warn, fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ]),
                 ),
-              ]),
-            ),
+              );
+            }),
 
             // ── Cart items ────────────────────────────────────────────────
             ..._buildGroupedItems(context, cart.items),
@@ -637,29 +681,33 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
         // Header row — always visible
         GestureDetector(
           onTap: hasCoupon ? null : () => setState(() => _expanded = !_expanded),
+          behavior: HitTestBehavior.opaque,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             child: Row(children: [
-              // Chevron (LEFT in RTL)
-              if (!hasCoupon)
+              // Title + subtitle (RIGHT in RTL = first child)
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.local_offer_outlined, size: 16, color: context.col.ink1),
+                    const SizedBox(width: 6),
+                    Text(context.tr('لديك كوبون خصم؟', 'Have a coupon?'),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                        color: context.col.ink0, fontFamily: 'Cairo')),
+                  ]),
+                  if (!hasCoupon)
+                    Text(context.tr('أدخل كود الخصم للحصول على خصم إضافي',
+                      'Enter coupon code for extra discount'),
+                      style: TextStyle(fontSize: 11, color: context.col.ink3,
+                        fontFamily: 'Cairo')),
+                ]),
+              ),
+              // Chevron (LEFT in RTL = last child)
+              if (!hasCoupon) ...[
+                const SizedBox(width: 10),
                 Icon(_expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                   size: 20, color: context.col.ink2),
-              const Spacer(),
-              // Title + subtitle (RIGHT in RTL)
-              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(context.tr('لديك كوبون خصم؟', 'Have a coupon?'),
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                      color: context.col.ink0, fontFamily: 'Cairo')),
-                  const SizedBox(width: 8),
-                  Icon(Icons.local_offer_outlined, size: 16, color: context.col.ink1),
-                ]),
-                if (!hasCoupon)
-                  Text(context.tr('أدخل كود الخصم للحصول على خصم إضافي',
-                    'Enter coupon code for extra discount'),
-                    style: TextStyle(fontSize: 11, color: context.col.ink3,
-                      fontFamily: 'Cairo')),
-              ]),
+              ],
             ]),
           ),
         ),
@@ -807,6 +855,11 @@ class _CartItemCard extends ConsumerWidget {
                           : null;
                   if (attrs == null || attrs.isEmpty) return const SizedBox.shrink();
                   final label = attrs
+                      .where((a) {
+                        final t = (a.typeName as String).toLowerCase();
+                        final tAr = (a.typeNameAr as String);
+                        return t != 'gender' && t != 'جنس' && tAr != 'الجنس' && t != 'sex';
+                      })
                       .map((a) => isAr && a.valueAr.isNotEmpty ? a.valueAr : a.value)
                       .where((v) => (v as String).isNotEmpty)
                       .join(' · ');
@@ -826,11 +879,35 @@ class _CartItemCard extends ConsumerWidget {
                   ]);
                 }),
                 const SizedBox(height: 4),
-                Text(
-                  '${fmtPrice(item.unitPrice)} ${context.s.lydUnit}',
-                  style: TextStyle(fontFamily: 'PlusJakartaSans',
-                    fontWeight: FontWeight.w800, fontSize: 15, color: context.col.ink0),
-                ),
+                Builder(builder: (_) {
+                  final onSale = item.product.salePrice != null &&
+                      item.product.salePrice! < item.product.price &&
+                      item.unitPrice < item.product.price;
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '${fmtPrice(item.unitPrice)} ${context.s.lydUnit}',
+                        style: TextStyle(fontFamily: 'PlusJakartaSans',
+                          fontWeight: FontWeight.w800, fontSize: 15,
+                          color: onSale ? AppColors.danger : context.col.ink0),
+                      ),
+                      if (onSale) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '${fmtPrice(item.product.price)} ${context.s.lydUnit}',
+                          style: TextStyle(
+                            fontFamily: 'PlusJakartaSans', fontSize: 12,
+                            color: context.col.ink3,
+                            decoration: TextDecoration.lineThrough,
+                            decorationColor: context.col.ink3,
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                }),
                 const SizedBox(height: 8),
                 // Action row: [stepper (RIGHT)] [delete + save-for-later (LEFT)]
                 Row(children: [
@@ -885,7 +962,7 @@ class _CartItemCard extends ConsumerWidget {
                       ));
                     },
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.bookmark_border_rounded, color: context.col.ink3, size: 16),
+                      Icon(Icons.favorite_border_rounded, color: context.col.ink3, size: 16),
                       const SizedBox(width: 3),
                       Text(context.s.saveForLater,
                         style: TextStyle(fontSize: 11.5, color: context.col.ink3,
@@ -992,10 +1069,11 @@ class _MayAlsoLikeSection extends ConsumerWidget {
                 color: context.col.ink0, fontFamily: 'Cairo')),
           ),
           SizedBox(
-            height: 160,
+            height: 148,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               reverse: true,
+              clipBehavior: Clip.none,
               itemCount: products.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (_, i) => _RecommendedCard(product: products[i]),
@@ -1023,7 +1101,7 @@ class _RecommendedCard extends ConsumerWidget {
     return GestureDetector(
       onTap: () => safePush(context, '/product/${product.id}'),
       child: Container(
-        width: 120,
+        width: 100,
         decoration: BoxDecoration(
           color: context.col.surface,
           borderRadius: BorderRadius.circular(6),
@@ -1034,7 +1112,7 @@ class _RecommendedCard extends ConsumerWidget {
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(9)),
               child: SizedBox(
-                width: 120, height: 90,
+                width: 100, height: 76,
                 child: product.firstImage != null
                     ? CachedNetworkImage(imageUrl: product.firstImage!, fit: BoxFit.cover)
                     : Container(color: context.col.surfaceSoft,

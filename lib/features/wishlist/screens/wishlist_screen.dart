@@ -114,6 +114,7 @@ class WishlistScreen extends ConsumerWidget {
             );
           }
           final discountCount = products.where((p) => p.displayPrice < p.price).length;
+          final totalSavings = products.fold<double>(0, (sum, p) => sum + (p.price - p.displayPrice));
           return RefreshIndicator(
             color: AppColors.primary,
             onRefresh: () => ref.read(wishlistProductsProvider.notifier).fetch(),
@@ -121,26 +122,8 @@ class WishlistScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
                 if (discountCount > 0) ...[
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                    margin: const EdgeInsets.only(bottom: 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF1EB),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppColors.warn.withValues(alpha: 0.35)),
-                    ),
-                    child: Row(children: [
-                      const Icon(Icons.local_fire_department_rounded, color: AppColors.warn, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(context.s.priceDrops, style: const TextStyle(
-                            fontFamily: 'Cairo', fontWeight: FontWeight.w800,
-                            fontSize: 13, color: AppColors.warn)),
-                        Text('$discountCount ${context.s.priceDropBanner}',
-                            style: TextStyle(fontSize: 12, color: context.col.ink2, height: 1.4)),
-                      ])),
-                    ]),
-                  ),
+                  _PriceDropBanner(count: discountCount, totalSavings: totalSavings),
+                  const SizedBox(height: 14),
                 ],
                 ...products.map((p) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -173,175 +156,268 @@ class _WishlistCard extends ConsumerWidget {
     final hasDiscount = salePrice < product.price;
     final isVariable = product.productType == 'variable';
 
+    final Color stockColor;
+    final String stockLabel;
+    if (!product.inStock) {
+      stockColor = AppColors.danger;
+      stockLabel = isAr ? 'غير متوفر' : 'Out of stock';
+    } else if (product.stockQuantity != null && product.stockQuantity! > 0 && product.stockQuantity! <= 5) {
+      stockColor = AppColors.warn;
+      stockLabel = isAr ? 'يبقى ${product.stockQuantity} فقط' : 'Only ${product.stockQuantity} left';
+    } else {
+      stockColor = AppColors.success;
+      stockLabel = isAr ? 'متوفر' : 'Available';
+    }
+
     return GestureDetector(
       onTap: () => safePush(context, '/product/${product.id}'),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: context.col.surface,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: context.col.border),
-          boxShadow: AppShadows.shadowCard,
-        ),
-        child: Row(children: [
-          // Image with discount badge
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: SizedBox(
-                  width: 82, height: 82,
-                  child: product.firstImage != null
-                      ? CachedNetworkImage(
-                          imageUrl: product.firstImage!,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) =>
-                              Container(color: context.col.surfaceSoft,
-                                child: Icon(Icons.image_outlined,
-                                    color: context.col.ink4, size: 28)),
-                        )
-                      : Container(
-                          color: context.col.surfaceSoft,
-                          child: Icon(Icons.image_outlined,
-                              color: context.col.ink4, size: 28)),
-                ),
-              ),
-              if (hasDiscount)
-                Positioned(
-                  top: 4, left: 4,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.danger,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                        '-${((1 - salePrice / product.price) * 100).round()}%',
-                        style: const TextStyle(
-                            fontSize: 9,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700)),
+      child: Stack(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: context.col.surface,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: context.col.border),
+              boxShadow: AppShadows.shadowCard,
+            ),
+            child: Row(children: [
+              // Square image + discount badge
+              Stack(children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: SizedBox(
+                    width: 82, height: 82,
+                    child: product.firstImage != null
+                        ? CachedNetworkImage(
+                            imageUrl: product.firstImage!,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Container(
+                                color: context.col.surfaceSoft,
+                                child: Icon(Icons.image_outlined, color: context.col.ink4, size: 28)),
+                          )
+                        : Container(
+                            color: context.col.surfaceSoft,
+                            child: Icon(Icons.image_outlined, color: context.col.ink4, size: 28)),
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(width: 12),
+                if (hasDiscount)
+                  Positioned(
+                    top: 4, left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                          color: AppColors.danger, borderRadius: BorderRadius.circular(6)),
+                      child: Text('-${((1 - salePrice / product.price) * 100).round()}%',
+                          style: const TextStyle(
+                              fontSize: 9, color: Colors.white, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+              ]),
+              const SizedBox(width: 12),
 
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (brandLabel != null)
-                  Text(brandLabel,
-                      style: TextStyle(fontSize: 11, color: context.col.ink3),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Text(name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600, height: 1.3)),
-                const SizedBox(height: 6),
-                Row(children: [
-                  Text('${fmtPrice(salePrice)} ${context.s.lydUnit}',
-                      style: const TextStyle(
-                          fontFamily: 'PlusJakartaSans',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800)),
-                  if (hasDiscount) ...[
-                    const SizedBox(width: 6),
-                    Text('${fmtPrice(product.price)} ${context.s.lydUnit}',
-                        style: TextStyle(
-                            fontFamily: 'PlusJakartaSans',
-                            fontSize: 11,
-                            color: context.col.ink3,
-                            decoration: TextDecoration.lineThrough)),
+              // Info column
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // top padding for X button space
+                    const SizedBox(height: 2),
+                    if (brandLabel != null)
+                      Text(brandLabel,
+                          style: TextStyle(fontSize: 11, color: context.col.ink3),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 2),
+                    Text(name,
+                        maxLines: 2, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.3)),
+                    const SizedBox(height: 6),
+                    // Price
+                    Row(children: [
+                      Text('${fmtPrice(salePrice)} ${context.s.lydUnit}',
+                          style: const TextStyle(
+                              fontFamily: 'PlusJakartaSans', fontSize: 15, fontWeight: FontWeight.w800)),
+                      if (hasDiscount) ...[
+                        const SizedBox(width: 6),
+                        Text('${fmtPrice(product.price)} ${context.s.lydUnit}',
+                            style: TextStyle(
+                                fontFamily: 'PlusJakartaSans', fontSize: 11,
+                                color: context.col.ink3, decoration: TextDecoration.lineThrough)),
+                      ],
+                    ]),
+                    const SizedBox(height: 8),
+                    // Stock dot + label  |  compact action button — same row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(mainAxisSize: MainAxisSize.min, children: [
+                          Container(width: 7, height: 7,
+                              decoration: BoxDecoration(color: stockColor, shape: BoxShape.circle)),
+                          const SizedBox(width: 5),
+                          Text(stockLabel,
+                              style: TextStyle(
+                                  fontFamily: 'Cairo', fontSize: 12,
+                                  fontWeight: FontWeight.w600, color: stockColor)),
+                        ]),
+                        if (isVariable)
+                          _WishBtn(
+                            label: isAr ? 'اختر المقاس' : 'Select Size',
+                            isVariable: true,
+                            onTap: () => safePush(context, '/product/${product.id}'),
+                          )
+                        else if (product.inStock)
+                          _WishBtn(
+                            label: isAr ? 'أضف للسلة' : 'Add to Cart',
+                            isVariable: false,
+                            onTap: () => ref.read(cartProvider.notifier).add(product),
+                          )
+                        else
+                          _WishBtn(
+                            label: isAr ? 'غير متوفر' : 'Unavailable',
+                            isVariable: false,
+                            disabled: true,
+                            onTap: () {},
+                          ),
+                      ],
+                    ),
                   ],
-                ]),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Actions: X top, Add bottom
-          Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  ref.read(wishlistProvider.notifier).toggle(product.id);
-                  ref.read(wishlistProductsProvider.notifier).remove(product.id);
-                },
-                child: Padding(
-                  padding: EdgeInsets.all(2),
-                  child: Icon(Icons.close, size: 18, color: context.col.ink3),
                 ),
               ),
-              const SizedBox(height: 14),
-              if (isVariable)
-                _ActionChip(
-                  label: isAr ? 'اختر الخيار' : 'Select Options',
-                  icon: Icons.tune_rounded,
-                  filled: hasDiscount,
-                  onTap: () => safePush(context, '/product/${product.id}'),
-                )
-              else if (product.inStock)
-                _ActionChip(
-                  label: context.s.add,
-                  icon: Icons.shopping_cart_outlined,
-                  filled: true,
-                  onTap: () => ref.read(cartProvider.notifier).add(product),
-                )
-              else
-                _ActionChip(
-                  label: context.s.soldOut,
-                  icon: Icons.notifications_outlined,
-                  filled: false,
-                  onTap: () => safePush(context, '/product/${product.id}'),
-                ),
-            ],
+            ]),
           ),
-        ]),
+          // X — physical top-left
+          Positioned(
+            top: 6, left: 6,
+            child: GestureDetector(
+              onTap: () {
+                ref.read(wishlistProvider.notifier).toggle(product.id);
+                ref.read(wishlistProductsProvider.notifier).remove(product.id);
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.all(3),
+                child: Icon(Icons.close, size: 16, color: context.col.ink3),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ActionChip extends StatelessWidget {
+class _WishBtn extends StatelessWidget {
   final String label;
-  final IconData icon;
-  final bool filled;
+  final bool isVariable;
+  final bool disabled;
   final VoidCallback onTap;
-  const _ActionChip(
-      {required this.label,
-      required this.icon,
-      required this.filled,
-      required this.onTap});
+  const _WishBtn({
+    required this.label,
+    required this.isVariable,
+    required this.onTap,
+    this.disabled = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (disabled) {
+      return SizedBox(
+        width: 100,
+        height: 28,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: context.col.surfaceSoft,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: context.col.border),
+          ),
+          child: Center(
+            child: Text(label,
+                style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: context.col.ink3)),
+          ),
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: context.col.ink2, width: 1.0),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 100,
+        height: 28,
+        child: Container(
+          decoration: BoxDecoration(
+            color: isVariable ? Colors.transparent : AppColors.primary,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isVariable ? context.col.ink3 : AppColors.primary,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(label,
+                  style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontSize: isVariable ? 10 : 12,
+                      fontWeight: FontWeight.w600,
+                      color: isVariable ? context.col.ink2 : Colors.white)),
+              if (isVariable) ...[
+                const SizedBox(width: 2),
+                Icon(Icons.keyboard_arrow_down_rounded,
+                    size: 11, color: context.col.ink3),
+              ],
+            ],
+          ),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 14, color: context.col.ink2),
-          const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontFamily: 'Cairo',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: context.col.ink2)),
-        ]),
       ),
+    );
+  }
+}
+
+class _PriceDropBanner extends StatelessWidget {
+  final int count;
+  final double totalSavings;
+  const _PriceDropBanner({required this.count, required this.totalSavings});
+
+  @override
+  Widget build(BuildContext context) {
+    final savedStr = '${fmtPrice(totalSavings)} ${context.s.lydUnit}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF1EB),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.warn.withValues(alpha: 0.3)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.local_fire_department_rounded, color: AppColors.warn, size: 22),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, height: 1.4),
+              children: [
+                TextSpan(
+                  text: context.s.isAr
+                      ? '$count منتجات انخفضت سعرها  '
+                      : '$count items on sale  ',
+                  style: TextStyle(color: context.col.ink1, fontWeight: FontWeight.w600),
+                ),
+                TextSpan(
+                  text: context.s.isAr ? '•  وفر حتى $savedStr' : '•  Save up to $savedStr',
+                  style: const TextStyle(color: AppColors.warn, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }

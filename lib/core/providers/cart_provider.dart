@@ -35,12 +35,27 @@ class CartState {
 
   bool get hasVendorFulfilledItems => items.any((i) => !i.product.fulfilledByBaahy);
 
+  // Sum collection fees across unique vendors. Zero if vendor has no fee set.
+  double get totalCollectionFee {
+    final seenIds = <int>{};
+    double total = 0;
+    for (final item in items) {
+      if (item.product.fulfilledByBaahy) continue;
+      final vendor = item.product.vendor;
+      if (vendor == null) continue;
+      if (seenIds.contains(vendor.id)) continue;
+      seenIds.add(vendor.id);
+      total += vendor.collectionFee ?? 0;
+    }
+    return total;
+  }
+
   double get deliveryFee {
     final base = cityRate != null
         ? cityRate!.effectiveRate(subtotal)
         : (subtotal >= 150 ? 0 : fallbackShippingFee);
     if (base == 0) return 0; // free shipping — waive collection fee too
-    return base + (hasVendorFulfilledItems ? collectionFee : 0);
+    return base + totalCollectionFee;
   }
 
   double get freeShippingThreshold => cityRate?.freeShippingThreshold ?? 150;
@@ -101,7 +116,40 @@ class CartNotifier extends StateNotifier<CartState> {
           .map((j) => CartItem.fromJson(j as Map<String, dynamic>))
           .toList();
       state = state.copyWith(items: list);
+      // Refresh vendor data in background so stale cached collection_fee gets updated
+      _refreshVendorFees(list);
     } catch (_) {}
+  }
+
+  Future<void> _refreshVendorFees(List<CartItem> items) async {
+    // Only refresh items where vendor collection_fee is missing
+    final staleItems = items.where((i) =>
+        !i.product.fulfilledByBaahy &&
+        i.product.vendor != null &&
+        i.product.vendor!.collectionFee == null).toList();
+    if (staleItems.isEmpty) return;
+    final uniqueProductIds = staleItems.map((i) => i.productId).toSet();
+    for (final pid in uniqueProductIds) {
+      try {
+        final res = await ApiClient.instance.dio.get('/products/$pid');
+        final fresh = Product.fromJson(res.data['data'] as Map<String, dynamic>);
+        if (fresh.vendor?.collectionFee == null) continue;
+        state = state.copyWith(
+          items: state.items.map((i) {
+            if (i.productId == pid) {
+              return CartItem(
+                productId: i.productId,
+                variationId: i.variationId,
+                quantity: i.quantity,
+                product: fresh,
+                variation: i.variation,
+              );
+            }
+            return i;
+          }).toList(),
+        );
+      } catch (_) {}
+    }
   }
 
   Future<void> _save() async {

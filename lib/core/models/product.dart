@@ -304,6 +304,7 @@ class Vendor {
   final String? descriptionAr;
   final double? averageRating;
   final String fulfillmentType;
+  final double? collectionFee;
 
   const Vendor({
     required this.id,
@@ -316,6 +317,7 @@ class Vendor {
     this.descriptionAr,
     this.averageRating,
     this.fulfillmentType = 'vendor',
+    this.collectionFee,
   });
 
   bool get fulfilledByBaahy => fulfillmentType == 'baahy';
@@ -329,6 +331,7 @@ class Vendor {
     'city': city,
     'average_rating': averageRating,
     'fulfillment_type': fulfillmentType,
+    'collection_fee': collectionFee,
   };
 
   factory Vendor.fromJson(Map<String, dynamic> j) => Vendor(
@@ -342,6 +345,7 @@ class Vendor {
     descriptionAr: j['description_ar'],
     averageRating: j['average_rating'] != null ? Product._d(j['average_rating']) : null,
     fulfillmentType: j['fulfillment_type'] as String? ?? 'vendor',
+    collectionFee: j['collection_fee'] != null ? Product._d(j['collection_fee']) : null,
   );
 }
 

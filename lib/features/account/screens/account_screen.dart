@@ -218,7 +218,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
               iconColor: const Color(0xFF0891B2),
               iconBg: const Color(0xFFE0F7FA),
               value: counts == null ? '—' : '${counts.active}',
-              label: context.tr('نشطة', 'Active'),
+              label: context.tr('النشطة', 'Active'),
               onTap: () => safePush(context, '/orders'),
             ),
             const SizedBox(width: 10),
@@ -227,7 +227,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
               iconColor: const Color(0xFF7C3AED),
               iconBg: const Color(0xFFEDE9FE),
               value: counts == null ? '—' : '${counts.total}',
-              label: context.tr('طلباتي', 'My Orders'),
+              label: context.tr('الطلبات', 'Orders'),
               onTap: () => safePush(context, '/orders'),
             ),
           ])),
@@ -621,40 +621,45 @@ class _StatTile extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           decoration: BoxDecoration(
             color: context.col.surface,
             borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(color: context.col.border),
             boxShadow: AppShadows.shadowLifted,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(value, style: TextStyle(
-                fontFamily: 'PlusJakartaSans',
-                fontSize: 20, fontWeight: FontWeight.w800,
-                color: context.col.ink0, height: 1.1)),
-              const SizedBox(height: 6),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(label,
-                      style: TextStyle(fontSize: 10.5, color: context.col.ink2),
-                      maxLines: 2),
-                  ),
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 34, height: 34,
-                    decoration: BoxDecoration(
-                      color: isDark ? context.col.surfaceSoft : iconBg,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Icon(icon, size: 17, color: isDark ? context.col.ink2 : iconColor),
-                  ),
-                ],
+              // icon box on physical left (last in RTL row = left)
+              // number+label on physical right (first in RTL row = right)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(value, style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 22, fontWeight: FontWeight.w800,
+                      color: context.col.ink0, height: 1.1)),
+                    const SizedBox(height: 3),
+                    Text(label,
+                      textAlign: TextAlign.start,
+                      style: TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 11, color: context.col.ink3),
+                      maxLines: 1),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: isDark ? context.col.surfaceSoft : iconBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 19, color: isDark ? context.col.ink2 : iconColor),
               ),
             ],
           ),
@@ -682,68 +687,84 @@ class _WalletCard extends StatelessWidget {
         color: isDark ? Colors.transparent : AppColors.primary.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: isDark ? accent.withValues(alpha: 0.30) : AppColors.primary.withValues(alpha: 0.35),
+          color: isDark ? accent.withValues(alpha: 0.30) : AppColors.primary.withValues(alpha: 0.30),
           width: 0.8),
       ),
-      child: Row(children: [
+      child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        // wallet icon — first = physical RIGHT in RTL
         Container(
-          width: 44, height: 44,
+          width: 48, height: 48,
           decoration: BoxDecoration(
-            color: isDark ? Colors.transparent : AppColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
-            border: isDark ? Border.all(color: accent.withValues(alpha: 0.35)) : null,
+            color: isDark ? context.col.surfaceSoft : AppColors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(Icons.account_balance_wallet_outlined, color: accent, size: 22),
+          child: Icon(Icons.account_balance_wallet_outlined, color: accent, size: 24),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 14),
+
+        // balance text — center
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(context.s.myWallet,
-              style: TextStyle(fontSize: 12, color: context.col.ink2, fontFamily: 'Cairo')),
+              style: TextStyle(fontSize: 12, color: context.col.ink3, fontFamily: 'Cairo')),
+            const SizedBox(height: 2),
             Text('${balance.toStringAsFixed(0)} ${context.s.lyd}',
               style: TextStyle(fontFamily: 'PlusJakartaSans',
-                fontSize: 22, fontWeight: FontWeight.w800,
+                fontSize: 24, fontWeight: FontWeight.w800,
                 color: context.col.ink0, height: 1.1)),
+            const SizedBox(height: 2),
+            Text(context.tr('الرصيد المتاح', 'Available balance'),
+              style: TextStyle(fontSize: 11, color: context.col.ink3, fontFamily: 'Cairo')),
           ]),
         ),
-        Row(mainAxisSize: MainAxisSize.min, children: [
-          GestureDetector(
-            onTap: () => safePush(context, '/wallet'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: context.col.borderStrong, width: 1.2),
+        const SizedBox(width: 14),
+
+        // stacked buttons — last = physical LEFT in RTL
+        IntrinsicWidth(
+         child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            GestureDetector(
+              onTap: () => safePush(context, '/wallet'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text(context.s.chargeWallet,
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                      color: Colors.white, fontFamily: 'Cairo')),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.add, size: 12, color: Colors.white),
+                ]),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(context.tr('تحويل', 'Transfer'),
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                    color: context.col.ink1, fontFamily: 'Cairo')),
-                const SizedBox(width: 4),
-                Icon(Icons.swap_horiz_rounded, size: 12, color: context.col.ink1),
-              ]),
             ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () => safePush(context, '/wallet'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: () => safePush(context, '/wallet'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: context.col.borderStrong, width: 1.2),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text(context.tr('تحويل', 'Transfer'),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                      color: context.col.ink1, fontFamily: 'Cairo')),
+                  const SizedBox(width: 4),
+                  Icon(Icons.swap_horiz_rounded, size: 12, color: context.col.ink1),
+                ]),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(context.s.chargeWallet,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                    color: Color(0xFFF0F0F0), fontFamily: 'Cairo')),
-                const SizedBox(width: 4),
-                const Icon(Icons.add, size: 12, color: Color(0xFFF0F0F0)),
-              ]),
             ),
-          ),
-        ]),
+          ],
+        )),
       ]),
     ));
   }
@@ -895,6 +916,7 @@ class _ReferralCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final count = ref.watch(_referralCountProvider).valueOrNull ?? 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () => safePush(context, '/friends'),
@@ -919,10 +941,9 @@ class _ReferralCard extends ConsumerWidget {
                 child: const Icon(Icons.group_rounded, size: 34, color: AppColors.primary),
               );
             }
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset('assets/images/referral_illustration.png',
-                width: 68, height: 68, fit: BoxFit.contain),
+            return Image.asset(
+              'assets/images/referral_illustration.png',
+              width: 72, height: 72, fit: BoxFit.contain,
             );
           }),
           const SizedBox(width: 12),
@@ -930,6 +951,7 @@ class _ReferralCard extends ConsumerWidget {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(context.s.inviteTitle,
+                textAlign: TextAlign.start,
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
                   color: context.col.ink0, fontFamily: 'Cairo')),
               const SizedBox(height: 2),
@@ -937,6 +959,7 @@ class _ReferralCard extends ConsumerWidget {
                 context.isAr
                   ? 'اكسب $giverAmount ${context.s.lyd} لكل صديق'
                   : 'Earn $giverAmount ${context.s.lyd} per friend',
+                textAlign: TextAlign.start,
                 style: TextStyle(fontSize: 12, color: context.col.ink2, fontFamily: 'Cairo')),
               const SizedBox(height: 3),
               Text(
@@ -945,20 +968,21 @@ class _ReferralCard extends ConsumerWidget {
                   color: AppColors.primary, fontFamily: 'Cairo')),
             ]),
           ),
+          const SizedBox(width: 12),
 
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.primary, width: 1.2),
+              border: Border.all(color: const Color(0xFF8B5CF6), width: 1.2),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.ios_share_rounded, size: 13, color: AppColors.primary),
-              const SizedBox(width: 4),
-              Text(context.tr('مشاركة', 'Share'),
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                  color: AppColors.primary, fontFamily: 'Cairo')),
+              const Icon(Icons.ios_share_rounded, size: 13, color: Color(0xFF8B5CF6)),
+              const SizedBox(width: 5),
+              Text(context.tr('مشاركة الرمز', 'Share Code'),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                  color: Color(0xFF8B5CF6), fontFamily: 'Cairo')),
             ]),
           ),
         ]),

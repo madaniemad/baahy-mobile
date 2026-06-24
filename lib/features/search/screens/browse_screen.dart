@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:math' show min;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -8,9 +8,10 @@ import '../../../core/providers/home_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/product_card.dart';
 
-// Standalone categories loader — used when homeProvider hasn't populated categories yet
+const _kCols = 3;
+const _kGap = 10.0;
+
 final _browseCategoriesProvider = FutureProvider<List<Category>>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/categories');
@@ -20,33 +21,6 @@ final _browseCategoriesProvider = FutureProvider<List<Category>>((ref) async {
   } catch (_) {
     return [];
   }
-});
-
-// Key: "parentId" or "parentId,sub1,sub2,..."
-final _categoryProductsProvider = FutureProvider.family<List<Product>, String>((ref, key) async {
-  final ids = key.split(',').map(int.parse).toList();
-  if (ids.length <= 1) {
-    final res = await ApiClient.instance.dio.get('/products',
-      queryParameters: {'category_id': ids[0], 'per_page': 50, 'sort': 'popular'});
-    final list = (res.data['data']['data'] as List?)
-        ?.map((p) => Product.fromJson(p)).toList() ?? [];
-    list.shuffle(Random(ids[0]));
-    return list;
-  }
-  // Fetch from each subcategory in parallel for a true cross-category mix
-  final subcatIds = ids.skip(1).toList();
-  final perCat = (48 / subcatIds.length).ceil().clamp(4, 8);
-  final futures = subcatIds.map((id) =>
-    ApiClient.instance.dio.get('/products',
-      queryParameters: {'category_id': id, 'per_page': perCat, 'sort': 'popular'})
-    .then((res) => (res.data['data']['data'] as List?)
-        ?.map((p) => Product.fromJson(p)).toList() ?? <Product>[])
-    .catchError((_) => <Product>[])
-  ).toList();
-  final results = await Future.wait(futures);
-  final combined = results.expand((l) => l).toList();
-  combined.shuffle(Random(ids[0]));
-  return combined;
 });
 
 class BrowseScreen extends ConsumerStatefulWidget {
@@ -60,51 +34,63 @@ class BrowseScreen extends ConsumerStatefulWidget {
 class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   int? _activeCategoryId;
   bool _deepLinked = false;
+  final _scrollCtrl = ScrollController();
+  final _subcatKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   void didUpdateWidget(BrowseScreen old) {
     super.didUpdateWidget(old);
-    if (widget.deepCategoryId != old.deepCategoryId && widget.deepCategoryId != null) {
+    if (widget.deepCategoryId != old.deepCategoryId &&
+        widget.deepCategoryId != null) {
       _deepLinked = false;
       _activeCategoryId = null;
     }
   }
 
+  void _selectCategory(int id, bool wasActive) {
+    setState(() => _activeCategoryId = wasActive ? null : id);
+    // No auto-scroll — the selected row stays in place, subcategory panel
+    // expands below it and pushes down everything else.
+  }
+
   @override
   Widget build(BuildContext context) {
     final home = ref.watch(homeProvider);
-    // Fall back to a direct /categories fetch if home provider hasn't loaded them yet
     final categoriesAsync = ref.watch(_browseCategoriesProvider);
-    final categories = home.categories.isNotEmpty
-        ? home.categories
-        : (categoriesAsync.valueOrNull ?? []);
+    final categories = categoriesAsync.valueOrNull?.isNotEmpty == true
+        ? categoriesAsync.valueOrNull!
+        : home.categories;
 
-    if (categories.isNotEmpty && _activeCategoryId == null) {
-      if (!_deepLinked && widget.deepCategoryId != null) {
-        _deepLinked = true;
-        final targetId = widget.deepCategoryId!;
-        // Check if it's a root category
-        final isRoot = categories.any((c) => c.id == targetId);
-        if (isRoot) {
-          _activeCategoryId = targetId;
-        } else {
-          // Find the root that has this as a child
-          for (final root in categories) {
-            if (root.children.any((child) => child.id == targetId)) {
-              _activeCategoryId = root.id;
-              break;
-            }
+    if (categories.isNotEmpty && !_deepLinked && widget.deepCategoryId != null) {
+      _deepLinked = true;
+      final targetId = widget.deepCategoryId!;
+      final isRoot = categories.any((c) => c.id == targetId);
+      if (isRoot) {
+        _activeCategoryId = targetId;
+      } else {
+        for (final root in categories) {
+          if (root.children.any((child) => child.id == targetId)) {
+            _activeCategoryId = root.id;
+            break;
           }
-          _activeCategoryId ??= categories.first.id;
         }
-      } else if (_activeCategoryId == null) {
-        _activeCategoryId = categories.first.id;
+        _activeCategoryId ??= categories.first.id;
       }
     }
 
-    final activeCategory = categories.isEmpty ? null
-        : categories.firstWhere((c) => c.id == _activeCategoryId,
-            orElse: () => categories.first);
+    final activeIdx = _activeCategoryId == null
+        ? -1
+        : categories.indexWhere((c) => c.id == _activeCategoryId);
+    final activeRow = activeIdx == -1 ? -1 : activeIdx ~/ _kCols;
+    final rowCount = (categories.length / _kCols).ceil();
+
+    final activeCategory = activeIdx == -1 ? null : categories[activeIdx];
 
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -112,102 +98,138 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     return Scaffold(
       backgroundColor: context.col.bg,
       body: SafeArea(
-        child: Column(
-          children: [
-            // ── Full-width search bar ──────────────────────────────────────
-            GestureDetector(
-              onTap: () => safePush(context, '/search'),
-              child: Container(
-                margin: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isDark ? context.col.surfaceSoft : context.col.surface,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: context.col.border),
-                  boxShadow: isDark ? null : AppShadows.shadowCard,
-                ),
-                child: Row(children: [
-                  Icon(Icons.search, size: 17, color: context.col.ink3),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(context.s.searchHint,
-                    style: TextStyle(color: context.col.ink3, fontSize: 13))),
-                  GestureDetector(
-                    onTap: () => safePush(context, '/search/camera'),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(Icons.camera_alt_outlined, size: 17, color: context.col.ink3),
-                    ),
+        child: CustomScrollView(
+          controller: _scrollCtrl,
+          slivers: [
+            // ── Search bar ─────────────────────────────────────────────────
+            SliverToBoxAdapter(
+              child: GestureDetector(
+                onTap: () => safePush(context, '/search'),
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark ? context.col.surfaceSoft : context.col.surface,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: context.col.borderStrong, width: 1.0),
                   ),
-                ]),
+                  child: Row(children: [
+                    Icon(Icons.search, size: 17, color: context.col.ink1),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(context.s.searchHint,
+                          style: TextStyle(
+                              color: context.col.ink1, fontSize: 13)),
+                    ),
+                    GestureDetector(
+                      onTap: () => safePush(context, '/search/camera'),
+                      child: Padding(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 6),
+                        child: Icon(Icons.camera_alt_outlined,
+                            size: 17, color: context.col.ink1),
+                      ),
+                    ),
+                  ]),
+                ),
               ),
             ),
 
-            // ── Rail + content ─────────────────────────────────────────────
-            Expanded(
-              child: categories.isEmpty
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Left rail
-                        Container(
-                          width: 108,
-                          decoration: BoxDecoration(
-                            color: context.col.surface,
-                            border: Border(right: BorderSide(color: context.col.border, width: 1)),
-                          ),
-                          child: ListView.builder(
-                            itemCount: categories.length,
-                            itemBuilder: (_, i) {
-                              final cat = categories[i];
-                              final isActive = cat.id == _activeCategoryId;
-                              return GestureDetector(
-                                onTap: () => setState(() => _activeCategoryId = cat.id),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                                  decoration: BoxDecoration(
-                                    color: isActive
-                                        ? (isDark ? AppColors.primary.withValues(alpha: 0.12) : const Color(0xFFF0FFFE))
-                                        : context.col.surface,
-                                    border: isAr
-                                      ? Border(left: BorderSide(
-                                          color: isActive ? AppColors.primary : Colors.transparent,
-                                          width: 3))
-                                      : Border(right: BorderSide(
-                                          color: isActive ? AppColors.primary : Colors.transparent,
-                                          width: 3)),
-                                  ),
-                                  child: Text(
-                                    isAr ? cat.nameAr : cat.name,
-                                    textAlign: TextAlign.start,
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                                      color: isActive ? AppColors.primary : context.col.ink1,
-                                      fontFamily: 'Cairo',
-                                      height: 1.35,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-
-                        // Right panel
-                        Expanded(
-                          child: _activeCategoryId == null || activeCategory == null
-                              ? const SizedBox.shrink()
-                              : _RightContent(
-                                  categoryId: _activeCategoryId!,
-                                  category: activeCategory,
-                                ),
-                        ),
-                      ],
-                    ),
+            // ── "التصنيفات" header ─────────────────────────────────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: Text(
+                  isAr ? 'التصنيفات' : 'Categories',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: context.col.ink0,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ),
             ),
+
+            if (categories.isEmpty)
+              const SliverFillRemaining(
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.teal),
+                ),
+              )
+            else
+              // ── Category rows with inline subcategory panel ─────────────
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (ctx, rowIdx) {
+                      final start = rowIdx * _kCols;
+                      final end =
+                          min(start + _kCols, categories.length);
+                      final rowCats = categories.sublist(start, end);
+                      final isActiveRow = rowIdx == activeRow;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // ── Row of category cards ──────────────────────
+                          // Selected card gets flex:2 (2× wider → 2× taller via AspectRatio)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (int j = 0; j < _kCols; j++) ...[
+                                if (j > 0) const SizedBox(width: _kGap),
+                                Expanded(
+                                  flex: (j < rowCats.length &&
+                                          rowCats[j].id == _activeCategoryId)
+                                      ? 4
+                                      : 3,
+                                  child: j < rowCats.length
+                                      ? _CategoryCard(
+                                          category: rowCats[j],
+                                          label: isAr
+                                              ? rowCats[j].nameAr
+                                              : rowCats[j].name,
+                                          isDark: isDark,
+                                          onTap: () => _selectCategory(
+                                            rowCats[j].id,
+                                            rowCats[j].id ==
+                                                _activeCategoryId,
+                                          ),
+                                        )
+                                      : const SizedBox(),
+                                ),
+                              ],
+                            ],
+                          ),
+
+                          // ── Subcategory panel (injected after active row) ──
+                          if (isActiveRow &&
+                              activeCategory != null &&
+                              activeCategory.children.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            _SubcategoryList(
+                              key: _subcatKey,
+                              category: activeCategory,
+                              isAr: isAr,
+                              isDark: isDark,
+                            ),
+                          ],
+
+                          // Row gap (space before next row)
+                          const SizedBox(height: 10),
+                        ],
+                      );
+                    },
+                    childCount: rowCount,
+                  ),
+                ),
+              ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
       ),
@@ -215,162 +237,189 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   }
 }
 
-class _RightContent extends ConsumerStatefulWidget {
-  final int categoryId;
+// ── Category card ─────────────────────────────────────────────────────────────
+
+class _CategoryCard extends StatelessWidget {
   final Category category;
-  const _RightContent({required this.categoryId, required this.category});
+  final String label;
+  final bool isDark;
+  final VoidCallback onTap;
 
-  @override
-  ConsumerState<_RightContent> createState() => _RightContentState();
-}
+  const _CategoryCard({
+    required this.category,
+    required this.label,
+    required this.isDark,
+    required this.onTap,
+  });
 
-class _RightContentState extends ConsumerState<_RightContent> {
   @override
   Widget build(BuildContext context) {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    final subcats = widget.category.children;
-    // Fetch from all subcategories for a true cross-category mix
-    final key = subcats.isNotEmpty
-        ? '${widget.categoryId},${subcats.map((s) => s.id).join(',')}'
-        : '${widget.categoryId}';
-    final productsAsync = ref.watch(_categoryProductsProvider(key));
+    final radius = BorderRadius.circular(AppRadius.card);
 
-    Widget _subcatGrid() => GridView.builder(
-      shrinkWrap: true,
-      padding: EdgeInsets.zero,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, mainAxisSpacing: 8, crossAxisSpacing: 8, childAspectRatio: 0.88),
-      itemCount: subcats.length,
-      itemBuilder: (_, i) {
-        final sub = subcats[i];
-        return _SubTile(
-          label: isAr ? sub.nameAr : sub.name,
-          image: sub.image,
-          onTap: () => safePush(context, '/search/results?q=&category=${sub.id}'),
-        );
-      },
-    );
-
-    return productsAsync.when(
-      loading: () => ListView(
-        padding: const EdgeInsets.all(12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (subcats.isNotEmpty) ...[_subcatGrid(), const SizedBox(height: 16)],
-          LayoutBuilder(builder: (_, box) {
-            const srcW = 165.0;
-            const srcH = 335.0; // natural card height at srcW
-            final colW = (box.maxWidth - 10) / 2;
-            final cellH = srcH * (colW / srcW);
-            return GridView.builder(
-              shrinkWrap: true, padding: EdgeInsets.zero,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10,
-                mainAxisExtent: cellH.ceilToDouble()),
-              itemCount: 6,
-              itemBuilder: (_, __) => const ProductCardSkeleton(),
-            );
-          }),
-        ],
-      ),
-      error: (_, __) => Center(child: Text(context.s.loadError, style: TextStyle(color: context.col.ink2))),
-      data: (products) => ListView(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        children: [
-          // Subcategory tiles
-          if (subcats.isNotEmpty) ...[
-            _subcatGrid(),
-            const SizedBox(height: 20),
-            Row(children: [
-              Container(width: 3, height: 16, decoration: BoxDecoration(
-                color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 8),
-              Text(context.s.sneakPeek,
-                style: TextStyle(fontFamily: 'Cairo',
-                  fontWeight: FontWeight.w800, fontSize: 14, color: context.col.ink0)),
-            ]),
-            const SizedBox(height: 10),
-          ],
-
-          if (products.isEmpty)
-            Center(child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Text(context.s.noProducts, style: TextStyle(color: context.col.ink2)),
-            ))
-          else
-            LayoutBuilder(builder: (_, box) {
-              const srcW = 165.0;
-              const srcH = 335.0;
-              final colW = (box.maxWidth - 10) / 2;
-              final cellH = srcH * (colW / srcW);
-              return GridView.builder(
-                shrinkWrap: true,
-                padding: EdgeInsets.zero,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  mainAxisExtent: cellH.ceilToDouble(),
-                ),
-                itemCount: products.length,
-                itemBuilder: (_, i) => FittedBox(
-                  fit: BoxFit.contain,
-                  alignment: Alignment.topCenter,
-                  child: SizedBox(
-                    width: srcW,
-                    child: ProductCard(product: products[i], width: srcW),
-                  ),
-                ),
-              );
-            }),
+          // Square image — AspectRatio ensures 1:1; flex in parent row drives the size
+          AspectRatio(
+            aspectRatio: 1.0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF1A1A1A)
+                    : const Color(0xFFF5F5F5),
+                borderRadius: radius,
+              ),
+              child: ClipRRect(
+                borderRadius: radius,
+                child: category.image != null
+                    ? CachedNetworkImage(
+                        imageUrl: category.image!,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 320,
+                        errorWidget: (_, __, ___) => Icon(
+                          Icons.category_outlined,
+                          size: 32,
+                          color: context.col.ink3,
+                        ),
+                      )
+                    : Icon(
+                        Icons.category_outlined,
+                        size: 32,
+                        color: context.col.ink3,
+                      ),
+              ),
+            ),
+          ),
+          // Label — same style regardless of selection state
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: context.col.ink0,
+                fontFamily: 'Cairo',
+                height: 1.3,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SubTile extends StatelessWidget {
-  final String label;
-  final String? image;
-  final VoidCallback onTap;
-  const _SubTile({required this.label, required this.image, required this.onTap});
+// ── Subcategory list ──────────────────────────────────────────────────────────
+
+class _SubcategoryList extends StatelessWidget {
+  final Category category;
+  final bool isAr;
+  final bool isDark;
+
+  const _SubcategoryList({
+    super.key,
+    required this.category,
+    required this.isAr,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: image != null
-                  ? CachedNetworkImage(
-                      imageUrl: image!, fit: BoxFit.cover,
-                      memCacheWidth: 400,
-                      errorWidget: (_, __, ___) =>
-                          Container(color: AppColors.primary.withValues(alpha: 0.12)),
-                    )
-                  : Container(color: AppColors.primary.withValues(alpha: 0.12)),
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              color: context.col.ink0,
-              fontFamily: 'Cairo',
-            ),
+    final subcats = category.children;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? context.col.surfaceSoft : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Column(
+          children: List.generate(subcats.length, (i) {
+            final sub = subcats[i];
+            final name = isAr ? sub.nameAr : sub.name;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => safePush(
+                      context,
+                      '/search/results?q=&category=${sub.id}',
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
+                      child: Row(
+                        // RTL: first child → right, last child → left.
+                        // text (right) then image (left) matches design.
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              textAlign: isAr
+                                  ? TextAlign.right
+                                  : TextAlign.left,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: context.col.ink0,
+                                fontFamily: 'Cairo',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: sub.image != null
+                                ? CachedNetworkImage(
+                                    imageUrl: sub.image!,
+                                    fit: BoxFit.contain,
+                                    memCacheWidth: 124,
+                                    errorWidget: (_, __, ___) => Icon(
+                                      Icons.category_outlined,
+                                      size: 28,
+                                      color: context.col.ink3,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.category_outlined,
+                                    size: 28,
+                                    color: context.col.ink3,
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (i < subcats.length - 1)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: context.col.border,
+                  ),
+              ],
+            );
+          }),
+        ),
       ),
     );
   }

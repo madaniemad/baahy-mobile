@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:badges/badges.dart' as badges;
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
@@ -52,11 +53,11 @@ class _AppLifecycleRefreshState extends ConsumerState<_AppLifecycleRefresh>
 // Branch indices must match router.dart: 0=home 1=wishlist 2=browse 3=cart 4=account
 typedef _Tab = ({IconData icon, String labelAr, String labelEn, int branchIdx});
 
-const _Tab _tabHome     = (icon: Icons.home_outlined,          labelAr: 'الرئيسية', labelEn: 'Home',       branchIdx: 0);
-const _Tab _tabWishlist = (icon: Icons.favorite_outline,       labelAr: 'المفضلة',  labelEn: 'Wishlist',   branchIdx: 1);
-const _Tab _tabBrowse   = (icon: Icons.grid_view_outlined,      labelAr: 'الأقسام',  labelEn: 'Categories', branchIdx: 2);
-const _Tab _tabCart     = (icon: Icons.shopping_cart_outlined, labelAr: 'السلة',    labelEn: 'Cart',       branchIdx: 3);
-const _Tab _tabAccount  = (icon: Icons.person_outline,         labelAr: 'حسابي',    labelEn: 'Me',         branchIdx: 4);
+const _Tab _tabHome     = (icon: Symbols.home,          labelAr: 'الرئيسية', labelEn: 'Home',       branchIdx: 0);
+const _Tab _tabWishlist = (icon: Symbols.favorite,      labelAr: 'المفضلة',  labelEn: 'Wishlist',   branchIdx: 1);
+const _Tab _tabBrowse   = (icon: Symbols.grid_view,     labelAr: 'الأقسام',  labelEn: 'Categories', branchIdx: 2);
+const _Tab _tabCart     = (icon: Symbols.shopping_cart, labelAr: 'السلة',    labelEn: 'Cart',       branchIdx: 3);
+const _Tab _tabAccount  = (icon: Symbols.person,        labelAr: 'حسابي',    labelEn: 'Me',         branchIdx: 4);
 
 const _tabs = [_tabHome, _tabWishlist, _tabBrowse, _tabCart, _tabAccount];
 
@@ -85,13 +86,12 @@ class MainShell extends ConsumerWidget {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: context.col.surface.withValues(alpha: 0.92),
-          border: Border(top: BorderSide(color: context.col.border)),
-          boxShadow: AppShadows.shadowPop,
+          boxShadow: [BoxShadow(color: Color(0x08000000), blurRadius: 4, offset: Offset(0, -1))],
         ),
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 56,
+            height: 60,
             child: Row(
               children: List.generate(tabs.length, (i) {
                 final tab = tabs[i];
@@ -99,8 +99,11 @@ class MainShell extends ConsumerWidget {
 
                 Widget icon = Icon(
                   tab.icon,
-                  size: 24,
-                  color: isActive ? AppColors.primary : context.col.ink3,
+                  size: 26,
+                  color: isActive ? AppColors.primary : context.col.ink1,
+                  opticalSize: 26,
+                  weight: isActive ? 300 : 200,
+                  grade: -25,
                 );
 
                 // Cart badge
@@ -149,9 +152,9 @@ class MainShell extends ConsumerWidget {
                           isAr ? tab.labelAr : tab.labelEn,
                           style: TextStyle(
                             fontFamily: 'Cairo',
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: isActive ? AppColors.primary : context.col.ink3,
+                            color: isActive ? AppColors.primary : context.col.ink1,
                           ),
                         ),
                       ],

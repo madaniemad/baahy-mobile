@@ -29,6 +29,32 @@ import '../../../core/models/tier_status.dart';
 import '../../../core/providers/welcome_coupon_provider.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+class Brand {
+  final int id;
+  final String name;
+  final String nameAr;
+  final String imageUrl;
+  final String link;
+  const Brand({required this.id, required this.name, required this.nameAr, required this.imageUrl, required this.link});
+  factory Brand.fromJson(Map<String, dynamic> j) => Brand(
+    id: j['id'] as int,
+    name: j['name'] as String,
+    nameAr: j['name_ar'] as String? ?? j['name'] as String,
+    imageUrl: j['image_url'] as String? ?? '',
+    link: j['link'] as String? ?? '',
+  );
+}
+
+final _brandsProvider = FutureProvider<List<Brand>>((ref) async {
+  try {
+    final res = await ApiClient.instance.dio.get('/brands');
+    final list = (res.data?['data'] as List?) ?? [];
+    return list.map((e) => Brand.fromJson(e as Map<String, dynamic>)).toList();
+  } catch (_) {
+    return [];
+  }
+});
+
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -92,17 +118,17 @@ class HomeScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: isDark ? context.col.surfaceSoft : Colors.white,
                         borderRadius: BorderRadius.circular(6),
-                        border: isDark ? Border.all(color: context.col.border) : null,
+                        border: Border.all(color: context.col.borderStrong, width: 1.0),
                       ),
                       child: Row(children: [
-                        Icon(Icons.search, size: 17, color: context.col.ink3),
+                        Icon(Icons.search, size: 17, color: context.col.ink1),
                         const SizedBox(width: 7),
                         Expanded(child: _SearchHintText()),
                         GestureDetector(
                           onTap: () => safePush(context, '/search/camera'),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: Icon(Icons.camera_alt_outlined, size: 17, color: context.col.ink3),
+                            child: Icon(Icons.camera_alt_outlined, size: 17, color: context.col.ink1),
                           ),
                         ),
                       ]),
@@ -214,13 +240,16 @@ class HomeScreen extends ConsumerWidget {
                 ),
 
               // ── Brand carousel — immediately after fashion cards ──
-              if (banners.promoStrip.any((b) => b.hasImage))
-                SliverToBoxAdapter(
-                  child: Padding(
+              SliverToBoxAdapter(
+                child: Consumer(builder: (ctx, ref2, _) {
+                  final brands = ref2.watch(_brandsProvider).valueOrNull ?? [];
+                  if (brands.isEmpty) return const SizedBox.shrink();
+                  return Padding(
                     padding: const EdgeInsets.only(top: 20),
-                    child: _BrandCarousel(brands: banners.promoStrip),
-                  ),
-                ),
+                    child: _BrandCarousel(brands: brands),
+                  );
+                }),
+              ),
 
               // ── Featured Products ──
               if (home.newArrivals.isNotEmpty) ...[
@@ -424,7 +453,7 @@ class _SearchHintText extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     context.s.searchHint,
-    style: TextStyle(color: context.col.ink3, fontSize: 14));
+    style: TextStyle(color: context.col.ink1, fontSize: 14));
 }
 
 // ── Active order strip + rewards nudge carousel ───────────────────────────────
@@ -1589,15 +1618,16 @@ class _FashionTile extends StatelessWidget {
 // ── Brand logo carousel ───────────────────────────────────────────────────────
 
 class _BrandCarousel extends StatelessWidget {
-  final List<AppBanner> brands;
+  final List<Brand> brands;
   const _BrandCarousel({required this.brands});
 
-  static const double _tileW = 78;
-  static const double _tileH = 64;
-  static const double _gap = 8;
+  static const double _tileW = 96;
+  static const double _tileH = 76;
+  static const double _gap = 10;
 
   @override
   Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -1609,28 +1639,29 @@ class _BrandCarousel extends StatelessWidget {
         ),
         SizedBox(
           height: _tileH,
-          child: GridView.builder(
+          child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 1,
-              mainAxisSpacing: _gap,
-              crossAxisSpacing: _gap,
-              mainAxisExtent: _tileW,
-            ),
             itemCount: brands.length,
+            separatorBuilder: (_, __) => const SizedBox(width: _gap),
             itemBuilder: (_, i) {
               final brand = brands[i];
               return GestureDetector(
-                onTap: () => BannerLink.navigate(context, brand.buttonLink),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: brand.hasImage
-                      ? CachedNetworkImage(imageUrl: brand.imageUrl!, fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(color: context.col.surfaceSoft,
-                            child: Icon(Icons.store_outlined, color: context.col.ink3, size: 24)))
-                      : Container(color: context.col.surfaceSoft,
-                          child: Icon(Icons.store_outlined, color: context.col.ink3, size: 24)),
+                onTap: () => safePush(context, brand.link),
+                child: SizedBox(
+                  width: _tileW,
+                  height: _tileH,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: brand.imageUrl.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: brand.imageUrl,
+                            fit: BoxFit.contain,
+                            memCacheWidth: 192,
+                            errorWidget: (_, __, ___) => _placeholder(context),
+                          )
+                        : _placeholder(context),
+                  ),
                 ),
               );
             },
@@ -1639,6 +1670,11 @@ class _BrandCarousel extends StatelessWidget {
       ],
     );
   }
+
+  Widget _placeholder(BuildContext context) => Container(
+    color: context.col.surfaceSoft,
+    child: Icon(Icons.store_outlined, color: context.col.ink3, size: 24),
+  );
 }
 
 // ── Tile carousel — full-width swipeable, 1920/700 ratio (all tile slots) ──────
@@ -2342,7 +2378,7 @@ class _WelcomeCouponBanner extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF1BBFBC), Color(0xFF32DDE5)],
+                  colors: [Color(0xFF1BBFBC), Color(0xFF1FD7E2)],
                   begin: Alignment.centerRight,
                   end: Alignment.centerLeft,
                 ),
