@@ -54,6 +54,30 @@ class DynCategoryCarousel extends HomeDynamicItem {
   DynCategoryCarousel({required this.titleAr, required this.titleEn, required this.categories});
 }
 
+class FashionCard {
+  final String imageUrl;
+  final String? linkUrl;
+  final String? badgeAr;
+  final String? badgeEn;
+  const FashionCard({required this.imageUrl, this.linkUrl, this.badgeAr, this.badgeEn});
+  Map<String, dynamic> toJson() => {
+    'imageUrl': imageUrl, 'linkUrl': linkUrl, 'badgeAr': badgeAr, 'badgeEn': badgeEn,
+  };
+  factory FashionCard.fromJson(Map<String, dynamic> j) => FashionCard(
+    imageUrl: j['imageUrl'] as String,
+    linkUrl: j['linkUrl'] as String?,
+    badgeAr: j['badgeAr'] as String?,
+    badgeEn: j['badgeEn'] as String?,
+  );
+}
+
+class DynFashionCards extends HomeDynamicItem {
+  final String titleAr;
+  final String titleEn;
+  final List<FashionCard> cards;
+  DynFashionCards({required this.titleAr, required this.titleEn, required this.cards});
+}
+
 class DynStripBanner extends HomeDynamicItem {
   final String imageUrl;
   final String? linkUrl;
@@ -142,7 +166,7 @@ class HomeData {
 class HomeNotifier extends StateNotifier<HomeData> {
   final ApiClient _api;
 
-  static const _cacheKey = 'home_data_v8';
+  static const _cacheKey = 'home_data_v10';
   static const _cacheTtl = Duration(minutes: 5);
 
   HomeNotifier(this._api) : super(const HomeData(loading: true)) {
@@ -415,7 +439,7 @@ class HomeNotifier extends StateNotifier<HomeData> {
           ));
           seenAboveIds.addAll(prods.map((p) => p.id));
         }
-      } else if (type == 'carousel' || type == 'fashion_cards') {
+      } else if (type == 'carousel') {
         if (prods.isNotEmpty) {
           int catId = s['id'] as int? ?? 0;
           if (viewAll != null) {
@@ -427,6 +451,23 @@ class HomeNotifier extends StateNotifier<HomeData> {
             category: cat, products: prods, viewAllUrl: viewAll,
           )));
           seenAboveIds.addAll(prods.map((p) => p.id));
+        }
+      } else if (type == 'fashion_cards') {
+        final rawCards = s['cards'] as List? ?? [];
+        final fashionCards = rawCards
+            .whereType<Map<String, dynamic>>()
+            .where((c) => (c['image'] as String?)?.isNotEmpty == true)
+            .map((c) => FashionCard(
+              imageUrl: c['image'] as String,
+              linkUrl: c['link'] as String?,
+              badgeAr: c['badge_ar'] as String?,
+              badgeEn: c['badge_en'] as String?,
+            ))
+            .toList();
+        if (fashionCards.isNotEmpty) {
+          orderedSections.add(DynFashionCards(
+            titleAr: titleAr, titleEn: titleEn, cards: fashionCards,
+          ));
         }
       } else if (type == 'banner_duo') {
         final duo = BannerDuoSection(
@@ -591,6 +632,10 @@ class HomeNotifier extends StateNotifier<HomeData> {
         'type': 'banner', 'imageUrl': item.imageUrl, 'linkUrl': item.linkUrl,
         'badgeAr': item.badgeAr, 'badgeEn': item.badgeEn, 'showOverlay': item.showOverlay,
       };
+      if (item is DynFashionCards) return {
+        'type': 'fashion_cards', 'titleAr': item.titleAr, 'titleEn': item.titleEn,
+        'cards': item.cards.map((c) => c.toJson()).toList(),
+      };
       return {'type': 'unknown'};
     }).toList(),
   };
@@ -647,6 +692,16 @@ class HomeNotifier extends StateNotifier<HomeData> {
           badgeEn:  m['badgeEn'] as String?,
           showOverlay: (m['showOverlay'] as bool?) ?? false,
         ));
+      } else if (type == 'fashion_cards') {
+        final cards = (m['cards'] as List? ?? [])
+            .map((c) => FashionCard.fromJson(c as Map<String, dynamic>)).toList();
+        if (cards.isNotEmpty) {
+          dynSections.add(DynFashionCards(
+            titleAr: m['titleAr'] as String? ?? '',
+            titleEn: m['titleEn'] as String? ?? '',
+            cards: cards,
+          ));
+        }
       }
     }
 

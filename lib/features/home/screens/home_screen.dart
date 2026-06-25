@@ -302,8 +302,8 @@ class HomeScreen extends ConsumerWidget {
                             child: CachedNetworkImage(
                               imageUrl: item.imageUrl,
                               fit: BoxFit.cover,
-                              placeholder: (_, __) => Container(color: context.col.surfaceSoft),
-                              errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                              placeholder: (_, __) => Container(color: const Color(0xFF1FD7E2)),
+                              errorWidget: (_, __, ___) => Container(color: const Color(0xFF1FD7E2)),
                             ),
                           ),
                         ),
@@ -320,6 +320,10 @@ class HomeScreen extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: _SingleBannerSection(item: item),
                     ),
+                  );
+                } else if (item is DynFashionCards) {
+                  yield SliverToBoxAdapter(
+                    child: _DynFashionCardsSection(item: item),
                   );
                 }
               }),
@@ -1503,6 +1507,80 @@ class _CategoriesGridState extends State<_CategoriesGrid> {
 }
 
 // ── Fashion banner portrait tiles ─────────────────────────────────────────────
+
+// ── Admin-driven fashion cards (portrait portrait image tiles) ───────────────
+class _DynFashionCardsSection extends StatelessWidget {
+  final DynFashionCards item;
+  const _DynFashionCardsSection({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final title = isAr ? item.titleAr : item.titleEn;
+    final sw = MediaQuery.of(context).size.width;
+    final cardW = (sw - 16) / 3.3;
+    final cardH = cardW * 1.7;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (title.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+            child: Text(title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          ),
+        SizedBox(
+          height: cardH,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(left: 16),
+            itemCount: item.cards.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              final card = item.cards[i];
+              return GestureDetector(
+                onTap: () => BannerLink.navigate(context, card.linkUrl),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: SizedBox(
+                    width: cardW,
+                    height: cardH,
+                    child: Stack(fit: StackFit.expand, children: [
+                      CachedNetworkImage(
+                        imageUrl: card.imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => Container(color: context.col.surfaceSoft),
+                        errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)),
+                      ),
+                      Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                            colors: [Colors.transparent, Color(0xCC000000)],
+                          ),
+                        ),
+                      ),
+                      if (card.badgeAr != null || card.badgeEn != null)
+                        Positioned(
+                          bottom: 12, left: 12, right: 12,
+                          child: Text(
+                            isAr ? (card.badgeAr ?? card.badgeEn ?? '') : (card.badgeEn ?? card.badgeAr ?? ''),
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800,
+                              color: Colors.white, height: 1.2),
+                          ),
+                        ),
+                    ]),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _FashionBannerTiles extends StatefulWidget {
   final List<AppBanner> banners;
