@@ -476,12 +476,11 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
       if (mounted) {
-        setState(() => _localImagePath = null);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.s.errorTryAgain)));
       }
     } finally {
-      if (mounted) setState(() => _uploading = false);
+      if (mounted) setState(() { _uploading = false; _localImagePath = null; });
     }
   }
 
@@ -523,6 +522,7 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
                           width: 68, height: 68)
                       : networkAvatar != null && networkAvatar.isNotEmpty
                         ? CachedNetworkImage(
+                            key: ValueKey(networkAvatar),
                             imageUrl: networkAvatar,
                             fit: BoxFit.cover,
                             width: 68, height: 68,

@@ -142,7 +142,7 @@ class HomeData {
 class HomeNotifier extends StateNotifier<HomeData> {
   final ApiClient _api;
 
-  static const _cacheKey = 'home_data_v7';
+  static const _cacheKey = 'home_data_v8';
   static const _cacheTtl = Duration(minutes: 5);
 
   HomeNotifier(this._api) : super(const HomeData(loading: true)) {

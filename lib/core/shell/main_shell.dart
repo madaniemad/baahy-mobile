@@ -91,7 +91,7 @@ class MainShell extends ConsumerWidget {
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 60,
+            height: 64,
             child: Row(
               children: List.generate(tabs.length, (i) {
                 final tab = tabs[i];
@@ -99,9 +99,9 @@ class MainShell extends ConsumerWidget {
 
                 Widget icon = Icon(
                   tab.icon,
-                  size: 26,
+                  size: 28,
                   color: isActive ? AppColors.primary : context.col.ink1,
-                  opticalSize: 26,
+                  opticalSize: 28,
                   weight: isActive ? 300 : 200,
                   grade: -25,
                 );
@@ -152,7 +152,7 @@ class MainShell extends ConsumerWidget {
                           isAr ? tab.labelAr : tab.labelEn,
                           style: TextStyle(
                             fontFamily: 'Cairo',
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: isActive ? AppColors.primary : context.col.ink1,
                           ),

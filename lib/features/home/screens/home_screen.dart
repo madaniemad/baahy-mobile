@@ -734,7 +734,7 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
     _current = n > 0 ? startPage % n : 0;
     if (n > 1) {
       _timer = Timer.periodic(const Duration(seconds: 4), (_) {
-        if (!mounted) return;
+        if (!mounted || !_pageCtrl.hasClients) return;
         _pageCtrl.nextPage(
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOut);
@@ -767,24 +767,35 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
     return AspectRatio(
       aspectRatio: 1400 / 480,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          PageView.builder(
-            controller: _pageCtrl,
-            itemCount: widget.banners.length > 1 ? widget.banners.length * _multiplier * 2 : widget.banners.length,
-            onPageChanged: (i) => setState(() => _current = i % widget.banners.length),
-            itemBuilder: (_, i) {
-              final idx = i % widget.banners.length;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: _BannerSlide(
-                    banner: widget.banners[idx],
-                    gradient: _gradients[idx % _gradients.length],
+          // LTR wrapper: normalises scroll direction regardless of app RTL locale.
+          // This is intentional — peek carousels in Arabic apps conventionally
+          // advance left-to-right (new banner enters from the right), matching
+          // Noon, Amazon.sa, etc.  Without this, the left-side peek is clipped
+          // in RTL mode because the adjacent page sits at a negative physical
+          // offset that hardEdge clips.
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: PageView.builder(
+              clipBehavior: Clip.none,
+              controller: _pageCtrl,
+              itemCount: widget.banners.length > 1 ? widget.banners.length * _multiplier * 2 : widget.banners.length,
+              onPageChanged: (i) => setState(() => _current = i % widget.banners.length),
+              itemBuilder: (_, i) {
+                final idx = i % widget.banners.length;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: _BannerSlide(
+                      banner: widget.banners[idx],
+                      gradient: _gradients[idx % _gradients.length],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
             if (widget.banners.length > 1)
               Positioned(
