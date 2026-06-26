@@ -103,17 +103,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/search',     builder: (_, __) => const SearchScreen()),
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/search/results', builder: (_, state) {
           final extra = state.extra as Map<String, dynamic>?;
+          final p = state.uri.queryParameters;
           return SearchResultsScreen(
-            query: state.uri.queryParameters['q'] ?? '',
-            categoryId: state.uri.queryParameters['category'] != null
-                ? int.tryParse(state.uri.queryParameters['category']!)
+            query: p['q'] ?? '',
+            pageTitle: extra?['title'] as String?,
+            categoryId: (p['category'] ?? p['category_id']) != null
+                ? int.tryParse((p['category'] ?? p['category_id'])!)
                 : null,
-            onSale: state.uri.queryParameters['on_sale'] == '1',
-            maxPrice: state.uri.queryParameters['max_price'] != null
-                ? double.tryParse(state.uri.queryParameters['max_price']!)
-                : null,
-            initialSort: state.uri.queryParameters['sort'],
-            initialBrand: state.uri.queryParameters['brand'],
+            onSale: p['on_sale'] == '1',
+            maxPrice: p['max_price'] != null ? double.tryParse(p['max_price']!) : null,
+            initialSort: p['sort'],
+            initialBrand: p['brand'],
             visionProducts: extra?['visionProducts'] as List<Product>?,
           );
         }),

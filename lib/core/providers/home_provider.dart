@@ -94,12 +94,37 @@ class BannerDuoSection {
   final String? badgeAr2;
   final String? badgeEn2;
   final bool showOverlay;
+  // Left panel overlay
+  final String? titleAr;
+  final String? titleEn;
+  final String? subtitleAr;
+  final String? subtitleEn;
+  final String? buttonAr;
+  final String? buttonEn;
+  final String textSide;
+  // Right panel overlay
+  final String? titleAr2;
+  final String? titleEn2;
+  final String? subtitleAr2;
+  final String? subtitleEn2;
+  final String? buttonAr2;
+  final String? buttonEn2;
+  final String textSide2;
+
   const BannerDuoSection({
     this.imageUrl, this.imageUrl2,
     this.linkUrl, this.linkUrl2,
     this.badgeAr, this.badgeEn,
     this.badgeAr2, this.badgeEn2,
     this.showOverlay = false,
+    this.titleAr, this.titleEn,
+    this.subtitleAr, this.subtitleEn,
+    this.buttonAr, this.buttonEn,
+    this.textSide = 'right',
+    this.titleAr2, this.titleEn2,
+    this.subtitleAr2, this.subtitleEn2,
+    this.buttonAr2, this.buttonEn2,
+    this.textSide2 = 'right',
   });
   Map<String, dynamic> toJson() => {
     'imageUrl': imageUrl, 'imageUrl2': imageUrl2,
@@ -107,6 +132,14 @@ class BannerDuoSection {
     'badgeAr': badgeAr, 'badgeEn': badgeEn,
     'badgeAr2': badgeAr2, 'badgeEn2': badgeEn2,
     'showOverlay': showOverlay,
+    'titleAr': titleAr, 'titleEn': titleEn,
+    'subtitleAr': subtitleAr, 'subtitleEn': subtitleEn,
+    'buttonAr': buttonAr, 'buttonEn': buttonEn,
+    'textSide': textSide,
+    'titleAr2': titleAr2, 'titleEn2': titleEn2,
+    'subtitleAr2': subtitleAr2, 'subtitleEn2': subtitleEn2,
+    'buttonAr2': buttonAr2, 'buttonEn2': buttonEn2,
+    'textSide2': textSide2,
   };
   factory BannerDuoSection.fromJson(Map<String, dynamic> j) => BannerDuoSection(
     imageUrl: j['imageUrl'] as String?,
@@ -118,6 +151,20 @@ class BannerDuoSection {
     badgeAr2: j['badgeAr2'] as String?,
     badgeEn2: j['badgeEn2'] as String?,
     showOverlay: (j['showOverlay'] as bool?) ?? false,
+    titleAr: j['titleAr'] as String?,
+    titleEn: j['titleEn'] as String?,
+    subtitleAr: j['subtitleAr'] as String?,
+    subtitleEn: j['subtitleEn'] as String?,
+    buttonAr: j['buttonAr'] as String?,
+    buttonEn: j['buttonEn'] as String?,
+    textSide: (j['textSide'] as String?) ?? 'right',
+    titleAr2: j['titleAr2'] as String?,
+    titleEn2: j['titleEn2'] as String?,
+    subtitleAr2: j['subtitleAr2'] as String?,
+    subtitleEn2: j['subtitleEn2'] as String?,
+    buttonAr2: j['buttonAr2'] as String?,
+    buttonEn2: j['buttonEn2'] as String?,
+    textSide2: (j['textSide2'] as String?) ?? 'right',
   );
 }
 
@@ -480,6 +527,20 @@ class HomeNotifier extends StateNotifier<HomeData> {
           badgeAr2:  s['badge_text_ar_2'] as String?,
           badgeEn2:  s['badge_text_en_2'] as String?,
           showOverlay: (s['show_overlay'] as bool?) ?? false,
+          titleAr:    s['overlay_title_ar'] as String?,
+          titleEn:    s['overlay_title_en'] as String?,
+          subtitleAr: s['overlay_subtitle_ar'] as String?,
+          subtitleEn: s['overlay_subtitle_en'] as String?,
+          buttonAr:   s['btn_label_ar'] as String?,
+          buttonEn:   s['btn_label_en'] as String?,
+          textSide:   (s['overlay_position'] as String?) ?? 'right',
+          titleAr2:    s['overlay_title_ar_2'] as String?,
+          titleEn2:    s['overlay_title_en_2'] as String?,
+          subtitleAr2: s['overlay_subtitle_ar_2'] as String?,
+          subtitleEn2: s['overlay_subtitle_en_2'] as String?,
+          buttonAr2:   s['btn_label_ar_2'] as String?,
+          buttonEn2:   s['btn_label_en_2'] as String?,
+          textSide2:   (s['overlay_position_2'] as String?) ?? 'right',
         );
         if (duo.imageUrl != null || duo.imageUrl2 != null) {
           orderedSections.add(DynBannerDuo(duo));

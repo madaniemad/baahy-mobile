@@ -401,8 +401,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final effectiveDeliveryFee = isReorder
         ? (selectedRate != null
             ? selectedRate.effectiveRate(effectiveSubtotal)
-            : (effectiveSubtotal >= (cart.cityRate?.freeShippingThreshold ?? 150) ? 0.0
-                : (cart.cityRate?.effectiveRate(effectiveSubtotal) ?? cart.fallbackShippingFee)))
+            : (cart.cityRate?.effectiveRate(effectiveSubtotal) ?? cart.fallbackShippingFee))
         : cart.deliveryFee;
     final effectiveTotal = isReorder
         ? effectiveSubtotal + effectiveDeliveryFee

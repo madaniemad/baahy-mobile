@@ -58,11 +58,12 @@ class CartState {
     return base + totalCollectionFee;
   }
 
-  double get freeShippingThreshold => cityRate?.freeShippingThreshold ?? 150;
+  double? get freeShippingThreshold => cityRate?.freeShippingThreshold;
 
-  // For UI: how much more until free shipping kicks in
+  // For UI: how much more until free shipping kicks in (0 if city has no threshold)
   double get freeShippingRemaining {
-    return subtotal >= freeShippingThreshold ? 0 : freeShippingThreshold - subtotal;
+    if (freeShippingThreshold == null) return 0;
+    return subtotal >= freeShippingThreshold! ? 0 : freeShippingThreshold! - subtotal;
   }
 
   double get total => subtotal - discountAmount + deliveryFee;

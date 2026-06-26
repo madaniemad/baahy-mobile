@@ -138,7 +138,7 @@ class AppColors {
   static const borderStrong= Color(0xFFD8DDDD);
 
   // Semantic
-  static const danger      = Color(0xFFE2553F); // red  — cancelled, errors, badges
+  static const danger      = Color(0xFFf64242); // red  — cancelled, errors, badges
   static const success     = Color(0xFF1F8A5B); // green — delivered, in-stock
   static const warn        = Color(0xFFD97757); // amber — pending, low-stock
   static const info        = Color(0xFF3B82F6); // blue  — shipped/in-delivery

@@ -206,7 +206,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
            child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             _StatTile(
               icon: Icons.favorite_rounded,
-              iconColor: const Color(0xFFE11D48),
+              iconColor: AppColors.danger,
               iconBg: const Color(0xFFFFE4E8),
               value: '$wishlistCount',
               label: context.tr('المفضلة', 'Saved'),

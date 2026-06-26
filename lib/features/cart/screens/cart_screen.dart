@@ -388,12 +388,12 @@ class _CartBodyState extends ConsumerState<_CartBody> {
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
           children: [
             // ── Free shipping banner ──────────────────────────────────────
-            if (cart.freeShippingRemaining > 0)
+            if (cart.freeShippingThreshold != null && cart.freeShippingRemaining > 0)
               _FreeShippingProgressBanner(
                 remaining: cart.freeShippingRemaining,
                 subtotal: cart.subtotal,
-                threshold: cart.freeShippingThreshold),
-            if (cart.subtotal >= cart.freeShippingThreshold)
+                threshold: cart.freeShippingThreshold!),
+            if (cart.freeShippingThreshold != null && cart.subtotal >= cart.freeShippingThreshold!)
               _FreeShippingAchievedBanner(saved: cart.deliveryFee),
 
             // ── Delivery header ───────────────────────────────────────────

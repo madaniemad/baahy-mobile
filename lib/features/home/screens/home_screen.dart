@@ -273,26 +273,35 @@ class HomeScreen extends ConsumerWidget {
                       ar: item.titleAr.isNotEmpty ? item.titleAr : 'منتجات',
                       en: item.titleEn.isNotEmpty ? item.titleEn : 'Products',
                       onAll: item.viewAllUrl != null
-                          ? () => safePush(context, '/search/results?q=${item.viewAllUrl}')
+                          ? () {
+                              final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                              safePush(
+                                context,
+                                '/search/results${item.viewAllUrl}',
+                                extra: {'title': isAr ? item.titleAr : item.titleEn},
+                              );
+                            }
                           : null,
                     ),
                   );
                   yield SliverToBoxAdapter(child: _BudgetCarousel(products: item.products));
+                  yield const SliverToBoxAdapter(child: SizedBox(height: 21));
                 } else if (item is DynCarousel) {
+                  // SizedBox(340) naturally leaves ~21px below card content — no extra padding needed.
                   yield SliverToBoxAdapter(
                     child: _CategoryCarouselSection(section: item.section),
                   );
                 } else if (item is DynBannerDuo) {
                   yield SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 21),
                       child: _DuoBannerRow(section: item.section),
                     ),
                   );
                 } else if (item is DynStripBanner) {
                   yield SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 21),
                       child: GestureDetector(
                         onTap: () => BannerLink.navigate(context, item.linkUrl),
                         child: ClipRRect(
@@ -311,19 +320,26 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   );
                 } else if (item is DynCategoryCarousel) {
+                  // SizedBox(110) has ~8px of natural bottom space; add 13px explicit = 21px total.
                   yield SliverToBoxAdapter(
-                    child: _CategoryImagesCarousel(item: item),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 13),
+                      child: _CategoryImagesCarousel(item: item),
+                    ),
                   );
                 } else if (item is DynBanner) {
                   yield SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 21),
                       child: _SingleBannerSection(item: item),
                     ),
                   );
                 } else if (item is DynFashionCards) {
                   yield SliverToBoxAdapter(
-                    child: _DynFashionCardsSection(item: item),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 21),
+                      child: _DynFashionCardsSection(item: item),
+                    ),
                   );
                 }
               }),
@@ -1072,8 +1088,13 @@ class _DuoBannerRow extends StatelessWidget {
     final badge1 = isAr ? section.badgeAr : section.badgeEn;
     final badge2 = isAr ? section.badgeAr2 : section.badgeEn2;
 
-    Widget tile(String? url, String? link, String? badge) {
+    Widget tile(
+      String? url, String? link, String? badge,
+      String? title, String? subtitle, String? button, String side,
+    ) {
       if (url == null || url.isEmpty) return const SizedBox.shrink();
+      final hasText = section.showOverlay && (title != null || subtitle != null || button != null);
+      final alignEnd = side == 'right' ? CrossAxisAlignment.end : CrossAxisAlignment.start;
       return Expanded(
         child: GestureDetector(
           onTap: () { if (link != null && link.isNotEmpty) BannerLink.navigate(context, link); },
@@ -1089,8 +1110,49 @@ class _DuoBannerRow extends StatelessWidget {
                     errorWidget: (_, __, ___) => Container(color: Colors.grey.shade200),
                   ),
                   if (section.showOverlay)
-                    Container(color: Colors.black.withValues(alpha: 0.2)),
-                  if (badge != null && badge.isNotEmpty)
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Colors.black.withValues(alpha: hasText ? 0.60 : 0.25)],
+                        ),
+                      ),
+                    ),
+                  if (hasText)
+                    Positioned(
+                      left: 10, right: 10, bottom: 10,
+                      child: Column(
+                        crossAxisAlignment: alignEnd,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (title != null)
+                            Text(title,
+                              textAlign: side == 'right' ? TextAlign.right : TextAlign.left,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
+                                color: Colors.white, height: 1.2)),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: 2),
+                            Text(subtitle,
+                              textAlign: side == 'right' ? TextAlign.right : TextAlign.left,
+                              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.85))),
+                          ],
+                          if (button != null) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: Text(button,
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+                            ),
+                          ],
+                        ],
+                      ),
+                    )
+                  else if (badge != null && badge.isNotEmpty)
                     Positioned(
                       bottom: 10, right: 10,
                       child: Container(
@@ -1100,8 +1162,7 @@ class _DuoBannerRow extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(badge,
-                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
+                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                       ),
                     ),
                 ],
@@ -1114,9 +1175,17 @@ class _DuoBannerRow extends StatelessWidget {
 
     return Row(
       children: [
-        tile(section.imageUrl, section.linkUrl, badge1),
+        tile(section.imageUrl, section.linkUrl, badge1,
+          isAr ? section.titleAr : section.titleEn,
+          isAr ? section.subtitleAr : section.subtitleEn,
+          isAr ? section.buttonAr : section.buttonEn,
+          section.textSide),
         const SizedBox(width: 8),
-        tile(section.imageUrl2, section.linkUrl2, badge2),
+        tile(section.imageUrl2, section.linkUrl2, badge2,
+          isAr ? section.titleAr2 : section.titleEn2,
+          isAr ? section.subtitleAr2 : section.subtitleEn2,
+          isAr ? section.buttonAr2 : section.buttonEn2,
+          section.textSide2),
       ],
     );
   }
@@ -1877,7 +1946,7 @@ class _CategoryCarouselSection extends StatelessWidget {
   const _CategoryCarouselSection({required this.section});
   @override
   Widget build(BuildContext context) {
-    if (section.products.isEmpty) return const SizedBox.shrink();
+    if (section.products.length < 3) return const SizedBox.shrink();
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final catName = isAr ? section.category.nameAr : section.category.name;
     final viewAllRoute = section.viewAllUrl != null
@@ -1996,7 +2065,7 @@ class _BudgetCarousel extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD32F2F).withValues(alpha: 0.92),
+                      color: AppColors.danger.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text('${fmtPrice(p.displayPrice)} ${context.s.lydUnit}',

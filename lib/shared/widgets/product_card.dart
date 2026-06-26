@@ -14,15 +14,25 @@ class ProductCard extends ConsumerWidget {
   final double? width;
   const ProductCard({required this.product, this.width, super.key});
 
-  // IDs of clothing parent categories + all known children — use object-cover for these.
+  // IDs of clothing/fashion categories — use object-cover for these.
   // Women Clothing(2)+subs(3-13), Men Clothing(26)+subs(27-34),
-  // Girls Clothing(48), Boys Clothing(51), Baby Fashion(53)+subs(54,55)
+  // Girls Fashion(47), Girls Clothing(48), Boys Fashion(50), Boys Clothing(51),
+  // Baby Fashion(53)+subs(54,55)
   static const _clothingIds = {
     2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13,
     26, 27, 28, 29, 30, 31, 32, 33, 34,
-    48, 51,
+    47, 48, 50, 51,
     53, 54, 55,
   };
+
+  static bool _isFashionName(String nameAr) {
+    if (nameAr.contains('ملاب') || nameAr.contains('أزياء')) {
+      // Exclude non-clothing sub-types within fashion parents
+      if (nameAr.contains('أحذية') || nameAr.contains('حقائب')) return false;
+      return true;
+    }
+    return false;
+  }
 
   static BoxFit _imageFit(Product p) {
     final cat = p.category;
@@ -30,9 +40,9 @@ class ProductCard extends ConsumerWidget {
     if (_clothingIds.contains(cat.id)) return BoxFit.cover;
     if (cat.parentId != null && _clothingIds.contains(cat.parentId)) return BoxFit.cover;
     if (cat.parent != null && _clothingIds.contains(cat.parent!.id)) return BoxFit.cover;
-    // Name-based fallback: mirrors web logic — any Arabic clothing category name
-    if (cat.nameAr.contains('ملاب')) return BoxFit.cover;
-    if (cat.parent?.nameAr.contains('ملاب') == true) return BoxFit.cover;
+    // Name-based fallback for any Arabic fashion/clothing category not explicitly listed
+    if (_isFashionName(cat.nameAr)) return BoxFit.cover;
+    if (cat.parent != null && _isFashionName(cat.parent!.nameAr)) return BoxFit.cover;
     return BoxFit.contain;
   }
 

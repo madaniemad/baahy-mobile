@@ -172,6 +172,7 @@ class _FilterState {
 
 class SearchResultsScreen extends ConsumerStatefulWidget {
   final String query;
+  final String? pageTitle;
   final int? categoryId;
   final bool onSale;
   final double? maxPrice;
@@ -181,6 +182,7 @@ class SearchResultsScreen extends ConsumerStatefulWidget {
   final List<Product>? visionProducts;
   const SearchResultsScreen({
     required this.query,
+    this.pageTitle,
     this.categoryId,
     this.onSale = false,
     this.maxPrice,
@@ -349,7 +351,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         backgroundColor: context.col.surface,
         elevation: 0,
         title: Text(
-          widget.query.isNotEmpty ? widget.query : 'المنتجات',
+          widget.pageTitle ?? (widget.query.isNotEmpty ? widget.query : 'المنتجات'),
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 16),
         ),
         actions: [
