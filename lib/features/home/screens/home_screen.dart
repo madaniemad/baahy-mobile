@@ -1714,6 +1714,10 @@ class _FashionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final imgUrl = (!isAr && banner.imageUrlEn != null && banner.imageUrlEn!.isNotEmpty)
+        ? banner.imageUrlEn!
+        : (banner.imageUrl ?? banner.imageUrlEn);
     return GestureDetector(
       onTap: () => BannerLink.navigate(context, banner.buttonLink),
       child: ClipRRect(
@@ -1722,8 +1726,8 @@ class _FashionTile extends StatelessWidget {
           width: width,
           height: height,
           child: Stack(fit: StackFit.expand, children: [
-            if (banner.hasImage)
-              CachedNetworkImage(imageUrl: banner.imageUrl!, fit: BoxFit.cover,
+            if (imgUrl != null && imgUrl.isNotEmpty)
+              CachedNetworkImage(imageUrl: imgUrl, fit: BoxFit.cover,
                 errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)))
             else
               Container(color: const Color(0xFF1A1A3E)),

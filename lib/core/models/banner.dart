@@ -2,6 +2,7 @@ class AppBanner {
   final int id;
   final String slot;
   final String? imageUrl;
+  final String? imageUrlEn;
   final String? badgeText;
   final String? titleAr;
   final String? titleEn;
@@ -17,6 +18,7 @@ class AppBanner {
     required this.id,
     required this.slot,
     this.imageUrl,
+    this.imageUrlEn,
     this.badgeText,
     this.titleAr,
     this.titleEn,
@@ -33,6 +35,7 @@ class AppBanner {
     id: (j['id'] as num).toInt(),
     slot: j['slot'] as String? ?? '',
     imageUrl: _resolveUrl(j['image_url'] as String?),
+    imageUrlEn: _resolveUrl(j['image_url_en'] as String?),
     badgeText: j['badge_text'] as String?,
     titleAr: j['title_ar'] as String?,
     titleEn: j['title_en'] as String?,
