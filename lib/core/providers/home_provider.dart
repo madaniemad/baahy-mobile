@@ -56,15 +56,17 @@ class DynCategoryCarousel extends HomeDynamicItem {
 
 class FashionCard {
   final String imageUrl;
+  final String? imageUrlEn;
   final String? linkUrl;
   final String? badgeAr;
   final String? badgeEn;
-  const FashionCard({required this.imageUrl, this.linkUrl, this.badgeAr, this.badgeEn});
+  const FashionCard({required this.imageUrl, this.imageUrlEn, this.linkUrl, this.badgeAr, this.badgeEn});
   Map<String, dynamic> toJson() => {
-    'imageUrl': imageUrl, 'linkUrl': linkUrl, 'badgeAr': badgeAr, 'badgeEn': badgeEn,
+    'imageUrl': imageUrl, 'imageUrlEn': imageUrlEn, 'linkUrl': linkUrl, 'badgeAr': badgeAr, 'badgeEn': badgeEn,
   };
   factory FashionCard.fromJson(Map<String, dynamic> j) => FashionCard(
     imageUrl: j['imageUrl'] as String,
+    imageUrlEn: j['imageUrlEn'] as String?,
     linkUrl: j['linkUrl'] as String?,
     badgeAr: j['badgeAr'] as String?,
     badgeEn: j['badgeEn'] as String?,
@@ -506,6 +508,7 @@ class HomeNotifier extends StateNotifier<HomeData> {
             .where((c) => (c['image'] as String?)?.isNotEmpty == true)
             .map((c) => FashionCard(
               imageUrl: c['image'] as String,
+              imageUrlEn: c['image_en'] as String?,
               linkUrl: c['link'] as String?,
               badgeAr: c['badge_ar'] as String?,
               badgeEn: c['badge_en'] as String?,

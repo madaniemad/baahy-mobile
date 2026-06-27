@@ -1608,6 +1608,9 @@ class _DynFashionCardsSection extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (_, i) {
               final card = item.cards[i];
+              final cardImg = (!isAr && card.imageUrlEn != null && card.imageUrlEn!.isNotEmpty)
+                  ? card.imageUrlEn!
+                  : card.imageUrl;
               return GestureDetector(
                 onTap: () => BannerLink.navigate(context, card.linkUrl),
                 child: ClipRRect(
@@ -1617,7 +1620,7 @@ class _DynFashionCardsSection extends StatelessWidget {
                     height: cardH,
                     child: Stack(fit: StackFit.expand, children: [
                       CachedNetworkImage(
-                        imageUrl: card.imageUrl,
+                        imageUrl: cardImg,
                         fit: BoxFit.cover,
                         placeholder: (_, __) => Container(color: context.col.surfaceSoft),
                         errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)),
