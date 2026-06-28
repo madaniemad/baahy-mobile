@@ -166,7 +166,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
 
           // ── Stats row ─────────────────────────────────────────────────────
           IntrinsicHeight(
@@ -199,12 +199,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
             ),
           ])),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
 
           // ── Wallet card ───────────────────────────────────────────────────
           _WalletCard(balance: walletDisplay),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
 
           // ── Tier card ─────────────────────────────────────────────────────
           GestureDetector(
@@ -212,12 +212,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
             child: const _TierCard(),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
 
           // ── Referral / invite card ────────────────────────────────────────
           _ReferralCard(giverAmount: config.referralGiverAmount),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
 
           // ── AI assistant card ─────────────────────────────────────────────
           if (config.aiEnabled)
@@ -267,7 +267,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
               ),
             ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
 
           // ── Menu group 1 ─────────────────────────────────────────────────
           _MenuGroup([
@@ -290,11 +290,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
 
           // ── Birthday row ──────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 12),
             child: _BirthdayRow(user: user),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
           // ── Menu group 2 ─────────────────────────────────────────────────
           _MenuGroup([

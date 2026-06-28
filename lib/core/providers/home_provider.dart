@@ -215,7 +215,7 @@ class HomeData {
 class HomeNotifier extends StateNotifier<HomeData> {
   final ApiClient _api;
 
-  static const _cacheKey = 'home_data_v10';
+  static const _cacheKey = 'home_data_v11';
   static const _cacheTtl = Duration(minutes: 5);
 
   HomeNotifier(this._api) : super(const HomeData(loading: true)) {
@@ -469,7 +469,7 @@ class HomeNotifier extends StateNotifier<HomeData> {
       return '$apiBase$path';
     }
 
-    for (final s in sectionList) {
+    for (final s in sectionList) { try {
       final type = s['type'] as String? ?? 'carousel';
       final titleAr = s['title_ar'] as String? ?? '';
       final titleEn = s['title_en'] as String? ?? titleAr;
@@ -581,7 +581,7 @@ class HomeNotifier extends StateNotifier<HomeData> {
           ));
         }
       }
-    }
+    } catch (e, st) { Sentry.captureException(e, stackTrace: st); } }
 
     // Partial emit — skeleton clears as soon as the fast calls finish.
     // featured (personalized) arrives in a second state update below.
