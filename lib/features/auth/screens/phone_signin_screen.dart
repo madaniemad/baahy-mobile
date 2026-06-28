@@ -100,30 +100,24 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               textDirection: TextDirection.ltr,
               child: Row(children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: context.col.surfaceSoft,
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: context.col.borderStrong),
                   ),
-                  child: Row(children: [
-                    Text('LY', style: TextStyle(
-                      fontFamily: 'PlusJakartaSans',
-                      fontSize: 12, fontWeight: FontWeight.w700,
-                      color: context.col.ink2)),
-                    const SizedBox(width: 6),
-                    const Text('+218',
-                      style: TextStyle(fontFamily: 'PlusJakartaSans',
-                        fontSize: 15, fontWeight: FontWeight.w600)),
-                  ]),
+                  child: const Text('+218',
+                    style: TextStyle(fontFamily: 'PlusJakartaSans',
+                      fontSize: 18, fontWeight: FontWeight.w600)),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: context.col.bg,
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: _error != null ? AppColors.danger : context.col.border),
+                        color: _error != null ? AppColors.danger : context.col.borderStrong),
                     ),
                     child: TextField(
                       controller: _ctrl,
@@ -207,10 +201,10 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   icon: _loading
                       ? const SizedBox(width: 18, height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87))
-                      : const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.black87),
+                      : const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
                   label: Text(context.s.sendCode,
                     style: const TextStyle(fontFamily: 'Cairo',
-                      fontWeight: FontWeight.w800, fontSize: 15, color: Colors.black87)),
+                      fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
@@ -219,42 +213,44 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
+              // "أو" divider
+              Row(children: [
+                Expanded(child: Divider(color: context.col.border, thickness: 1)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(context.s.orDivider,
+                    style: TextStyle(fontSize: 13, color: context.col.ink3)),
+                ),
+                Expanded(child: Divider(color: context.col.border, thickness: 1)),
+              ]),
+              const SizedBox(height: 12),
+              // Continue as guest
               SizedBox(
                 width: double.infinity,
                 height: 48,
-                child: OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: Icon(Icons.chat_outlined, size: 16, color: context.col.ink1),
-                  label: Text(context.s.viaWhatsapp,
-                    style: TextStyle(fontFamily: 'Cairo',
-                      fontWeight: FontWeight.w700, color: context.col.ink0)),
+                child: OutlinedButton(
+                  onPressed: () => context.go('/home'),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: context.col.border),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    side: BorderSide(color: context.col.borderStrong),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6)),
                   ),
+                  child: Text(context.s.continueGuest,
+                    style: TextStyle(fontFamily: 'Cairo',
+                      fontWeight: FontWeight.w700, fontSize: 14,
+                      color: context.col.ink0)),
                 ),
               ),
-              const SizedBox(height: 12),
-              Center(
-                child: GestureDetector(
-                  onTap: () => context.go('/home'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(context.s.browseAsGuest,
-                      style: TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600,
-                        color: context.col.ink2,
-                        decoration: TextDecoration.underline,
-                        decorationColor: context.col.ink2)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.s.termsAgreement,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: context.col.ink3, height: 1.5)),
+              const SizedBox(height: 16),
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(Icons.lock_outline_rounded, size: 12, color: context.col.ink3),
+                const SizedBox(width: 5),
+                Flexible(child: Text(
+                  context.s.termsAgreement,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: context.col.ink3, height: 1.5))),
+              ]),
             ]),
           ),
         ],

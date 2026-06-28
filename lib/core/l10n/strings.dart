@@ -14,21 +14,30 @@ class AppStrings {
   String get navAccount     => isAr ? 'حسابي'      : 'Account';
 
   // ── Auth ────────────────────────────────────────────────────────────────────
-  String get enterPhone     => isAr ? 'أدخل رقم هاتفك'          : 'Enter your phone number';
-  String get phoneSub       => isAr ? 'سنرسل لك رمزاً من 6 أرقام للتأكد من هويتك.' : 'We\'ll send you a 6-digit code to verify your identity.';
-  String get sendCode       => isAr ? 'إرسال الرمز'             : 'Send Code';
-  String get viaWhatsapp    => isAr ? 'المتابعة عبر واتساب'     : 'Continue via WhatsApp';
-  String get browseAsGuest  => isAr ? 'تصفّح كزائر'             : 'Browse as guest';
-  String get termsAgreement => isAr ? 'بالمتابعة أنت توافق على الشروط وسياسة الخصوصية.' : 'By continuing you agree to the Terms and Privacy Policy.';
+  String get authHi         => isAr ? 'أهلين'                    : 'Hello';
+  String get authTitle      => isAr ? 'سجّل دخولك إلى باهي'     : 'Sign in to Baahy';
+  String get authSub        => isAr ? 'احفظ مفضلاتك، تابع طلباتك، واكسب مكافآت مع كل طلب.' : 'Save favourites, track orders, and earn rewards with every purchase.';
+  String get authBenefit1   => isAr ? 'مكافآت وكاش باك'          : 'Rewards & Cashback';
+  String get authBenefit2   => isAr ? 'متابعة الطلبات'            : 'Order Tracking';
+  String get authBenefit3   => isAr ? 'حفظ المفضلة'               : 'Save Favourites';
+  String get createAccount  => isAr ? 'إنشاء حساب جديد'           : 'Create Account';
+  String get continueGuest  => isAr ? 'تابع كضيف'                 : 'Continue as guest';
+  String get orDivider      => isAr ? 'أو'                         : 'or';
 
-  String get confirmNumber  => isAr ? 'تأكيد رقمك'              : 'Confirm your number';
-  String get codeSentTo     => isAr ? 'أرسلنا رمزاً من 6 أرقام إلى' : 'We sent a 6-digit code to';
-  String get verify         => isAr ? 'تحقق'                    : 'Verify';
-  String get resendIn       => isAr ? 'إعادة الإرسال خلال'      : 'Resend in';
-  String get seconds        => isAr ? 'ثانية'                   : 's';
-  String get resendCode     => isAr ? 'إعادة إرسال الرمز'       : 'Resend code';
-  String get wrongCode      => isAr ? 'رمز خاطئ، حاول مجدداً'  : 'Wrong code, please try again';
-  String get notReceivedInfo=> isAr ? 'إذا لم يصلك الرمز، تحقق من صحة رقم الهاتف أو حاول مجدداً.' : 'If you didn\'t receive the code, check your number and try again.';
+  String get enterPhone     => isAr ? 'أدخل رقم هاتفك'            : 'Enter your phone number';
+  String get phoneSub       => isAr ? 'سنرسل لك رمزاً من 6 أرقام للتأكد من هويتك.' : 'We\'ll send you a 6-digit code to verify your identity.';
+  String get sendCode       => isAr ? 'إرسال الرمز'               : 'Send Code';
+  String get termsAgreement => isAr ? 'بالمتابعة، أنت توافق على الشروط والأحكام وسياسة الخصوصية.' : 'By continuing, you agree to the Terms & Conditions and Privacy Policy.';
+
+  String get confirmNumber  => isAr ? 'أدخل رمز التحقق'           : 'Enter verification code';
+  String get codeSentTo     => isAr ? 'لقد أرسلنا رمزاً من 6 أرقام إلى' : 'We sent a 6-digit code to';
+  String get didntReceive   => isAr ? 'لم يصلك الرمز؟'             : 'Didn\'t receive the code?';
+  String get verify         => isAr ? 'تحقق'                      : 'Verify';
+  String get resendIn       => isAr ? 'إعادة الإرسال خلال'         : 'Resend in';
+  String get seconds        => isAr ? 'ثانية'                     : 's';
+  String get resendCode     => isAr ? 'إعادة إرسال الرمز'          : 'Resend code';
+  String get wrongCode      => isAr ? 'رمز خاطئ، حاول مجدداً'     : 'Wrong code, please try again';
+  String get notReceivedInfo=> isAr ? 'هذا الرمز صالح لمدة 5 دقائق فقط لأمان حسابك.' : 'This code is valid for 5 minutes only for your account security.';
 
   // ── Home ────────────────────────────────────────────────────────────────────
   String get seeAll         => isAr ? 'عرض الكل'               : 'See all';

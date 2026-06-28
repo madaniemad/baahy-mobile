@@ -14,6 +14,7 @@ import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../auth/screens/auth_landing_screen.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 const _kActiveStatuses = ['out_for_delivery'];
@@ -97,41 +98,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
     final config = ref.watch(appConfigProvider);
     final unread = ref.watch(unreadNotificationCountProvider);
 
-    if (!auth.isLoggedIn) {
-      return Scaffold(
-        backgroundColor: context.col.bg,
-        appBar: AppBar(
-          title: Text(context.s.myAccount,
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
-          backgroundColor: context.col.surface, elevation: 0,
-        ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 80, height: 80,
-                  decoration: BoxDecoration(
-                    color: context.col.surfaceSoft, shape: BoxShape.circle),
-                  child: Icon(Icons.person_outline, size: 44, color: context.col.ink3),
-                ),
-                const SizedBox(height: 16),
-                Text(context.s.signInPrompt,
-                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 20, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 8),
-                Text(context.s.signInSub,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 14, color: context.col.ink2)),
-                const SizedBox(height: 24),
-                AppButton(label: context.s.signIn, onTap: () => safePush(context, '/signin')),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    if (!auth.isLoggedIn) return const AuthLandingScreen();
 
     final user          = auth.user!;
 

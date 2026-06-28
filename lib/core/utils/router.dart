@@ -8,6 +8,7 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/city_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
 import '../../features/auth/screens/rewards_intro_screen.dart';
+import '../../features/auth/screens/auth_landing_screen.dart';
 import '../../features/auth/screens/phone_signin_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
 import '../../features/home/screens/home_screen.dart';
@@ -72,7 +73,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/city',          builder: (_, __) => const CityScreen()),
       GoRoute(path: '/rewards-intro', builder: (_, __) => const RewardsIntroScreen()),
       GoRoute(path: '/onboarding',    builder: (_, __) => const OnboardingScreen()),
-      GoRoute(path: '/signin',   builder: (_, __) => const PhoneSignInScreen()),
+      GoRoute(path: '/signin',       builder: (_, __) => const AuthLandingScreen()),
+      GoRoute(path: '/phone-signin', builder: (_, __) => const PhoneSignInScreen()),
       GoRoute(path: '/otp', builder: (_, state) {
         final extra = state.extra;
         if (extra is Map<String, dynamic>) {
