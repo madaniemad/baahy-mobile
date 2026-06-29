@@ -554,8 +554,8 @@ class _TierProgressCard extends StatelessWidget {
 
         GestureDetector(
           onTap: () => safePush(context, '/rewards-hub'),
-          child: const Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.chevron_left_rounded, size: 16, color: Color(0xFF1FD7E2)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.chevron_left_rounded, size: 16, color: AppColors.primary),
             Text(context.tr('عرض جميع المزايا', 'View all benefits'),
               style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.primary,
                 fontWeight: FontWeight.w600)),
