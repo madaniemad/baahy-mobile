@@ -2291,7 +2291,7 @@ class _WelcomeCouponBanner extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(children: [
-                const Text('🎁', style: TextStyle(fontSize: 20)),
+                const Icon(Icons.confirmation_number_outlined, color: Colors.white, size: 22),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
