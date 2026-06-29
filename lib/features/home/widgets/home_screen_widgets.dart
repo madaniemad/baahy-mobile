@@ -478,7 +478,7 @@ class _BannerSlide extends StatelessWidget {
         else
           _gradientBg(gradient),
 
-        if (banner.showOverlay && (banner.badgeText?.isNotEmpty == true || banner.titleAr?.isNotEmpty == true || banner.subtitleAr?.isNotEmpty == true || banner.buttonText?.isNotEmpty == true)) ...[
+        if (banner.showOverlay && (banner.titleAr?.isNotEmpty == true || banner.subtitleAr?.isNotEmpty == true || banner.buttonText?.isNotEmpty == true)) ...[
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -527,7 +527,21 @@ class _BannerSlide extends StatelessWidget {
               ],
             ),
           ),
-        ],
+        ] else if (banner.showOverlay && banner.badgeText?.isNotEmpty == true)
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: Text(banner.badgeText!,
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                  color: Colors.white, letterSpacing: 0.5)),
+            ),
+          ),
       ]),
     );
   }
@@ -826,8 +840,6 @@ class _SingleBannerSection extends StatelessWidget {
                 errorWidget: (_, __, ___) => Container(color: Colors.grey.shade200),
               ),
               if (item.showOverlay && badge != null && badge.isNotEmpty)
-                Container(color: Colors.black.withValues(alpha: 0.3)),
-              if (badge != null && badge.isNotEmpty)
                 Positioned(
                   bottom: 12, right: 16,
                   child: Container(
@@ -1238,21 +1250,22 @@ class _DynFashionCardsSection extends StatelessWidget {
                         errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)),
                       ),
                       if (card.badgeAr?.isNotEmpty == true || card.badgeEn?.isNotEmpty == true)
-                        Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                              colors: [Colors.transparent, Color(0xCC000000)],
-                            ),
-                          ),
-                        ),
-                      if (card.badgeAr?.isNotEmpty == true || card.badgeEn?.isNotEmpty == true)
                         Positioned(
-                          bottom: 12, left: 12, right: 12,
-                          child: Text(
-                            isAr ? (card.badgeAr ?? card.badgeEn ?? '') : (card.badgeEn ?? card.badgeAr ?? ''),
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800,
-                              color: Colors.white, height: 1.2),
+                          bottom: 10, left: 8, right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.92),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              isAr ? (card.badgeAr ?? card.badgeEn ?? '') : (card.badgeEn ?? card.badgeAr ?? ''),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                                color: Colors.white),
+                            ),
                           ),
                         ),
                     ]),
@@ -1347,7 +1360,7 @@ class _FashionTile extends StatelessWidget {
                 errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)))
             else
               Container(color: const Color(0xFF1A1A3E)),
-            if (banner.showOverlay && (banner.badgeText?.isNotEmpty == true || banner.titleAr?.isNotEmpty == true || banner.buttonText?.isNotEmpty == true)) ...[
+            if (banner.showOverlay && (banner.titleAr?.isNotEmpty == true || banner.buttonText?.isNotEmpty == true)) ...[
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -1385,7 +1398,21 @@ class _FashionTile extends StatelessWidget {
                   ],
                 ),
               ),
-            ],
+            ] else if (banner.showOverlay && banner.badgeText?.isNotEmpty == true)
+              Positioned(
+                bottom: 10,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(banner.badgeText!,
+                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
+                      color: Colors.white)),
+                ),
+              ),
           ]),
         ),
       ),
