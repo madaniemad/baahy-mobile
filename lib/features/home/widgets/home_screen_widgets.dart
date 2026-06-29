@@ -478,8 +478,7 @@ class _BannerSlide extends StatelessWidget {
         else
           _gradientBg(gradient),
 
-        if (banner.showOverlay) ...[
-          // Dark gradient for text readability
+        if (banner.showOverlay && (banner.badgeText != null || banner.titleAr != null || banner.subtitleAr != null || banner.buttonText != null)) ...[
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -489,8 +488,6 @@ class _BannerSlide extends StatelessWidget {
               ),
             ),
           ),
-
-          // Text content
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -724,13 +721,13 @@ class _DuoBannerRow extends StatelessWidget {
                     placeholder: (_, __) => Container(color: Colors.grey.shade100),
                     errorWidget: (_, __, ___) => Container(color: Colors.grey.shade200),
                   ),
-                  if (section.showOverlay)
+                  if (hasText)
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black.withValues(alpha: hasText ? 0.60 : 0.25)],
+                          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.60)],
                         ),
                       ),
                     ),
@@ -828,7 +825,7 @@ class _SingleBannerSection extends StatelessWidget {
                 placeholder: (_, __) => Container(color: Colors.grey.shade100),
                 errorWidget: (_, __, ___) => Container(color: Colors.grey.shade200),
               ),
-              if (item.showOverlay)
+              if (item.showOverlay && badge != null && badge.isNotEmpty)
                 Container(color: Colors.black.withValues(alpha: 0.3)),
               if (badge != null && badge.isNotEmpty)
                 Positioned(
@@ -1350,7 +1347,7 @@ class _FashionTile extends StatelessWidget {
                 errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)))
             else
               Container(color: const Color(0xFF1A1A3E)),
-            if (banner.showOverlay) ...[
+            if (banner.showOverlay && (banner.badgeText != null || banner.titleAr != null || banner.buttonText != null)) ...[
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
