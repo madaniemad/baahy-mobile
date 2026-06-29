@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../core/models/product.dart';
 import '../../core/providers/wishlist_provider.dart';
 import '../../core/providers/auth_provider.dart';
@@ -358,32 +359,38 @@ class ProductCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = context.col.surfaceSoft;
-    final surface = context.col.surface;
-    return Container(
-      width: width,
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: AppRadius.cardRadius,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AspectRatio(aspectRatio: 0.8, child: Container(color: bg)),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _shimmerBox(bg, height: 12, width: double.infinity),
-                const SizedBox(height: 6),
-                _shimmerBox(bg, height: 12, width: 80),
-                const SizedBox(height: 8),
-                _shimmerBox(bg, height: 14, width: 60),
-              ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final base      = isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE8E8E8);
+    final highlight = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF5F5F5);
+    final surface   = context.col.surface;
+    return Shimmer.fromColors(
+      baseColor: base,
+      highlightColor: highlight,
+      child: Container(
+        width: width,
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: AppRadius.cardRadius,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(aspectRatio: 0.8, child: Container(color: base)),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _shimmerBox(base, height: 12, width: double.infinity),
+                  const SizedBox(height: 6),
+                  _shimmerBox(base, height: 12, width: 80),
+                  const SizedBox(height: 8),
+                  _shimmerBox(base, height: 14, width: 60),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

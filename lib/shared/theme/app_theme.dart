@@ -148,9 +148,9 @@ class AppColors {
 
 class AppRadius {
   static const sm  = Radius.circular(6);
-  static const md  = Radius.circular(6);
-  static const lg  = Radius.circular(6);
-  static const xl  = Radius.circular(6);
+  static const md  = Radius.circular(10);
+  static const lg  = Radius.circular(14);
+  static const xl  = Radius.circular(20);
   static const pill= Radius.circular(9999);
 
   static const double card = 6; // used as double in ClipRRect
