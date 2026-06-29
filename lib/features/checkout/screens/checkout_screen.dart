@@ -255,22 +255,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     if (!isReorder) {
       // Pre-flight: variable items without a chosen variation.
-      // Heuristic: same productId in cart both with and without variationId → clearly variable.
       final allItems = ref.read(cartProvider).items;
-      final productIdsWithVariations = allItems
-          .where((i) => i.variationId != null)
-          .map((i) => i.productId)
-          .toSet();
-      final unresolved = allItems.where((i) =>
-        i.variationId == null &&
-        (i.product.productType == 'variable' ||
-         i.product.variations.isNotEmpty ||
-         productIdsWithVariations.contains(i.productId))
-      ).toList();
+      final unresolved = allItems
+          .where((i) => i.variationId == null && i.product.productType == 'variable')
+          .toList();
       if (unresolved.isNotEmpty) {
         if (mounted) {
+          final names = unresolved.map((i) => i.product.nameAr).join('، ');
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('بعض المنتجات تحتاج لاختيار المقاس أو اللون'),
+            content: Text('اختر المقاس/اللون لـ: $names'),
             action: SnackBarAction(label: 'مراجعة السلة', onPressed: () => context.pop()),
             backgroundColor: AppColors.danger,
           ));

@@ -239,20 +239,14 @@ class _CartBodyState extends ConsumerState<_CartBody> {
     }
     // Block variable items without a variation before hitting the server
     final cartItems = ref.read(cartProvider).items;
-    final varProductIds = cartItems
-        .where((i) => i.variationId != null)
-        .map((i) => i.productId)
-        .toSet();
-    final hasUnresolved = cartItems.any((i) =>
-      i.variationId == null &&
-      (i.product.productType == 'variable' ||
-       i.product.variations.isNotEmpty ||
-       varProductIds.contains(i.productId))
-    );
-    if (hasUnresolved) {
+    final unresolved = cartItems
+        .where((i) => i.variationId == null && i.product.productType == 'variable')
+        .toList();
+    if (unresolved.isNotEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('بعض المنتجات تحتاج لاختيار المقاس أو اللون'),
+        final names = unresolved.map((i) => i.product.nameAr).join('، ');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('اختر المقاس/اللون لـ: $names'),
           backgroundColor: AppColors.danger,
         ));
       }
