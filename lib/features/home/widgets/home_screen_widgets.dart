@@ -1215,7 +1215,7 @@ class _DynFashionCardsSection extends StatelessWidget {
           height: cardH,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.only(left: 16),
+            padding: const EdgeInsetsDirectional.only(start: 16),
             itemCount: item.cards.length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (_, i) {
@@ -1310,7 +1310,7 @@ class _FashionBannerTilesState extends State<_FashionBannerTiles> {
       child: ListView.separated(
         controller: _ctrl,
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 16),
+        padding: const EdgeInsetsDirectional.only(start: 16),
         itemCount: visible.length * 10000,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
