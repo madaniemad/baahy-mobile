@@ -254,7 +254,7 @@ class HomeData {
 class HomeNotifier extends StateNotifier<HomeData> {
   final ApiClient _api;
 
-  static const _cacheKey = 'home_data_v12';
+  static const _cacheKey = 'home_data_v13';
   static const _cacheTtl = Duration(minutes: 5);
 
   HomeNotifier(this._api) : super(const HomeData(loading: true)) {
@@ -513,10 +513,12 @@ class HomeNotifier extends StateNotifier<HomeData> {
       final titleAr = s['title_ar'] as String? ?? '';
       final titleEn = s['title_en'] as String? ?? titleAr;
       final viewAll = s['view_all_url'] as String?;
-      final prods = (s['products'] as List? ?? [])
+      final isRandom = s['is_random'] == true;
+      final rawProds = (s['products'] as List? ?? [])
           .map((p) => Product.fromJson(p as Map<String, dynamic>))
           .where((p) => !seenAboveIds.contains(p.id))
           .toList();
+      final prods = isRandom ? (rawProds..shuffle()) : rawProds;
 
       if (type == 'grid') {
         if (prods.isNotEmpty) {
