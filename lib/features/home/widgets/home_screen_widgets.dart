@@ -478,7 +478,7 @@ class _BannerSlide extends StatelessWidget {
         else
           _gradientBg(gradient),
 
-        if (banner.showOverlay && (banner.badgeText != null || banner.titleAr != null || banner.subtitleAr != null || banner.buttonText != null)) ...[
+        if (banner.showOverlay && (banner.badgeText?.isNotEmpty == true || banner.titleAr?.isNotEmpty == true || banner.subtitleAr?.isNotEmpty == true || banner.buttonText?.isNotEmpty == true)) ...[
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -705,7 +705,7 @@ class _DuoBannerRow extends StatelessWidget {
       String? title, String? subtitle, String? button, String side,
     ) {
       if (url == null || url.isEmpty) return const SizedBox.shrink();
-      final hasText = section.showOverlay && (title != null || subtitle != null || button != null);
+      final hasText = section.showOverlay && (title?.isNotEmpty == true || subtitle?.isNotEmpty == true || button?.isNotEmpty == true);
       final alignEnd = side == 'right' ? CrossAxisAlignment.end : CrossAxisAlignment.start;
       return Expanded(
         child: GestureDetector(
@@ -1237,7 +1237,7 @@ class _DynFashionCardsSection extends StatelessWidget {
                         placeholder: (_, __) => Container(color: context.col.surfaceSoft),
                         errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)),
                       ),
-                      if (card.badgeAr != null || card.badgeEn != null)
+                      if (card.badgeAr?.isNotEmpty == true || card.badgeEn?.isNotEmpty == true)
                         Container(
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
@@ -1246,7 +1246,7 @@ class _DynFashionCardsSection extends StatelessWidget {
                             ),
                           ),
                         ),
-                      if (card.badgeAr != null || card.badgeEn != null)
+                      if (card.badgeAr?.isNotEmpty == true || card.badgeEn?.isNotEmpty == true)
                         Positioned(
                           bottom: 12, left: 12, right: 12,
                           child: Text(
@@ -1347,7 +1347,7 @@ class _FashionTile extends StatelessWidget {
                 errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)))
             else
               Container(color: const Color(0xFF1A1A3E)),
-            if (banner.showOverlay && (banner.badgeText != null || banner.titleAr != null || banner.buttonText != null)) ...[
+            if (banner.showOverlay && (banner.badgeText?.isNotEmpty == true || banner.titleAr?.isNotEmpty == true || banner.buttonText?.isNotEmpty == true)) ...[
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
