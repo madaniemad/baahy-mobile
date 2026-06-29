@@ -15,6 +15,10 @@ class DeepLinkService {
   StreamSubscription<Uri>? _sub;
   ProviderContainer? _container;
 
+  // Broadcast stream for PayPal payment return token
+  final _paypalController = StreamController<String>.broadcast();
+  Stream<String> get paypalReturnStream => _paypalController.stream;
+
   void setContainer(ProviderContainer container) {
     _container = container;
   }
@@ -39,9 +43,20 @@ class DeepLinkService {
 
   void dispose() {
     _sub?.cancel();
+    _paypalController.close();
   }
 
   Future<void> _handleUri(Uri uri) async {
+    // PayPal return: baahy://paypal/return?token=PAYPAL_ORDER_ID
+    if (uri.scheme == 'baahy' && uri.host == 'paypal' &&
+        uri.pathSegments.isNotEmpty && uri.pathSegments.first == 'return') {
+      final token = uri.queryParameters['token'];
+      if (token != null && token.isNotEmpty) {
+        _paypalController.add(token);
+      }
+      return;
+    }
+
     final code = _extractReferralCode(uri);
     if (code != null && code.isNotEmpty) {
       // Don't store the code if user is already signed in — they can't use it anyway

@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/services/deep_link_service.dart';
 import '../../../core/models/shipping_rate.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/reorder_provider.dart';
@@ -51,11 +54,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   String _paymentMethod = 'cash_on_delivery';
   Map<String, dynamic>? _selectedAddress;
   bool _loading = false;
+  bool _waitingForPaypal = false;
   List<Map<String, dynamic>> _addresses = [];
   double _walletBalance = 0;
   bool _useWallet = false;
   bool _walletLoading = false;
   bool _itemsExpanded = false;
+  StreamSubscription<String>? _paypalSub;
 
   @override
   void initState() {
@@ -328,7 +333,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (!isReorder) await ref.read(cartProvider.notifier).clear();
       ref.read(reorderSessionProvider.notifier).state = null;
       ref.invalidate(welcomeCouponProvider);
-      if (mounted) context.pushReplacement('/order-confirmed', extra: res.data['data']);
+
+      final orderData = Map<String, dynamic>.from(res.data['data'] as Map);
+      if (_paymentMethod == 'paypal') {
+        await _handlePayPalPayment(orderData['order_number'] as String, orderData);
+      } else {
+        if (mounted) context.pushReplacement('/order-confirmed', extra: orderData);
+      }
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
@@ -345,9 +356,61 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   void dispose() {
+    _paypalSub?.cancel();
     _notesCtrl.dispose();
     _walletAmountCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _handlePayPalPayment(String orderNumber, Map<String, dynamic> orderConfirmedData) async {
+    try {
+      final res = await ApiClient.instance.dio.post('/payment/paypal/initiate', data: {
+        'order_number': orderNumber,
+      });
+      final approvalUrl = res.data['approval_url'] as String?;
+      if (approvalUrl == null) throw Exception('No approval URL');
+
+      _paypalSub?.cancel();
+      _paypalSub = DeepLinkService.instance.paypalReturnStream.listen((paypalOrderId) async {
+        _paypalSub?.cancel();
+        _paypalSub = null;
+        if (!mounted) return;
+        setState(() { _loading = true; _waitingForPaypal = false; });
+        try {
+          await ApiClient.instance.dio.post('/payment/paypal/capture', data: {
+            'order_number': orderNumber,
+            'paypal_order_id': paypalOrderId,
+          });
+          if (mounted) {
+            setState(() => _loading = false);
+            context.pushReplacement('/order-confirmed', extra: orderConfirmedData);
+          }
+        } catch (e) {
+          if (mounted) {
+            setState(() => _loading = false);
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('فشل تأكيد الدفع — تواصل مع الدعم'),
+              backgroundColor: AppColors.danger,
+            ));
+          }
+        }
+      });
+
+      await launchUrl(Uri.parse(approvalUrl), mode: LaunchMode.inAppBrowserView);
+      if (mounted) setState(() { _loading = false; _waitingForPaypal = true; });
+    } catch (e) {
+      _paypalSub?.cancel();
+      if (mounted) {
+        setState(() { _loading = false; _waitingForPaypal = false; });
+        String msg = 'فشل بدء الدفع عبر PayPal';
+        if (e is DioException) {
+          final data = e.response?.data;
+          if (data is Map && data['message'] != null) msg = data['message'].toString();
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(msg), backgroundColor: AppColors.danger));
+      }
+    }
   }
 
   ShippingRate? get _selectedRate {
@@ -823,12 +886,37 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       fontSize: 18, fontWeight: FontWeight.w800)),
                 ]),
                 const SizedBox(height: 10),
-                AppButton(
-                  label: context.s.placeOrder,
-                  icon: const Icon(Icons.check_rounded, size: 16, color: Color(0xFFF0F0F0)),
-                  onTap: _placeOrder,
-                  loading: _loading,
-                ),
+                if (_waitingForPaypal)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF003087).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF003087).withValues(alpha: 0.25)),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 16, height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2,
+                            color: Color(0xFF003087)),
+                        ),
+                        SizedBox(width: 10),
+                        Text('في انتظار إتمام الدفع عبر PayPal...',
+                          style: TextStyle(fontFamily: 'Cairo',
+                            color: Color(0xFF003087), fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                  )
+                else
+                  AppButton(
+                    label: context.s.placeOrder,
+                    icon: const Icon(Icons.check_rounded, size: 16, color: Color(0xFFF0F0F0)),
+                    onTap: _placeOrder,
+                    loading: _loading,
+                  ),
               ]),
             ),
           ],
@@ -1119,6 +1207,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                     ),
                     child: Icon(
                       m.id == 'cash_on_delivery' ? Icons.payments_outlined
+                          : m.id == 'paypal' ? Icons.language_outlined
                           : m.id == 'card' ? Icons.credit_card_outlined
                           : Icons.receipt_long_outlined,
                       size: 18,
