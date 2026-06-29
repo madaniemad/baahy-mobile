@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -14,7 +15,7 @@ final bannersProvider = StateNotifierProvider<BannersNotifier, BannersData>((ref
 });
 
 class BannersNotifier extends StateNotifier<BannersData> {
-  static const _cacheKey = 'banners';
+  static const _cacheKey = 'banners_v2';
 
   BannersNotifier() : super(const BannersData()) {
     _load();
@@ -71,7 +72,8 @@ class BannersNotifier extends StateNotifier<BannersData> {
 
   Future<void> refresh() async {
     try {
-      final res = await ApiClient.instance.dio.get('/content/banners');
+      final res = await ApiClient.instance.dio.get('/content/banners',
+          options: Options(headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}));
       final data = res.data['data'] as Map<String, dynamic>?;
       if (data != null) {
         await CacheService.instance.set(_cacheKey, data);
