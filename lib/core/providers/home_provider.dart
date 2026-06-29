@@ -486,7 +486,6 @@ class HomeNotifier extends StateNotifier<HomeData> {
             viewAllUrl: viewAll,
             products: prods.take(24).toList(),
           ));
-          seenAboveIds.addAll(prods.map((p) => p.id));
         }
       } else if (type == 'carousel') {
         if (prods.isNotEmpty) {
@@ -499,7 +498,6 @@ class HomeNotifier extends StateNotifier<HomeData> {
           orderedSections.add(DynCarousel(CategorySection(
             category: cat, products: prods, viewAllUrl: viewAll,
           )));
-          seenAboveIds.addAll(prods.map((p) => p.id));
         }
       } else if (type == 'fashion_cards') {
         final rawCards = s['cards'] as List? ?? [];

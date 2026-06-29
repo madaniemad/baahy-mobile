@@ -1240,14 +1240,15 @@ class _DynFashionCardsSection extends StatelessWidget {
                         placeholder: (_, __) => Container(color: context.col.surfaceSoft),
                         errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)),
                       ),
-                      Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Color(0xCC000000)],
+                      if (card.badgeAr != null || card.badgeEn != null)
+                        Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Color(0xCC000000)],
+                            ),
                           ),
                         ),
-                      ),
                       if (card.badgeAr != null || card.badgeEn != null)
                         Positioned(
                           bottom: 12, left: 12, right: 12,
