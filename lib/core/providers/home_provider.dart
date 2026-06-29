@@ -17,6 +17,8 @@ class CategorySection {
   const CategorySection({required this.category, required this.products, this.viewAllUrl});
 }
 
+String? _ne(String? v) => (v == null || v.isEmpty) ? null : v;
+
 // ── Ordered dynamic section items (reflect admin position exactly) ────────────
 abstract class HomeDynamicItem {}
 
@@ -66,10 +68,10 @@ class FashionCard {
   };
   factory FashionCard.fromJson(Map<String, dynamic> j) => FashionCard(
     imageUrl: j['imageUrl'] as String,
-    imageUrlEn: j['imageUrlEn'] as String?,
-    linkUrl: j['linkUrl'] as String?,
-    badgeAr: j['badgeAr'] as String?,
-    badgeEn: j['badgeEn'] as String?,
+    imageUrlEn: _ne(j['imageUrlEn'] as String?),
+    linkUrl: _ne(j['linkUrl'] as String?),
+    badgeAr: _ne(j['badgeAr'] as String?),
+    badgeEn: _ne(j['badgeEn'] as String?),
   );
 }
 
@@ -144,28 +146,28 @@ class BannerDuoSection {
     'textSide2': textSide2,
   };
   factory BannerDuoSection.fromJson(Map<String, dynamic> j) => BannerDuoSection(
-    imageUrl: j['imageUrl'] as String?,
-    imageUrl2: j['imageUrl2'] as String?,
-    linkUrl: j['linkUrl'] as String?,
-    linkUrl2: j['linkUrl2'] as String?,
-    badgeAr: j['badgeAr'] as String?,
-    badgeEn: j['badgeEn'] as String?,
-    badgeAr2: j['badgeAr2'] as String?,
-    badgeEn2: j['badgeEn2'] as String?,
+    imageUrl: _ne(j['imageUrl'] as String?),
+    imageUrl2: _ne(j['imageUrl2'] as String?),
+    linkUrl: _ne(j['linkUrl'] as String?),
+    linkUrl2: _ne(j['linkUrl2'] as String?),
+    badgeAr: _ne(j['badgeAr'] as String?),
+    badgeEn: _ne(j['badgeEn'] as String?),
+    badgeAr2: _ne(j['badgeAr2'] as String?),
+    badgeEn2: _ne(j['badgeEn2'] as String?),
     showOverlay: (j['showOverlay'] as bool?) ?? false,
-    titleAr: j['titleAr'] as String?,
-    titleEn: j['titleEn'] as String?,
-    subtitleAr: j['subtitleAr'] as String?,
-    subtitleEn: j['subtitleEn'] as String?,
-    buttonAr: j['buttonAr'] as String?,
-    buttonEn: j['buttonEn'] as String?,
+    titleAr: _ne(j['titleAr'] as String?),
+    titleEn: _ne(j['titleEn'] as String?),
+    subtitleAr: _ne(j['subtitleAr'] as String?),
+    subtitleEn: _ne(j['subtitleEn'] as String?),
+    buttonAr: _ne(j['buttonAr'] as String?),
+    buttonEn: _ne(j['buttonEn'] as String?),
     textSide: (j['textSide'] as String?) ?? 'right',
-    titleAr2: j['titleAr2'] as String?,
-    titleEn2: j['titleEn2'] as String?,
-    subtitleAr2: j['subtitleAr2'] as String?,
-    subtitleEn2: j['subtitleEn2'] as String?,
-    buttonAr2: j['buttonAr2'] as String?,
-    buttonEn2: j['buttonEn2'] as String?,
+    titleAr2: _ne(j['titleAr2'] as String?),
+    titleEn2: _ne(j['titleEn2'] as String?),
+    subtitleAr2: _ne(j['subtitleAr2'] as String?),
+    subtitleEn2: _ne(j['subtitleEn2'] as String?),
+    buttonAr2: _ne(j['buttonAr2'] as String?),
+    buttonEn2: _ne(j['buttonEn2'] as String?),
     textSide2: (j['textSide2'] as String?) ?? 'right',
   );
 }
@@ -506,10 +508,10 @@ class HomeNotifier extends StateNotifier<HomeData> {
             .where((c) => (c['image'] as String?)?.isNotEmpty == true)
             .map((c) => FashionCard(
               imageUrl: c['image'] as String,
-              imageUrlEn: c['image_en'] as String?,
-              linkUrl: c['link'] as String?,
-              badgeAr: c['badge_ar'] as String?,
-              badgeEn: c['badge_en'] as String?,
+              imageUrlEn: _ne(c['image_en'] as String?),
+              linkUrl: _ne(c['link'] as String?),
+              badgeAr: _ne(c['badge_ar'] as String?),
+              badgeEn: _ne(c['badge_en'] as String?),
             ))
             .toList();
         if (fashionCards.isNotEmpty) {
@@ -521,26 +523,26 @@ class HomeNotifier extends StateNotifier<HomeData> {
         final duo = BannerDuoSection(
           imageUrl:  fullUrl(s['image_url'] as String?),
           imageUrl2: fullUrl(s['image_url_2'] as String?),
-          linkUrl:   s['link_url'] as String?,
-          linkUrl2:  s['link_url_2'] as String?,
-          badgeAr:   s['badge_text_ar'] as String?,
-          badgeEn:   s['badge_text_en'] as String?,
-          badgeAr2:  s['badge_text_ar_2'] as String?,
-          badgeEn2:  s['badge_text_en_2'] as String?,
+          linkUrl:   _ne(s['link_url'] as String?),
+          linkUrl2:  _ne(s['link_url_2'] as String?),
+          badgeAr:   _ne(s['badge_text_ar'] as String?),
+          badgeEn:   _ne(s['badge_text_en'] as String?),
+          badgeAr2:  _ne(s['badge_text_ar_2'] as String?),
+          badgeEn2:  _ne(s['badge_text_en_2'] as String?),
           showOverlay: (s['show_overlay'] as bool?) ?? false,
-          titleAr:    s['overlay_title_ar'] as String?,
-          titleEn:    s['overlay_title_en'] as String?,
-          subtitleAr: s['overlay_subtitle_ar'] as String?,
-          subtitleEn: s['overlay_subtitle_en'] as String?,
-          buttonAr:   s['btn_label_ar'] as String?,
-          buttonEn:   s['btn_label_en'] as String?,
+          titleAr:    _ne(s['overlay_title_ar'] as String?),
+          titleEn:    _ne(s['overlay_title_en'] as String?),
+          subtitleAr: _ne(s['overlay_subtitle_ar'] as String?),
+          subtitleEn: _ne(s['overlay_subtitle_en'] as String?),
+          buttonAr:   _ne(s['btn_label_ar'] as String?),
+          buttonEn:   _ne(s['btn_label_en'] as String?),
           textSide:   (s['overlay_position'] as String?) ?? 'right',
-          titleAr2:    s['overlay_title_ar_2'] as String?,
-          titleEn2:    s['overlay_title_en_2'] as String?,
-          subtitleAr2: s['overlay_subtitle_ar_2'] as String?,
-          subtitleEn2: s['overlay_subtitle_en_2'] as String?,
-          buttonAr2:   s['btn_label_ar_2'] as String?,
-          buttonEn2:   s['btn_label_en_2'] as String?,
+          titleAr2:    _ne(s['overlay_title_ar_2'] as String?),
+          titleEn2:    _ne(s['overlay_title_en_2'] as String?),
+          subtitleAr2: _ne(s['overlay_subtitle_ar_2'] as String?),
+          subtitleEn2: _ne(s['overlay_subtitle_en_2'] as String?),
+          buttonAr2:   _ne(s['btn_label_ar_2'] as String?),
+          buttonEn2:   _ne(s['btn_label_en_2'] as String?),
           textSide2:   (s['overlay_position_2'] as String?) ?? 'right',
         );
         if (duo.imageUrl != null || duo.imageUrl2 != null) {
@@ -572,9 +574,9 @@ class HomeNotifier extends StateNotifier<HomeData> {
         if (imageUrl != null) {
           orderedSections.add(DynBanner(
             imageUrl: imageUrl,
-            linkUrl:  s['link_url'] as String?,
-            badgeAr:  s['badge_text_ar'] as String?,
-            badgeEn:  s['badge_text_en'] as String?,
+            linkUrl:  _ne(s['link_url'] as String?),
+            badgeAr:  _ne(s['badge_text_ar'] as String?),
+            badgeEn:  _ne(s['badge_text_en'] as String?),
             showOverlay: (s['show_overlay'] as bool?) ?? false,
           ));
         }

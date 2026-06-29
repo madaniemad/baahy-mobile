@@ -36,19 +36,21 @@ class AppBanner {
     slot: j['slot'] as String? ?? '',
     imageUrl: _resolveUrl(j['image_url'] as String?),
     imageUrlEn: _resolveUrl(j['image_url_en'] as String?),
-    badgeText: j['badge_text'] as String?,
-    titleAr: j['title_ar'] as String?,
-    titleEn: j['title_en'] as String?,
-    subtitleAr: j['subtitle_ar'] as String?,
-    subtitleEn: j['subtitle_en'] as String?,
-    buttonText: j['button_text'] as String?,
-    buttonLink: j['button_link'] as String?,
+    badgeText: _ne(j['badge_text'] as String?),
+    titleAr: _ne(j['title_ar'] as String?),
+    titleEn: _ne(j['title_en'] as String?),
+    subtitleAr: _ne(j['subtitle_ar'] as String?),
+    subtitleEn: _ne(j['subtitle_en'] as String?),
+    buttonText: _ne(j['button_text'] as String?),
+    buttonLink: _ne(j['button_link'] as String?),
     sortOrder: (j['sort_order'] as num?)?.toInt() ?? 0,
     showOverlay: (j['show_overlay'] == true || j['show_overlay'] == 1),
     textSide: j['text_side'] as String? ?? 'right',
   );
 
   bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;
+
+  static String? _ne(String? v) => (v == null || v.isEmpty) ? null : v;
 
   static String? _resolveUrl(String? v) {
     if (v == null || v.isEmpty) return null;
