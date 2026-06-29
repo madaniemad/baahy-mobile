@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 const _baseUrl = String.fromEnvironment(
   'API_BASE_URL',
@@ -11,6 +11,10 @@ const _kToken = 'auth_token';
 // Callback registered by auth layer to redirect to login on 401.
 typedef OnUnauthorized = void Function();
 OnUnauthorized? _onUnauthorized;
+
+const _secureStorage = FlutterSecureStorage(
+  aOptions: AndroidOptions(encryptedSharedPreferences: true),
+);
 
 class ApiClient {
   static ApiClient? _instance;
@@ -25,8 +29,7 @@ class ApiClient {
   }
 
   Future<void> _preloadToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString(_kToken);
+    _token = await _secureStorage.read(key: _kToken);
   }
 
   static void setUnauthorizedCallback(OnUnauthorized cb) {
@@ -57,8 +60,7 @@ class ApiClient {
           final isSilent = error.requestOptions.extra['silent401'] == true;
           final hadToken = _token != null;
           _token = null;
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.remove(_kToken);
+          await _secureStorage.delete(key: _kToken);
           if (hadToken && !isSilent) _onUnauthorized?.call();
         }
         handler.next(error);
@@ -70,20 +72,17 @@ class ApiClient {
 
   Future<void> setToken(String token) async {
     _token = token;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kToken, token);
+    await _secureStorage.write(key: _kToken, value: token);
   }
 
   Future<void> clearToken() async {
     _token = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kToken);
+    await _secureStorage.delete(key: _kToken);
   }
 
   Future<bool> get isLoggedIn async {
     if (_token != null) return true;
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString(_kToken);
+    _token = await _secureStorage.read(key: _kToken);
     return _token != null;
   }
 }

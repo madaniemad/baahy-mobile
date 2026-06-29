@@ -417,7 +417,7 @@ class _CityLabel extends ConsumerWidget {
     return GestureDetector(
       onTap: () => fromAddress
           ? safePush(context, '/addresses')
-          : context.push('/city'),
+          : safePush(context, '/city'),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(
           fromAddress ? Icons.home_outlined : Icons.location_on_outlined,

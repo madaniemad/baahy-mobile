@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../../core/utils/l10n.dart';
+import '../../core/utils/navigation.dart';
 import '../theme/app_theme.dart';
 
 // Preferred Arabic locales in order — ar-LY (Libyan) first, then Gulf, Egyptian, generic
@@ -86,7 +86,7 @@ class _MicButtonState extends ConsumerState<MicButton>
             mounted) {
           _stopListening();
           final q = Uri.encodeComponent(result.recognizedWords.trim());
-          context.push('/search/results?q=$q');
+          safePush(context, '/search/results?q=$q');
         }
       },
       listenFor: const Duration(seconds: 10),

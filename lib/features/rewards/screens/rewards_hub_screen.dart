@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/app_config.dart';
@@ -10,6 +9,7 @@ import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/utils/l10n.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
 final _hubReferralProvider = FutureProvider<Map<String, dynamic>>((ref) async {
@@ -90,7 +90,7 @@ class RewardsHubScreen extends ConsumerWidget {
             actions: [
               IconButton(
                 icon: Icon(Icons.info_outline_rounded, color: context.col.ink2),
-                onPressed: () => context.push('/faq'),
+                onPressed: () => safePush(context, '/faq'),
               ),
             ],
           ),
@@ -1058,7 +1058,7 @@ class _FaqSection extends StatelessWidget {
 
         // Support card
         GestureDetector(
-          onTap: () => context.push('/contact'),
+          onTap: () => safePush(context, '/contact'),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(

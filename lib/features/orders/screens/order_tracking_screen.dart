@@ -78,13 +78,13 @@ class OrderTrackingScreen extends ConsumerWidget {
             data: (o) => IconButton(
               icon: const Icon(Icons.auto_awesome_outlined, size: 22),
               tooltip: 'اسأل عن طلبك',
-              onPressed: () => context.push('/chat',
+              onPressed: () => safePush(context, '/chat',
                   extra: 'أحتاج مساعدة بخصوص طلب رقم ${o.orderNumber}'),
             ),
             orElse: () => IconButton(
               icon: const Icon(Icons.auto_awesome_outlined, size: 22),
               tooltip: 'اسأل عن طلبك',
-              onPressed: () => context.push('/chat'),
+              onPressed: () => safePush(context, '/chat'),
             ),
           ),
           orderAsync.maybeWhen(
@@ -268,7 +268,7 @@ class _OrderBody extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () => context.push('/chat',
+            onPressed: () => safePush(context, '/chat',
                 extra: 'أحتاج مساعدة بخصوص طلب رقم ${order.orderNumber}'),
             icon: const Icon(Icons.help_outline_rounded, size: 16),
             label: Text(context.s.orderHelp,

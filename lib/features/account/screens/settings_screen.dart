@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -34,7 +35,7 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.location_city_outlined,
               label: isAr ? 'تغيير المدينة' : 'Change City',
               trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
-              onTap: () => context.push('/city'),
+              onTap: () => safePush(context, '/city'),
             ),
             _SettingsRow(
               icon: Icons.language_outlined,
@@ -63,7 +64,7 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.notifications_outlined,
               label: isAr ? 'الإشعارات' : 'Notifications',
               trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
-              onTap: () => context.push('/notifications'),
+              onTap: () => safePush(context, '/notifications'),
             ),
           ]),
           const SizedBox(height: 12),
@@ -74,13 +75,13 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.help_outline_rounded,
               label: isAr ? 'الأسئلة الشائعة' : 'FAQ',
               trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
-              onTap: () => context.push('/faq'),
+              onTap: () => safePush(context, '/faq'),
             ),
             _SettingsRow(
               icon: Icons.support_agent_outlined,
               label: isAr ? 'تواصل مع الدعم' : 'Contact Support',
               trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
-              onTap: () => context.push('/contact'),
+              onTap: () => safePush(context, '/contact'),
             ),
           ]),
           const SizedBox(height: 12),
@@ -91,19 +92,19 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.shield_outlined,
               label: isAr ? 'سياسة الخصوصية' : 'Privacy Policy',
               trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
-              onTap: () => context.push('/privacy'),
+              onTap: () => safePush(context, '/privacy'),
             ),
             _SettingsRow(
               icon: Icons.description_outlined,
               label: isAr ? 'الشروط والأحكام' : 'Terms of Service',
               trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
-              onTap: () => context.push('/terms'),
+              onTap: () => safePush(context, '/terms'),
             ),
             _SettingsRow(
               icon: Icons.assignment_return_outlined,
               label: isAr ? 'سياسة الإرجاع' : 'Return Policy',
               trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
-              onTap: () => context.push('/return-policy'),
+              onTap: () => safePush(context, '/return-policy'),
             ),
           ]),
           const SizedBox(height: 12),

@@ -1781,7 +1781,7 @@ class _VendorRow extends StatelessWidget {
         ],
       )),
       OutlinedButton(
-        onPressed: () => context.push('/vendors/${vendor.id}'),
+        onPressed: () => safePush(context, '/vendors/${vendor.id}'),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           side: BorderSide(color: AppColors.success.withValues(alpha: 0.8)),
