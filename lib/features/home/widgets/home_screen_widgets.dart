@@ -1200,7 +1200,7 @@ class _DynFashionCardsSection extends StatelessWidget {
     final title = isAr ? item.titleAr : item.titleEn;
     final sw = MediaQuery.of(context).size.width;
     final cardW = (sw - 16) / 3.3;
-    final cardH = cardW * 1.7;
+    final cardH = cardW * 1.6;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1303,7 +1303,7 @@ class _FashionBannerTilesState extends State<_FashionBannerTiles> {
     final sw = MediaQuery.of(context).size.width;
     // 3 cards + ~0.3 peek; 16px left padding, 8px gap between cards
     final cardW = (sw - 16) / 3.3;
-    final cardH = cardW * 1.7;
+    final cardH = cardW * 1.6;
 
     return SizedBox(
       height: cardH,
