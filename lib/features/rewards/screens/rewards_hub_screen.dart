@@ -987,26 +987,31 @@ class _StepNode extends StatelessWidget {
 
 // ── 6. FAQ ────────────────────────────────────────────────────────────────────
 class _FaqSection extends StatelessWidget {
-  static const _faqs = [
-    (q: 'متى أستلم الكاش باك؟',
-     a: 'يُضاف الكاش باك إلى محفظتك تلقائياً بمجرد توصيل طلبك وتأكيد الاستلام.'),
-    (q: 'هل يمكنني استخدام رصيد المكافآت مع العروض؟',
-     a: 'نعم، يمكنك استخدام رصيد محفظتك مع أي طلب بصرف النظر عن العروض المطبّقة.'),
-    (q: 'هل يوجد حد أقصى لاستخدام المكافآت؟',
-     a: 'لا يوجد حد أقصى. يمكنك تجميع الرصيد واستخدامه متى شئت على أي طلب.'),
-    (q: 'كيف أرتقي في مستوى الولاء؟',
-     a: 'يجب تحقيق شرطي الطلبات والإنفاق معاً خلال آخر 12 شهراً. تتم المراجعة تلقائياً عند كل توصيل.'),
+  static List<({String q, String a})> _getFaqs(bool isAr) => [
+    (q: isAr ? 'متى أستلم الكاش باك؟' : 'When do I receive my cashback?',
+     a: isAr ? 'يُضاف الكاش باك إلى محفظتك تلقائياً بمجرد توصيل طلبك وتأكيد الاستلام.'
+              : 'Cashback is added to your wallet automatically once your order is delivered and confirmed.'),
+    (q: isAr ? 'هل يمكنني استخدام رصيد المكافآت مع العروض؟' : 'Can I use rewards balance with promotions?',
+     a: isAr ? 'نعم، يمكنك استخدام رصيد محفظتك مع أي طلب بصرف النظر عن العروض المطبّقة.'
+              : 'Yes, you can use your wallet balance on any order regardless of active promotions.'),
+    (q: isAr ? 'هل يوجد حد أقصى لاستخدام المكافآت؟' : 'Is there a maximum on rewards usage?',
+     a: isAr ? 'لا يوجد حد أقصى. يمكنك تجميع الرصيد واستخدامه متى شئت على أي طلب.'
+              : 'There is no maximum. Accumulate balance and use it whenever you want on any order.'),
+    (q: isAr ? 'كيف أرتقي في مستوى الولاء؟' : 'How do I level up my loyalty tier?',
+     a: isAr ? 'يجب تحقيق شرطي الطلبات والإنفاق معاً خلال آخر 12 شهراً. تتم المراجعة تلقائياً عند كل توصيل.'
+              : 'You must meet both orders and spend conditions within the last 12 months. Your tier is reviewed automatically at each delivery.'),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final faqs = _getFaqs(context.isAr);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           const Icon(Icons.help_outline_rounded, size: 16, color: AppColors.primary),
           const SizedBox(width: 6),
-          Text('الأسئلة الشائعة',
+          Text(context.s.faqTitle,
             style: TextStyle(fontFamily: 'Cairo', fontSize: 16,
               fontWeight: FontWeight.w800, color: context.col.ink0)),
         ]),
@@ -1021,9 +1026,9 @@ class _FaqSection extends StatelessWidget {
             boxShadow: AppShadows.shadowLifted,
           ),
           child: Column(
-            children: List.generate(_faqs.length, (i) {
-              final faq    = _faqs[i];
-              final isLast = i == _faqs.length - 1;
+            children: List.generate(faqs.length, (i) {
+              final faq    = faqs[i];
+              final isLast = i == faqs.length - 1;
               return Column(children: [
                 Theme(
                   data: Theme.of(context).copyWith(

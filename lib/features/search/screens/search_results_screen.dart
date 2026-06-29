@@ -351,7 +351,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         backgroundColor: context.col.surface,
         elevation: 0,
         title: Text(
-          widget.pageTitle ?? (widget.query.isNotEmpty ? widget.query : 'المنتجات'),
+          widget.pageTitle ?? (widget.query.isNotEmpty ? widget.query : context.s.products),
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 16),
         ),
         actions: [
@@ -842,7 +842,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
 
                 // ── Category chips ─────────────────────────────────────
                 if (scopedCats.isNotEmpty) ...[
-                  _sectionHeader('القسم', _catExpanded,
+                  _sectionHeader(context.s.category, _catExpanded,
                     () => setState(() => _catExpanded = !_catExpanded)),
 
                   if (_catExpanded) ...[
@@ -851,7 +851,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                       runSpacing: 8,
                       children: [
                         _CatChip(
-                          label: 'الكل',
+                          label: context.s.all,
                           selected: _categoryId == null || _categoryId == widget.scopeCategoryId,
                           onTap: () => _selectCategory(null, null),
                         ),
@@ -962,7 +962,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _sectionHeader('الماركة', _brandExpanded,
+                          _sectionHeader(context.s.brand, _brandExpanded,
                             () => setState(() => _brandExpanded = !_brandExpanded)),
                           if (_brandExpanded) ...[
                             Wrap(
@@ -999,16 +999,16 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 }),
 
                 // ── Price ─────────────────────────────────────────────────
-                _sectionHeader('نطاق السعر (د.ل)', _priceExpanded,
+                _sectionHeader(context.isAr ? 'نطاق السعر (د.ل)' : 'Price Range (LD)', _priceExpanded,
                   () => setState(() => _priceExpanded = !_priceExpanded)),
 
                 if (_priceExpanded) ...[
                   Row(children: [
-                    Expanded(child: _PriceField(controller: _minCtrl, hint: 'الحد الأدنى')),
+                    Expanded(child: _PriceField(controller: _minCtrl, hint: context.isAr ? 'الحد الأدنى' : 'Min')),
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Text('—', style: TextStyle(color: context.col.ink3))),
-                    Expanded(child: _PriceField(controller: _maxCtrl, hint: 'الحد الأقصى')),
+                    Expanded(child: _PriceField(controller: _maxCtrl, hint: context.isAr ? 'الحد الأقصى' : 'Max')),
                   ]),
                   const SizedBox(height: 12),
                   const Divider(height: 1),
@@ -1057,7 +1057,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 const Divider(height: 1),
 
                 // ── Rating ────────────────────────────────────────────────
-                _sectionHeader('الحد الأدنى للتقييم', _ratingExpanded,
+                _sectionHeader(context.isAr ? 'الحد الأدنى للتقييم' : 'Min. Rating', _ratingExpanded,
                   () => setState(() => _ratingExpanded = !_ratingExpanded)),
 
                 if (_ratingExpanded) ...[
@@ -1080,7 +1080,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                             Icon(Icons.star_rounded, size: 14,
                               color: selected ? Colors.white : AppColors.warn),
                             const SizedBox(width: 4),
-                            Text('$star+ نجوم',
+                            Text('$star+ ${context.isAr ? 'نجوم' : 'stars'}',
                               style: TextStyle(
                                 fontSize: 12, fontWeight: FontWeight.w700,
                                 color: selected ? Colors.white : context.col.ink1)),
@@ -1102,7 +1102,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _sectionHeader('المتجر', _vendorExpanded,
+                      _sectionHeader(context.s.storeLabel, _vendorExpanded,
                         () => setState(() => _vendorExpanded = !_vendorExpanded)),
                       if (_vendorExpanded) ...[
                         Wrap(
@@ -1156,35 +1156,6 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CatRow extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final bool small;
-  final VoidCallback onTap;
-  const _CatRow({required this.label, required this.selected, required this.onTap, this.small = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(children: [
-          Text(label,
-            style: TextStyle(
-              fontSize: small ? 12 : 13,
-              color: selected ? AppColors.primary : context.col.ink1,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-            )),
-          const Spacer(),
-          if (selected)
-            const Icon(Icons.check_rounded, size: 16, color: AppColors.primary),
-        ]),
       ),
     );
   }

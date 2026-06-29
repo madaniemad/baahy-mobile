@@ -821,9 +821,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       : SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: null,
+                            onPressed: () => _notifyMe(product.id),
                             icon: const Icon(Icons.notifications_outlined, size: 18),
-                            label: Text(context.s.outOfStock,
+                            label: Text(context.s.notifyMe,
                               style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),

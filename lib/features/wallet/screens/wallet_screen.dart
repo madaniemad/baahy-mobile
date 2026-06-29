@@ -124,7 +124,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Icon(Icons.shield_outlined, size: 13, color: context.col.ink3),
                 const SizedBox(width: 6),
-                Text('رصيدك آمن ١٠٠٪ ويمكنك استخدامه في أي وقت',
+                Text(context.tr('رصيدك آمن ١٠٠٪ ويمكنك استخدامه في أي وقت', 'Your balance is 100% secure — use it anytime'),
                   style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5, color: context.col.ink2)),
               ]),
             ),
@@ -251,9 +251,9 @@ class _HeroBalanceCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
               const SizedBox(height: 18),
-              const Text('رصيدك المتاح',
+              Text(context.tr('رصيدك المتاح', 'Your Balance'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 13, fontWeight: FontWeight.w500,
+                style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, fontWeight: FontWeight.w500,
                   color: Colors.white)),
               const SizedBox(height: 6),
               Row(mainAxisAlignment: MainAxisAlignment.center,
@@ -269,18 +269,18 @@ class _HeroBalanceCard extends StatelessWidget {
                     color: Colors.white)),
               ]),
               const SizedBox(height: 5),
-              const Text('✦  أنت تكسب مع كل طلب',
+              Text(context.tr('✦  أنت تكسب مع كل طلب', '✦  You earn on every order'),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Colors.white,
+                style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Colors.white,
                   fontWeight: FontWeight.w500)),
               const SizedBox(height: 14),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 _CardButton(
-                  label: 'شحن', icon: Icons.add_rounded,
+                  label: context.s.topUpWallet, icon: Icons.add_rounded,
                   outlined: true, onTap: onTopUp),
                 const SizedBox(width: 10),
                 _CardButton(
-                  label: 'تحويل', icon: Icons.upload_outlined,
+                  label: context.s.sendMoney, icon: Icons.upload_outlined,
                   outlined: false, onTap: onSend),
               ]),
             ]),
@@ -360,7 +360,7 @@ class _StatsRow extends StatelessWidget {
         ),
         child: Row(children: [
           _StatItem(
-            label: 'كاش باك مكتسب',
+            label: context.tr('كاش باك مكتسب', 'Cashback Earned'),
             amount: cashbackEarned,
             iconBg: const Color(0xFFE0F9F9),
             iconColor: const Color(0xFF08AAAC),
@@ -368,7 +368,7 @@ class _StatsRow extends StatelessWidget {
           ),
           _StatDivider(),
           _StatItem(
-            label: 'استرداد معلق',
+            label: context.tr('استرداد معلق', 'Pending Refunds'),
             amount: pendingRefunds,
             iconBg: const Color(0xFFFFF3E0),
             iconColor: const Color(0xFFE65100),
@@ -376,18 +376,18 @@ class _StatsRow extends StatelessWidget {
           ),
           _StatDivider(),
           _StatItem(
-            label: 'مكافآت الدعوات',
+            label: context.tr('مكافآت الدعوات', 'Referral Rewards'),
             amount: referralRewards,
-            iconBg: const Color(0xFFF3E5F5),
-            iconColor: const Color(0xFF7B1FA2),
+            iconBg: const Color(0xFFEFF6FF),
+            iconColor: AppColors.info,
             icon: Icons.card_giftcard_outlined,
           ),
           _StatDivider(),
           _StatItem(
-            label: 'رصيد متاح',
+            label: context.s.availableBalance,
             amount: balance,
-            iconBg: const Color(0xFFE3F2FD),
-            iconColor: const Color(0xFF1565C0),
+            iconBg: AppColors.teal50,
+            iconColor: AppColors.primary,
             iconAsset: 'assets/images/wallet_icon.png',
           ),
         ]),
@@ -493,14 +493,14 @@ class _TierProgressCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('المستوى الحالي',
+              Text(context.tr('المستوى الحالي', 'Current Tier'),
                 style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: context.col.ink2)),
               const SizedBox(height: 2),
               Text(_tierLabels[currentIndex],
                 style: TextStyle(fontFamily: 'Cairo', fontSize: 20, fontWeight: FontWeight.w800,
                   color: _tierColors[currentIndex], height: 1.1)),
               if (nextIndex != null)
-                Text('استمر للتقدم للمستوى ${_tierLabels[nextIndex]}',
+                Text(context.isAr ? 'استمر للتقدم للمستوى ${_tierLabels[nextIndex]}' : 'Keep going to reach ${_tierLabels[nextIndex]}',
                   style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: context.col.ink2)),
             ]),
           ),
@@ -527,11 +527,11 @@ class _TierProgressCard extends StatelessWidget {
           // Orders progress
           _DualProgressRow(
             icon: Icons.receipt_long_outlined,
-            label: 'الطلبات',
+            label: context.s.hubOrders,
             current: tier.ordersCount,
             needed: tier.ordersNeeded,
             remaining: tier.ordersRemaining,
-            unit: 'طلب',
+            unit: context.isAr ? 'طلب' : 'orders',
             progress: ordersProgress,
             color: AppColors.primary,
           ),
@@ -540,11 +540,11 @@ class _TierProgressCard extends StatelessWidget {
           // Spend progress
           _DualProgressRow(
             icon: Icons.payments_outlined,
-            label: 'المبلغ',
+            label: context.tr('المبلغ', 'Spend'),
             current: tier.spendAmount.toInt(),
             needed: tier.spendNeeded.toInt(),
             remaining: tier.spendRemaining.toInt(),
-            unit: 'د.ل',
+            unit: context.s.lydUnit,
             progress: spendProgress,
             color: const Color(0xFF0AABB3),
           ),
@@ -556,8 +556,8 @@ class _TierProgressCard extends StatelessWidget {
           onTap: () => safePush(context, '/rewards-hub'),
           child: const Row(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.chevron_left_rounded, size: 16, color: Color(0xFF1FD7E2)),
-            Text('عرض جميع المزايا',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Color(0xFF1FD7E2),
+            Text(context.tr('عرض جميع المزايا', 'View all benefits'),
+              style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.primary,
                 fontWeight: FontWeight.w600)),
           ]),
         ),
@@ -593,11 +593,11 @@ class _DualProgressRow extends StatelessWidget {
             fontWeight: FontWeight.w600, color: context.col.ink1)),
         const Spacer(),
         if (done)
-          const Row(children: [
-            Icon(Icons.check_circle_rounded, size: 14, color: AppColors.success),
-            SizedBox(width: 3),
-            Text('مكتمل',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 11,
+          Row(children: [
+            const Icon(Icons.check_circle_rounded, size: 14, color: AppColors.success),
+            const SizedBox(width: 3),
+            Text(context.tr('مكتمل', 'Done'),
+              style: const TextStyle(fontFamily: 'Cairo', fontSize: 11,
                 color: AppColors.success, fontWeight: FontWeight.w700)),
           ])
         else
@@ -632,7 +632,7 @@ class _EarnMoreSection extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Text('اكسب أكثر',
+        child: Text(context.tr('اكسب أكثر', 'Earn More'),
           style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800,
             color: context.col.ink0)),
       ),
@@ -644,29 +644,29 @@ class _EarnMoreSection extends StatelessWidget {
             icon: Icons.shopping_bag_outlined,
             iconColor: const Color(0xFF08AAAC),
             cardBg: const Color(0xFFE2F9FA),
-            title: 'تسوق لتحصل على كاش باك',
-            subtitle: 'اكسب كاش باك على كل طلب تقوم به',
-            actionLabel: 'تسوق الآن',
+            title: context.tr('تسوق لتحصل على كاش باك', 'Shop for cashback'),
+            subtitle: context.tr('اكسب كاش باك على كل طلب تقوم به', 'Earn cashback on every order'),
+            actionLabel: context.tr('تسوق الآن', 'Shop Now'),
           )),
           const SizedBox(width: 8),
           Expanded(child: _EarnCard(
             onTap: onInvite,
             iconAsset: 'assets/images/referral_gift.png',
-            iconColor: const Color(0xFF7B1FA2),
-            cardBg: const Color(0xFFF0E8FB),
-            title: 'دعوة الأصدقاء',
-            subtitle: 'ادع أصدقائك واكسب مكافآت عند كل دعوة',
-            actionLabel: 'دعوة الآن',
+            iconColor: AppColors.info,
+            cardBg: const Color(0xFFEFF6FF),
+            title: context.tr('دعوة الأصدقاء', 'Invite Friends'),
+            subtitle: context.tr('ادع أصدقائك واكسب مكافآت عند كل دعوة', 'Invite friends and earn rewards'),
+            actionLabel: context.tr('دعوة الآن', 'Invite Now'),
           )),
           const SizedBox(width: 8),
           Expanded(child: _EarnCard(
             onTap: onDeals,
             icon: Icons.local_offer_outlined,
-            iconColor: const Color(0xFFD4A82E),
+            iconColor: AppColors.gold,
             cardBg: const Color(0xFFFFF8E1),
-            title: 'عروض حصرية',
-            subtitle: 'اكتشف عروض ومكافآت خاصة للأعضاء',
-            actionLabel: 'اكتشف',
+            title: context.tr('عروض حصرية', 'Exclusive Deals'),
+            subtitle: context.tr('اكتشف عروض ومكافآت خاصة للأعضاء', 'Discover member-only deals & rewards'),
+            actionLabel: context.tr('اكتشف', 'Explore'),
           )),
         ])),
       ),
@@ -744,15 +744,15 @@ class _TransactionsSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Text('آخر المعاملات',
+          Text(context.tr('آخر المعاملات', 'Recent Transactions'),
             style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800,
               color: context.col.ink0)),
           const Spacer(),
           if (txns.isNotEmpty)
-            const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.chevron_left_rounded, size: 15, color: Color(0xFF1FD7E2)),
-              Text('عرض الكل',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Color(0xFF1FD7E2),
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.chevron_left_rounded, size: 15, color: AppColors.primary),
+              Text(context.s.seeAll,
+                style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.primary,
                   fontWeight: FontWeight.w600)),
             ]),
         ]),
@@ -764,7 +764,7 @@ class _TransactionsSection extends StatelessWidget {
               child: Column(children: [
                 Icon(Icons.receipt_long_outlined, size: 60, color: context.col.ink4),
                 const SizedBox(height: 12),
-                Text('لا توجد معاملات بعد',
+                Text(context.s.noTransactions,
                   style: TextStyle(fontFamily: 'Cairo', fontSize: 15, color: context.col.ink2)),
               ]),
             ),
@@ -1231,8 +1231,8 @@ class _TransactionRow extends StatelessWidget {
         iconColor = AppColors.success;
       case 'referral':
         iconData = Icons.group_outlined;
-        iconBg = const Color(0xFF7B1FA2).withValues(alpha: 0.10);
-        iconColor = const Color(0xFF7B1FA2);
+        iconBg = AppColors.info.withValues(alpha: 0.10);
+        iconColor = AppColors.info;
       case 'refund':
         iconData = Icons.assignment_return_outlined;
         iconBg = AppColors.success.withValues(alpha: 0.12);

@@ -72,8 +72,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
         automaticallyImplyLeading: true,
-        title: const Text('الأصدقاء',
-          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
+        title: Text(context.s.friends,
+          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_outlined, size: 22),
@@ -92,10 +92,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
           indicatorSize: TabBarIndicatorSize.label,
           dividerColor: const Color(0xFFE5E7EB),
           tabs: [
-            const Tab(text: 'أصدقائي'),
+            Tab(text: context.s.myFriends),
             Tab(
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Text('طلبات الصداقة', style: TextStyle(fontFamily: 'Cairo')),
+                Text(context.s.friendRequests, style: const TextStyle(fontFamily: 'Cairo')),
                 if (pendingCount > 0) ...[
                   const SizedBox(width: 6),
                   Container(
@@ -136,8 +136,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
 
                 const SizedBox(height: 22),
 
-                const Text('أرباحك حتى الآن',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800)),
+                Text(context.tr('أرباحك حتى الآن', 'Your Earnings'),
+                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 10),
 
                 referralAsync.when(
@@ -154,8 +154,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
 
                 const SizedBox(height: 22),
 
-                const Text('أصدقاؤك',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800)),
+                Text(context.tr('أصدقاؤك', 'Your Friends'),
+                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 10),
 
                 referralAsync.when(
@@ -192,7 +192,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                             Icon(
                               _showAll ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
                               size: 18, color: _tiffanyDeep),
-                            Text(_showAll ? 'عرض أقل' : 'عرض المزيد',
+                            Text(_showAll ? context.tr('عرض أقل', 'Show Less') : context.s.viewMore,
                               style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
                                 color: _tiffanyDeep, fontWeight: FontWeight.w600)),
                           ]),
@@ -266,7 +266,8 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
       await Clipboard.setData(ClipboardData(text: text));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم نسخ رابط الدعوة', style: TextStyle(fontFamily: 'Cairo'))),
+          SnackBar(content: Text(context.tr('تم نسخ رابط الدعوة', 'Invite link copied'),
+              style: const TextStyle(fontFamily: 'Cairo'))),
         );
       }
     }
@@ -291,11 +292,13 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('ادع أصدقاءك واربح مكافآت',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w800, height: 1.3)),
+              Text(context.tr('ادع أصدقاءك واربح مكافآت', 'Invite friends & earn rewards'),
+                style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w800, height: 1.3)),
               const SizedBox(height: 5),
               Text(
-                'يحصل كل منكما على ${widget.giver} د.ل\nعند إتمام أول طلب',
+                context.isAr
+                  ? 'يحصل كل منكما على ${widget.giver} د.ل\nعند إتمام أول طلب'
+                  : 'You each earn ${widget.giver} LD\non first order completion',
                 style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
                   color: context.col.ink2, height: 1.45)),
               const SizedBox(height: 10),
@@ -326,7 +329,7 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
                             size: 14,
                             color: _copied ? AppColors.success : context.col.ink2),
                           const SizedBox(width: 4),
-                          Text(_copied ? 'نُسخ' : 'نسخ',
+                          Text(_copied ? context.s.copied : context.s.copyBtn,
                             style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5,
                               color: _copied ? AppColors.success : context.col.ink2,
                               fontWeight: FontWeight.w700)),
@@ -350,11 +353,11 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
               color: _tiffany,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.share_rounded, size: 16, color: Colors.white),
-              SizedBox(width: 8),
-              Text('شارك رابط الدعوة',
-                style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Icon(Icons.share_rounded, size: 16, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(context.tr('شارك رابط الدعوة', 'Share Invite Link'),
+                style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
                   fontSize: 14, color: Colors.white)),
             ]),
           ),
@@ -378,19 +381,19 @@ class _EarningsRow extends StatelessWidget {
       _EarnStat(
         icon: Icons.account_balance_wallet_outlined,
         value: '${earned.toInt()} د.ل',
-        label: 'إجمالي الأرباح',
+        label: context.tr('إجمالي الأرباح', 'Total Earned'),
       ),
       const SizedBox(width: 8),
       _EarnStat(
         icon: Icons.person_add_alt_1_outlined,
         value: '$joined',
-        label: 'أصدقاء انضموا',
+        label: context.tr('أصدقاء انضموا', 'Friends Joined'),
       ),
       const SizedBox(width: 8),
       _EarnStat(
         icon: Icons.calendar_today_outlined,
         value: '${pending.toInt()} د.ل',
-        label: 'بانتظار التأكيد',
+        label: context.tr('بانتظار التأكيد', 'Pending'),
       ),
     ]);
   }
@@ -478,7 +481,7 @@ class _ReferralRow extends StatelessWidget {
           Text(name,
             style: const TextStyle(fontFamily: 'Cairo', fontSize: 14, fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
-          Text(isCompleted ? 'اكتمل الطلب' : 'بانتظار إتمام الطلب',
+          Text(isCompleted ? context.tr('اكتمل الطلب', 'Order completed') : context.tr('بانتظار إتمام الطلب', 'Awaiting first order'),
             style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5,
               color: isCompleted ? _tiffanyDeep : context.col.ink3,
               fontWeight: FontWeight.w500)),
@@ -515,11 +518,11 @@ class _EmptyFriends extends StatelessWidget {
           child: const Icon(Icons.group_outlined, size: 32, color: _tiffanyDeep),
         ),
         const SizedBox(height: 12),
-        const Text('لم تدعُ أحداً بعد',
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w700)),
+        Text(context.tr('لم تدعُ أحداً بعد', 'No invites yet'),
+          style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
-        const Text('شارك كودك وابدأ بكسب المكافآت',
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink2)),
+        Text(context.tr('شارك كودك وابدأ بكسب المكافآت', 'Share your code and start earning'),
+          style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink2)),
       ])),
     );
   }
@@ -547,8 +550,8 @@ class _RequestsTab extends ConsumerWidget {
             child: const Icon(Icons.inbox_outlined, size: 32, color: _tiffanyDeep),
           ),
           const SizedBox(height: 12),
-          const Text('لا توجد طلبات معلقة',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w700)),
+          Text(context.tr('لا توجد طلبات معلقة', 'No pending requests'),
+            style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w700)),
         ]),
       );
     }
@@ -588,7 +591,7 @@ class _RequestsTab extends ConsumerWidget {
                     foregroundColor: context.col.ink2,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
-                  child: const Text('رفض', style: TextStyle(fontFamily: 'Cairo', fontSize: 12)),
+                  child: Text(context.tr('رفض', 'Decline'), style: const TextStyle(fontFamily: 'Cairo', fontSize: 12)),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -604,8 +607,8 @@ class _RequestsTab extends ConsumerWidget {
                     minimumSize: const Size(0, 34),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Text('قبول',
-                    style: TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.w700)),
+                  child: Text(context.tr('قبول', 'Accept'),
+                    style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.w700)),
                 ),
               ]),
             ]),
@@ -658,13 +661,14 @@ class _FaqCard extends StatelessWidget {
         Row(children: [
           Icon(Icons.info_outline_rounded, size: 17, color: context.col.ink2),
           const SizedBox(width: 7),
-          const Text('كيف تعمل مكافآت الأصدقاء؟',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 13.5, fontWeight: FontWeight.w700)),
+          Text(context.tr('كيف تعمل مكافآت الأصدقاء؟', 'How do friend rewards work?'),
+            style: const TextStyle(fontFamily: 'Cairo', fontSize: 13.5, fontWeight: FontWeight.w700)),
         ]),
         const SizedBox(height: 10),
         Text(
-          'سيتم إضافة المكافأة إلى رصيدك بعد أن يُكمل صديقك أول طلب له '
-          'ويتم استلامه بنجاح. ستحصل أنت على $giver د.ل وصديقك على $giver د.ل.',
+          context.isAr
+            ? 'سيتم إضافة المكافأة إلى رصيدك بعد أن يُكمل صديقك أول طلب له ويتم استلامه بنجاح. ستحصل أنت على $giver د.ل وصديقك على $giver د.ل.'
+            : 'The reward is added to your wallet once your friend completes their first order and it is delivered. You each get $giver LD.',
           style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
             color: context.col.ink2, height: 1.55)),
       ]),

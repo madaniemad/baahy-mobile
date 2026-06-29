@@ -246,7 +246,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
       if (mounted) {
         final names = unresolved.map((i) => i.product.nameAr).join('، ');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('اختر المقاس/اللون لـ: $names'),
+          content: Text(context.isAr ? 'اختر المقاس/اللون لـ: $names' : 'Choose size/colour for: $names'),
           backgroundColor: AppColors.danger,
         ));
       }
