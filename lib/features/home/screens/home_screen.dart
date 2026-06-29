@@ -192,81 +192,6 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
 
-              // ── Picked for you (matches web: featured before promo) ──
-              if (home.featured.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: _SectionHead(
-                    ar: 'مختار لك',
-                    en: 'Picked for you',
-                    onAll: () => safePush(context, '/search/results?q=&sort=featured'),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _HorizontalProductList(products: home.featured),
-                ),
-              ],
-
-              // ── Promo banners — full-width, same 1920/700 ratio as hero ──
-              if (banners.promoLeft.any((b) => b.hasImage) || banners.promoRight.any((b) => b.hasImage))
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    child: _BannerStack(
-                      banners: [
-                        ...banners.promoLeft.where((b) => b.hasImage),
-                        ...banners.promoRight.where((b) => b.hasImage),
-                      ],
-                      aspectRatio: 1920 / 700,
-                    ),
-                  ),
-                ),
-
-              // ── Deals of the day with countdown timer ──
-              if (home.deals.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: _DealsHead(
-                    onAll: () => safePush(context, '/search/results?q=&on_sale=1&sort=popular'),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _HorizontalProductList(products: home.deals),
-                ),
-              ],
-
-              // ── Fashion banner cards carousel (slot: fashion_banner) ──
-              if (banners.fashionBanner.any((b) => b.hasImage))
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: _FashionBannerTiles(banners: banners.fashionBanner),
-                  ),
-                ),
-
-              // ── Brand carousel — immediately after fashion cards ──
-              SliverToBoxAdapter(
-                child: Consumer(builder: (ctx, ref2, _) {
-                  final brands = ref2.watch(_brandsProvider).valueOrNull ?? [];
-                  if (brands.isEmpty) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 20),
-                    child: _BrandCarousel(brands: brands),
-                  );
-                }),
-              ),
-
-              // ── Featured Products ──
-              if (home.newArrivals.isNotEmpty) ...[
-                SliverToBoxAdapter(
-                  child: _SectionHead(
-                    ar: 'منتجات مميزة',
-                    en: 'Featured Products',
-                    onAll: () => safePush(context, '/search/results?q=&featured=1&sort=popular'),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _HorizontalProductList(products: home.newArrivals),
-                ),
-              ],
 
               // ── Admin-controlled sections in exact admin order ──
               ...home.orderedDynamicSections.expand((item) sync* {
@@ -344,30 +269,48 @@ class HomeScreen extends ConsumerWidget {
                       child: _DynFashionCardsSection(item: item),
                     ),
                   );
+                } else if (item is DynFeatured) {
+                  final featProds = home.featured;
+                  if (featProds.isNotEmpty) {
+                    yield SliverToBoxAdapter(
+                      child: _SectionHead(
+                        ar: item.titleAr.isNotEmpty ? item.titleAr : 'مختار لك',
+                        en: item.titleEn.isNotEmpty ? item.titleEn : 'Picks for you',
+                        onAll: () => safePush(context, '/search/results?q=&sort=featured'),
+                      ),
+                    );
+                    yield SliverToBoxAdapter(child: _HorizontalProductList(products: featProds));
+                  }
+                } else if (item is DynDeals) {
+                  final dealProds = home.deals.isNotEmpty ? home.deals : item.fallbackProducts;
+                  if (dealProds.isNotEmpty) {
+                    yield SliverToBoxAdapter(
+                      child: _DealsHead(
+                        onAll: () => safePush(context, '/search/results?q=&on_sale=1&sort=popular'),
+                      ),
+                    );
+                    yield SliverToBoxAdapter(child: _HorizontalProductList(products: dealProds));
+                  }
+                } else if (item is DynBrandCarousel) {
+                  yield SliverToBoxAdapter(
+                    child: Consumer(builder: (ctx, ref2, _) {
+                      final brands = ref2.watch(_brandsProvider).valueOrNull ?? [];
+                      if (brands.isEmpty) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: _BrandCarousel(brands: brands),
+                      );
+                    }),
+                  );
+                } else if (item is DynTileCarousel) {
+                  yield SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: _DynTileCarousel(item: item),
+                    ),
+                  );
                 }
               }),
-
-              // ── Tile carousel ──
-              if (banners.tile1.isNotEmpty || banners.tile2.isNotEmpty || banners.tile3.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    child: _TileCarousel(banners: [
-                      ...banners.tile1.where((b) => b.hasImage),
-                      ...banners.tile2.where((b) => b.hasImage),
-                      ...banners.tile3.where((b) => b.hasImage),
-                    ]),
-                  ),
-                ),
-
-              // ── Mid banners ──
-              if (banners.midBanner.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                    child: _BannerStack(banners: banners.midBanner),
-                  ),
-                ),
 
               // Recently viewed
               const SliverToBoxAdapter(child: _RecentlyViewedSection()),

@@ -1535,6 +1535,107 @@ class _TileCarouselState extends State<_TileCarousel> {
   }
 }
 
+// ── Dyn tile carousel (auto-advance, images from home sections API) ───────────
+
+class _DynTileCarousel extends StatefulWidget {
+  final DynTileCarousel item;
+  const _DynTileCarousel({required this.item});
+  @override
+  State<_DynTileCarousel> createState() => _DynTileCarouselState();
+}
+
+class _DynTileCarouselState extends State<_DynTileCarousel> {
+  final _pageCtrl = PageController();
+  int _current = 0;
+  Timer? _timer;
+
+  static const _gradients = [
+    [Color(0xFF1F2E2E), Color(0xFF0A1A1A)],
+    [Color(0xFF1A1A3E), Color(0xFF0A0A1A)],
+    [Color(0xFF2E1A1A), Color(0xFF1A0A0A)],
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.item.images.length > 1) {
+      _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (!mounted) return;
+        final next = (_current + 1) % widget.item.images.length;
+        _pageCtrl.animateToPage(next,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final images = widget.item.images;
+    if (images.isEmpty) return const SizedBox.shrink();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: AspectRatio(
+        aspectRatio: 1920 / 700,
+        child: Stack(children: [
+          PageView.builder(
+            controller: _pageCtrl,
+            itemCount: images.length,
+            onPageChanged: (i) => setState(() => _current = i),
+            itemBuilder: (_, i) {
+              final img = images[i];
+              return GestureDetector(
+                onTap: () => BannerLink.navigate(context, img.linkUrl),
+                child: Stack(fit: StackFit.expand, children: [
+                  CachedNetworkImage(
+                    imageUrl: img.imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                      decoration: BoxDecoration(gradient: LinearGradient(
+                        begin: Alignment.topLeft, end: Alignment.bottomRight,
+                        colors: _gradients[i % _gradients.length],
+                      )),
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      decoration: BoxDecoration(gradient: LinearGradient(
+                        begin: Alignment.topLeft, end: Alignment.bottomRight,
+                        colors: _gradients[i % _gradients.length],
+                      )),
+                    ),
+                  ),
+                ]),
+              );
+            },
+          ),
+          if (images.length > 1)
+            Positioned(
+              bottom: 10, left: 0, right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(images.length, (i) => Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: _current == i ? 18 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: _current == i ? 0.9 : 0.35),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                )),
+              ),
+            ),
+        ]),
+      ),
+    );
+  }
+}
+
 // ── 2-col product grid ────────────────────────────────────────────────────────
 
 class _TwoColGrid extends StatelessWidget {

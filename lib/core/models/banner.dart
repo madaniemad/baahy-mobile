@@ -64,36 +64,17 @@ class BannersData {
   final List<AppBanner> hero;
   final List<AppBanner> heroSide;
   final List<AppBanner> subHero;
-  final List<AppBanner> promoStrip;
-  final List<AppBanner> promoLeft;
-  final List<AppBanner> promoRight;
-  final List<AppBanner> midBanner;
-  final List<AppBanner> fashionBanner;
-  final List<AppBanner> tile1;
-  final List<AppBanner> tile2;
-  final List<AppBanner> tile3;
 
   const BannersData({
     this.initialized = false,
     this.hero = const [],
     this.heroSide = const [],
     this.subHero = const [],
-    this.promoStrip = const [],
-    this.promoLeft = const [],
-    this.promoRight = const [],
-    this.midBanner = const [],
-    this.fashionBanner = const [],
-    this.tile1 = const [],
-    this.tile2 = const [],
-    this.tile3 = const [],
   });
 
   BannersData copyWith({bool? initialized}) => BannersData(
     initialized: initialized ?? this.initialized,
     hero: hero, heroSide: heroSide, subHero: subHero,
-    promoStrip: promoStrip, promoLeft: promoLeft, promoRight: promoRight,
-    midBanner: midBanner, fashionBanner: fashionBanner,
-    tile1: tile1, tile2: tile2, tile3: tile3,
   );
 
   factory BannersData.fromJson(Map<String, dynamic> data) {
@@ -106,14 +87,6 @@ class BannersData {
       hero: _parse('hero'),
       heroSide: _parse('hero_side'),
       subHero: _parse('sub_hero'),
-      promoStrip: _parse('promo_strip'),
-      promoLeft: _parse('promo_left'),
-      promoRight: _parse('promo_right'),
-      midBanner: _parse('mid_banner'),
-      fashionBanner: _parse('fashion_banner'),
-      tile1: _parse('tile_1'),
-      tile2: _parse('tile_2'),
-      tile3: _parse('tile_3'),
     );
   }
 }

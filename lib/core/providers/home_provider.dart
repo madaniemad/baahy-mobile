@@ -88,6 +88,43 @@ class DynStripBanner extends HomeDynamicItem {
   DynStripBanner({required this.imageUrl, this.linkUrl});
 }
 
+class DynFeatured extends HomeDynamicItem {
+  final String titleAr;
+  final String titleEn;
+  final String? viewAllUrl;
+  DynFeatured({required this.titleAr, required this.titleEn, this.viewAllUrl});
+}
+
+class DynDeals extends HomeDynamicItem {
+  final String titleAr;
+  final String titleEn;
+  final String? viewAllUrl;
+  final List<Product> fallbackProducts;
+  DynDeals({required this.titleAr, required this.titleEn, this.viewAllUrl, required this.fallbackProducts});
+}
+
+class DynBrandCarousel extends HomeDynamicItem {
+  final String titleAr;
+  final String titleEn;
+  DynBrandCarousel({required this.titleAr, required this.titleEn});
+}
+
+class TileCarouselImage {
+  final String imageUrl;
+  final String? linkUrl;
+  const TileCarouselImage({required this.imageUrl, this.linkUrl});
+  Map<String, dynamic> toJson() => {'imageUrl': imageUrl, 'linkUrl': linkUrl};
+  factory TileCarouselImage.fromJson(Map<String, dynamic> j) => TileCarouselImage(
+    imageUrl: j['imageUrl'] as String,
+    linkUrl: j['linkUrl'] as String?,
+  );
+}
+
+class DynTileCarousel extends HomeDynamicItem {
+  final List<TileCarouselImage> images;
+  DynTileCarousel({required this.images});
+}
+
 class BannerDuoSection {
   final String? imageUrl;
   final String? imageUrl2;
@@ -217,7 +254,7 @@ class HomeData {
 class HomeNotifier extends StateNotifier<HomeData> {
   final ApiClient _api;
 
-  static const _cacheKey = 'home_data_v11';
+  static const _cacheKey = 'home_data_v12';
   static const _cacheTtl = Duration(minutes: 5);
 
   HomeNotifier(this._api) : super(const HomeData(loading: true)) {
@@ -580,6 +617,28 @@ class HomeNotifier extends StateNotifier<HomeData> {
             showOverlay: (s['show_overlay'] as bool?) ?? false,
           ));
         }
+      } else if (type == 'featured') {
+        orderedSections.add(DynFeatured(
+          titleAr: titleAr, titleEn: titleEn, viewAllUrl: viewAll,
+        ));
+      } else if (type == 'deals') {
+        orderedSections.add(DynDeals(
+          titleAr: titleAr, titleEn: titleEn, viewAllUrl: viewAll,
+          fallbackProducts: prods,
+        ));
+      } else if (type == 'brand_carousel') {
+        orderedSections.add(DynBrandCarousel(titleAr: titleAr, titleEn: titleEn));
+      } else if (type == 'tile_carousel') {
+        final rawImages = s['images'] as List? ?? [];
+        final images = rawImages
+            .whereType<Map<String, dynamic>>()
+            .where((img) => (img['image_url'] as String?)?.isNotEmpty == true)
+            .map((img) => TileCarouselImage(
+              imageUrl: img['image_url'] as String,
+              linkUrl: _ne(img['link_url'] as String?),
+            ))
+            .toList();
+        if (images.isNotEmpty) orderedSections.add(DynTileCarousel(images: images));
       }
     } catch (e, st) { Sentry.captureException(e, stackTrace: st); } }
 
@@ -700,6 +759,22 @@ class HomeNotifier extends StateNotifier<HomeData> {
         'type': 'fashion_cards', 'titleAr': item.titleAr, 'titleEn': item.titleEn,
         'cards': item.cards.map((c) => c.toJson()).toList(),
       };
+      if (item is DynFeatured) return {
+        'type': 'featured', 'titleAr': item.titleAr, 'titleEn': item.titleEn,
+        'viewAllUrl': item.viewAllUrl,
+      };
+      if (item is DynDeals) return {
+        'type': 'deals', 'titleAr': item.titleAr, 'titleEn': item.titleEn,
+        'viewAllUrl': item.viewAllUrl,
+        'products': item.fallbackProducts.map((p) => p.toJson()).toList(),
+      };
+      if (item is DynBrandCarousel) return {
+        'type': 'brand_carousel', 'titleAr': item.titleAr, 'titleEn': item.titleEn,
+      };
+      if (item is DynTileCarousel) return {
+        'type': 'tile_carousel',
+        'images': item.images.map((i) => i.toJson()).toList(),
+      };
       return {'type': 'unknown'};
     }).toList(),
   };
@@ -766,6 +841,30 @@ class HomeNotifier extends StateNotifier<HomeData> {
             cards: cards,
           ));
         }
+      } else if (type == 'featured') {
+        dynSections.add(DynFeatured(
+          titleAr: m['titleAr'] as String? ?? '',
+          titleEn: m['titleEn'] as String? ?? '',
+          viewAllUrl: m['viewAllUrl'] as String?,
+        ));
+      } else if (type == 'deals') {
+        final prods = (m['products'] as List? ?? [])
+            .map((p) => Product.fromJson(p as Map<String, dynamic>)).toList();
+        dynSections.add(DynDeals(
+          titleAr: m['titleAr'] as String? ?? '',
+          titleEn: m['titleEn'] as String? ?? '',
+          viewAllUrl: m['viewAllUrl'] as String?,
+          fallbackProducts: prods,
+        ));
+      } else if (type == 'brand_carousel') {
+        dynSections.add(DynBrandCarousel(
+          titleAr: m['titleAr'] as String? ?? '',
+          titleEn: m['titleEn'] as String? ?? '',
+        ));
+      } else if (type == 'tile_carousel') {
+        final images = (m['images'] as List? ?? [])
+            .map((i) => TileCarouselImage.fromJson(i as Map<String, dynamic>)).toList();
+        if (images.isNotEmpty) dynSections.add(DynTileCarousel(images: images));
       }
     }
 
