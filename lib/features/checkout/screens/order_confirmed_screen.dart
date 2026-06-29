@@ -46,7 +46,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
     final deliveryDays = _deliveryDays(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.col.bg,
       body: SafeArea(
         child: Column(children: [
           // ── scrollable body ──────────────────────────────────────────────
@@ -58,7 +58,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
                 Container(
                   width: 40, height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDDE1E7),
+                    color: context.col.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -101,11 +101,11 @@ class OrderConfirmedScreen extends ConsumerWidget {
                 Text(
                   isAr ? 'تم تسجيل الطلب' : 'Order Placed!',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827),
+                    color: context.col.ink0,
                     height: 1.2,
                   ),
                 ),
@@ -115,10 +115,10 @@ class OrderConfirmedScreen extends ConsumerWidget {
                       ? 'تم حفظ طلبك بنجاح في حسابك'
                       : 'Your order has been saved successfully',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Cairo',
                     fontSize: 14,
-                    color: Color(0xFF6B7280),
+                    color: context.col.ink2,
                     height: 1.5,
                   ),
                 ),
@@ -149,11 +149,11 @@ class OrderConfirmedScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Text(
                         isAr ? 'رقم الطلب' : 'Order #',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cairo',
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF374151),
+                          color: context.col.ink1,
                         ),
                       ),
                     ],
@@ -162,7 +162,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
                 const SizedBox(height: 20),
 
                 // thin divider
-                Container(height: 1, color: const Color(0xFFE5E7EB)),
+                Container(height: 1, color: context.col.border),
                 const SizedBox(height: 16),
 
                 // ── delivery card ─────────────────────────────────────────
@@ -170,9 +170,9 @@ class OrderConfirmedScreen extends ConsumerWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.col.surface,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    border: Border.all(color: context.col.border),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -184,11 +184,11 @@ class OrderConfirmedScreen extends ConsumerWidget {
                           children: [
                             Text(
                               isAr ? 'موعد التوصيل المتوقع' : 'Expected Delivery',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Cairo',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF111827),
+                                color: context.col.ink0,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -207,10 +207,10 @@ class OrderConfirmedScreen extends ConsumerWidget {
                               isAr
                                   ? 'سنوافيك بتحديثات الطلب'
                                   : "We'll keep you updated",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Cairo',
                                 fontSize: 12,
-                                color: Color(0xFF9CA3AF),
+                                color: context.col.ink3,
                               ),
                             ),
                           ],
@@ -236,9 +236,9 @@ class OrderConfirmedScreen extends ConsumerWidget {
                 if (loyaltyRemaining != null || cashbackAmount != null)
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.col.surface,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      border: Border.all(color: context.col.border),
                     ),
                     child: IntrinsicHeight(
                       child: Row(
@@ -263,11 +263,11 @@ class OrderConfirmedScreen extends ConsumerWidget {
                                     const SizedBox(height: 10),
                                     Text(
                                       isAr ? 'نقاط الولاء' : 'Loyalty',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontFamily: 'Cairo',
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF111827),
+                                        color: context.col.ink0,
                                       ),
                                     ),
                                     const SizedBox(height: 3),
@@ -275,10 +275,10 @@ class OrderConfirmedScreen extends ConsumerWidget {
                                       isAr
                                           ? '$loyaltyRemaining طلب أكثر'
                                           : '$loyaltyRemaining more order',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontFamily: 'Cairo',
                                         fontSize: 12,
-                                        color: Color(0xFF6B7280),
+                                        color: context.col.ink2,
                                       ),
                                     ),
                                     Text(
@@ -302,7 +302,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
                               cashbackAmount != null)
                             Container(
                               width: 1,
-                              color: const Color(0xFFE5E7EB),
+                              color: context.col.border,
                             ),
 
                           // cashback column (LEFT in RTL = last)
@@ -325,20 +325,20 @@ class OrderConfirmedScreen extends ConsumerWidget {
                                     const SizedBox(height: 10),
                                     Text(
                                       isAr ? 'كاش باك' : 'Cashback',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontFamily: 'Cairo',
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF111827),
+                                        color: context.col.ink0,
                                       ),
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
                                       isAr ? 'ستحصل على' : "You'll receive",
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontFamily: 'Cairo',
                                         fontSize: 12,
-                                        color: Color(0xFF6B7280),
+                                        color: context.col.ink2,
                                       ),
                                     ),
                                     Text(
@@ -380,11 +380,11 @@ class OrderConfirmedScreen extends ConsumerWidget {
                               ? 'سيُخبرك عند تجهيز طلبك والشحن والتوصيل'
                               : "We'll notify you when your order is prepared, shipped and delivered",
                           textAlign: TextAlign.start,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Cairo',
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF374151),
+                            color: context.col.ink1,
                             height: 1.5,
                           ),
                         ),
@@ -456,26 +456,26 @@ class OrderConfirmedScreen extends ConsumerWidget {
                   child: Container(
                     height: 52,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.col.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: const Color(0xFFD1D5DB), width: 1.2),
+                          color: context.col.border, width: 1.2),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           isAr ? 'مواصلة التسوق' : 'Keep Shopping',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Cairo',
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF111827),
+                            color: context.col.ink0,
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.shopping_bag_outlined,
-                            color: Color(0xFF111827), size: 18),
+                        Icon(Icons.shopping_bag_outlined,
+                            color: context.col.ink0, size: 18),
                       ],
                     ),
                   ),

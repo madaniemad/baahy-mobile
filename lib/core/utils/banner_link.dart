@@ -70,7 +70,7 @@ class BannerLink {
     // /vendor/register — open web in browser (vendor onboarding is web-only)
     if (path == '/vendor/register') {
       launchUrl(
-        Uri.parse('https://baahy-web.vercel.app/vendor/register'),
+        Uri.parse('https://baahy.com/vendor/register'),
         mode: LaunchMode.externalApplication,
       );
       return;

@@ -676,7 +676,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   bool _catExpanded = true;
   bool _priceExpanded = true;
   bool _ratingExpanded = true;
-  bool _attrExpanded = true;
+  Map<int, bool> _attrExpanded = {};
   bool _brandExpanded = true;
   bool _vendorExpanded = true;
   final Set<int> _expandedCats = {};
@@ -888,9 +888,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _sectionHeader(typeLabel, _attrExpanded,
-                                () => setState(() => _attrExpanded = !_attrExpanded)),
-                              if (_attrExpanded) ...[
+                              _sectionHeader(typeLabel, _attrExpanded[attrType.id] ?? true,
+                                () => setState(() => _attrExpanded[attrType.id] = !(_attrExpanded[attrType.id] ?? true))),
+                              if (_attrExpanded[attrType.id] ?? true) ...[
                                 Wrap(
                                   spacing: 8, runSpacing: 8,
                                   children: attrType.values.map((val) {

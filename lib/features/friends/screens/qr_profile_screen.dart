@@ -18,7 +18,7 @@ class QrProfileScreen extends ConsumerStatefulWidget {
 
 class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
   Future<void> _share(String username, int reward) async {
-    final link = 'https://baahy-web.vercel.app/u/$username?reward=$reward';
+    final link = 'https://baahy.com/u/$username?reward=$reward';
     final text = 'أضفني على تطبيق باهي 👋\nستحصل على $reward د.ل عند إتمام أول طلب 🎁\n$link';
     try {
       await Share.share(text);
@@ -85,7 +85,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
                     boxShadow: AppShadows.shadowLifted,
                   ),
                   child: QrImageView(
-                    data: 'https://baahy-web.vercel.app/u/$username?reward=$reward',
+                    data: 'https://baahy.com/u/$username?reward=$reward',
                     version: QrVersions.auto,
                     size: 220,
                   ),

@@ -948,7 +948,10 @@ class _CartItemCard extends ConsumerWidget {
                   // Save for later (RIGHT of trash in RTL)
                   GestureDetector(
                     onTap: () {
-                      ref.read(wishlistProvider.notifier).toggle(item.productId);
+                      // Only add if not already wishlisted — toggle() would remove it
+                      if (!ref.read(wishlistProvider).contains(item.productId)) {
+                        ref.read(wishlistProvider.notifier).toggle(item.productId);
+                      }
                       ref.read(cartProvider.notifier).remove(item.key);
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: Text(context.s.savedToWishlist),

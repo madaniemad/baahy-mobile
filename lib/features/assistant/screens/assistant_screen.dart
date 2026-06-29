@@ -420,24 +420,25 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
         elevation: 0,
         title: Text(context.s.assistantTitle,
             style: const TextStyle(
-                fontFamily: 'Outfit',
+                fontFamily: 'Cairo',
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
                 letterSpacing: 0.3)),
         centerTitle: true,
         actions: [
-          if (_messages.isNotEmpty)
+          if (_messages.isNotEmpty) ...[
+            if (_savedConvos.isNotEmpty)
+              IconButton(
+                icon: Icon(Icons.history_rounded, color: context.col.ink2, size: 22),
+                tooltip: 'المحادثات السابقة',
+                onPressed: _clearConversation,
+              ),
             IconButton(
               icon: Icon(Icons.edit_note_rounded, color: context.col.ink2, size: 22),
               tooltip: 'محادثة جديدة',
               onPressed: _clearConversation,
-            )
-          else if (_savedConvos.isNotEmpty)
-            IconButton(
-              icon: Icon(Icons.history_rounded, color: context.col.ink2, size: 22),
-              tooltip: 'المحادثات السابقة',
-              onPressed: () {},
             ),
+          ],
         ],
       ),
       body: _messages.isEmpty

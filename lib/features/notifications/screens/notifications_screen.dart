@@ -17,9 +17,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(notificationsProvider.notifier).markAllRead();
-    });
   }
 
   @override
@@ -171,7 +168,7 @@ class _NotifCard extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: n.isRead ? Colors.white : AppColors.primary.withValues(alpha: 0.08),
+          color: n.isRead ? context.col.surface : AppColors.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: n.isRead ? context.col.border : AppColors.primary.withValues(alpha: 0.15),

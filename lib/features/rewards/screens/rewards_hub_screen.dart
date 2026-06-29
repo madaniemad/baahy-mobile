@@ -663,7 +663,7 @@ class _ReferralCardState extends ConsumerState<_ReferralCard> {
   Future<void> _share() async {
     if (_code.isEmpty) return;
     final firstName = ((widget.user?.name ?? '') as String).split(' ').first;
-    final inviteLink = 'https://baahy-web.vercel.app/invite/$_code'
+    final inviteLink = 'https://baahy.com/invite/$_code'
         '?from=$firstName&reward=${widget.receiverAmount}';
     final text = context.isAr
         ? '$firstName دعاك للانضمام لباهي!\n'

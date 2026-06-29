@@ -169,7 +169,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.go('/city'),
+      onTap: () async {
+        final prefs = await SharedPreferences.getInstance();
+        final v2Done = prefs.getBool('onboarding_v2_done') ?? false;
+        final hasCity = prefs.getString('city') != null;
+        if (!context.mounted) return;
+        if (v2Done) {
+          context.go('/home');
+        } else if (hasCity) {
+          context.go('/rewards-intro');
+        } else {
+          context.go('/city');
+        }
+      },
       child: Scaffold(
         backgroundColor: _teal,
         body: Stack(children: [

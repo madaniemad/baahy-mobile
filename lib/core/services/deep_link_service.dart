@@ -71,8 +71,8 @@ class DeepLinkService {
     if (uri.scheme == 'baahy' && uri.host == 'invite') {
       return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
     }
-    // Universal link: https://baahy-web.vercel.app/invite/CODE
-    if (uri.host == 'baahy-web.vercel.app' && uri.pathSegments.length >= 2) {
+    // Universal link: https://baahy.com/invite/CODE
+    if (uri.host == 'baahy.com' && uri.pathSegments.length >= 2) {
       if (uri.pathSegments[0] == 'invite') return uri.pathSegments[1];
     }
     // Query param fallback: ?ref=CODE

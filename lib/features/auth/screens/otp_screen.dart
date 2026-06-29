@@ -131,20 +131,23 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   // Hidden field captures all input
                   SizedBox(
                     height: 0,
-                    child: TextField(
-                      controller: _ctrl,
-                      focusNode: _focus,
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      style: const TextStyle(height: 0.001, color: Colors.transparent),
-                      cursorColor: Colors.transparent,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        counterText: '',
-                        contentPadding: EdgeInsets.zero,
+                    child: AutofillGroup(
+                      child: TextField(
+                        controller: _ctrl,
+                        focusNode: _focus,
+                        keyboardType: TextInputType.number,
+                        maxLength: 6,
+                        autofillHints: const [AutofillHints.oneTimeCode],
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        style: const TextStyle(height: 0.001, color: Colors.transparent),
+                        cursorColor: Colors.transparent,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          counterText: '',
+                          contentPadding: EdgeInsets.zero,
+                        ),
                       ),
                     ),
                   ),

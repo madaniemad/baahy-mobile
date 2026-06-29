@@ -1327,7 +1327,7 @@ class _WalletQrSheet extends StatelessWidget {
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4))],
           ),
           child: QrImageView(
-            data: 'https://baahy-web.vercel.app/wallet/send?phone=${Uri.encodeComponent(phone)}',
+            data: 'https://baahy.com/wallet/send?phone=${Uri.encodeComponent(phone)}',
             version: QrVersions.auto,
             size: 200,
             backgroundColor: Colors.white,

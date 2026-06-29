@@ -248,7 +248,7 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
     final firstName = (user?.name ?? '').split(' ').first;
     final inviteLink = Uri(
       scheme: 'https',
-      host: 'baahy-web.vercel.app',
+      host: 'baahy.com',
       path: '/invite/${widget.code}',
       queryParameters: {
         'from': firstName,

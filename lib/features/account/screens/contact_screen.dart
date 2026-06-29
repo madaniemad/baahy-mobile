@@ -149,12 +149,12 @@ class ContactScreen extends ConsumerWidget {
               border: Border.all(color: AppColors.primary.withValues(alpha: 0.20)),
             ),
             child: Row(children: [
-              const Icon(Icons.info_outline_rounded, color: Colors.white, size: 17),
+              Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 17),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   context.s.orderComplaintTip,
-                  style: const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
+                  style: TextStyle(fontSize: 12, color: context.col.ink1, height: 1.5),
                 ),
               ),
             ]),

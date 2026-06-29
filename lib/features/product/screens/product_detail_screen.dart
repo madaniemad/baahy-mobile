@@ -737,7 +737,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () => Share.share(
-                            '${product.nameAr}\nhttps://baahy-web.vercel.app/products/${product.id}'),
+                            '${context.isAr ? product.nameAr : product.name}\nhttps://baahy.com/products/${product.id}'),
                           child: Container(
                             margin: const EdgeInsets.only(right: 4),
                             padding: const EdgeInsets.all(8),

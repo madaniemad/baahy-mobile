@@ -46,6 +46,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
   }
 
   void _next() => context.go('/onboarding');
+  void _skip() => context.go('/home');
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +173,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
         Positioned(
           top: top + 14, left: 16,
           child: GestureDetector(
-            onTap: _next,
+            onTap: _skip,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
