@@ -24,9 +24,8 @@ Baahy (باهي) customer mobile app. Flutter for iOS and Android. Connects to t
 - Hardcoded in `lib/core/api/api_client.dart` (can be overridden via `--dart-define=API_BASE_URL=...`)
 - Mobile hits Cloudways **directly** — no Vercel proxy (unlike web). Imunify360 can block IPs.
 - Auth token stored in `SharedPreferences` under key `auth_token`
-- OTP bypass: code `000000` always works (until WhatsApp/Sendly live)
-- Backend SSH (for emergencies): `REDACTED_HOST` password: `REDACTED`
-- Laravel app path: `/home/REDACTED_PATH`
+- OTP dev bypass exists — see backend `.env` (disabled once WhatsApp/Sendly live)
+- Backend SSH credentials: see Cloudways dashboard (do not commit here)
 
 ## Key Files
 ```
@@ -66,7 +65,7 @@ lib/
 All from `lib/shared/theme/app_theme.dart`:
 
 **Colors:**
-- `AppColors.primary` — `#2563EB` blue (buttons, CTAs)
+- `AppColors.primary` — `#1FD7E2` tiffany (buttons, CTAs)
 - `AppColors.teal` / `teal600` — `#4ECDC4` teal (active nav, links, selections, spinner)
 - `AppColors.ink0–ink4` — text hierarchy (ink0 = primary text, ink3 = placeholder)
 - `AppColors.bg` — `#FAFBFC` page background
@@ -75,7 +74,7 @@ All from `lib/shared/theme/app_theme.dart`:
 - `AppColors.success` — `#1F8A5B` green (delivered, in-stock)
 - `AppColors.gold` — `#D4A82E` star ratings
 
-**Radius:** All corners 10px (`AppRadius.card = 10`, `AppRadius.sm/md/lg/xl`). Pills use `AppRadius.pill = 9999`. NEVER use arbitrary values; always use AppRadius constants.
+**Radius:** All corners 6px (`AppRadius.card = 6`, `AppRadius.sm/md/lg/xl` all = 6). Pills use `AppRadius.pill = 9999`. NEVER use arbitrary values; always use AppRadius constants.
 
 **Shadows:** `AppShadows.shadowCard` — 2-layer subtle shadow for cards.
 
@@ -295,6 +294,6 @@ All search logic is in `app/Http/Controllers/API/ProductController.php`:
 - Map picker in address flow needs real Google Maps API key
 
 ## What This App Does NOT Own
-- Backend PHP code → lives only on Cloudways server (no local git); SSH: `REDACTED_HOST`
+- Backend PHP code → lives only on Cloudways server (no local git); SSH via Cloudways dashboard
 - Admin panel → at `https://api.baahy.com/admin`
 - Web frontend → edit in `baahy-web` project
