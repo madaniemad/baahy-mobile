@@ -55,6 +55,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Map<String, dynamic>? _selectedAddress;
   bool _loading = false;
   bool _waitingForPaypal = false;
+  String? _pendingApprovalUrl;
+  Map<String, dynamic>? _pendingOrderData;
   List<Map<String, dynamic>> _addresses = [];
   double _walletBalance = 0;
   bool _useWallet = false;
@@ -323,14 +325,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       });
 
       SharedPreferences.getInstance().then((p) => p.setString(_kLastPaymentKey, _paymentMethod));
-      if (!isReorder) await ref.read(cartProvider.notifier).clear();
-      ref.read(reorderSessionProvider.notifier).state = null;
-      ref.invalidate(welcomeCouponProvider);
 
       final orderData = Map<String, dynamic>.from(res.data['data'] as Map);
       if (_paymentMethod == 'paypal') {
-        await _handlePayPalPayment(orderData['order_number'] as String, orderData);
+        // Cart, coupon, and reorder session are cleared ONLY after successful PayPal capture
+        await _handlePayPalPayment(orderData['order_number'] as String, orderData, clearCart: !isReorder);
       } else {
+        if (!isReorder) await ref.read(cartProvider.notifier).clear();
+        ref.read(reorderSessionProvider.notifier).state = null;
+        ref.invalidate(welcomeCouponProvider);
         if (mounted) context.pushReplacement('/order-confirmed', extra: orderData);
       }
     } catch (e) {
@@ -355,13 +358,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     super.dispose();
   }
 
-  Future<void> _handlePayPalPayment(String orderNumber, Map<String, dynamic> orderConfirmedData) async {
+  Future<void> _handlePayPalPayment(String orderNumber, Map<String, dynamic> orderConfirmedData, {bool clearCart = true}) async {
     try {
-      final res = await ApiClient.instance.dio.post('/payment/paypal/initiate', data: {
-        'order_number': orderNumber,
-      });
-      final approvalUrl = res.data['approval_url'] as String?;
-      if (approvalUrl == null) throw Exception('No approval URL');
+      final approvalUrl = _pendingApprovalUrl ?? await _initiatePayPal(orderNumber);
+      if (approvalUrl == null) return;
+      setState(() { _pendingApprovalUrl = approvalUrl; _pendingOrderData = orderConfirmedData; });
 
       _paypalSub?.cancel();
       _paypalSub = DeepLinkService.instance.paypalReturnStream.listen((paypalOrderId) async {
@@ -374,8 +375,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             'order_number': orderNumber,
             'paypal_order_id': paypalOrderId,
           });
+          // Only clear cart/coupon after confirmed payment
+          if (clearCart) await ref.read(cartProvider.notifier).clear();
+          ref.read(reorderSessionProvider.notifier).state = null;
+          ref.invalidate(welcomeCouponProvider);
           if (mounted) {
-            setState(() => _loading = false);
+            setState(() { _loading = false; _pendingApprovalUrl = null; _pendingOrderData = null; });
             context.pushReplacement('/order-confirmed', extra: orderConfirmedData);
           }
         } catch (e) {
@@ -403,6 +408,30 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(msg), backgroundColor: AppColors.danger));
       }
+    }
+  }
+
+  Future<String?> _initiatePayPal(String orderNumber) async {
+    try {
+      final res = await ApiClient.instance.dio.post('/payment/paypal/initiate', data: {
+        'order_number': orderNumber,
+      });
+      final url = res.data['approval_url'] as String?;
+      if (url == null) throw Exception('No approval URL');
+      return url;
+    } catch (e) {
+      _paypalSub?.cancel();
+      if (mounted) {
+        setState(() { _loading = false; _waitingForPaypal = false; });
+        String msg = 'فشل بدء الدفع عبر PayPal';
+        if (e is DioException) {
+          final data = e.response?.data;
+          if (data is Map && data['message'] != null) msg = data['message'].toString();
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(msg), backgroundColor: AppColors.danger));
+      }
+      return null;
     }
   }
 
@@ -880,29 +909,55 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ]),
                 const SizedBox(height: 10),
                 if (_waitingForPaypal)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF003087).withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF003087).withValues(alpha: 0.25)),
+                  Column(children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF003087).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF003087).withValues(alpha: 0.25)),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(width: 16, height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF003087))),
+                          SizedBox(width: 10),
+                          Text('في انتظار إتمام الدفع عبر PayPal...',
+                            style: TextStyle(fontFamily: 'Cairo',
+                              color: Color(0xFF003087), fontWeight: FontWeight.w700)),
+                        ],
+                      ),
                     ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 16, height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2,
-                            color: Color(0xFF003087)),
-                        ),
-                        SizedBox(width: 10),
-                        Text('في انتظار إتمام الدفع عبر PayPal...',
-                          style: TextStyle(fontFamily: 'Cairo',
-                            color: Color(0xFF003087), fontWeight: FontWeight.w700)),
-                      ],
+                    const SizedBox(height: 10),
+                    AppButton(
+                      label: 'إعادة فتح PayPal',
+                      icon: const Icon(Icons.open_in_browser_rounded, size: 16, color: Colors.white),
+                      onTap: () {
+                        if (_pendingApprovalUrl != null && _pendingOrderData != null) {
+                          _handlePayPalPayment(
+                            _pendingOrderData!['order_number'] as String,
+                            _pendingOrderData!,
+                            clearCart: true,
+                          );
+                        }
+                      },
                     ),
-                  )
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        _paypalSub?.cancel();
+                        _paypalSub = null;
+                        if (mounted && _pendingOrderData != null) {
+                          setState(() { _waitingForPaypal = false; _pendingApprovalUrl = null; });
+                          context.pushReplacement('/order-confirmed', extra: _pendingOrderData);
+                        }
+                      },
+                      child: const Text('عرض الطلب بدون إتمام الدفع',
+                        style: TextStyle(fontFamily: 'Cairo', color: AppColors.ink3, fontSize: 13)),
+                    ),
+                  ])
                 else
                   AppButton(
                     label: context.s.placeOrder,
