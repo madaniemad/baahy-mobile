@@ -51,10 +51,6 @@ class CartState {
   }
 
   double get deliveryFee {
-    // Vendor-fulfilled items don't use city logistics — only collection fees apply
-    final hasBaahyItems = items.any((i) => i.product.fulfilledByBaahy);
-    if (!hasBaahyItems) return totalCollectionFee;
-
     final base = cityRate != null
         ? cityRate!.effectiveRate(subtotal)
         : (subtotal >= 150 ? 0 : fallbackShippingFee);
