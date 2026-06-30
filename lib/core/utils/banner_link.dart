@@ -25,9 +25,19 @@ class BannerLink {
     final dest = link?.trim() ?? '';
     if (dest.isEmpty) { safePush(context, fallback); return; }
 
-    // External URLs — open in browser
+    // Full Baahy URLs — strip host and treat as internal path
     if (dest.startsWith('http://') || dest.startsWith('https://')) {
-      launchUrl(Uri.parse(dest), mode: LaunchMode.externalApplication);
+      final uri = Uri.tryParse(dest);
+      const baahyHosts = {
+        'baahy.com', 'www.baahy.com',
+        'baahy-web.vercel.app', 'api.baahy.com',
+      };
+      if (uri != null && baahyHosts.contains(uri.host)) {
+        final internal = uri.path + (uri.hasQuery ? '?${uri.query}' : '');
+        navigate(context, internal.isEmpty ? '/' : internal, fallback: fallback);
+      } else {
+        launchUrl(Uri.parse(dest), mode: LaunchMode.externalApplication);
+      }
       return;
     }
 

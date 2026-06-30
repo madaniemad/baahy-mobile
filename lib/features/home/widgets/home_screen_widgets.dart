@@ -1697,16 +1697,17 @@ class _CategoryCarouselSection extends StatelessWidget {
     if (section.products.length < 3) return const SizedBox.shrink();
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final catName = isAr ? section.category.nameAr : section.category.name;
-    final viewAllRoute = section.viewAllUrl != null
-        ? '/search/results?q=${section.viewAllUrl}'
-        : '/search/results?q=&category=${section.category.id}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionHead(
           ar: catName,
           en: catName,
-          onAll: () => safePush(context, viewAllRoute),
+          onAll: () => BannerLink.navigate(
+            context,
+            section.viewAllUrl ?? '/products?category_id=${section.category.id}',
+            fallback: '/search/results?q=&category=${section.category.id}',
+          ),
         ),
         SizedBox(
           height: 340,

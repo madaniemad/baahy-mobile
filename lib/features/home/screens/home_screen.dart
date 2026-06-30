@@ -201,14 +201,10 @@ class HomeScreen extends ConsumerWidget {
                       ar: item.titleAr.isNotEmpty ? item.titleAr : 'منتجات',
                       en: item.titleEn.isNotEmpty ? item.titleEn : 'Products',
                       onAll: item.viewAllUrl != null
-                          ? () {
-                              final isAr = Localizations.localeOf(context).languageCode == 'ar';
-                              safePush(
-                                context,
-                                '/search/results${item.viewAllUrl}',
-                                extra: {'title': isAr ? item.titleAr : item.titleEn},
-                              );
-                            }
+                          ? () => BannerLink.navigate(
+                              context,
+                              '/products${item.viewAllUrl}',
+                            )
                           : null,
                     ),
                   );
