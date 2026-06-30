@@ -21,6 +21,8 @@ class CartState {
   // Fallback estimate shown before city is selected
   final double fallbackShippingFee;
   final double collectionFee;
+  // True while background vendor fee refresh is in progress
+  final bool feesRefreshing;
 
   const CartState({
     this.items = const [],
@@ -29,6 +31,7 @@ class CartState {
     this.cityRate,
     this.fallbackShippingFee = 10.0,
     this.collectionFee = 0,
+    this.feesRefreshing = false,
   });
 
   double get subtotal => items.fold(0, (s, i) => s + i.total);
@@ -78,6 +81,7 @@ class CartState {
     double? fallbackShippingFee,
     double? collectionFee,
     bool clearCoupon = false,
+    bool? feesRefreshing,
   }) => CartState(
     items: items ?? this.items,
     couponCode: clearCoupon ? null : (couponCode ?? this.couponCode),
@@ -85,6 +89,7 @@ class CartState {
     cityRate: clearCityRate ? null : (cityRate ?? this.cityRate),
     fallbackShippingFee: fallbackShippingFee ?? this.fallbackShippingFee,
     collectionFee: collectionFee ?? this.collectionFee,
+    feesRefreshing: feesRefreshing ?? this.feesRefreshing,
   );
 }
 
@@ -118,7 +123,7 @@ class CartNotifier extends StateNotifier<CartState> {
           .toList();
       state = state.copyWith(items: list);
       // Refresh vendor data in background so stale cached collection_fee gets updated
-      _refreshVendorFees(list);
+      await _refreshVendorFees(list);
     } catch (_) {}
   }
 
@@ -128,6 +133,7 @@ class CartNotifier extends StateNotifier<CartState> {
         !i.product.fulfilledByBaahy &&
         i.product.vendor != null).toList();
     if (staleItems.isEmpty) return;
+    state = state.copyWith(feesRefreshing: true);
     final uniqueProductIds = staleItems.map((i) => i.productId).toSet();
     for (final pid in uniqueProductIds) {
       try {
@@ -150,6 +156,7 @@ class CartNotifier extends StateNotifier<CartState> {
         );
       } catch (_) {}
     }
+    state = state.copyWith(feesRefreshing: false);
   }
 
   Future<void> _save() async {

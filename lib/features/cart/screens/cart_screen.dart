@@ -237,6 +237,13 @@ class _CartBodyState extends ConsumerState<_CartBody> {
       safePush(context, '/signin');
       return;
     }
+    // Wait for vendor fee refresh to complete before showing checkout total
+    if (ref.read(cartProvider).feesRefreshing) {
+      await Future.doWhile(() async {
+        await Future.delayed(const Duration(milliseconds: 200));
+        return ref.read(cartProvider).feesRefreshing;
+      });
+    }
     // Block variable items without a variation before hitting the server
     final cartItems = ref.read(cartProvider).items;
     final unresolved = cartItems
@@ -1307,8 +1314,10 @@ class _OrderSummary extends StatelessWidget {
             '− ${fmtPrice(cart.discountAmount)} ${context.s.lyd}',
             valueColor: AppColors.success),
         _Row(context.s.shipping,
-          cart.deliveryFee == 0 ? context.s.free : '${fmtPrice(cart.deliveryFee)} ${context.s.lyd}',
-          valueColor: cart.deliveryFee == 0 ? AppColors.success : null),
+          cart.feesRefreshing
+            ? '...'
+            : (cart.deliveryFee == 0 ? context.s.free : '${fmtPrice(cart.deliveryFee)} ${context.s.lyd}'),
+          valueColor: cart.deliveryFee == 0 && !cart.feesRefreshing ? AppColors.success : null),
         Divider(height: 20, color: context.col.border),
         _Row(context.tr('الإجمالي', 'Total'),
           '${fmtPrice(cart.total)} ${context.s.lyd}',
