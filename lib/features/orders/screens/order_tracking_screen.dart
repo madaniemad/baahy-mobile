@@ -515,8 +515,13 @@ class _OrderItemRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
             child: SizedBox(
               width: 44, height: 44,
-              child: item.productImage != null
-                  ? CachedNetworkImage(imageUrl: item.productImage!, fit: BoxFit.cover)
+              child: item.productImage != null && item.productImage!.startsWith('http')
+                  ? CachedNetworkImage(
+                      imageUrl: item.productImage!,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => Container(color: context.col.bg,
+                          child: Icon(Icons.image_outlined, color: context.col.ink4)),
+                      placeholder: (_, __) => Container(color: context.col.bg))
                   : Container(color: context.col.bg,
                       child: Icon(Icons.image_outlined, color: context.col.ink4)),
             ),

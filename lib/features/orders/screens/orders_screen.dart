@@ -241,7 +241,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         title: Text(context.s.myOrders,
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
         leading: IconButton(
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/account'),
           icon: Icon(Icons.arrow_back, color: context.col.ink0)),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
@@ -386,8 +386,14 @@ class _OrderCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
               child: SizedBox(
                 width: 56, height: 56,
-                child: firstImage != null
-                    ? CachedNetworkImage(imageUrl: firstImage, fit: BoxFit.cover)
+                child: firstImage != null && firstImage.startsWith('http')
+                    ? CachedNetworkImage(
+                        imageUrl: firstImage,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => Container(
+                          color: context.col.surfaceSoft,
+                          child: Icon(Icons.shopping_bag_outlined, color: context.col.ink3, size: 24)),
+                        placeholder: (_, __) => Container(color: context.col.surfaceSoft))
                     : Container(color: context.col.surfaceSoft,
                         child: Icon(Icons.shopping_bag_outlined,
                           color: context.col.ink3, size: 24)),
