@@ -123,18 +123,17 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 
   Future<void> _refreshVendorFees(List<CartItem> items) async {
-    // Only refresh items where vendor collection_fee is missing
+    // Refresh all vendor-fulfilled items so stale cached collection_fee values are corrected
     final staleItems = items.where((i) =>
         !i.product.fulfilledByBaahy &&
-        i.product.vendor != null &&
-        i.product.vendor!.collectionFee == null).toList();
+        i.product.vendor != null).toList();
     if (staleItems.isEmpty) return;
     final uniqueProductIds = staleItems.map((i) => i.productId).toSet();
     for (final pid in uniqueProductIds) {
       try {
         final res = await ApiClient.instance.dio.get('/products/$pid');
         final fresh = Product.fromJson(res.data['data'] as Map<String, dynamic>);
-        if (fresh.vendor?.collectionFee == null) continue;
+        if (fresh.vendor == null) continue;
         state = state.copyWith(
           items: state.items.map((i) {
             if (i.productId == pid) {
