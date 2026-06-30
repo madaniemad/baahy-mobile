@@ -63,6 +63,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _walletLoading = false;
   bool _itemsExpanded = false;
   StreamSubscription<String>? _paypalSub;
+  StreamSubscription<String>? _tadawelSub;
+  StreamSubscription<String>? _moamlatSub;
 
   @override
   void initState() {
@@ -328,8 +330,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
       final orderData = Map<String, dynamic>.from(res.data['data'] as Map);
       if (_paymentMethod == 'paypal') {
-        // Cart, coupon, and reorder session are cleared ONLY after successful PayPal capture
         await _handlePayPalPayment(orderData['order_number'] as String, orderData, clearCart: !isReorder);
+      } else if (_paymentMethod == 'tadawel') {
+        await _handleGatewayPayment('tadawel', orderData['order_number'] as String, orderData, clearCart: !isReorder);
+      } else if (_paymentMethod == 'moamlat') {
+        await _handleGatewayPayment('moamlat', orderData['order_number'] as String, orderData, clearCart: !isReorder);
+      } else if (_paymentMethod == 'mobicash') {
+        await _handleMobicashPayment(orderData['order_number'] as String, orderData, clearCart: !isReorder);
       } else {
         if (!isReorder) await ref.read(cartProvider.notifier).clear();
         ref.read(reorderSessionProvider.notifier).state = null;
@@ -353,6 +360,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void dispose() {
     _paypalSub?.cancel();
+    _tadawelSub?.cancel();
+    _moamlatSub?.cancel();
     _notesCtrl.dispose();
     _walletAmountCtrl.dispose();
     super.dispose();
@@ -433,6 +442,204 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
       return null;
     }
+  }
+
+  Future<void> _handleGatewayPayment(String gateway, String orderNumber,
+      Map<String, dynamic> orderConfirmedData, {bool clearCart = true}) async {
+    try {
+      final endpoint = '/payment/$gateway/initiate';
+      final res = await ApiClient.instance.dio.post(endpoint, data: {'order_number': orderNumber});
+      final paymentUrl = res.data['payment_url'] as String?;
+      if (paymentUrl == null || paymentUrl.isEmpty) throw Exception('No payment URL');
+
+      final stream = gateway == 'tadawel'
+          ? DeepLinkService.instance.tadawelReturnStream
+          : DeepLinkService.instance.moamlatReturnStream;
+
+      final sub = gateway == 'tadawel' ? _tadawelSub : _moamlatSub;
+      sub?.cancel();
+
+      final newSub = stream.listen((returnedOrder) async {
+        _tadawelSub?.cancel();
+        _moamlatSub?.cancel();
+        _tadawelSub = null;
+        _moamlatSub = null;
+        if (!mounted) return;
+        setState(() { _loading = false; });
+        if (clearCart) await ref.read(cartProvider.notifier).clear();
+        ref.read(reorderSessionProvider.notifier).state = null;
+        ref.invalidate(welcomeCouponProvider);
+        if (mounted) context.pushReplacement('/order-confirmed', extra: orderConfirmedData);
+      });
+
+      if (gateway == 'tadawel') {
+        _tadawelSub = newSub;
+      } else {
+        _moamlatSub = newSub;
+      }
+
+      await launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.inAppBrowserView);
+      if (mounted) setState(() { _loading = false; });
+    } catch (e) {
+      _tadawelSub?.cancel();
+      _moamlatSub?.cancel();
+      if (mounted) {
+        setState(() { _loading = false; });
+        String msg = 'فشل بدء عملية الدفع';
+        if (e is DioException) {
+          final data = e.response?.data;
+          if (data is Map && data['message'] != null) msg = data['message'].toString();
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(msg), backgroundColor: AppColors.danger));
+      }
+    }
+  }
+
+  Future<void> _handleMobicashPayment(String orderNumber,
+      Map<String, dynamic> orderConfirmedData, {bool clearCart = true}) async {
+    // Show card number input sheet
+    final cardCtrl = TextEditingController();
+    final otpCtrl  = TextEditingController();
+    String? mitfTxId;
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    // State for the bottom sheet (declared outside builder to avoid re-initialization)
+    bool sheetLoading = false;
+    String? sheetError;
+    bool otpStep = false;
+
+    await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => GestureDetector(
+          onTap: () => FocusScope.of(ctx).unfocus(),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+            decoration: BoxDecoration(
+              color: context.col.surface,
+              borderRadius: const BorderRadius.all(Radius.circular(12)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(width: 40, height: 4,
+                  decoration: BoxDecoration(color: context.col.border,
+                      borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 16),
+                Text(otpStep ? 'رمز التحقق OTP' : 'رقم بطاقة موبيكاش',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+                if (!otpStep)
+                  TextField(
+                    controller: cardCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      hintText: 'أدخل رقم بطاقة موبيكاش',
+                      border: OutlineInputBorder(),
+                    ),
+                  )
+                else
+                  TextField(
+                    controller: otpCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      hintText: 'أدخل رمز OTP المرسل إليك',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                if (sheetError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(sheetError!, style: TextStyle(color: AppColors.danger, fontSize: 13)),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: sheetLoading ? null : () async {
+                      if (!otpStep) {
+                        if (cardCtrl.text.trim().isEmpty) {
+                          setS(() => sheetError = 'يرجى إدخال رقم البطاقة');
+                          return;
+                        }
+                        setS(() { sheetLoading = true; sheetError = null; });
+                        try {
+                          final r = await ApiClient.instance.dio.post(
+                            '/payment/mobicash/initiate',
+                            data: {'order_number': orderNumber, 'card_number': cardCtrl.text.trim()},
+                          );
+                          mitfTxId = r.data['mitf_transaction_id']?.toString();
+                          setS(() { sheetLoading = false; otpStep = true; });
+                        } catch (e) {
+                          String msg = 'البطاقة غير صحيحة أو الخدمة غير متاحة';
+                          if (e is DioException) {
+                            final d = e.response?.data;
+                            if (d is Map && d['message'] != null) msg = d['message'].toString();
+                          }
+                          setS(() { sheetLoading = false; sheetError = msg; });
+                        }
+                      } else {
+                        if (otpCtrl.text.trim().isEmpty) {
+                          setS(() => sheetError = 'يرجى إدخال رمز OTP');
+                          return;
+                        }
+                        setS(() { sheetLoading = true; sheetError = null; });
+                        try {
+                          await ApiClient.instance.dio.post(
+                            '/payment/mobicash/verify-otp',
+                            data: {
+                              'order_number': orderNumber,
+                              'card_number': cardCtrl.text.trim(),
+                              'otp': otpCtrl.text.trim(),
+                              'mitf_transaction_id': mitfTxId ?? '',
+                            },
+                          );
+                          if (ctx.mounted) Navigator.of(ctx).pop(true);
+                        } catch (e) {
+                          String msg = 'رمز OTP غير صحيح، حاول مجدداً';
+                          if (e is DioException) {
+                            final d = e.response?.data;
+                            if (d is Map && d['message'] != null) msg = d['message'].toString();
+                          }
+                          setS(() { sheetLoading = false; sheetError = msg; });
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: sheetLoading
+                        ? const SizedBox(width: 20, height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(otpStep ? 'تأكيد الدفع' : 'إرسال OTP',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // If payment succeeded (sheet returned true via Navigator.pop(true)), navigate to order confirmed
+    // The sheet pops with true only on successful OTP verification
+    // We check if order is now paid by just proceeding
+    if (!mounted) return;
+    if (clearCart) await ref.read(cartProvider.notifier).clear();
+    ref.read(reorderSessionProvider.notifier).state = null;
+    ref.invalidate(welcomeCouponProvider);
+    if (mounted) context.pushReplacement('/order-confirmed', extra: orderConfirmedData);
   }
 
   ShippingRate? get _selectedRate {

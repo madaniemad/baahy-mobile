@@ -19,6 +19,13 @@ class DeepLinkService {
   final _paypalController = StreamController<String>.broadcast();
   Stream<String> get paypalReturnStream => _paypalController.stream;
 
+  // Broadcast streams for Tadawel and Moamlat order returns
+  final _tadawelController = StreamController<String>.broadcast();
+  Stream<String> get tadawelReturnStream => _tadawelController.stream;
+
+  final _moamlatController = StreamController<String>.broadcast();
+  Stream<String> get moamlatReturnStream => _moamlatController.stream;
+
   void setContainer(ProviderContainer container) {
     _container = container;
   }
@@ -44,6 +51,8 @@ class DeepLinkService {
   void dispose() {
     _sub?.cancel();
     _paypalController.close();
+    _tadawelController.close();
+    _moamlatController.close();
   }
 
   Future<void> _handleUri(Uri uri) async {
@@ -53,6 +62,28 @@ class DeepLinkService {
       final token = uri.queryParameters['token'];
       if (token != null && token.isNotEmpty) {
         _paypalController.add(token);
+      }
+      return;
+    }
+
+    // Tadawel return: baahy://payment/tadawel/return?order=ORD-123
+    if (uri.scheme == 'baahy' && uri.host == 'payment' &&
+        uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'tadawel' &&
+        uri.pathSegments[1] == 'return') {
+      final order = uri.queryParameters['order'];
+      if (order != null && order.isNotEmpty) {
+        _tadawelController.add(order);
+      }
+      return;
+    }
+
+    // Moamlat return: baahy://payment/moamlat/return?order=ORD-123
+    if (uri.scheme == 'baahy' && uri.host == 'payment' &&
+        uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'moamlat' &&
+        uri.pathSegments[1] == 'return') {
+      final order = uri.queryParameters['order'];
+      if (order != null && order.isNotEmpty) {
+        _moamlatController.add(order);
       }
       return;
     }
