@@ -81,7 +81,7 @@ class BannerLink {
     }
 
     // Direct app routes that match 1:1
-    const directRoutes = {'/cart', '/wishlist', '/notifications', '/account', '/browse'};
+    const directRoutes = {'/cart', '/wishlist', '/notifications', '/account', '/browse', '/friends', '/referral'};
     if (directRoutes.contains(path)) { safePush(context, path); return; }
 
     // /vendor/register — open web in browser (vendor onboarding is web-only)
