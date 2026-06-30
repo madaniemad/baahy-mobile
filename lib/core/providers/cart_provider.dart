@@ -207,11 +207,11 @@ class CartNotifier extends StateNotifier<CartState> {
   Future<String?> applyCoupon(String code) async {
     if (code.trim().isEmpty) return 'أدخل رمز الكوبون';
     try {
-      final res = await ApiClient.instance.dio.post('/coupons/validate', data: {
+      final res = await ApiClient.instance.dio.post('/coupons/apply', data: {
         'code': code.trim(),
-        'subtotal': state.subtotal,
+        'order_total': state.subtotal,
       });
-      final raw = res.data['data']?['discount_amount'];
+      final raw = res.data['data']?['discount'] ?? res.data['data']?['discount_amount'];
       final discount = raw is num ? raw.toDouble() : double.tryParse(raw?.toString() ?? '') ?? 0.0;
       state = state.copyWith(couponCode: code.trim(), discountAmount: discount);
       return null;
