@@ -17,6 +17,7 @@ import 'navigation.dart';
 ///   /vendor/register                     → vendor registration page (web)
 ///   /cart                                → cart
 ///   /wishlist                            → wishlist
+///   /rewards                             → loyalty rewards hub
 ///   https://...                          → open in browser
 class BannerLink {
   BannerLink._();
@@ -70,6 +71,12 @@ class BannerLink {
       if (q['featured'] == 'true')      params.write('&sort=featured');
       if (q['sort'] != null && q['sort'] != 'featured') params.write('&sort=${q['sort']}');
       safePush(context, '/search/results?$params');
+      return;
+    }
+
+    // /rewards or /rewards-hub → loyalty hub
+    if (path == '/rewards' || path == '/rewards-hub') {
+      safePush(context, '/rewards-hub');
       return;
     }
 
