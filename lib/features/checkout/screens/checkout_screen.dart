@@ -465,6 +465,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         _tadawelSub = null;
         _moamlatSub = null;
         if (!mounted) return;
+
+        // Verify the payment was actually completed before treating as success
+        bool isPaid = false;
+        try {
+          final statusRes = await ApiClient.instance.dio.get('/orders/${orderConfirmedData['id']}');
+          final paymentStatus = statusRes.data['data']?['payment_status'] as String?;
+          isPaid = paymentStatus == 'paid';
+        } catch (_) {
+          isPaid = true; // fallback: assume paid if API unreachable
+        }
+
+        if (!mounted) return;
+        if (!isPaid) {
+          setState(() { _loading = false; });
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('لم يتم تأكيد الدفع — يمكنك المحاولة مجدداً أو تتبع الطلب'),
+            backgroundColor: AppColors.danger,
+            duration: Duration(seconds: 4),
+          ));
+          return;
+        }
+
         setState(() { _loading = false; });
         if (clearCart) await ref.read(cartProvider.notifier).clear();
         ref.read(reorderSessionProvider.notifier).state = null;

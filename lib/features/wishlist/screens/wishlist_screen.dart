@@ -28,6 +28,10 @@ class WishlistScreen extends ConsumerWidget {
     final isLoggedIn = ref.watch(authProvider).isLoggedIn;
     final wishlistIds = ref.watch(wishlistProvider);
     final productsAsync = ref.watch(wishlistProductsProvider);
+    final displayCount = productsAsync.maybeWhen(
+      data: (p) => p.length,
+      orElse: () => wishlistIds.length,
+    );
 
     if (!isLoggedIn) {
       return Scaffold(
@@ -72,7 +76,7 @@ class WishlistScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: context.col.surface,
         elevation: 0,
-        title: Text('${context.s.wishlistTitle} (${wishlistIds.length})',
+        title: Text('${context.s.wishlistTitle} ($displayCount)',
             style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
       ),
       body: productsAsync.when(

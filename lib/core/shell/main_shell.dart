@@ -72,7 +72,10 @@ class MainShell extends ConsumerWidget {
     final currentTabIdx = tabs.indexWhere((t) => t.branchIdx == currentBranch);
 
     final cartCount     = ref.watch(cartProvider.select((s) => s.count));
-    final wishlistCount = ref.watch(wishlistProvider.select((s) => s.length));
+    final wishlistCount = ref.watch(wishlistProductsProvider).maybeWhen(
+      data: (products) => products.length,
+      orElse: () => ref.watch(wishlistProvider.select((s) => s.length)),
+    );
     final unreadCount   = ref.watch(notificationsProvider.select(
         (list) => list.where((n) => !n.isRead).length));
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
