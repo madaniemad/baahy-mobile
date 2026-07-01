@@ -66,24 +66,24 @@ class DeepLinkService {
       return;
     }
 
-    // Tadawel return: baahy://payment/tadawel/return?order=ORD-123
+    // Tadawel return: baahy://payment/tadawel/return?ref=UUID
     if (uri.scheme == 'baahy' && uri.host == 'payment' &&
         uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'tadawel' &&
         uri.pathSegments[1] == 'return') {
-      final order = uri.queryParameters['order'];
-      if (order != null && order.isNotEmpty) {
-        _tadawelController.add(order);
+      final ref = uri.queryParameters['ref'] ?? uri.queryParameters['order'];
+      if (ref != null && ref.isNotEmpty) {
+        _tadawelController.add(ref);
       }
       return;
     }
 
-    // Moamlat return: baahy://payment/moamlat/return?order=ORD-123
+    // Moamlat return: baahy://payment/moamlat/return?ref=UUID
     if (uri.scheme == 'baahy' && uri.host == 'payment' &&
         uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'moamlat' &&
         uri.pathSegments[1] == 'return') {
-      final order = uri.queryParameters['order'];
-      if (order != null && order.isNotEmpty) {
-        _moamlatController.add(order);
+      final ref = uri.queryParameters['ref'] ?? uri.queryParameters['order'];
+      if (ref != null && ref.isNotEmpty) {
+        _moamlatController.add(ref);
       }
       return;
     }

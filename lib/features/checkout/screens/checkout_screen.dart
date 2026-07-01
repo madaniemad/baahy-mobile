@@ -56,7 +56,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _loading = false;
   bool _waitingForPaypal = false;
   String? _pendingApprovalUrl;
-  Map<String, dynamic>? _pendingOrderData;
+  String? _pendingRef;
   List<Map<String, dynamic>> _addresses = [];
   double _walletBalance = 0;
   bool _useWallet = false;
@@ -328,16 +328,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
       SharedPreferences.getInstance().then((p) => p.setString(_kLastPaymentKey, _paymentMethod));
 
-      final orderData = Map<String, dynamic>.from(res.data['data'] as Map);
-      if (_paymentMethod == 'paypal') {
-        await _handlePayPalPayment(orderData['order_number'] as String, orderData, clearCart: !isReorder);
-      } else if (_paymentMethod == 'tadawel') {
-        await _handleGatewayPayment('tadawel', orderData['order_number'] as String, orderData, clearCart: !isReorder);
-      } else if (_paymentMethod == 'moamlat') {
-        await _handleGatewayPayment('moamlat', orderData['order_number'] as String, orderData, clearCart: !isReorder);
-      } else if (_paymentMethod == 'mobicash') {
-        await _handleMobicashPayment(orderData['order_number'] as String, orderData, clearCart: !isReorder);
+      final resData = res.data;
+      // Gateway payments return pending_ref; COD/wallet return data.data directly
+      final pendingRef = resData['pending_ref'] as String?;
+      if (pendingRef != null) {
+        setState(() => _pendingRef = pendingRef);
+        if (_paymentMethod == 'paypal') {
+          await _handlePayPalPayment(pendingRef, clearCart: !isReorder);
+        } else if (_paymentMethod == 'tadawel') {
+          await _handleGatewayPayment('tadawel', pendingRef, clearCart: !isReorder);
+        } else if (_paymentMethod == 'moamlat') {
+          await _handleGatewayPayment('moamlat', pendingRef, clearCart: !isReorder);
+        } else if (_paymentMethod == 'mobicash') {
+          await _handleMobicashPayment(pendingRef, clearCart: !isReorder);
+        }
       } else {
+        // COD / wallet — order created immediately
+        final orderData = Map<String, dynamic>.from(resData['data'] as Map);
         if (!isReorder) await ref.read(cartProvider.notifier).clear();
         ref.read(reorderSessionProvider.notifier).state = null;
         ref.invalidate(welcomeCouponProvider);
@@ -367,11 +374,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     super.dispose();
   }
 
-  Future<void> _handlePayPalPayment(String orderNumber, Map<String, dynamic> orderConfirmedData, {bool clearCart = true}) async {
+  Future<void> _handlePayPalPayment(String pendingRef, {bool clearCart = true}) async {
     try {
-      final approvalUrl = _pendingApprovalUrl ?? await _initiatePayPal(orderNumber);
+      final approvalUrl = _pendingApprovalUrl ?? await _initiatePayPal(pendingRef);
       if (approvalUrl == null) return;
-      setState(() { _pendingApprovalUrl = approvalUrl; _pendingOrderData = orderConfirmedData; });
+      setState(() { _pendingApprovalUrl = approvalUrl; });
 
       _paypalSub?.cancel();
       _paypalSub = DeepLinkService.instance.paypalReturnStream.listen((paypalOrderId) async {
@@ -380,17 +387,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         if (!mounted) return;
         setState(() { _loading = true; _waitingForPaypal = false; });
         try {
-          await ApiClient.instance.dio.post('/payment/paypal/capture', data: {
-            'order_number': orderNumber,
+          final captureRes = await ApiClient.instance.dio.post('/payment/paypal/capture', data: {
+            'pending_ref': pendingRef,
             'paypal_order_id': paypalOrderId,
           });
-          // Only clear cart/coupon after confirmed payment
+          final orderId = captureRes.data['order_id'];
+          Map<String, dynamic> orderData = {
+            'id': orderId,
+            'order_number': captureRes.data['order_number'] ?? '',
+          };
+          try {
+            final orderRes = await ApiClient.instance.dio.get('/orders/$orderId');
+            orderData = Map<String, dynamic>.from(orderRes.data['data'] as Map);
+          } catch (_) {}
           if (clearCart) await ref.read(cartProvider.notifier).clear();
           ref.read(reorderSessionProvider.notifier).state = null;
           ref.invalidate(welcomeCouponProvider);
           if (mounted) {
-            setState(() { _loading = false; _pendingApprovalUrl = null; _pendingOrderData = null; });
-            context.pushReplacement('/order-confirmed', extra: orderConfirmedData);
+            setState(() { _loading = false; _pendingApprovalUrl = null; _pendingRef = null; });
+            context.pushReplacement('/order-confirmed', extra: orderData);
           }
         } catch (e) {
           if (mounted) {
@@ -420,10 +435,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
-  Future<String?> _initiatePayPal(String orderNumber) async {
+  Future<String?> _initiatePayPal(String pendingRef) async {
     try {
       final res = await ApiClient.instance.dio.post('/payment/paypal/initiate', data: {
-        'order_number': orderNumber,
+        'pending_ref': pendingRef,
+        'platform': 'mobile',
       });
       final url = res.data['approval_url'] as String?;
       if (url == null) throw Exception('No approval URL');
@@ -444,11 +460,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
-  Future<void> _handleGatewayPayment(String gateway, String orderNumber,
-      Map<String, dynamic> orderConfirmedData, {bool clearCart = true}) async {
+  Future<void> _handleGatewayPayment(String gateway, String pendingRef, {bool clearCart = true}) async {
     try {
       final endpoint = '/payment/$gateway/initiate';
-      final res = await ApiClient.instance.dio.post(endpoint, data: {'order_number': orderNumber});
+      final res = await ApiClient.instance.dio.post(endpoint, data: {
+        'pending_ref': pendingRef,
+        'platform': 'mobile',
+      });
       final paymentUrl = res.data['payment_url'] as String?;
       if (paymentUrl == null || paymentUrl.isEmpty) throw Exception('No payment URL');
 
@@ -459,26 +477,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final sub = gateway == 'tadawel' ? _tadawelSub : _moamlatSub;
       sub?.cancel();
 
-      final newSub = stream.listen((returnedOrder) async {
+      final newSub = stream.listen((_) async {
         _tadawelSub?.cancel();
         _moamlatSub?.cancel();
         _tadawelSub = null;
         _moamlatSub = null;
         if (!mounted) return;
+        setState(() => _loading = true);
 
-        // Verify the payment was actually completed before treating as success
-        bool isPaid = false;
-        try {
-          final statusRes = await ApiClient.instance.dio.get('/orders/${orderConfirmedData['id']}');
-          final paymentStatus = statusRes.data['data']?['payment_status'] as String?;
-          isPaid = paymentStatus == 'paid';
-        } catch (_) {
-          isPaid = true; // fallback: assume paid if API unreachable
+        // Poll pending-status until order is confirmed (max 15 attempts = 30s)
+        Map<String, dynamic>? result;
+        for (int i = 0; i < 15; i++) {
+          try {
+            final statusRes = await ApiClient.instance.dio.get('/payment/pending-status/$pendingRef');
+            final status = statusRes.data['status'] as String?;
+            if (status == 'completed') { result = Map<String, dynamic>.from(statusRes.data as Map); break; }
+            if (status == 'failed') break;
+          } catch (_) {}
+          await Future.delayed(const Duration(seconds: 2));
         }
 
         if (!mounted) return;
-        if (!isPaid) {
-          setState(() { _loading = false; });
+        if (result == null) {
+          setState(() => _loading = false);
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('لم يتم تأكيد الدفع — يمكنك المحاولة مجدداً أو تتبع الطلب'),
             backgroundColor: AppColors.danger,
@@ -487,11 +508,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           return;
         }
 
-        setState(() { _loading = false; });
+        final orderId = result['order_id'];
+        Map<String, dynamic> orderData = {'id': orderId, 'order_number': result['order_number'] ?? ''};
+        try {
+          final orderRes = await ApiClient.instance.dio.get('/orders/$orderId');
+          orderData = Map<String, dynamic>.from(orderRes.data['data'] as Map);
+        } catch (_) {}
+
         if (clearCart) await ref.read(cartProvider.notifier).clear();
         ref.read(reorderSessionProvider.notifier).state = null;
         ref.invalidate(welcomeCouponProvider);
-        if (mounted) context.pushReplacement('/order-confirmed', extra: orderConfirmedData);
+        if (mounted) {
+          setState(() { _loading = false; _pendingRef = null; });
+          context.pushReplacement('/order-confirmed', extra: orderData);
+        }
       });
 
       if (gateway == 'tadawel') {
@@ -518,8 +548,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
-  Future<void> _handleMobicashPayment(String orderNumber,
-      Map<String, dynamic> orderConfirmedData, {bool clearCart = true}) async {
+  Future<void> _handleMobicashPayment(String pendingRef, {bool clearCart = true}) async {
     // Show card number input sheet
     final cardCtrl = TextEditingController();
     final otpCtrl  = TextEditingController();
@@ -533,7 +562,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     String? sheetError;
     bool otpStep = false;
 
-    final bool? paid = await showModalBottomSheet<bool>(
+    final Map<String, dynamic>? result = await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -595,7 +624,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         try {
                           final r = await ApiClient.instance.dio.post(
                             '/payment/mobicash/initiate',
-                            data: {'order_number': orderNumber, 'card_number': cardCtrl.text.trim()},
+                            data: {'pending_ref': pendingRef, 'card_number': cardCtrl.text.trim()},
                           );
                           mitfTxId = r.data['mitf_transaction_id']?.toString();
                           setS(() { sheetLoading = false; otpStep = true; });
@@ -614,16 +643,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         }
                         setS(() { sheetLoading = true; sheetError = null; });
                         try {
-                          await ApiClient.instance.dio.post(
+                          final r = await ApiClient.instance.dio.post(
                             '/payment/mobicash/verify-otp',
                             data: {
-                              'order_number': orderNumber,
+                              'pending_ref': pendingRef,
                               'card_number': cardCtrl.text.trim(),
                               'otp': otpCtrl.text.trim(),
                               'mitf_transaction_id': mitfTxId ?? '',
                             },
                           );
-                          if (ctx.mounted) Navigator.of(ctx).pop(true);
+                          if (ctx.mounted) {
+                            Navigator.of(ctx).pop<Map<String, dynamic>>({
+                              'id': r.data['order_id'],
+                              'order_number': r.data['order_number'] ?? '',
+                            });
+                          }
                         } catch (e) {
                           String msg = 'رمز OTP غير صحيح، حاول مجدداً';
                           if (e is DioException) {
@@ -654,12 +688,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ),
     );
 
-    if (paid != true) return;
+    if (result == null) return;
     if (!mounted) return;
+
+    // Fetch full order data for the confirmation screen
+    Map<String, dynamic> orderData = result;
+    final orderId = result['id'];
+    if (orderId != null) {
+      try {
+        final orderRes = await ApiClient.instance.dio.get('/orders/$orderId');
+        orderData = Map<String, dynamic>.from(orderRes.data['data'] as Map);
+      } catch (_) {}
+    }
+
     if (clearCart) await ref.read(cartProvider.notifier).clear();
     ref.read(reorderSessionProvider.notifier).state = null;
     ref.invalidate(welcomeCouponProvider);
-    if (mounted) context.pushReplacement('/order-confirmed', extra: orderConfirmedData);
+    setState(() => _pendingRef = null);
+    if (mounted) context.pushReplacement('/order-confirmed', extra: orderData);
   }
 
   ShippingRate? get _selectedRate {
@@ -1165,12 +1211,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       label: 'إعادة فتح PayPal',
                       icon: const Icon(Icons.open_in_browser_rounded, size: 16, color: Colors.white),
                       onTap: () {
-                        if (_pendingApprovalUrl != null && _pendingOrderData != null) {
-                          _handlePayPalPayment(
-                            _pendingOrderData!['order_number'] as String,
-                            _pendingOrderData!,
-                            clearCart: true,
-                          );
+                        if (_pendingRef != null) {
+                          _handlePayPalPayment(_pendingRef!, clearCart: true);
                         }
                       },
                     ),
@@ -1179,12 +1221,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       onPressed: () {
                         _paypalSub?.cancel();
                         _paypalSub = null;
-                        if (mounted && _pendingOrderData != null) {
-                          setState(() { _waitingForPaypal = false; _pendingApprovalUrl = null; });
-                          context.pushReplacement('/order-confirmed', extra: _pendingOrderData);
+                        if (mounted) {
+                          setState(() {
+                            _waitingForPaypal = false;
+                            _pendingApprovalUrl = null;
+                            _pendingRef = null;
+                          });
+                          context.go('/home');
                         }
                       },
-                      child: const Text('عرض الطلب بدون إتمام الدفع',
+                      child: const Text('إلغاء والعودة للرئيسية',
                         style: TextStyle(fontFamily: 'Cairo', color: AppColors.ink3, fontSize: 13)),
                     ),
                   ])
