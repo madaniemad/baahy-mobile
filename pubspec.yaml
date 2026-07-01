@@ -58,6 +58,7 @@ dependencies:
   # Social / QR
   qr_flutter: ^4.1.0
   app_links: ^6.3.4
+  webview_flutter: ^4.10.0
 
   # File storage (PDF invoice download)
   path_provider: ^2.1.4
@@ -83,6 +84,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/payment/
     - assets/icons/
 
   fonts:

@@ -305,7 +305,7 @@ class _StripTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             color: isDark ? Colors.transparent : const Color(0xFFE8F8F8),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isDark ? AppColors.teal : const Color(0xFFE0E0E0),
               width: isDark ? 1.4 : 1,
@@ -399,9 +399,15 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
   Widget build(BuildContext context) {
     if (widget.banners.isEmpty) return const _HeroBannerFallback();
 
-    return AspectRatio(
-      aspectRatio: 1400 / 480,
-      child: Stack(
+    return LayoutBuilder(builder: (context, constraints) {
+      // Slide width = 90% of full width minus horizontal padding (6px each side).
+      // Height must equal slideWidth / imageRatio so BoxFit.cover shows no crop.
+      const imageRatio = 2105.0 / 747.0;
+      final slideWidth = constraints.maxWidth * 0.9 - 12.0;
+      final bannerHeight = slideWidth / imageRatio;
+      return SizedBox(
+        height: bannerHeight,
+        child: Stack(
         clipBehavior: Clip.none,
         children: [
           // LTR wrapper: normalises scroll direction regardless of app RTL locale.
@@ -422,7 +428,7 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                     child: _BannerSlide(
                       banner: widget.banners[idx],
                       gradient: _gradients[idx % _gradients.length],
@@ -450,7 +456,8 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
               ),
           ],
         ),
-    );
+      );
+    });
   }
 }
 
@@ -559,7 +566,7 @@ class _HeroBannerFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const AspectRatio(
-      aspectRatio: 1400 / 480,
+      aspectRatio: 2105 / 747,
       child: _BannerSkeleton(),
     );
   }
@@ -599,7 +606,7 @@ class _BannerSkeletonState extends State<_BannerSkeleton> with SingleTickerProvi
         margin: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
           color: Color.lerp(base, light, _anim.value),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );
@@ -645,7 +652,7 @@ class _SubHeroBannerState extends State<_SubHeroBanner> {
     return GestureDetector(
       onTap: () => BannerLink.navigate(context, banner.buttonLink),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
         child: AspectRatio(
           aspectRatio: 1920 / 350,
           child: AnimatedSwitcher(
@@ -687,7 +694,7 @@ class _BannerStack extends StatelessWidget {
         for (int i = 0; i < banners.length; i++) ...[
           if (i > 0) const SizedBox(height: 10),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
             child: AspectRatio(
               aspectRatio: aspectRatio,
               child: _BannerSlide(
@@ -725,7 +732,7 @@ class _DuoBannerRow extends StatelessWidget {
         child: GestureDetector(
           onTap: () { if (link != null && link.isNotEmpty) BannerLink.navigate(context, link); },
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
             child: AspectRatio(
               aspectRatio: 1,
               child: Stack(
@@ -829,9 +836,9 @@ class _SingleBannerSection extends StatelessWidget {
     return GestureDetector(
       onTap: () { if (item.linkUrl != null) BannerLink.navigate(context, item.linkUrl!); },
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
         child: AspectRatio(
-          aspectRatio: 1920 / 700,
+          aspectRatio: 2105 / 747,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -872,9 +879,8 @@ class _PromiseStrip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: context.col.border),
-        boxShadow: AppShadows.shadowCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E4E4)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -902,7 +908,7 @@ class _PromiseChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Column(children: [
-      Icon(icon, size: 18, color: AppColors.primary),
+      Icon(icon, size: 18, color: context.col.ink0),
       const SizedBox(height: 3),
       Text(isAr ? ar : en,
         style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.col.ink1),
@@ -948,7 +954,7 @@ class _CategoryImagesCarousel extends StatelessWidget {
                   child: Column(
                     children: [
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(12),
                         child: CachedNetworkImage(
                           imageUrl: cat.image!,
                           width: 72, height: 72,
@@ -1024,7 +1030,7 @@ class _DealsHead extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
           decoration: BoxDecoration(
             color: AppColors.danger,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(Icons.bolt_rounded, size: 14, color: Colors.white),
         ),
@@ -1238,7 +1244,7 @@ class _DynFashionCardsSection extends StatelessWidget {
               return GestureDetector(
                 onTap: () => BannerLink.navigate(context, card.linkUrl),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                   child: SizedBox(
                     width: cardW,
                     height: cardH,
@@ -1350,7 +1356,7 @@ class _FashionTile extends StatelessWidget {
     return GestureDetector(
       onTap: () => BannerLink.navigate(context, banner.buttonLink),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
         child: SizedBox(
           width: width,
           height: height,
@@ -1457,7 +1463,7 @@ class _BrandCarousel extends StatelessWidget {
                   width: _tileW,
                   height: _tileH,
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     child: brand.imageUrl.isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: brand.imageUrl,
@@ -1527,9 +1533,9 @@ class _TileCarouselState extends State<_TileCarousel> {
   Widget build(BuildContext context) {
     if (widget.banners.isEmpty) return const SizedBox.shrink();
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(12),
       child: AspectRatio(
-        aspectRatio: 1920 / 700,
+        aspectRatio: 2105 / 747,
         child: Stack(children: [
           PageView.builder(
             controller: _pageCtrl,
@@ -1608,9 +1614,9 @@ class _DynTileCarouselState extends State<_DynTileCarousel> {
     final images = widget.item.images;
     if (images.isEmpty) return const SizedBox.shrink();
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(12),
       child: AspectRatio(
-        aspectRatio: 1920 / 700,
+        aspectRatio: 2105 / 747,
         child: Stack(children: [
           PageView.builder(
             controller: _pageCtrl,
@@ -1803,7 +1809,7 @@ class _BudgetCarousel extends StatelessWidget {
           return GestureDetector(
             onTap: () => safePush(context, '/product/${p.id}'),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(12),
               child: Stack(fit: StackFit.expand, children: [
                 p.firstImage != null
                     ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover,
@@ -1815,7 +1821,7 @@ class _BudgetCarousel extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
                       color: AppColors.danger.withValues(alpha: 0.92),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text('${fmtPrice(p.displayPrice)} ${context.s.lydUnit}',
                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
@@ -1841,7 +1847,7 @@ class _BaahyPromiseCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
         gradient: LinearGradient(
           begin: Alignment.topLeft, end: Alignment.bottomRight,
           colors: [context.col.ink0, Color(0xFF1A3838)],
@@ -1978,7 +1984,7 @@ class _RewardsNudgeCard extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: isDk ? Colors.transparent : color.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: color.withValues(alpha: isDk ? 0.45 : 0.25)),
               ),
               child: Row(
@@ -2084,17 +2090,17 @@ class _HomeSkeleton extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Column(children: [
         Container(height: 130, decoration: BoxDecoration(
-          color: context.col.surfaceSoft, borderRadius: BorderRadius.circular(6))),
+          color: context.col.surfaceSoft, borderRadius: BorderRadius.circular(12))),
         const SizedBox(height: 14),
         Container(height: 54, decoration: BoxDecoration(
-          color: context.col.surfaceSoft, borderRadius: BorderRadius.circular(6))),
+          color: context.col.surfaceSoft, borderRadius: BorderRadius.circular(12))),
         const SizedBox(height: 24),
         Wrap(spacing: 10, runSpacing: 10,
           children: List.generate(8, (_) => Container(
             width: (MediaQuery.of(context).size.width - 82) / 4,
             height: 80,
             decoration: BoxDecoration(
-              color: context.col.surfaceSoft, borderRadius: BorderRadius.circular(6))))),
+              color: context.col.surfaceSoft, borderRadius: BorderRadius.circular(12))))),
         const SizedBox(height: 24),
         SizedBox(
           height: 320,

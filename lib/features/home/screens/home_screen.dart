@@ -120,7 +120,7 @@ class HomeScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: isDark ? context.col.surfaceSoft : Colors.white,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: context.col.borderStrong, width: 1.0),
                       ),
                       child: Row(children: [
@@ -187,7 +187,7 @@ class HomeScreen extends ConsumerWidget {
               // Promise strip
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: _PromiseStrip(config: config),
                 ),
               ),
@@ -209,27 +209,26 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   );
                   yield SliverToBoxAdapter(child: _BudgetCarousel(products: item.products));
-                  yield const SliverToBoxAdapter(child: SizedBox(height: 21));
+                  yield const SliverToBoxAdapter(child: SizedBox(height: 20));
                 } else if (item is DynCarousel) {
-                  // SizedBox(340) naturally leaves ~21px below card content — no extra padding needed.
                   yield SliverToBoxAdapter(
                     child: _CategoryCarouselSection(section: item.section),
                   );
                 } else if (item is DynBannerDuo) {
                   yield SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 21),
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                       child: _DuoBannerRow(section: item.section),
                     ),
                   );
                 } else if (item is DynStripBanner) {
                   yield SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 21),
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                       child: GestureDetector(
                         onTap: () => BannerLink.navigate(context, item.linkUrl),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(12),
                           child: AspectRatio(
                             aspectRatio: 1920 / 350,
                             child: CachedNetworkImage(
@@ -244,24 +243,23 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   );
                 } else if (item is DynCategoryCarousel) {
-                  // SizedBox(110) has ~8px of natural bottom space; add 13px explicit = 21px total.
                   yield SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.only(bottom: 13),
+                      padding: const EdgeInsets.only(top: 22, bottom: 8),
                       child: _CategoryImagesCarousel(item: item),
                     ),
                   );
                 } else if (item is DynBanner) {
                   yield SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 21),
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                       child: _SingleBannerSection(item: item),
                     ),
                   );
                 } else if (item is DynFashionCards) {
                   yield SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.only(bottom: 21),
+                      padding: const EdgeInsets.only(top: 14, bottom: 10),
                       child: _DynFashionCardsSection(item: item),
                     ),
                   );
@@ -293,7 +291,7 @@ class HomeScreen extends ConsumerWidget {
                       final brands = ref2.watch(_brandsProvider).valueOrNull ?? [];
                       if (brands.isEmpty) return const SizedBox.shrink();
                       return Padding(
-                        padding: const EdgeInsets.only(top: 20),
+                        padding: const EdgeInsets.only(top: 10),
                         child: _BrandCarousel(brands: brands),
                       );
                     }),
@@ -301,7 +299,7 @@ class HomeScreen extends ConsumerWidget {
                 } else if (item is DynTileCarousel) {
                   yield SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                       child: _DynTileCarousel(item: item),
                     ),
                   );

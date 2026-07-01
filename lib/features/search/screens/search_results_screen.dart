@@ -210,7 +210,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   @override
   void initState() {
     super.initState();
-    _sort = widget.initialSort ?? 'latest';
+    _sort = widget.initialSort ?? 'random';
     _filters = _FilterState(
       categoryId: widget.categoryId,
       maxPrice: widget.maxPrice,
@@ -293,7 +293,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       isScrollControlled: true,
       backgroundColor: context.col.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(6))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
       builder: (_) => _FilterSheet(initial: _filters, scopeCategoryId: widget.categoryId),
     );
     if (result != null && mounted) {
@@ -616,7 +616,7 @@ class _BannerSliderState extends State<_BannerSlider> {
                         }
                       },
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         child: CachedNetworkImage(
                           imageUrl: banner.imageUrl,
                           fit: BoxFit.cover,
@@ -928,7 +928,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                           horizontal: 12, vertical: 7),
                                         decoration: BoxDecoration(
                                           color: sel ? AppColors.adaptive(context) : context.col.surface,
-                                          borderRadius: BorderRadius.circular(6),
+                                          borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
                                             color: sel ? AppColors.adaptive(context) : context.col.border,
                                             width: 1.5)),
@@ -976,7 +976,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                       horizontal: 12, vertical: 7),
                                     decoration: BoxDecoration(
                                       color: sel ? context.col.ink0 : context.col.surface,
-                                      borderRadius: BorderRadius.circular(6),
+                                      borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: sel ? context.col.ink0 : context.col.border,
                                         width: 1.5)),
@@ -1071,7 +1071,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
                             color: selected ? context.col.ink0 : context.col.surface,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: selected ? context.col.ink0 : context.col.border,
                               width: 1.5),
@@ -1115,7 +1115,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                                 decoration: BoxDecoration(
                                   color: sel ? context.col.ink0 : context.col.surface,
-                                  borderRadius: BorderRadius.circular(6),
+                                  borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: sel ? context.col.ink0 : context.col.border,
                                     width: 1.5)),
@@ -1147,7 +1147,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(context.s.applyFilters,
                   style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
@@ -1176,7 +1176,7 @@ class _CatChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? AppColors.adaptive(context) : context.col.surface,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? AppColors.adaptive(context) : context.col.border,
             width: 1.5),
@@ -1266,13 +1266,13 @@ class _PriceField extends StatelessWidget {
         hintStyle: TextStyle(fontSize: 12, color: context.col.ink3, fontFamily: 'Cairo'),
         filled: true, fillColor: context.col.surfaceSoft,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: context.col.border)),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: context.col.border)),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),

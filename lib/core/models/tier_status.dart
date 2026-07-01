@@ -59,7 +59,7 @@ class TierStatus {
       nextMilestoneOrder: (milestone?['order_number'] as num?)?.toInt(),
       nextMilestoneReward: (milestone?['reward_amount'] as num?)?.toDouble(),
       nextMilestoneRemaining: (milestone?['orders_remaining'] as num?)?.toInt(),
-      cashbackRate: (benefits['cashback_rate'] as num?)?.toDouble() ?? 2.0,
+      cashbackRate: (benefits['cashback_rate'] as num?)?.toDouble() ?? 1.5,
       freeShippingThreshold: (benefits['free_shipping_threshold'] as num?)?.toDouble() ?? 150.0,
       returnDays: (benefits['return_days'] as num?)?.toInt() ?? 7,
       pendingTotal: ((j['pending_rewards'] as Map?)?['total'] as num?)?.toDouble() ?? 0.0,
@@ -83,7 +83,7 @@ class TierStatus {
     nextMilestoneOrder: 1,
     nextMilestoneReward: 5,
     nextMilestoneRemaining: 1,
-    cashbackRate: 2.0,
+    cashbackRate: 1.5,
     freeShippingThreshold: 150.0,
     returnDays: 7,
   );

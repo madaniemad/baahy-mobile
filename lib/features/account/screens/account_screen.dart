@@ -158,7 +158,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
               isScrollControlled: true,
               backgroundColor: context.col.surface,
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(10))),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
               builder: (_) => _EditProfileSheet(
                 currentName: user.name,
                 onSaved: () => ref.read(authProvider.notifier).refreshProfile(),
@@ -233,17 +233,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
                     begin: Alignment.centerRight,
                     end: Alignment.centerLeft,
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [BoxShadow(
-                    color: const Color(0xFF00DEDA).withValues(alpha: 0.30),
-                    blurRadius: 12, offset: const Offset(0, 4))],
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(children: [
                   Container(
                     width: 40, height: 40,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.28),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.auto_awesome_rounded,
                       color: Colors.white, size: 20),
@@ -392,7 +389,7 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
       context: context,
       backgroundColor: context.col.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(10))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const SizedBox(height: 8),
@@ -465,8 +462,7 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: context.col.border),
-        boxShadow: AppShadows.shadowLifted,
+        border: Border.all(color: const Color(0xFFE2E4E4)),
       ),
       child: Row(children: [
         // Avatar
@@ -592,8 +588,7 @@ class _StatTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: context.col.surface,
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: context.col.border),
-            boxShadow: AppShadows.shadowLifted,
+            border: Border.all(color: const Color(0xFFE2E4E4)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -624,7 +619,7 @@ class _StatTile extends StatelessWidget {
                 width: 40, height: 40,
                 decoration: BoxDecoration(
                   color: isDark ? context.col.surfaceSoft : iconBg,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, size: 19, color: isDark ? context.col.ink2 : iconColor),
               ),
@@ -698,7 +693,7 @@ class _WalletCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: accent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -717,7 +712,7 @@ class _WalletCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: context.col.borderStrong, width: 1.2),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min,
@@ -789,8 +784,7 @@ class _TierCard extends ConsumerWidget {
           decoration: BoxDecoration(
             color: context.col.surface,
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: context.col.border),
-            boxShadow: AppShadows.shadowLifted,
+            border: Border.all(color: const Color(0xFFE2E4E4)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -807,7 +801,7 @@ class _TierCard extends ConsumerWidget {
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
                         color: context.col.ink0, fontFamily: 'Cairo', height: 1.2)),
                     const SizedBox(height: 3),
-                    Text('${context.s.cashbackLabel} ${tier.cashbackRate.toStringAsFixed(0)}%',
+                    Text('${context.s.cashbackLabel} ${tier.cashbackRate == tier.cashbackRate.truncate().toDouble() ? tier.cashbackRate.toInt() : tier.cashbackRate.toStringAsFixed(1)}%',
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
                         color: tierColor, fontFamily: 'Cairo')),
                   ]),
@@ -892,8 +886,7 @@ class _ReferralCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: context.col.surface,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(color: context.col.border),
-          boxShadow: AppShadows.shadowLifted,
+          border: Border.all(color: const Color(0xFFE2E4E4)),
         ),
         child: Row(children: [
           Builder(builder: (ctx) {
@@ -903,7 +896,7 @@ class _ReferralCard extends ConsumerWidget {
                 width: 68, height: 68,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.group_rounded, size: 34, color: AppColors.primary),
               );
@@ -941,7 +934,7 @@ class _ReferralCard extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFF8B5CF6), width: 1.2),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -969,8 +962,7 @@ class _MenuGroup extends StatelessWidget {
     decoration: BoxDecoration(
       color: context.col.surface,
       borderRadius: BorderRadius.circular(AppRadius.card),
-      border: Border.all(color: context.col.border),
-      boxShadow: AppShadows.shadowLifted,
+      border: Border.all(color: const Color(0xFFE2E4E4)),
     ),
     child: Column(
       children: [
@@ -1098,8 +1090,7 @@ class _BirthdayRowState extends ConsumerState<_BirthdayRow> {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: context.col.border),
-        boxShadow: AppShadows.shadowLifted,
+        border: Border.all(color: const Color(0xFFE2E4E4)),
       ),
       child: GestureDetector(
         onTap: _birthday == null && !_saving ? _pickDate : null,
@@ -1229,13 +1220,13 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               filled: true,
               fillColor: context.col.bg,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: context.col.border)),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: context.col.border)),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: AppColors.primary, width: 2)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             ),
@@ -1250,7 +1241,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 backgroundColor: AppColors.ink0,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: _loading
                 ? const SizedBox(width: 20, height: 20,

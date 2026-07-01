@@ -1,13 +1,11 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api/api_client.dart';
-import '../../../core/services/deep_link_service.dart';
+import 'payment_webview_screen.dart';
 import '../../../core/models/shipping_rate.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/reorder_provider.dart';
@@ -21,6 +19,18 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/widgets/app_button.dart';
 
 const _kLastPaymentKey = 'baahy_last_payment';
+
+String? _paymentIconPath(String id) {
+  switch (id) {
+    case 'cash_on_delivery': return 'assets/images/payment/cod.png';
+    case 'paypal': return 'assets/images/payment/paypal.png';
+    case 'moamlat': return 'assets/images/payment/moamlat.png';
+    case 'mobicash': return 'assets/images/payment/mobicash.png';
+    case 'tadawul': case 'tadawel': return 'assets/images/payment/tadawul.png';
+    case 'lypay': return 'assets/images/payment/lypay.png';
+    default: return null;
+  }
+}
 
 Color _accent(BuildContext context) => AppColors.adaptive(context);
 
@@ -54,17 +64,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   String _paymentMethod = '';
   Map<String, dynamic>? _selectedAddress;
   bool _loading = false;
-  bool _waitingForPaypal = false;
-  String? _pendingApprovalUrl;
-  String? _pendingRef;
   List<Map<String, dynamic>> _addresses = [];
   double _walletBalance = 0;
   bool _useWallet = false;
   bool _walletLoading = false;
   bool _itemsExpanded = false;
-  StreamSubscription<String>? _paypalSub;
-  StreamSubscription<String>? _tadawelSub;
-  StreamSubscription<String>? _moamlatSub;
 
   @override
   void initState() {
@@ -332,7 +336,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       // Gateway payments return pending_ref; COD/wallet return data.data directly
       final pendingRef = resData['pending_ref'] as String?;
       if (pendingRef != null) {
-        setState(() => _pendingRef = pendingRef);
         if (_paymentMethod == 'paypal') {
           await _handlePayPalPayment(pendingRef, clearCart: !isReorder);
         } else if (_paymentMethod == 'tadawel') {
@@ -366,9 +369,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   void dispose() {
-    _paypalSub?.cancel();
-    _tadawelSub?.cancel();
-    _moamlatSub?.cancel();
     _notesCtrl.dispose();
     _walletAmountCtrl.dispose();
     super.dispose();
@@ -376,78 +376,67 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _handlePayPalPayment(String pendingRef, {bool clearCart = true}) async {
     try {
-      final approvalUrl = _pendingApprovalUrl ?? await _initiatePayPal(pendingRef);
-      if (approvalUrl == null) return;
-      setState(() { _pendingApprovalUrl = approvalUrl; });
-
-      _paypalSub?.cancel();
-      _paypalSub = DeepLinkService.instance.paypalReturnStream.listen((paypalOrderId) async {
-        _paypalSub?.cancel();
-        _paypalSub = null;
-        if (!mounted) return;
-        setState(() { _loading = true; _waitingForPaypal = false; });
-        try {
-          final captureRes = await ApiClient.instance.dio.post('/payment/paypal/capture', data: {
-            'pending_ref': pendingRef,
-            'paypal_order_id': paypalOrderId,
-          });
-          final orderId = captureRes.data['order_id'];
-          Map<String, dynamic> orderData = {
-            'id': orderId,
-            'order_number': captureRes.data['order_number'] ?? '',
-          };
-          try {
-            final orderRes = await ApiClient.instance.dio.get('/orders/$orderId');
-            orderData = Map<String, dynamic>.from(orderRes.data['data'] as Map);
-          } catch (_) {}
-          if (clearCart) await ref.read(cartProvider.notifier).clear();
-          ref.read(reorderSessionProvider.notifier).state = null;
-          ref.invalidate(welcomeCouponProvider);
-          if (mounted) {
-            setState(() { _loading = false; _pendingApprovalUrl = null; _pendingRef = null; });
-            context.pushReplacement('/order-confirmed', extra: orderData);
-          }
-        } catch (e) {
-          if (mounted) {
-            setState(() => _loading = false);
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('فشل تأكيد الدفع — تواصل مع الدعم'),
-              backgroundColor: AppColors.danger,
-            ));
-          }
-        }
-      });
-
-      await launchUrl(Uri.parse(approvalUrl), mode: LaunchMode.inAppBrowserView);
-      if (mounted) setState(() { _loading = false; _waitingForPaypal = true; });
-    } catch (e) {
-      _paypalSub?.cancel();
-      if (mounted) {
-        setState(() { _loading = false; _waitingForPaypal = false; });
-        String msg = 'فشل بدء الدفع عبر PayPal';
-        if (e is DioException) {
-          final data = e.response?.data;
-          if (data is Map && data['message'] != null) msg = data['message'].toString();
-        }
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(msg), backgroundColor: AppColors.danger));
-      }
-    }
-  }
-
-  Future<String?> _initiatePayPal(String pendingRef) async {
-    try {
       final res = await ApiClient.instance.dio.post('/payment/paypal/initiate', data: {
         'pending_ref': pendingRef,
         'platform': 'mobile',
       });
-      final url = res.data['approval_url'] as String?;
-      if (url == null) throw Exception('No approval URL');
-      return url;
+      final approvalUrl = res.data['approval_url'] as String?;
+      if (approvalUrl == null || approvalUrl.isEmpty) throw Exception('No approval URL');
+      if (!mounted) return;
+      setState(() => _loading = false);
+
+      final Uri? deepLink = await Navigator.of(context).push<Uri?>(
+        MaterialPageRoute(builder: (_) => PaymentWebViewScreen(
+          url: approvalUrl,
+          title: 'الدفع عبر PayPal',
+        )),
+      );
+
+      if (!mounted || deepLink == null) return;
+      setState(() => _loading = true);
+
+      final paypalOrderId = deepLink.queryParameters['token'] ?? '';
+      if (paypalOrderId.isEmpty) {
+        setState(() => _loading = false);
+        return;
+      }
+
+      try {
+        final captureRes = await ApiClient.instance.dio.post('/payment/paypal/capture', data: {
+          'pending_ref': pendingRef,
+          'paypal_order_id': paypalOrderId,
+        });
+        final orderId = captureRes.data['order_id'];
+        Map<String, dynamic> orderData = {
+          'id': orderId,
+          'order_number': captureRes.data['order_number'] ?? '',
+        };
+        try {
+          final orderRes = await ApiClient.instance.dio.get('/orders/$orderId');
+          orderData = Map<String, dynamic>.from(orderRes.data['data'] as Map);
+        } catch (_) {}
+        if (clearCart) await ref.read(cartProvider.notifier).clear();
+        ref.read(reorderSessionProvider.notifier).state = null;
+        ref.invalidate(welcomeCouponProvider);
+        if (mounted) {
+          setState(() => _loading = false);
+          context.pushReplacement('/order-confirmed', extra: orderData);
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _loading = false);
+          String msg = 'فشل تأكيد الدفع — تواصل مع الدعم';
+          if (e is DioException) {
+            final d = e.response?.data;
+            if (d is Map && d['message'] != null) msg = d['message'].toString();
+          }
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(msg), backgroundColor: AppColors.danger));
+        }
+      }
     } catch (e) {
-      _paypalSub?.cancel();
       if (mounted) {
-        setState(() { _loading = false; _waitingForPaypal = false; });
+        setState(() => _loading = false);
         String msg = 'فشل بدء الدفع عبر PayPal';
         if (e is DioException) {
           final data = e.response?.data;
@@ -456,87 +445,67 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(msg), backgroundColor: AppColors.danger));
       }
-      return null;
     }
   }
 
   Future<void> _handleGatewayPayment(String gateway, String pendingRef, {bool clearCart = true}) async {
     try {
-      final endpoint = '/payment/$gateway/initiate';
-      final res = await ApiClient.instance.dio.post(endpoint, data: {
+      final res = await ApiClient.instance.dio.post('/payment/$gateway/initiate', data: {
         'pending_ref': pendingRef,
         'platform': 'mobile',
       });
       final paymentUrl = res.data['payment_url'] as String?;
       if (paymentUrl == null || paymentUrl.isEmpty) throw Exception('No payment URL');
+      if (!mounted) return;
+      setState(() => _loading = false);
 
-      final stream = gateway == 'tadawel'
-          ? DeepLinkService.instance.tadawelReturnStream
-          : DeepLinkService.instance.moamlatReturnStream;
+      final title = gateway == 'tadawel' ? 'الدفع عبر تداول' : 'الدفع عبر معاملات';
+      final Uri? deepLink = await Navigator.of(context).push<Uri?>(
+        MaterialPageRoute(builder: (_) => PaymentWebViewScreen(url: paymentUrl, title: title)),
+      );
 
-      final sub = gateway == 'tadawel' ? _tadawelSub : _moamlatSub;
-      sub?.cancel();
+      if (!mounted || deepLink == null) return;
+      setState(() => _loading = true);
 
-      final newSub = stream.listen((_) async {
-        _tadawelSub?.cancel();
-        _moamlatSub?.cancel();
-        _tadawelSub = null;
-        _moamlatSub = null;
-        if (!mounted) return;
-        setState(() => _loading = true);
-
-        // Poll pending-status until order is confirmed (max 15 attempts = 30s)
-        Map<String, dynamic>? result;
-        for (int i = 0; i < 15; i++) {
-          try {
-            final statusRes = await ApiClient.instance.dio.get('/payment/pending-status/$pendingRef');
-            final status = statusRes.data['status'] as String?;
-            if (status == 'completed') { result = Map<String, dynamic>.from(statusRes.data as Map); break; }
-            if (status == 'failed') break;
-          } catch (_) {}
-          await Future.delayed(const Duration(seconds: 2));
-        }
-
-        if (!mounted) return;
-        if (result == null) {
-          setState(() => _loading = false);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('لم يتم تأكيد الدفع — يمكنك المحاولة مجدداً أو تتبع الطلب'),
-            backgroundColor: AppColors.danger,
-            duration: Duration(seconds: 4),
-          ));
-          return;
-        }
-
-        final orderId = result['order_id'];
-        Map<String, dynamic> orderData = {'id': orderId, 'order_number': result['order_number'] ?? ''};
+      Map<String, dynamic>? result;
+      for (int i = 0; i < 15; i++) {
         try {
-          final orderRes = await ApiClient.instance.dio.get('/orders/$orderId');
-          orderData = Map<String, dynamic>.from(orderRes.data['data'] as Map);
+          final statusRes = await ApiClient.instance.dio.get('/payment/pending-status/$pendingRef');
+          final status = statusRes.data['status'] as String?;
+          if (status == 'completed') { result = Map<String, dynamic>.from(statusRes.data as Map); break; }
+          if (status == 'failed') break;
         } catch (_) {}
-
-        if (clearCart) await ref.read(cartProvider.notifier).clear();
-        ref.read(reorderSessionProvider.notifier).state = null;
-        ref.invalidate(welcomeCouponProvider);
-        if (mounted) {
-          setState(() { _loading = false; _pendingRef = null; });
-          context.pushReplacement('/order-confirmed', extra: orderData);
-        }
-      });
-
-      if (gateway == 'tadawel') {
-        _tadawelSub = newSub;
-      } else {
-        _moamlatSub = newSub;
+        await Future.delayed(const Duration(seconds: 2));
       }
 
-      await launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.inAppBrowserView);
-      if (mounted) setState(() { _loading = false; });
-    } catch (e) {
-      _tadawelSub?.cancel();
-      _moamlatSub?.cancel();
+      if (!mounted) return;
+      if (result == null) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('لم يتم تأكيد الدفع — يمكنك المحاولة مجدداً أو تتبع الطلب'),
+          backgroundColor: AppColors.danger,
+          duration: Duration(seconds: 4),
+        ));
+        return;
+      }
+
+      final orderId = result['order_id'];
+      Map<String, dynamic> orderData = {'id': orderId, 'order_number': result['order_number'] ?? ''};
+      try {
+        final orderRes = await ApiClient.instance.dio.get('/orders/$orderId');
+        orderData = Map<String, dynamic>.from(orderRes.data['data'] as Map);
+      } catch (_) {}
+
+      if (clearCart) await ref.read(cartProvider.notifier).clear();
+      ref.read(reorderSessionProvider.notifier).state = null;
+      ref.invalidate(welcomeCouponProvider);
       if (mounted) {
-        setState(() { _loading = false; });
+        setState(() => _loading = false);
+        context.pushReplacement('/order-confirmed', extra: orderData);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
         String msg = 'فشل بدء عملية الدفع';
         if (e is DioException) {
           final data = e.response?.data;
@@ -671,7 +640,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: sheetLoading
@@ -704,7 +673,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (clearCart) await ref.read(cartProvider.notifier).clear();
     ref.read(reorderSessionProvider.notifier).state = null;
     ref.invalidate(welcomeCouponProvider);
-    setState(() => _pendingRef = null);
     if (mounted) context.pushReplacement('/order-confirmed', extra: orderData);
   }
 
@@ -840,7 +808,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: _cardFill(context),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: accent, width: 1.5),
                               ),
                               child: Row(children: [
@@ -857,9 +825,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: _cardFill(context),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: context.col.border),
-                                boxShadow: isDark ? null : AppShadows.shadowCard,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFFE2E4E4)),
                               ),
                               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Padding(
@@ -904,15 +871,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: _cardFill(context),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: context.col.border),
-                          boxShadow: isDark ? null : AppShadows.shadowCard,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E4E4)),
                         ),
                         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 1),
-                            child: Icon(Icons.payment_outlined, size: 18, color: accent),
-                          ),
+                          Builder(builder: (_) {
+                            final iconPath = _paymentMethod.isNotEmpty && !walletCoversAll
+                                ? _paymentIconPath(_paymentMethod)
+                                : (_paymentMethod == '' ? null : 'assets/images/payment/wallet_pay.png');
+                            return SizedBox(
+                              width: 26, height: 26,
+                              child: iconPath != null
+                                  ? Image.asset(iconPath, fit: BoxFit.contain)
+                                  : Icon(Icons.payment_outlined, size: 18, color: accent),
+                            );
+                          }),
                           const SizedBox(width: 10),
                           Expanded(child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -959,14 +932,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
                     // ── Order items (collapsible) ─────────────────────────
-                    _CollapsibleHeader(
-                      title: context.s.productsCountN(effectiveItems.length),
-                      subtitle: '${fmtPrice(effectiveSubtotal)} ${context.s.lydUnit}',
-                      expanded: _itemsExpanded,
+                    _SectionLabel(context.s.productsCountN(effectiveItems.length)),
+                    const SizedBox(height: 8),
+                    GestureDetector(
                       onTap: () => setState(() => _itemsExpanded = !_itemsExpanded),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _cardFill(context),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E4E4)),
+                        ),
+                        child: Row(children: [
+                          Expanded(child: Text(
+                            '${fmtPrice(effectiveSubtotal)} ${context.s.lydUnit}',
+                            style: TextStyle(fontSize: 12.5, color: context.col.ink2))),
+                          AnimatedRotation(
+                            turns: _itemsExpanded ? 0.5 : 0.0,
+                            duration: const Duration(milliseconds: 200),
+                            child: Icon(Icons.keyboard_arrow_down_rounded,
+                              size: 20, color: context.col.ink2),
+                          ),
+                        ]),
+                      ),
                     ),
                     if (_itemsExpanded) ...[
                       const SizedBox(height: 8),
@@ -974,9 +965,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: _cardFill(context),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: context.col.border),
-                          boxShadow: isDark ? null : AppShadows.shadowCard,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E4E4)),
                         ),
                         child: Column(
                           children: effectiveItems.map((item) {
@@ -991,7 +981,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                   child: item.image != null
                                       ? CachedNetworkImage(
                                           imageUrl: item.image!, width: 52, height: 52,
@@ -1049,16 +1039,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
                     // ── Price summary ─────────────────────────────────────
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: _cardFill(context),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: context.col.border),
-                        boxShadow: isDark ? null : AppShadows.shadowCard,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E4E4)),
                       ),
                       child: Column(children: [
                         _SummaryRow(context.s.subtotalLabel,
@@ -1087,7 +1076,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.transparent : AppColors.success.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: AppColors.success.withValues(alpha: isDark ? 0.45 : 0.35)),
                         ),
@@ -1111,7 +1100,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.transparent : AppColors.success.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: AppColors.success.withValues(alpha: isDark ? 0.45 : 0.35)),
                         ),
@@ -1126,20 +1115,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               color: AppColors.success))),
                         ]),
                       ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
                     // ── Trust badges ───────────────────────────────────────
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                       decoration: BoxDecoration(
                         color: _cardFill(context),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: context.col.border),
-                        boxShadow: isDark ? null : AppShadows.shadowCard,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E4E4)),
                       ),
                       child: const _TrustRow(),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
                     // ── Notes ─────────────────────────────────────────────
                     _SectionLabel(context.s.notesOptional),
@@ -1147,7 +1135,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     Container(
                       decoration: BoxDecoration(
                         color: _cardFill(context),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: context.col.border),
                       ),
                       child: TextField(
@@ -1176,71 +1164,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 boxShadow: AppShadows.shadowPop,
               ),
               child: Column(children: [
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text(context.s.total,
-                    style: TextStyle(fontSize: 13, color: context.col.ink2)),
-                  Text('${fmtPrice(effectiveTotal)} ${context.s.lydUnit}',
-                    style: const TextStyle(fontFamily: 'PlusJakartaSans',
-                      fontSize: 18, fontWeight: FontWeight.w800)),
-                ]),
-                const SizedBox(height: 10),
-                if (_waitingForPaypal)
-                  Column(children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF003087).withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF003087).withValues(alpha: 0.25)),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(width: 16, height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF003087))),
-                          SizedBox(width: 10),
-                          Text('في انتظار إتمام الدفع عبر PayPal...',
-                            style: TextStyle(fontFamily: 'Cairo',
-                              color: Color(0xFF003087), fontWeight: FontWeight.w700)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    AppButton(
-                      label: 'إعادة فتح PayPal',
-                      icon: const Icon(Icons.open_in_browser_rounded, size: 16, color: Colors.white),
-                      onTap: () {
-                        if (_pendingRef != null) {
-                          _handlePayPalPayment(_pendingRef!, clearCart: true);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () {
-                        _paypalSub?.cancel();
-                        _paypalSub = null;
-                        if (mounted) {
-                          setState(() {
-                            _waitingForPaypal = false;
-                            _pendingApprovalUrl = null;
-                            _pendingRef = null;
-                          });
-                          context.go('/home');
-                        }
-                      },
-                      child: const Text('إلغاء والعودة للرئيسية',
-                        style: TextStyle(fontFamily: 'Cairo', color: AppColors.ink3, fontSize: 13)),
-                    ),
-                  ])
-                else if (_paymentMethod.isEmpty)
+                if (_paymentMethod.isEmpty)
                   Container(
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
                       color: const Color(0xFFE5E7EB),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Center(
                       child: Text('اختر طريقة الدفع',
@@ -1249,11 +1179,37 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                   )
                 else
-                  AppButton(
-                    label: context.s.placeOrder,
-                    icon: const Icon(Icons.check_rounded, size: 16, color: Color(0xFFF0F0F0)),
-                    onTap: _placeOrder,
-                    loading: _loading,
+                  GestureDetector(
+                    onTap: _loading ? null : _placeOrder,
+                    child: Container(
+                      width: double.infinity,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (_loading)
+                            const SizedBox(width: 22, height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                          else
+                            Row(mainAxisSize: MainAxisSize.min, children: [
+                              Text(context.s.placeOrder,
+                                style: const TextStyle(fontFamily: 'Cairo',
+                                  fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                            ]),
+                          if (!_loading)
+                            Positioned(
+                              left: 16,
+                              child: Text('${fmtPrice(effectiveTotal)} ${context.s.lydUnit}',
+                                style: const TextStyle(fontFamily: 'PlusJakartaSans',
+                                  fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
               ]),
             ),
@@ -1363,7 +1319,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.warn.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.warn.withValues(alpha: 0.4)),
               ),
               child: Row(children: [
@@ -1390,42 +1346,18 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                 : null,
             child: Container(
               padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.only(bottom: 8),
+              margin: const EdgeInsets.only(bottom: 10),
               decoration: BoxDecoration(
                 color: _cardFill(context),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: walletActive ? _selBorder(context) : context.col.border,
-                  width: walletActive ? 1.5 : 1),
-                boxShadow: isDark ? null : AppShadows.shadowCard,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.col.border),
               ),
               child: Row(children: [
                 _RadioDot(selected: walletActive),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Text(context.s.walletTitle,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: widget.onTopUp,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: context.col.borderStrong),
-                        ),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.add, size: 10, color: context.col.ink2),
-                          const SizedBox(width: 2),
-                          Text(context.s.topUpShort,
-                            style: TextStyle(fontFamily: 'Cairo', fontSize: 10,
-                              fontWeight: FontWeight.w700, color: context.col.ink2)),
-                        ]),
-                      ),
-                    ),
-                  ]),
+                  Text(context.s.walletTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                   const SizedBox(height: 2),
                   widget.walletLoading
                       ? Text(context.s.loading,
@@ -1438,16 +1370,35 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                             fontSize: 11.5,
                             color: widget.walletBalance > 0 ? AppColors.success : context.col.ink3)),
                 ])),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: widget.onTopUp,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.col.borderStrong),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.add, size: 10, color: context.col.ink2),
+                      const SizedBox(width: 2),
+                      Text(context.s.topUpShort,
+                        style: TextStyle(fontFamily: 'Cairo', fontSize: 10,
+                          fontWeight: FontWeight.w700, color: context.col.ink2)),
+                    ]),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Container(
-                  width: 36, height: 36,
+                  width: 40, height: 40,
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: _softFill(context),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                     border: isDark ? Border.all(color: context.col.border) : null,
                   ),
-                  child: Icon(Icons.account_balance_wallet_outlined, size: 18,
-                    color: walletActive ? accent : context.col.ink3),
+                  child: Image.asset('assets/images/payment/wallet_pay.png', fit: BoxFit.contain),
                 ),
               ]),
             ),
@@ -1460,7 +1411,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
               padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
               decoration: BoxDecoration(
                 color: isDark ? Colors.transparent : Colors.white,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
@@ -1511,15 +1462,12 @@ class _PaymentSheetState extends State<_PaymentSheet> {
             ...widget.methods.map((m) => GestureDetector(
               onTap: () => setState(() => _paymentMethod = m.id),
               child: Container(
-                margin: const EdgeInsets.only(bottom: 8),
+                margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: _cardFill(context),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: _paymentMethod == m.id ? _selBorder(context) : context.col.border,
-                    width: _paymentMethod == m.id ? 1.5 : 1),
-                  boxShadow: isDark ? null : AppShadows.shadowCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.col.border),
                 ),
                 child: Row(children: [
                   _RadioDot(selected: _paymentMethod == m.id),
@@ -1536,21 +1484,21 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                       style: TextStyle(fontSize: 11.5, color: context.col.ink2)),
                   ])),
                   const SizedBox(width: 10),
-                  Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(
-                      color: _softFill(context),
-                      borderRadius: BorderRadius.circular(6),
-                      border: isDark ? Border.all(color: context.col.border) : null,
-                    ),
-                    child: Icon(
-                      m.id == 'cash_on_delivery' ? Icons.payments_outlined
-                          : m.id == 'paypal' ? Icons.language_outlined
-                          : m.id == 'card' ? Icons.credit_card_outlined
-                          : Icons.receipt_long_outlined,
-                      size: 18,
-                      color: _paymentMethod == m.id ? accent : context.col.ink3),
-                  ),
+                  Builder(builder: (_) {
+                    final iconPath = _paymentIconPath(m.id);
+                    return Container(
+                      width: 40, height: 40,
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: _softFill(context),
+                        borderRadius: BorderRadius.circular(12),
+                        border: isDark ? Border.all(color: context.col.border) : null,
+                      ),
+                      child: iconPath != null
+                          ? Image.asset(iconPath, fit: BoxFit.contain)
+                          : Icon(Icons.credit_card_outlined, size: 18, color: context.col.ink3),
+                    );
+                  }),
                 ]),
               ),
             )),
@@ -1565,7 +1513,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text('تأكيد',
                 style: TextStyle(fontFamily: 'Cairo',
@@ -1614,11 +1562,10 @@ class _AddressSheet extends StatelessWidget {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: _cardFill(context),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected ? _selBorder(context) : context.col.border,
                     width: isSelected ? 1.5 : 1),
-                  boxShadow: isDark ? null : AppShadows.shadowCard,
                 ),
                 child: Row(children: [
                   _RadioDot(selected: isSelected),
@@ -1647,7 +1594,7 @@ class _AddressSheet extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 44),
               side: BorderSide(color: context.col.border),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
           const SizedBox(height: 8),
@@ -1665,14 +1612,14 @@ class _TrustRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tiffany = AppColors.adaptive(context);
+    final greyIcon = context.col.ink0;
+    final greyBorder = context.col.ink2;
     final items = [
-      (Icons.verified_outlined,          context.s.trustAuthentic,  tiffany),
-      (Icons.local_shipping_outlined,   context.s.trustDelivery,   tiffany),
-      (Icons.workspace_premium_outlined, context.s.trustWarranty,   tiffany),
-      (Icons.replay_rounded,             context.s.trustReturn,     tiffany),
+      (Icons.verified_outlined,          context.s.trustAuthentic),
+      (Icons.local_shipping_outlined,    context.s.trustDelivery),
+      (Icons.workspace_premium_outlined, context.s.trustWarranty),
+      (Icons.replay_rounded,             context.s.trustReturn),
     ];
-    final dimColor = tiffany;
     return Row(
       children: items.map((item) => Expanded(
         child: Column(children: [
@@ -1680,11 +1627,10 @@ class _TrustRow extends StatelessWidget {
             width: 38, height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDark ? Colors.transparent : item.$3.withValues(alpha: 0.10),
-              border: Border.all(
-                color: isDark ? dimColor.withValues(alpha: 0.55) : item.$3.withValues(alpha: 0.35)),
+              color: Colors.transparent,
+              border: Border.all(color: greyBorder),
             ),
-            child: Icon(item.$1, size: 17, color: isDark ? dimColor : item.$3),
+            child: Icon(item.$1, size: 17, color: greyIcon),
           ),
           const SizedBox(height: 6),
           Text(item.$2,
@@ -1777,7 +1723,7 @@ class _QtyBtn extends StatelessWidget {
           color: enabled
               ? AppColors.primary.withValues(alpha: 0.12)
               : context.col.surfaceSoft,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(icon, size: 15,
           color: enabled ? AppColors.primary : context.col.ink4),
@@ -1808,9 +1754,8 @@ class _CollapsibleHeader extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: _cardFill(context),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: context.col.border),
-          boxShadow: isDark ? null : AppShadows.shadowCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E4E4)),
         ),
         child: Row(children: [
           Expanded(child: Column(
