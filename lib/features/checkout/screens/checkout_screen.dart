@@ -533,7 +533,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     String? sheetError;
     bool otpStep = false;
 
-    await showModalBottomSheet<bool>(
+    final bool? paid = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -654,9 +654,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ),
     );
 
-    // If payment succeeded (sheet returned true via Navigator.pop(true)), navigate to order confirmed
-    // The sheet pops with true only on successful OTP verification
-    // We check if order is now paid by just proceeding
+    if (paid != true) return;
     if (!mounted) return;
     if (clearCart) await ref.read(cartProvider.notifier).clear();
     ref.read(reorderSessionProvider.notifier).state = null;
