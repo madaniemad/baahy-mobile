@@ -51,7 +51,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _notesCtrl = TextEditingController();
   final _walletAmountCtrl = TextEditingController();
-  String _paymentMethod = 'cash_on_delivery';
+  String _paymentMethod = '';
   Map<String, dynamic>? _selectedAddress;
   bool _loading = false;
   bool _waitingForPaypal = false;
@@ -853,10 +853,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             Text(
                               walletCoversAll
                                   ? context.s.walletTitle
-                                  : (walletActive
+                                  : (walletActive && _paymentMethod.isNotEmpty
                                       ? '${context.s.walletTitle} + ${_paymentMethodLabel(context, methods)}'
-                                      : _paymentMethodLabel(context, methods)),
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                                      : (_paymentMethod.isEmpty
+                                          ? (context.isAr ? 'اختر طريقة الدفع' : 'Select Payment Method')
+                                          : _paymentMethodLabel(context, methods))),
+                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14,
+                                color: _paymentMethod.isEmpty ? const Color(0xFF9CA3AF) : null)),
                             if (walletActive && walletDeduct > 0) ...[
                               const SizedBox(height: 2),
                               Text(
@@ -1165,6 +1168,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         style: TextStyle(fontFamily: 'Cairo', color: AppColors.ink3, fontSize: 13)),
                     ),
                   ])
+                else if (_paymentMethod.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE5E7EB),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Center(
+                      child: Text('اختر طريقة الدفع',
+                        style: TextStyle(fontFamily: 'Cairo', fontSize: 15,
+                          fontWeight: FontWeight.w700, color: Color(0xFF9CA3AF))),
+                    ),
+                  )
                 else
                   AppButton(
                     label: context.s.placeOrder,
