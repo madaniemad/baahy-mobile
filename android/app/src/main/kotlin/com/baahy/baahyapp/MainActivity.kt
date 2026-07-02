@@ -1,4 +1,4 @@
-package com.example.baahy_customer
+package com.baahy.baahyapp
 
 import io.flutter.embedding.android.FlutterActivity
 

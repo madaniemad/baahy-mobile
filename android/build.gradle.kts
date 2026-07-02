@@ -5,11 +5,9 @@ allprojects {
     }
 }
 
-// FIREBASE: Uncomment after adding google-services.json
-// plugins {
-//     id("com.google.gms.google-services") version "4.4.2" apply false
-//     id("com.google.firebase.crashlytics") version "3.0.2" apply false
-// }
+// FIREBASE: the google-services plugin is declared in settings.gradle.kts (plugins block)
+// and applied in app/build.gradle.kts. It must NOT be added here — a plugins {} block
+// after allprojects {} above is invalid in a root build.gradle.kts.
 
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory

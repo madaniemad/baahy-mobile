@@ -17,7 +17,7 @@ Baahy (باهي) customer mobile app. Flutter for iOS and Android. Connects to t
 - **Push notifications**: Firebase Messaging + flutter_local_notifications
 - **Voice search**: `speech_to_text ^6.6.0` — locale preference: ar_LY → ar_SA → ar_AE → ar_EG → ar
 - **Fonts**: Cairo (primary), PlusJakartaSans (numbers/monospace)
-- **Bundle ID**: `com.example.baahyCustomer`
+- **Bundle ID**: iOS `com.baahy.app` · Android `com.baahy.baahyapp` (production identity — adopted 2026-07-02 to match the existing live App Store / Play Store listings so the new app ships as an in-place UPDATE. Do NOT revert to the old `com.example.baahyCustomer` placeholder.)
 
 ## Backend
 - **API base URL**: `https://api.baahy.com/api`
@@ -74,7 +74,7 @@ All from `lib/shared/theme/app_theme.dart`:
 - `AppColors.success` — `#1F8A5B` green (delivered, in-stock)
 - `AppColors.gold` — `#D4A82E` star ratings
 
-**Radius:** All corners 6px (`AppRadius.card = 6`, `AppRadius.sm/md/lg/xl` all = 6). Pills use `AppRadius.pill = 9999`. NEVER use arbitrary values; always use AppRadius constants.
+**Radius:** All corners **12px** (standardized 2026-07-01 — screens use `BorderRadius.circular(12)`; note `AppRadius.card` constant still reads 6 but the app UI is 12px). Cards use a flat border (`Color(0xFFE2E4E4)`) instead of `AppShadows.shadowCard`. Pills use `AppRadius.pill = 9999`.
 
 **Shadows:** `AppShadows.shadowCard` — 2-layer subtle shadow for cards.
 
@@ -136,7 +136,7 @@ Hero images should be uploaded at **1400×480 px**. Sub-hero at any wide landsca
 - **City screen** (`city_screen.dart`): Column layout — language pill row → `Expanded(SingleChildScrollView)` → `_BottomBar`. SafeArea handles insets. Button never overlaps list. 28px side padding.
 - **Rewards intro** (`rewards_intro_screen.dart`): solid white `_BenefitCard` (navy text, teal `0xFFE8F9FB` icon bg); 5 floating background icons with staggered sin-phase animation (`_floatCtrl` 7 s loop); `onb-pattern.png` at 0.06 opacity texture. Uses `TickerProviderStateMixin`.
 - **Onboarding screen** (`onboarding_screen.dart`): final slide, calls `_start()` which sets `onboarding_v2_done = true` then navigates to `/home`.
-- To review onboarding from scratch: `xcrun simctl uninstall B764355C-AE75-49CC-8E30-8B5089A32CAB com.example.baahyCustomer` then `flutter run`.
+- To review onboarding from scratch: `xcrun simctl uninstall B764355C-AE75-49CC-8E30-8B5089A32CAB com.baahy.app` then `flutter run`.
 
 ## Rewards / Loyalty Hub
 - Route: `/rewards` — `RewardsHubScreen` in `lib/features/rewards/screens/`
@@ -232,8 +232,8 @@ The booted simulator UDID as of last session: `B764355C-AE75-49CC-8E30-8B5089A32
 - Category tiles in horizontal scroll: `ClipOval` + `BoxShape.circle` (circular frames)
 
 ## Simulator / flutter run Notes
-- **Bundle ID**: `com.example.baahyCustomer` — do NOT change for simulator (was temporarily changed for physical device, reverted back)
-- **Lost connection bug**: caused by stale `development-service` process from iPhone session + wrong bundle ID app still running on simulator. Fix: `pkill -f "development-service"` + `xcrun simctl terminate ... com.baahy.customer` before running
+- **Bundle ID**: iOS `com.baahy.app` · Android `com.baahy.baahyapp` (production identity — see Stack section; do NOT revert to `com.example.baahyCustomer`)
+- **Lost connection bug**: caused by stale `development-service` process from iPhone session + wrong bundle ID app still running on simulator. Fix: `pkill -f "development-service"` + `xcrun simctl terminate ... com.baahy.app` before running
 - **Stable run pattern**: terminate stale app, then `flutter run --no-devtools` in same shell session keeping process alive
 - **flutter run stability**: must keep start + monitor in same bash shell session — background processes from separate tool calls get killed when parent shell exits
 
@@ -286,8 +286,8 @@ All search logic is in `app/Http/Controllers/API/ProductController.php`:
 - **MySQL FULLTEXT**: broken for Arabic (returns 0). LIKE fallback is the primary Arabic match path.
 
 ## Known Issues / TODO
-- Bundle ID `com.example.baahyCustomer` — should be changed to production bundle before App Store release
-- Firebase `google-services.json` and `GoogleService-Info.plist` are present but Crashlytics is commented out in pubspec
+- Bundle ID adopted production identity 2026-07-02 (iOS `com.baahy.app`, Android `com.baahy.baahyapp`) — ships as an in-place UPDATE to the live listings. Android **versionCode** (`+N` in pubspec `version:`) MUST be set higher than the live Play Console versionCode before Android release, and the iOS version must be > 4.4.18 (currently `5.0.0+1`).
+- Firebase **NOT wired yet**: `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) are MISSING from the repo, and the `com.google.gms.google-services` Gradle plugin is commented out in `android/build.gradle.kts` + `android/app/build.gradle.kts`. → `FirebaseMessaging.getToken()` returns null → 0 device tokens → no push. Pending Phase 3+ (add config files, uncomment plugin, add iOS Push capability/entitlement).
 - Wallet screen is UI-only (no backend wallet feature yet)
 - Referral screen is UI-only
 - Order tracking shows mock timeline steps (backend returns status string only, no step history)

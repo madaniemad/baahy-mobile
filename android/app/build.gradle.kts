@@ -2,13 +2,13 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
-    // FIREBASE: Uncomment these two lines after adding google-services.json
-    // id("com.google.gms.google-services")
+    id("com.google.gms.google-services")
+    // Crashlytics stays disabled until firebase_crashlytics is enabled in pubspec
     // id("com.google.firebase.crashlytics")
 }
 
 android {
-    namespace = "com.baahy.customer"
+    namespace = "com.baahy.baahyapp"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -22,7 +22,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.baahy.customer"
+        applicationId = "com.baahy.baahyapp"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

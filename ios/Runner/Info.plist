@@ -28,7 +28,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.baahy.customer</string>
+			<string>com.baahy.app</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>baahy</string>
@@ -66,6 +66,10 @@
 	<string>باهي تحتاج موقعك لتحديد مدينة التوصيل تلقائياً</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>باهي تحتاج موقعك لتحديد مدينة التوصيل تلقائياً</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
