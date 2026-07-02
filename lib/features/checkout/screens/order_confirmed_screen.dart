@@ -52,7 +52,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
           // ── scrollable body ──────────────────────────────────────────────
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
               child: Column(children: [
                 // drag handle
                 Container(
@@ -62,35 +62,35 @@ class OrderConfirmedScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
 
                 // ── hero bag + confetti ──────────────────────────────────
                 SizedBox(
-                  height: 230,
+                  height: 155,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       // confetti decorations
-                      _Sparkle(top: 18, right: 30, size: 14),
-                      _Dash(top: 30, right: 80, angle: 0.4),
-                      _Sparkle(top: 10, left: 60, size: 10),
-                      _Dash(top: 55, left: 28, angle: -0.5),
-                      _Dot(top: 70, left: 48, size: 8),
-                      _GoldDot(top: 105, left: 18),
-                      _Dash(bottom: 60, left: 50, angle: 0.3),
-                      _Dot(bottom: 45, left: 80, size: 6, color: AppColors.primary.withValues(alpha: 0.5)),
-                      _Sparkle(bottom: 30, right: 40, size: 12),
-                      _Dash(bottom: 55, right: 25, angle: -0.3),
-                      _Dot(top: 40, right: 55, size: 6, color: AppColors.primary.withValues(alpha: 0.4)),
-                      _Sparkle(bottom: 80, left: 30, size: 9),
-                      _Dot(top: 20, right: 110, size: 10),
-                      _Dash(top: 15, left: 100, angle: 0.6),
+                      _Sparkle(top: 8, right: 30, size: 12),
+                      _Dash(top: 18, right: 75, angle: 0.4),
+                      _Sparkle(top: 5, left: 55, size: 9),
+                      _Dash(top: 38, left: 22, angle: -0.5),
+                      _Dot(top: 50, left: 42, size: 7),
+                      _GoldDot(top: 75, left: 14),
+                      _Dash(bottom: 35, left: 44, angle: 0.3),
+                      _Dot(bottom: 25, left: 72, size: 5, color: AppColors.primary.withValues(alpha: 0.5)),
+                      _Sparkle(bottom: 15, right: 36, size: 10),
+                      _Dash(bottom: 32, right: 20, angle: -0.3),
+                      _Dot(top: 28, right: 50, size: 5, color: AppColors.primary.withValues(alpha: 0.4)),
+                      _Sparkle(bottom: 55, left: 26, size: 8),
+                      _Dot(top: 12, right: 100, size: 9),
+                      _Dash(top: 8, left: 90, angle: 0.6),
 
                       // bag image
                       Image.asset(
                         'assets/images/order_success_bag.png',
-                        width: 190,
-                        height: 190,
+                        width: 130,
+                        height: 130,
                         fit: BoxFit.contain,
                       ),
                     ],
@@ -103,13 +103,13 @@ class OrderConfirmedScreen extends ConsumerWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Cairo',
-                    fontSize: 28,
+                    fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: context.col.ink0,
                     height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   isAr
                       ? 'تم حفظ طلبك بنجاح في حسابك'
@@ -117,16 +117,16 @@ class OrderConfirmedScreen extends ConsumerWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Cairo',
-                    fontSize: 14,
+                    fontSize: 13,
                     color: context.col.ink2,
-                    height: 1.5,
+                    height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 // ── order number pill ─────────────────────────────────────
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(100),
@@ -159,19 +159,19 @@ class OrderConfirmedScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
                 // thin divider
                 Container(height: 1, color: context.col.border),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
 
                 // ── delivery card ─────────────────────────────────────────
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: context.col.surface,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: context.col.border),
                   ),
                   child: Row(
@@ -196,7 +196,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
                               isAr ? '$deliveryDays يوم' : '$deliveryDays days',
                               style: const TextStyle(
                                 fontFamily: 'Cairo',
-                                fontSize: 22,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.primary,
                                 height: 1.2,
@@ -230,14 +230,14 @@ class OrderConfirmedScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
                 // ── rewards two-column card ───────────────────────────────
                 if (loyaltyRemaining != null || cashbackAmount != null)
                   Container(
                     decoration: BoxDecoration(
                       color: context.col.surface,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: context.col.border),
                     ),
                     child: IntrinsicHeight(
@@ -247,7 +247,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
                           if (loyaltyRemaining != null && loyaltyReward != null)
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -255,12 +255,12 @@ class OrderConfirmedScreen extends ConsumerWidget {
                                       width: 40, height: 40,
                                       decoration: BoxDecoration(
                                         color: AppColors.primary.withValues(alpha: 0.10),
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: const Icon(Icons.star_outline_rounded,
                                           color: AppColors.primary, size: 20),
                                     ),
-                                    const SizedBox(height: 10),
+                                    const SizedBox(height: 8),
                                     Text(
                                       isAr ? 'نقاط الولاء' : 'Loyalty',
                                       style: TextStyle(
@@ -309,7 +309,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
                           if (cashbackAmount != null)
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -317,12 +317,12 @@ class OrderConfirmedScreen extends ConsumerWidget {
                                       width: 40, height: 40,
                                       decoration: BoxDecoration(
                                         color: AppColors.primary.withValues(alpha: 0.10),
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: const Icon(Icons.savings_outlined,
                                           color: AppColors.primary, size: 20),
                                     ),
-                                    const SizedBox(height: 10),
+                                    const SizedBox(height: 8),
                                     Text(
                                       isAr ? 'كاش باك' : 'Cashback',
                                       style: TextStyle(
@@ -361,15 +361,15 @@ class OrderConfirmedScreen extends ConsumerWidget {
                     ),
                   ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
                 // ── notification banner ───────────────────────────────────
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
