@@ -96,9 +96,9 @@ class AppConfig {
     this.seasonalLabelAr = 'كاش باك مضاعف',
     this.tierCashbacks = const [2.0, 3.0, 4.0, 6.0],
     this.tierShippingThresholds = const [150.0, 120.0, 100.0, 80.0],
-    this.tierReturnDays = const [3, 3, 5, 7],
+    this.tierReturnDays = const [1, 3, 7, 14],
     this.milestoneOrders = const [1, 3, 5, 10, 25, 50],
-    this.milestoneRewards = const [5.0, 8.0, 12.0, 25.0, 50.0, 100.0],
+    this.milestoneRewards = const [10.0, 15.0, 20.0, 30.0, 50.0, 100.0],
   });
 
   static const AppConfig defaults = AppConfig(
@@ -141,9 +141,9 @@ class AppConfig {
     seasonalLabelAr: 'كاش باك مضاعف',
     tierCashbacks: [2.0, 3.0, 4.0, 6.0],
     tierShippingThresholds: [150.0, 120.0, 100.0, 80.0],
-    tierReturnDays: [3, 3, 5, 7],
+    tierReturnDays: [1, 3, 7, 14],
     milestoneOrders: [1, 3, 5, 10, 25, 50],
-    milestoneRewards: [5.0, 8.0, 12.0, 25.0, 50.0, 100.0],
+    milestoneRewards: [10.0, 15.0, 20.0, 30.0, 50.0, 100.0],
   );
 
   factory AppConfig.fromJson(Map<String, dynamic> j) {
@@ -167,8 +167,8 @@ class AppConfig {
     final goldSh   = _d(rewards?['tier_gold_free_shipping']                 ?? defaults.tierShippingThresholds[2]);
     final platSh   = _d(rewards?['tier_platinum_free_shipping']             ?? defaults.tierShippingThresholds[3]);
 
-    // Per-tier return days (bronze = top-level return_days)
-    final bronzeRd = (j['return_days']                         as num?)?.toInt() ?? defaults.tierReturnDays[0];
+    // Per-tier return days (bronze = inside rewards object, not top-level)
+    final bronzeRd = (rewards?['return_days']                  as num?)?.toInt() ?? defaults.tierReturnDays[0];
     final silverRd = (rewards?['tier_silver_return_days']      as num?)?.toInt() ?? defaults.tierReturnDays[1];
     final goldRd   = (rewards?['tier_gold_return_days']        as num?)?.toInt() ?? defaults.tierReturnDays[2];
     final platRd   = (rewards?['tier_platinum_return_days']    as num?)?.toInt() ?? defaults.tierReturnDays[3];

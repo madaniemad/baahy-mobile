@@ -94,20 +94,6 @@ class ContactScreen extends ConsumerWidget {
             const SizedBox(height: 10),
           ],
 
-          if (pages.contactPhone.isNotEmpty) ...[
-            _ContactCard(
-              icon: Icons.phone_rounded,
-              color: AppColors.primary,
-              bgColor: const Color(0xFFE8FAFB),
-              darkBgColor: const Color(0xFF0A2425),
-              label: context.s.phoneLabel,
-              subtitle: isAr ? 'اتصال مباشر' : 'Direct call',
-              value: pages.contactPhone,
-              onTap: () => _openPhone(pages.contactPhone),
-            ),
-            const SizedBox(height: 10),
-          ],
-
           if (pages.contactEmail.isNotEmpty) ...[
             _ContactCard(
               icon: Icons.email_rounded,
@@ -128,7 +114,7 @@ class ContactScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: context.col.surfaceSoft,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: context.col.border),
             ),
             child: Row(children: [
@@ -145,7 +131,7 @@ class ContactScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.primary.withValues(alpha: 0.20)),
             ),
             child: Row(children: [
@@ -196,7 +182,7 @@ class _ContactCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
           color: context.col.surface,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: context.col.border),
           boxShadow: AppShadows.shadowLifted,
         ),
@@ -205,7 +191,7 @@ class _ContactCard extends StatelessWidget {
             width: 48, height: 48,
             decoration: BoxDecoration(
               color: isDark ? darkBgColor : bgColor,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 24),
           ),
