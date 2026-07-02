@@ -2,14 +2,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../api/api_client.dart';
 import '../models/shipping_rate.dart';
+import '../services/cache_service.dart';
 import 'address_provider.dart';
 
-// Cached list of all active city rates — loaded once on app start, rarely changes.
+const _shippingCacheKey = 'shipping_cities_v1';
+const _shippingCacheTtl = Duration(minutes: 5);
+
+// Shipping rates with 5-minute disk cache — refreshes automatically without app restart.
 final shippingRatesProvider = FutureProvider<List<ShippingRate>>((ref) async {
   try {
-    final res = await ApiClient.instance.dio.get('/shipping/cities');
-    final list = (res.data['data'] as List? ?? []);
-    return list.map((j) => ShippingRate.fromJson(j as Map<String, dynamic>)).toList();
+    final cached = await CacheService.instance.get(_shippingCacheKey, maxAge: _shippingCacheTtl);
+    List rawList;
+    if (cached != null && cached['data'] is List) {
+      rawList = cached['data'] as List;
+    } else {
+      final res = await ApiClient.instance.dio.get('/shipping/cities');
+      rawList = (res.data['data'] as List? ?? []);
+      await CacheService.instance.set(_shippingCacheKey, {'data': rawList});
+    }
+    return rawList.map((j) => ShippingRate.fromJson(j as Map<String, dynamic>)).toList();
   } catch (e, st) {
     Sentry.captureException(e, stackTrace: st);
     return [];
