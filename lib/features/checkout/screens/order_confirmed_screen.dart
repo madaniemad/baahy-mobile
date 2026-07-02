@@ -33,9 +33,13 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
   void initState() {
     super.initState();
     // Haptic success burst so user feels payment went through even without looking
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // Wait for the route transition to finish (~350ms) so the vibration
+    // fires exactly when the screen settles — giving the "payment done" feel.
+    Future.delayed(const Duration(milliseconds: 350), () async {
+      if (!mounted) return;
       await HapticFeedback.heavyImpact();
-      await Future.delayed(const Duration(milliseconds: 120));
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (!mounted) return;
       await HapticFeedback.mediumImpact();
     });
   }
