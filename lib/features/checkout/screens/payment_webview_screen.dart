@@ -91,7 +91,12 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
         ),
         Expanded(
           child: Stack(children: [
-            WebViewWidget(controller: _ctrl),
+            // Directionality(ltr) fixes mirrored touch coordinates in RTL apps —
+            // without it, taps register at the horizontally-flipped position.
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: WebViewWidget(controller: _ctrl),
+            ),
             if (_pageLoading)
               const Center(
                 child: CircularProgressIndicator(
