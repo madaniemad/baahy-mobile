@@ -431,7 +431,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                             ],
                             const SizedBox(height: 8),
                             TextButton.icon(
-                              onPressed: () => safePush(context, '/assistant'),
+                              onPressed: () => safePush(context, '/chat'),
                               icon: const Icon(Icons.auto_awesome_outlined,
                                 size: 16, color: AppColors.primary),
                               label: Text(context.s.askAssistant,
