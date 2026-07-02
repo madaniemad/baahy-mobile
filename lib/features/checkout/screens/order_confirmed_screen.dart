@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/app_config_provider.dart';
@@ -7,24 +8,41 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
-class OrderConfirmedScreen extends ConsumerWidget {
+class OrderConfirmedScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> data;
   const OrderConfirmedScreen({required this.data, super.key});
 
-  String _deliveryDays(BuildContext context) {
-    final rate = data['shipping_rate'];
+  @override
+  ConsumerState<OrderConfirmedScreen> createState() => _OrderConfirmedScreenState();
+}
+
+class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
+  String _deliveryDays() {
+    final rate = widget.data['shipping_rate'];
     if (rate is Map) {
       final days = rate['estimated_days'];
       if (days != null) return days.toString();
     }
-    final city = (data['city'] ?? data['shipping_city'] ?? '').toString();
+    final city = (widget.data['city'] ?? widget.data['shipping_city'] ?? '').toString();
     final isTripoli = city.toLowerCase().contains('طرابلس') ||
         city.toLowerCase().contains('tripoli');
     return isTripoli ? '1 - 2' : '2 - 5';
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    // Haptic success burst so user feels payment went through even without looking
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 120));
+      await HapticFeedback.mediumImpact();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = widget.data;
     final orderNumber = data['order_number'] ?? '#${data['id']}';
     final orderId = data['id'];
     final rawTotal = data['total'];
@@ -43,7 +61,7 @@ class OrderConfirmedScreen extends ConsumerWidget {
     final loyaltyRemaining = tier?.nextMilestoneRemaining;
     final loyaltyReward = tier?.nextMilestoneReward;
     final isAr = context.isAr;
-    final deliveryDays = _deliveryDays(context);
+    final deliveryDays = _deliveryDays();
 
     return Scaffold(
       backgroundColor: context.col.bg,

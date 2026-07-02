@@ -8,6 +8,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/order.dart';
+import '../../../core/models/product.dart';
+import '../../../core/providers/cart_provider.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
@@ -108,12 +110,58 @@ class OrderTrackingScreen extends ConsumerWidget {
   }
 }
 
-class _OrderBody extends StatelessWidget {
+class _OrderBody extends ConsumerStatefulWidget {
   final Order order;
   const _OrderBody({required this.order});
 
   @override
+  ConsumerState<_OrderBody> createState() => _OrderBodyState();
+}
+
+class _OrderBodyState extends ConsumerState<_OrderBody> {
+  bool _reordering = false;
+
+  Future<void> _reorder(BuildContext context) async {
+    if (_reordering) return;
+    setState(() => _reordering = true);
+    try {
+      final ids = widget.order.vendorGroups
+          .expand((g) => g.items)
+          .map((i) => i.productId)
+          .toSet()
+          .toList();
+      final queryParams = ids.map((id) => 'ids[]=$id').join('&');
+      final res = await ApiClient.instance.dio.get('/products?$queryParams');
+      final raw = (res.data['data'] as List? ?? []);
+      final products = {for (final j in raw) (j['id'] as int): Product.fromJson(j)};
+      final cart = ref.read(cartProvider.notifier);
+      for (final group in widget.order.vendorGroups) {
+        for (final item in group.items) {
+          final p = products[item.productId];
+          if (p == null) continue;
+          ProductVariation? v;
+          if (item.variationId != null) {
+            try { v = p.variations.firstWhere((vv) => vv.id == item.variationId); }
+            catch (_) {}
+          }
+          await cart.add(p, variation: v, qty: item.quantity);
+        }
+      }
+      if (context.mounted) context.go('/cart');
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.isAr ? 'تعذرت إعادة الطلب' : 'Could not reorder')));
+      }
+    } finally {
+      if (mounted) setState(() => _reordering = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final order = widget.order;
     final isActive = ['pending_confirmation', 'pending', 'confirmed', 'processing',
         'fulfilled', 'shipped', 'out_for_delivery'].contains(order.status);
 
@@ -131,7 +179,7 @@ class _OrderBody extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: context.col.surface,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.col.border),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -157,7 +205,7 @@ class _OrderBody extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 color: context.col.surface,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.col.border),
               ),
               child: Column(
@@ -178,13 +226,19 @@ class _OrderBody extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: context.col.surface,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.col.border),
           ),
           child: Column(children: [
             _SumRow(context.s.subtotalOrder, '${fmtPrice(order.subtotal)} ${context.s.lydUnit}', ctx: context),
-            if (order.shippingCost > 0)
-              _SumRow(context.s.shippingLabel, '${fmtPrice(order.shippingCost)} ${context.s.lydUnit}', ctx: context),
+            _SumRow(
+              context.s.shippingLabel,
+              order.shippingCost > 0
+                  ? '${fmtPrice(order.shippingCost)} ${context.s.lydUnit}'
+                  : (context.isAr ? 'مجاني' : 'Free'),
+              color: order.shippingCost == 0 ? AppColors.success : null,
+              ctx: context,
+            ),
             if (order.discount > 0)
               _SumRow(context.s.discountLabel, '-${fmtPrice(order.discount)} ${context.s.lydUnit}',
                 color: AppColors.success, ctx: context),
@@ -216,7 +270,7 @@ class _OrderBody extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: color.withValues(alpha: 0.3)),
                     ),
                     child: Row(children: [
@@ -240,7 +294,7 @@ class _OrderBody extends StatelessWidget {
                   style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   side: BorderSide(color: context.col.border),
                 ),
               ),
@@ -251,7 +305,7 @@ class _OrderBody extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
               decoration: BoxDecoration(
                 color: context.col.surfaceSoft,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.col.border),
               ),
               child: Row(children: [
@@ -265,6 +319,28 @@ class _OrderBody extends StatelessWidget {
           ],
         ],
         const SizedBox(height: 8),
+        // Reorder button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _reordering ? null : () => _reorder(context),
+            icon: _reordering
+                ? const SizedBox(width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.shopping_bag_outlined, size: 16),
+            label: Text(
+              context.isAr ? 'إعادة الطلب' : 'Reorder',
+              style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
@@ -275,7 +351,7 @@ class _OrderBody extends StatelessWidget {
               style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 13),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               side: BorderSide(color: context.col.border),
             ),
           ),
@@ -328,36 +404,32 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final info = _info(context);
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: context.col.ink0,
-        borderRadius: BorderRadius.circular(6),
+        color: context.col.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.col.border),
       ),
-      child: Stack(children: [
-        Positioned(
-          right: -40, top: -40,
-          child: Container(width: 180, height: 180,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary.withValues(alpha: 0.2)),
+      child: Row(children: [
+        Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(10),
           ),
+          child: Icon(info.icon, color: AppColors.primary, size: 20),
         ),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(info.icon, color: AppColors.primary, size: 14),
-            const SizedBox(width: 5),
-            Text(info.badge,
-              style: const TextStyle(fontFamily: 'Cairo', color: AppColors.primary,
-                fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1)),
-          ]),
-          const SizedBox(height: 8),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(info.badge,
+            style: const TextStyle(fontFamily: 'Cairo', color: AppColors.primary,
+              fontSize: 12, fontWeight: FontWeight.w700)),
           Text(info.title,
-            style: const TextStyle(color: Colors.white,
-              fontSize: 22, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
+            style: TextStyle(fontFamily: 'Cairo', color: context.col.ink0,
+              fontSize: 15, fontWeight: FontWeight.w800)),
           Text(info.subtitle,
-            style: const TextStyle(color: Colors.white70, fontSize: 13)),
-        ]),
+            style: TextStyle(fontFamily: 'Cairo', color: context.col.ink3, fontSize: 12)),
+        ])),
       ]),
     );
   }
@@ -442,7 +514,7 @@ class _Timeline extends StatelessWidget {
                     width: 2),
                 ),
                 child: isDone
-                    ? Icon(Icons.check_rounded, size: 12, color: context.col.ink0)
+                    ? const Icon(Icons.check_rounded, size: 12, color: Colors.white)
                     : null,
               ),
               if (!isLast)
@@ -466,7 +538,10 @@ class _Timeline extends StatelessWidget {
                 if (ts != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    '${ts.day}/${ts.month}/${ts.year} ${ts.hour.toString().padLeft(2, '0')}:${ts.minute.toString().padLeft(2, '0')}',
+                    () {
+                      final t = ts.toLocal();
+                      return '${t.day}/${t.month}/${t.year} ${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+                    }(),
                     style: TextStyle(fontSize: 11, color: context.col.ink3,
                       fontFamily: 'PlusJakartaSans')),
                 ],
@@ -512,7 +587,7 @@ class _OrderItemRow extends StatelessWidget {
         ),
         child: Row(children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
             child: SizedBox(
               width: 44, height: 44,
               child: item.productImage != null && item.productImage!.startsWith('http')
@@ -535,7 +610,7 @@ class _OrderItemRow extends StatelessWidget {
               if (item.variationLabel != null)
                 Text(item.variationLabel!,
                   style: TextStyle(fontSize: 11, color: context.col.ink3)),
-              Text('×${item.quantity}',
+              Text('${fmtPrice(item.price)} ${context.s.lydUnit} × ${item.quantity}',
                 style: TextStyle(fontFamily: 'PlusJakartaSans',
                   fontSize: 11, color: context.col.ink2)),
             ]),
