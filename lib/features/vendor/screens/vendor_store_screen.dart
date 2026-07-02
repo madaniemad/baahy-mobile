@@ -220,7 +220,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 44),
                           side: BorderSide(color: context.col.border),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: Text(context.s.viewMore,
                           style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,

@@ -150,7 +150,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         context: context,
         backgroundColor: context.col.surface,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(6))),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
         builder: (_) => _AddedToCartSheet(
           product: product,
           qty: _qty,
@@ -343,7 +343,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                                 decoration: BoxDecoration(
                                   color: AppColors.danger,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
                                   '-${((product.price - displayPrice) / product.price * 100).round()}%',
@@ -381,7 +381,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                   width: 46, height: 46,
                                   margin: const EdgeInsets.only(right: 6),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: i == _imageIndex ? AppColors.primary : context.col.border,
                                       width: i == _imageIndex ? 2 : 1),
@@ -407,7 +407,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: context.col.surface,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: context.col.border),
                             boxShadow: AppShadows.shadowLifted,
                           ),
@@ -496,7 +496,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                                           decoration: BoxDecoration(
                                             color: AppColors.danger.withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(6)),
+                                            borderRadius: BorderRadius.circular(12)),
                                           child: Text(
                                             '${context.s.saveAmountPrefix} ${fmtPrice(product.price - displayPrice)} ${context.s.lydUnit}',
                                             style: const TextStyle(color: AppColors.danger,
@@ -542,7 +542,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: context.col.surface,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: context.col.border),
                             boxShadow: AppShadows.shadowLifted,
                           ),
@@ -595,7 +595,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: context.col.surface,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: context.col.border),
                             boxShadow: AppShadows.shadowLifted,
                           ),
@@ -627,7 +627,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: context.col.surface,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: context.col.border),
                               boxShadow: AppShadows.shadowLifted,
                             ),
@@ -675,7 +675,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: context.col.surface,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: context.col.border),
                               boxShadow: AppShadows.shadowLifted,
                             ),
@@ -690,7 +690,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                           decoration: BoxDecoration(
                             color: context.col.surface,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: context.col.border),
                             boxShadow: AppShadows.shadowLifted,
                           ),
@@ -812,7 +812,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 backgroundColor: AppColors.primary,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6)),
+                                  borderRadius: BorderRadius.circular(12)),
                                 elevation: 0,
                               ),
                             ),
@@ -828,7 +828,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6)),
+                                borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
                         ),

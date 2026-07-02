@@ -119,9 +119,9 @@ class _UsernameSetupScreenState extends ConsumerState<UsernameSetupScreen> {
               hintStyle: TextStyle(color: context.col.ink4),
               filled: true,
               fillColor: context.col.surfaceSoft,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: _errorColor, width: 1.5),
               ),
               suffixIcon: _suffixIcon(),
@@ -138,7 +138,7 @@ class _UsernameSetupScreenState extends ConsumerState<UsernameSetupScreen> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 disabledBackgroundColor: context.col.surfaceSoft,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: _saving

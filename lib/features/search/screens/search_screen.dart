@@ -183,7 +183,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     height: 46,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: context.col.border, width: 1.2),
                     ),
                     child: Row(children: [
@@ -443,7 +443,7 @@ class _SuggestionRow extends StatelessWidget {
   Widget build(BuildContext ctx) {
     final leading = showImage && image != null
         ? ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
             child: CachedNetworkImage(
               imageUrl: image!,
               width: 36,
@@ -619,7 +619,7 @@ class _EmptyState extends StatelessWidget {
                               horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
                             color: context.col.surface,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: context.col.border),
                           ),
                           child: Text(c,
@@ -652,7 +652,7 @@ class _EmptyState extends StatelessWidget {
                     begin: Alignment.centerRight,
                     end: Alignment.centerLeft,
                   ),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
                         color: const Color(0xFF00DEDA).withValues(alpha: 0.30),
@@ -666,7 +666,7 @@ class _EmptyState extends StatelessWidget {
                     height: 42,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.28),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.auto_awesome_rounded,
                         color: Colors.white, size: 22),

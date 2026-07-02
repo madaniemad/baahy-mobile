@@ -98,7 +98,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             width: 56, height: 56,
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.verified_user_outlined,
               color: AppColors.primary, size: 28),
@@ -162,7 +162,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: context.col.surfaceSoft,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             width: 1.5,
                             color: _hasError
@@ -235,7 +235,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(Icons.lock_outline_rounded, size: 16, color: AppColors.primary),
@@ -258,7 +258,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 backgroundColor: AppColors.primary,
                 disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: _loading
                   ? const SizedBox(width: 20, height: 20,

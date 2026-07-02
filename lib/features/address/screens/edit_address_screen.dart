@@ -206,7 +206,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                                   ? AppColors.primary.withValues(alpha: 0.12)
                                   : const Color(0xFFF5F5F5))
                               : context.col.surface,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected ? AppColors.primary : context.col.border,
                             width: isSelected ? 1.5 : 1),
@@ -234,7 +234,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                   Container(
                     decoration: BoxDecoration(
                       color: context.col.bg,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: _phoneFocus.hasFocus ? AppColors.primary : context.col.border,
                         width: _phoneFocus.hasFocus ? 1.5 : 1),
@@ -271,7 +271,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                         horizontal: 14, vertical: 13),
                       decoration: BoxDecoration(
                         color: context.col.bg,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _city != null ? AppColors.primary : context.col.border,
                           width: _city != null ? 1.5 : 1),
@@ -305,7 +305,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                     color: _lat != null
                         ? AppColors.primary.withValues(alpha: 0.06)
                         : context.col.bg,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _lat != null ? AppColors.primary : context.col.border,
                       width: _lat != null ? 1.5 : 1,
@@ -359,7 +359,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: context.col.bg,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _notesFocus.hasFocus ? AppColors.primary : context.col.border,
                     width: _notesFocus.hasFocus ? 1.5 : 1),
@@ -427,7 +427,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
     return Container(
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(6)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       padding: EdgeInsets.fromLTRB(16, 12, 16, bottom + 16),
       height: MediaQuery.of(context).size.height * 0.75,
@@ -447,7 +447,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
         Container(
           decoration: BoxDecoration(
             color: context.col.surfaceSoft,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.col.border),
           ),
           child: TextField(
@@ -494,7 +494,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
                     decoration: BoxDecoration(
                       color: selected
                           ? Color(0xFFF5F5F5) : context.col.surfaceSoft,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: selected ? AppColors.primary : context.col.border,
                         width: selected ? 1.5 : 1),
@@ -572,7 +572,7 @@ class _TextFieldState extends State<_TextField> {
       Container(
         decoration: BoxDecoration(
           color: context.col.bg,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _focused ? AppColors.primary : context.col.border,
             width: _focused ? 1.5 : 1),

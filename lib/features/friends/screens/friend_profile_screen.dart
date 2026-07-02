@@ -166,7 +166,7 @@ class _PendingBanner extends ConsumerWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Row(children: [
@@ -181,7 +181,7 @@ class _PendingBanner extends ConsumerWidget {
           onPressed: () async => await ref.read(friendsProvider.notifier).acceptRequest(friendshipId),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary, foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             minimumSize: const Size(0, 32),
           ),
@@ -222,7 +222,7 @@ class _AddFriendSectionState extends ConsumerState<_AddFriendSection> {
           style: ElevatedButton.styleFrom(
             backgroundColor: isPending ? context.col.surfaceSoft : AppColors.primary,
             foregroundColor: isPending ? context.col.ink2 : Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.symmetric(vertical: 12),
           ),
         ),
@@ -263,13 +263,13 @@ class _WishlistSection extends StatelessWidget {
                 margin: const EdgeInsets.only(right: 10),
                 decoration: BoxDecoration(
                   color: context.col.surface,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: context.col.border),
                   boxShadow: AppShadows.shadowLifted,
                 ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                     child: images.isNotEmpty
                         ? CachedNetworkImage(imageUrl: images.first, width: 120, height: 100, fit: BoxFit.cover)
                         : Container(width: 120, height: 100, color: context.col.surfaceSoft),
@@ -308,7 +308,7 @@ class _PurchasesSection extends StatelessWidget {
             width: 44, height: 44,
             decoration: BoxDecoration(
               color: context.col.surfaceSoft,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(Icons.shopping_bag_outlined, color: context.col.ink3),
           ),

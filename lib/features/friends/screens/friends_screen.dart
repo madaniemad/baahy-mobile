@@ -102,7 +102,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.danger,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text('$pendingCount',
                       style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
@@ -172,7 +172,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                       Container(
                         decoration: BoxDecoration(
                           color: context.col.surface,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: context.col.border),
                           boxShadow: AppShadows.shadowLifted,
                         ),
@@ -279,7 +279,7 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.col.border),
         boxShadow: AppShadows.shadowLifted,
       ),
@@ -305,12 +305,12 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
               // Code box
               widget.code.isEmpty
                 ? Container(height: 34,
-                    decoration: BoxDecoration(color: context.col.surfaceSoft, borderRadius: BorderRadius.circular(8)))
+                    decoration: BoxDecoration(color: context.col.surfaceSoft, borderRadius: BorderRadius.circular(12)))
                 : Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                     decoration: BoxDecoration(
                       color: context.col.surfaceSoft,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: context.col.border),
                     ),
                     child: Row(children: [
@@ -351,7 +351,7 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
             height: 46,
             decoration: BoxDecoration(
               color: _tiffany,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Icon(Icons.share_rounded, size: 16, color: Colors.white),
@@ -412,7 +412,7 @@ class _EarnStat extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
           color: context.col.surface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: context.col.border),
           boxShadow: AppShadows.shadowLifted,
         ),
@@ -566,7 +566,7 @@ class _RequestsTab extends ConsumerWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: context.col.surface,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: context.col.border),
               boxShadow: AppShadows.shadowLifted,
             ),
@@ -605,7 +605,7 @@ class _RequestsTab extends ConsumerWidget {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     minimumSize: const Size(0, 34),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(context.tr('قبول', 'Accept'),
                     style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.w700)),
@@ -653,7 +653,7 @@ class _FaqCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.col.border),
         boxShadow: AppShadows.shadowLifted,
       ),

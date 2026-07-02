@@ -355,7 +355,7 @@ class _StatsRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
           color: context.col.surface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: context.col.border),
         ),
         child: Row(children: [
@@ -480,7 +480,7 @@ class _TierProgressCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.col.border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -697,7 +697,7 @@ class _EarnCard extends StatelessWidget {
         padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           border: isDark ? Border.all(color: context.col.border) : null,
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -773,7 +773,7 @@ class _TransactionsSection extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: context.col.surface,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: context.col.border),
             ),
             child: Column(
@@ -930,7 +930,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       padding: EdgeInsets.fromLTRB(20, 20, 20, bottom + 20),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: const BorderRadius.all(Radius.circular(6)),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -968,7 +968,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: context.col.bg,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic,
@@ -996,7 +996,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
                         color: isSelected ? AppColors.primary : context.col.surface,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected ? AppColors.primary : context.col.border, width: 1.5)),
                       child: Center(child: Text('$amt',
@@ -1013,7 +1013,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
             Container(
               decoration: BoxDecoration(
                 color: context.col.surface,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: _customCtrl.text.trim().isNotEmpty ? AppColors.primary : context.col.border,
                   width: _customCtrl.text.trim().isNotEmpty ? 1.5 : 1)),
@@ -1044,7 +1044,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isSelected ? context.col.surfaceSoft : context.col.surface,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected ? AppColors.primary : context.col.border,
                       width: isSelected ? 1.5 : 1)),
@@ -1078,7 +1078,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
             Container(
               decoration: BoxDecoration(
                 color: context.col.surface,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _cardCtrl,
@@ -1103,7 +1103,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
             Container(
               decoration: BoxDecoration(
                 color: context.col.surface,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _otpCtrl,
@@ -1135,7 +1135,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: _loading
                   ? SizedBox(width: 20, height: 20,
@@ -1323,7 +1323,7 @@ class _WalletQrSheet extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4))],
           ),
           child: QrImageView(
@@ -1562,7 +1562,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _phoneCtrl,
@@ -1587,7 +1587,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFE0F9F9),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(children: [
                 const Icon(Icons.person_outline_rounded, size: 18, color: Color(0xFF08AAAC)),
@@ -1606,7 +1606,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _amountCtrl,
@@ -1632,7 +1632,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _noteCtrl,
@@ -1674,7 +1674,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),
               child: Column(children: [
@@ -1713,7 +1713,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1FD7E2),
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: _loading
                   ? const SizedBox(width: 20, height: 20,

@@ -227,7 +227,7 @@ class _BenefitCard extends StatelessWidget {
           width: 46, height: 46,
           decoration: BoxDecoration(
             color: const Color(0xFFE8F9FB),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, size: 24, color: _teal),
         ),

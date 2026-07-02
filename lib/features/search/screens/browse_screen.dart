@@ -111,7 +111,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: isDark ? context.col.surfaceSoft : context.col.surface,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: context.col.borderStrong, width: 1.0),
                   ),
                   child: Row(children: [
@@ -336,7 +336,7 @@ class _SubcategoryList extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? context.col.surfaceSoft : Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.07),
@@ -346,7 +346,7 @@ class _SubcategoryList extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: Column(
           children: List.generate(subcats.length, (i) {
             final sub = subcats[i];

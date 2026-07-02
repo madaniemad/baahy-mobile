@@ -159,7 +159,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.92),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(12),
                               boxShadow: [BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.07),
                                 blurRadius: 12, offset: const Offset(0, 4))],
@@ -272,7 +272,7 @@ class _CityRow extends StatelessWidget {
           border: Border.all(
             color: selected ? teal : Colors.white.withValues(alpha: 0.35),
             width: selected ? 2 : 1.5),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: selected
               ? [const BoxShadow(color: Color(0x280E3C46), blurRadius: 20, offset: Offset(0, 8))]
               : [],

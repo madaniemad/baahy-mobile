@@ -70,7 +70,7 @@ class _AppButtonState extends State<AppButton> {
         height: widget.height,
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           border: border,
         ),
         child: Center(

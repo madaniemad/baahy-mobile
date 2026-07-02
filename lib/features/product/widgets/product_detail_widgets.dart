@@ -21,7 +21,7 @@ class _StockEtaStrip extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.col.surfaceSoft,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
@@ -62,7 +62,7 @@ class _StockEtaStrip extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -187,7 +187,7 @@ class _TrustBlock extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.col.border),
       ),
       child: Column(
@@ -300,7 +300,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                     Container(
                       width: 80, height: 80,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _checked[all[i].id] == true
                               ? AppColors.primary : context.col.border,
@@ -329,7 +329,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
               Container(
                 decoration: BoxDecoration(
                   color: context.col.surface,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: context.col.border),
                 ),
                 child: Column(
@@ -344,7 +344,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                             Container(
                               width: 20, height: 20,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(12),
                                 color: _checked[all[i].id] == true ? context.col.ink0 : context.col.surface,
                                 border: _checked[all[i].id] == true
                                     ? null : Border.all(color: context.col.borderStrong, width: 1.8),
@@ -402,7 +402,7 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                     style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
@@ -488,7 +488,7 @@ class _ReviewCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.col.surfaceSoft,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -665,7 +665,7 @@ class _VariationPicker extends StatelessWidget {
                             color: isSelected ? AppColors.adaptive(context)
                                 : isOutOfStock ? context.col.surfaceSoft
                                 : context.col.surface,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isSelected ? AppColors.adaptive(context)
                                   : context.col.border,
@@ -682,7 +682,7 @@ class _VariationPicker extends StatelessWidget {
                         if (isOutOfStock)
                           Positioned.fill(
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(12),
                               child: CustomPaint(painter: _OutOfStockPainter()),
                             ),
                           ),
@@ -759,7 +759,7 @@ class _QtySelector extends StatelessWidget {
       Container(
         decoration: BoxDecoration(
           border: Border.all(color: context.col.border),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(children: [
           _QtyBtn(Icons.remove, qty > 1 && enabled ? () => onChanged(qty - 1) : null),
@@ -873,7 +873,7 @@ class _DeliveryCard extends ConsumerWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: Border.all(color: context.col.border),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -893,7 +893,7 @@ class _DeliveryCard extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: context.col.surfaceSoft,
-              borderRadius: BorderRadius.circular(8)),
+              borderRadius: BorderRadius.circular(12)),
             child: Text(estimate,
               style: TextStyle(fontSize: 12.5,
                 fontWeight: FontWeight.w600, color: context.col.ink1),
@@ -922,11 +922,11 @@ class _VendorRow extends StatelessWidget {
         width: 44, height: 44,
         decoration: BoxDecoration(
           color: context.col.surfaceSoft,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: context.col.border)),
         child: vendor.logo != null
             ? ClipRRect(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
                 child: CachedNetworkImage(
                   imageUrl: vendor.logo!, fit: BoxFit.cover))
             : Icon(Icons.store_outlined, size: 22, color: context.col.ink2),
@@ -947,7 +947,7 @@ class _VendorRow extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           side: BorderSide(color: AppColors.success.withValues(alpha: 0.8)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
@@ -1009,7 +1009,7 @@ class _CouponSectionState extends State<_CouponSection> {
                 child: Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: context.col.border),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: TextField(
                     controller: _ctrl,
@@ -1039,7 +1039,7 @@ class _CouponSectionState extends State<_CouponSection> {
                   backgroundColor: AppColors.primary,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(context.s.apply,
                   style: const TextStyle(fontFamily: 'Cairo',
@@ -1243,7 +1243,7 @@ class _AddedToCartSheet extends StatelessWidget {
                   backgroundColor: const Color(0xFF1C1C1E),
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(context.s.continueShopping,
                   style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, color: Colors.white)),
@@ -1261,7 +1261,7 @@ class _AddedToCartSheet extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
                 child: Text(context.s.viewCart,

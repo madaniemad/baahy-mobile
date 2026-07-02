@@ -567,7 +567,7 @@ class _TierCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isActive ? palette.gradA : context.col.border,
           width: isActive ? 2 : 1,
@@ -1077,7 +1077,7 @@ class _FaqSection extends StatelessWidget {
                 width: 44, height: 44,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.headset_mic_rounded,
                   size: 22, color: AppColors.primary),

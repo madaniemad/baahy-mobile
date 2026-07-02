@@ -99,7 +99,7 @@ class ReturnPolicyScreen extends ConsumerWidget {
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(50),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             icon: const Icon(Icons.shopping_bag_outlined, size: 18),
             label: Text(
@@ -126,7 +126,7 @@ class _PolicyCard extends StatelessWidget {
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: context.col.surface,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       border: Border.all(color: context.col.border),
     ),
     child: Row(
@@ -136,7 +136,7 @@ class _PolicyCard extends StatelessWidget {
           width: 36, height: 36,
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, size: 18, color: AppColors.primary),
         ),

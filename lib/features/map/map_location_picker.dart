@@ -194,7 +194,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
           content: Text(context.s.locationFailed),
           backgroundColor: context.col.ink1,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
       }
     }
@@ -377,7 +377,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(12),
                           boxShadow: [BoxShadow(
                             color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 8, offset: const Offset(0, 2))],
@@ -456,7 +456,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                     constraints: const BoxConstraints(maxHeight: 260),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                       boxShadow: [BoxShadow(
                         color: Colors.black.withValues(alpha: 0.12),
                         blurRadius: 12, offset: const Offset(0, 4))],
@@ -474,7 +474,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                             : null;
                         return InkWell(
                           onTap: () => _selectSuggestion(s),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(12),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 11),

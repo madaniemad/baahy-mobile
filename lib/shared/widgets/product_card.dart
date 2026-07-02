@@ -100,8 +100,7 @@ class ProductCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: context.col.surface,
           borderRadius: AppRadius.cardRadius,
-          border: Border.all(color: context.col.border),
-          boxShadow: AppShadows.shadowCard,
+          border: Border.all(color: const Color(0xFFE2E4E4)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +134,7 @@ class ProductCard extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppColors.danger,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '-${product.discountPercent}%',
@@ -158,7 +157,7 @@ class ProductCard extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: isDark ? context.col.surface : AppColors.ink0,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             context.tr('نفدت الكمية', 'OUT OF STOCK'),

@@ -242,7 +242,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
             left: frameL, top: frameT,
             width: frameSize, height: frameSize,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(12),
               child: Image.file(_captured!, fit: BoxFit.cover),
             ),
           ),
@@ -358,7 +358,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                       child: Text(
                         context.isAr
@@ -604,7 +604,7 @@ class _BracketPainter extends CustomPainter {
       final dimPaint = Paint()..color = Colors.black.withValues(alpha: 0.4);
       final outer = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
       final inner = Path()..addRRect(RRect.fromRectAndRadius(
-          Rect.fromLTRB(r, b, right, bottom), const Radius.circular(6)));
+          Rect.fromLTRB(r, b, right, bottom), const Radius.circular(12)));
       canvas.drawPath(Path.combine(PathOperation.difference, outer, inner), dimPaint);
     }
 

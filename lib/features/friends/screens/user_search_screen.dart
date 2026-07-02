@@ -132,7 +132,7 @@ class _SearchResultTileState extends ConsumerState<_SearchResultTile> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: AppColors.success.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
           ),
           child: Text(context.tr('أصدقاء', 'Friends'),
@@ -142,7 +142,7 @@ class _SearchResultTileState extends ConsumerState<_SearchResultTile> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: context.col.surfaceSoft,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.col.border),
           ),
           child: Text(context.tr('معلق', 'Pending'),
@@ -154,7 +154,7 @@ class _SearchResultTileState extends ConsumerState<_SearchResultTile> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.primary,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Text(context.tr('إضافة', 'Add'),
               style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Colors.white, fontWeight: FontWeight.w700)),

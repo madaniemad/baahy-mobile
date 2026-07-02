@@ -69,7 +69,7 @@ class AuthLandingScreen extends StatelessWidget {
                     backgroundColor: AppColors.primary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6)),
+                      borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(context.s.signIn,
                     style: const TextStyle(fontFamily: 'Cairo',
@@ -94,7 +94,7 @@ class AuthLandingScreen extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: context.col.borderStrong),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6)),
+                      borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
@@ -137,7 +137,7 @@ class _BenefitCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
           color: AppColors.primary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(children: [
           Icon(icon, color: AppColors.primary, size: 20),

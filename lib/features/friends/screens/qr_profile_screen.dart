@@ -69,7 +69,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
                   onPressed: () => context.push('/username-setup'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary, foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   ),
                   child: Text(context.tr('اختر اسم مستخدم', 'Set Username'),
@@ -80,7 +80,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: context.col.border),
                     boxShadow: AppShadows.shadowLifted,
                   ),
@@ -108,7 +108,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   ),
                 ),

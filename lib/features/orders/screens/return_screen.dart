@@ -307,7 +307,7 @@ class _ReturnPolicyBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(children: [
@@ -433,7 +433,7 @@ class _StepItems extends ConsumerWidget {
                       ),
                       const SizedBox(width: 10),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(12),
                         child: SizedBox(
                           width: 48, height: 48,
                           child: imageUrl != null
@@ -465,7 +465,7 @@ class _StepItems extends ConsumerWidget {
                             width: 28, height: 28,
                             decoration: BoxDecoration(
                               border: Border.all(color: context.col.border),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(Icons.remove, size: 14, color: context.col.ink1),
                           ),
@@ -484,7 +484,7 @@ class _StepItems extends ConsumerWidget {
                             decoration: BoxDecoration(
                               border: Border.all(
                                 color: qty < maxQty ? context.col.border : context.col.border.withValues(alpha: 0.3)),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(12),
                               color: qty < maxQty ? null : context.col.surfaceSoft,
                             ),
                             child: Icon(Icons.add, size: 14,
@@ -559,7 +559,7 @@ class _StepReason extends StatelessWidget {
                       color: selected
                           ? AppColors.primary.withValues(alpha: 0.08)
                           : context.col.surface,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: selected ? AppColors.primary : context.col.border,
                         width: selected ? 2 : 1),
@@ -586,7 +586,7 @@ class _StepReason extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: context.col.surfaceSoft,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: context.col.border),
                   ),
                   child: Row(children: [
@@ -618,13 +618,13 @@ class _StepReason extends StatelessWidget {
                   hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink3),
                   filled: true, fillColor: context.col.bg,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: context.col.border)),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: context.col.border)),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                   contentPadding: const EdgeInsets.all(14),
                 ),
@@ -654,7 +654,7 @@ class _StepReason extends StatelessWidget {
                         margin: const EdgeInsets.only(left: 8),
                         decoration: BoxDecoration(
                           color: context.col.bg,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: context.col.border),
                         ),
                         child: Column(
@@ -674,9 +674,9 @@ class _StepReason extends StatelessWidget {
                         Container(
                           width: 80, height: 80,
                           margin: const EdgeInsets.only(left: 8),
-                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(12),
                             child: Image.file(File(e.value.path), fit: BoxFit.cover),
                           ),
                         ),
@@ -777,7 +777,7 @@ class _StepDone extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: context.col.surface,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: context.col.border),
             ),
             child: Column(children: [

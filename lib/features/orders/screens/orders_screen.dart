@@ -261,7 +261,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                         decoration: BoxDecoration(
                           color: isActive ? AppColors.primary : context.col.surfaceSoft,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(t.$2,
                           style: TextStyle(
@@ -375,7 +375,7 @@ class _OrderCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: context.col.surface,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: _isActive ? AppColors.primary.withValues(alpha: 0.4) : context.col.border),
           boxShadow: _isActive ? AppShadows.shadowCard : null,
@@ -383,7 +383,7 @@ class _OrderCard extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(12),
               child: SizedBox(
                 width: 56, height: 56,
                 child: firstImage != null && firstImage.startsWith('http')
@@ -412,7 +412,7 @@ class _OrderCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: statusBg,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(_statusLabel(context, order.status),
                       style: TextStyle(color: statusColor,
@@ -449,7 +449,7 @@ class _OrderCard extends StatelessWidget {
                   foregroundColor: context.col.ink0,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   side: BorderSide(color: context.col.border),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

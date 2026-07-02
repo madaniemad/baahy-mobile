@@ -81,7 +81,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               width: 56, height: 56,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.phone_outlined,
                 color: AppColors.primary, size: 26),
@@ -103,7 +103,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
                     color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: context.col.borderStrong),
                   ),
                   child: const Text('+218',
@@ -115,7 +115,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: _error != null ? AppColors.danger : context.col.borderStrong),
                     ),
@@ -162,7 +162,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: context.col.bg,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: context.col.border),
                 ),
                 child: TextField(
@@ -209,7 +209,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                     backgroundColor: AppColors.primary,
                     disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
@@ -234,7 +234,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: context.col.borderStrong),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6)),
+                      borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(context.s.continueGuest,
                     style: TextStyle(fontFamily: 'Cairo',

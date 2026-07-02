@@ -263,7 +263,7 @@ class _AddressCard extends StatelessWidget {
                             width: 44, height: 44,
                             decoration: BoxDecoration(
                               color: context.col.surfaceSoft,
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(_labelIcon(rawLabel), size: 22,
                               color: isDefault ? AppColors.primary : context.col.ink2),
@@ -321,7 +321,7 @@ class _AddressCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: AppColors.gold.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text('📍 ${addr['notes']}',
                         style: const TextStyle(fontSize: 11.5, color: Color(0xFF7a5e10))),
@@ -340,7 +340,7 @@ class _AddressCard extends StatelessWidget {
                           width: 34, height: 34,
                           decoration: BoxDecoration(
                             color: AppColors.danger.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.delete_outline_rounded,
                             size: 17, color: AppColors.danger),
@@ -355,7 +355,7 @@ class _AddressCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
                           color: context.col.surfaceSoft,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(Icons.edit_outlined, size: 13, color: context.col.ink1),
@@ -376,7 +376,7 @@ class _AddressCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
                           color: context.col.surfaceSoft,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(Icons.ios_share_outlined, size: 13, color: context.col.ink1),
@@ -464,7 +464,7 @@ class _DeliveryTipCard extends StatelessWidget {
           width: 56, height: 56,
           decoration: BoxDecoration(
             color: context.col.surfaceSoft,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(Icons.local_shipping_outlined, size: 30, color: context.col.ink2),
         ),

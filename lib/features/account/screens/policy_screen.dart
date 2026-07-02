@@ -144,7 +144,7 @@ class _ReturnPolicyBody extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: context.col.surface,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.col.border),
           ),
           child: Column(

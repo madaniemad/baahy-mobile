@@ -181,15 +181,14 @@ class _WishlistCard extends ConsumerWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: context.col.surface,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: context.col.border),
-              boxShadow: AppShadows.shadowCard,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E4E4), width: 1),
             ),
             child: Row(children: [
               // Square image + discount badge
               Stack(children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                   child: SizedBox(
                     width: 82, height: 82,
                     child: product.firstImage != null
@@ -211,7 +210,7 @@ class _WishlistCard extends ConsumerWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                       decoration: BoxDecoration(
-                          color: AppColors.danger, borderRadius: BorderRadius.circular(6)),
+                          color: AppColors.danger, borderRadius: BorderRadius.circular(12)),
                       child: Text('-${((1 - salePrice / product.price) * 100).round()}%',
                           style: const TextStyle(
                               fontSize: 9, color: Colors.white, fontWeight: FontWeight.w700)),
@@ -331,7 +330,7 @@ class _WishBtn extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: context.col.surfaceSoft,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.col.border),
           ),
           child: Center(
@@ -355,7 +354,7 @@ class _WishBtn extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: isVariable ? Colors.transparent : AppColors.primary,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isVariable ? context.col.ink3 : AppColors.primary,
               width: 1,
@@ -396,7 +395,7 @@ class _PriceDropBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF1EB),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.warn.withValues(alpha: 0.3)),
       ),
       child: Row(children: [

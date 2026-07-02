@@ -164,7 +164,7 @@ class _PrivacyTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.col.border),
         boxShadow: AppShadows.shadowLifted,
       ),
