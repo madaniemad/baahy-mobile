@@ -156,14 +156,14 @@ class _CityScreenState extends ConsumerState<CityScreen>
 
                           // Search bar
                           ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 300),
+                            constraints: const BoxConstraints(maxWidth: 320),
                             child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.92),
-                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
                               boxShadow: [BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.07),
-                                blurRadius: 12, offset: const Offset(0, 4))],
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 14, offset: const Offset(0, 5))],
                             ),
                             child: Row(children: [
                               const SizedBox(width: 14),
@@ -195,44 +195,51 @@ class _CityScreenState extends ConsumerState<CityScreen>
                           )),
                           const SizedBox(height: 10),
 
-                          // City list — fixed-height card, scrolls internally
+                          // City list — clean white card, scrolls internally
                           ConstrainedBox(
                             constraints: BoxConstraints(
-                              maxWidth: 300,
-                              maxHeight: MediaQuery.sizeOf(context).height * 0.42),
+                              maxWidth: 320,
+                              maxHeight: MediaQuery.sizeOf(context).height * 0.44),
                             child: Container(
                             clipBehavior: Clip.antiAlias,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.20),
-                              borderRadius: BorderRadius.circular(16),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.10),
+                                blurRadius: 24, offset: const Offset(0, 10))],
                             ),
-                            padding: const EdgeInsets.all(6),
                             child: loading
                                 ? const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 32),
+                                    padding: EdgeInsets.symmetric(vertical: 36),
                                     child: Center(child: CircularProgressIndicator(
-                                      color: Colors.white, strokeWidth: 2.5)),
+                                      color: _teal, strokeWidth: 2.5)),
                                   )
-                                : SingleChildScrollView(
-                                    physics: const BouncingScrollPhysics(),
-                                    child: Column(children: [
-                                    ...filtered.map((city) => _CityRow(
-                                      cityAr: city.ar,
-                                      cityEn: city.en,
-                                      selected: _selected == city.ar,
-                                      isAr: isAr,
-                                      teal: _teal,
-                                      onTap: () => setState(() => _selected = city.ar),
-                                    )),
-                                    if (filtered.isEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 14),
+                                : filtered.isEmpty
+                                    ? Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 24),
                                         child: Text(isAr ? 'لا توجد نتائج' : 'No results',
                                           textAlign: TextAlign.center,
                                           style: const TextStyle(color: _navy, fontWeight: FontWeight.w700)),
+                                      )
+                                    : SingleChildScrollView(
+                                        physics: const BouncingScrollPhysics(),
+                                        child: Column(children: [
+                                          for (int i = 0; i < filtered.length; i++) ...[
+                                            _CityRow(
+                                              cityAr: filtered[i].ar,
+                                              cityEn: filtered[i].en,
+                                              selected: _selected == filtered[i].ar,
+                                              isAr: isAr,
+                                              teal: _teal,
+                                              onTap: () => setState(() => _selected = filtered[i].ar),
+                                            ),
+                                            if (i < filtered.length - 1)
+                                              const Divider(height: 1, thickness: 1,
+                                                indent: 16, endIndent: 16, color: Color(0xFFEDF1F2)),
+                                          ],
+                                        ]),
                                       ),
-                                  ]),
-                                  ),
                           )),
                           const Spacer(),
                         ],
@@ -272,48 +279,27 @@ class _CityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(bottom: 5),
-        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 12),
-        decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.white.withValues(alpha: 0.35),
-          border: Border.all(
-            color: selected ? teal : Colors.white.withValues(alpha: 0.35),
-            width: selected ? 2 : 1.5),
-          borderRadius: BorderRadius.circular(11),
-          boxShadow: selected
-              ? [const BoxShadow(color: Color(0x280E3C46), blurRadius: 20, offset: Offset(0, 8))]
-              : [],
-        ),
-        child: Row(children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: 18, height: 18,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: selected ? teal : Colors.transparent,
-              border: selected ? null
-                  : Border.all(color: const Color(0x590E3C46), width: 2),
+    return Material(
+      color: selected ? teal.withValues(alpha: 0.10) : Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
+          child: Row(children: [
+            Expanded(
+              child: Text(isAr ? cityAr : cityEn,
+                textAlign: isAr ? TextAlign.right : TextAlign.left,
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 14.5,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: selected ? _navy : const Color(0xFF33565C))),
             ),
-            child: selected
-                ? const Icon(Icons.check_rounded, size: 12, color: Colors.white)
-                : null,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(isAr ? cityAr : cityEn,
-              textAlign: isAr ? TextAlign.right : TextAlign.left,
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 13.5,
-                fontWeight: FontWeight.w700,
-                color: selected ? _navy : const Color(0xFF13474F))),
-          ),
-          const SizedBox(width: 8),
-          Icon(Icons.location_on_outlined, size: 17,
-            color: selected ? teal : const Color(0xFF3A8E98)),
-        ]),
+            const SizedBox(width: 10),
+            if (selected)
+              Icon(Icons.check_circle_rounded, size: 20, color: teal)
+            else
+              const SizedBox(width: 20),
+          ]),
+        ),
       ),
     );
   }
