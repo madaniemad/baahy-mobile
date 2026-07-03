@@ -98,14 +98,14 @@ class _CityScreenState extends ConsumerState<CityScreen>
               children: [
                 // Language pill
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       GestureDetector(
                         onTap: () => ref.read(localeProvider.notifier).toggle(),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(999),
@@ -114,11 +114,11 @@ class _CityScreenState extends ConsumerState<CityScreen>
                               blurRadius: 16, offset: const Offset(0, 6))],
                           ),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.language_rounded, size: 18, color: _teal),
+                            Icon(Icons.language_rounded, size: 16, color: _teal),
                             const SizedBox(width: 6),
                             Text(isAr ? 'English' : 'العربية',
                               style: const TextStyle(fontFamily: 'Cairo',
-                                fontSize: 15, fontWeight: FontWeight.w800, color: _navy)),
+                                fontSize: 13, fontWeight: FontWeight.w800, color: _navy)),
                           ]),
                         ),
                       ),
@@ -129,7 +129,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
                 // Scrollable content
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(28, 16, 28, 16),
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
                     physics: const BouncingScrollPhysics(),
                     child: AnimatedBuilder(
                       animation: Listenable.merge([_slideY, _fade]),
@@ -143,17 +143,17 @@ class _CityScreenState extends ConsumerState<CityScreen>
                           // Heading
                           Text(isAr ? 'اختار مدينتك' : 'Choose Your City',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontFamily: 'Cairo', fontSize: 34,
+                            style: const TextStyle(fontFamily: 'Cairo', fontSize: 26,
                               fontWeight: FontWeight.w900, color: Colors.white,
                               shadows: [Shadow(color: Color(0x2E0E3C46), blurRadius: 14, offset: Offset(0, 3))])),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 5),
                           Text(isAr
                               ? 'لنتمكن من عرض المنتجات والعروض المناسبة لك'
                               : 'To show you relevant products and offers',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontFamily: 'Cairo', fontSize: 15,
-                              fontWeight: FontWeight.w700, color: _navy, height: 1.5)),
-                          const SizedBox(height: 16),
+                            style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                              fontWeight: FontWeight.w700, color: _navy, height: 1.4)),
+                          const SizedBox(height: 12),
 
                           // Search bar
                           Container(
@@ -165,9 +165,9 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                 blurRadius: 12, offset: const Offset(0, 4))],
                             ),
                             child: Row(children: [
-                              const SizedBox(width: 16),
-                              const Icon(Icons.search_rounded, size: 22, color: Color(0xFF0D6B75)),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 14),
+                              const Icon(Icons.search_rounded, size: 20, color: Color(0xFF0D6B75)),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: TextField(
                                   controller: _searchCtrl,
@@ -176,30 +176,31 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                   textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
                                   onChanged: (v) => setState(() => _query = v),
                                   style: const TextStyle(fontFamily: 'Cairo',
-                                    fontSize: 14, fontWeight: FontWeight.w600, color: _navy),
+                                    fontSize: 13.5, fontWeight: FontWeight.w600, color: _navy),
                                   decoration: InputDecoration(
                                     hintText: isAr ? 'ابحث عن مدينتك' : 'Search cities',
                                     hintStyle: const TextStyle(fontFamily: 'Cairo',
-                                      color: Color(0xFF2A6E78), fontSize: 14, fontWeight: FontWeight.w500),
+                                      color: Color(0xFF2A6E78), fontSize: 13.5, fontWeight: FontWeight.w500),
                                     border: InputBorder.none,
                                     filled: true,
                                     fillColor: Colors.transparent,
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                                    isDense: true,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 14),
                             ]),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
 
                           // City list
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.20),
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(6),
                             child: loading
                                 ? const Padding(
                                     padding: EdgeInsets.symmetric(vertical: 32),
@@ -265,14 +266,14 @@ class _CityRow extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(bottom: 6),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        margin: const EdgeInsets.only(bottom: 5),
+        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 12),
         decoration: BoxDecoration(
           color: selected ? Colors.white : Colors.white.withValues(alpha: 0.35),
           border: Border.all(
             color: selected ? teal : Colors.white.withValues(alpha: 0.35),
             width: selected ? 2 : 1.5),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(11),
           boxShadow: selected
               ? [const BoxShadow(color: Color(0x280E3C46), blurRadius: 20, offset: Offset(0, 8))]
               : [],
@@ -280,7 +281,7 @@ class _CityRow extends StatelessWidget {
         child: Row(children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            width: 22, height: 22,
+            width: 18, height: 18,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: selected ? teal : Colors.transparent,
@@ -288,19 +289,19 @@ class _CityRow extends StatelessWidget {
                   : Border.all(color: const Color(0x590E3C46), width: 2),
             ),
             child: selected
-                ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                ? const Icon(Icons.check_rounded, size: 12, color: Colors.white)
                 : null,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(isAr ? cityAr : cityEn,
               textAlign: isAr ? TextAlign.right : TextAlign.left,
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 15,
+              style: TextStyle(fontFamily: 'Cairo', fontSize: 13.5,
                 fontWeight: FontWeight.w700,
                 color: selected ? _navy : const Color(0xFF13474F))),
           ),
           const SizedBox(width: 8),
-          Icon(Icons.location_on_outlined, size: 20,
+          Icon(Icons.location_on_outlined, size: 17,
             color: selected ? teal : const Color(0xFF3A8E98)),
         ]),
       ),
@@ -318,12 +319,12 @@ class _BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
+      padding: const EdgeInsets.fromLTRB(18, 6, 18, 12),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 22),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 22),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(999),
@@ -332,14 +333,14 @@ class _BottomBar extends StatelessWidget {
           ),
           child: Stack(alignment: Alignment.center, children: [
             Text(label, style: const TextStyle(fontFamily: 'Cairo',
-              fontSize: 17, fontWeight: FontWeight.w900, color: _navy)),
+              fontSize: 15, fontWeight: FontWeight.w900, color: _navy)),
             Positioned(
               right: 0,
               child: Opacity(
                 opacity: 0.45,
                 child: Icon(
                   isAr ? Icons.arrow_forward_ios : Icons.arrow_back_ios_new_rounded,
-                  size: 18, color: _teal),
+                  size: 16, color: _teal),
               ),
             ),
           ]),
