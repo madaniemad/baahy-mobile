@@ -60,7 +60,11 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         centerTitle: true,
-        automaticallyImplyLeading: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          onPressed: () => context.canPop() ? context.pop() : context.go('/account'),
+        ),
         title: Text(context.s.myWallet,
           style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
       ),

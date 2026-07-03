@@ -479,6 +479,7 @@ class _BannerSlide extends StatelessWidget {
           CachedNetworkImage(
             imageUrl: banner.imageUrl!,
             fit: BoxFit.cover,
+            memCacheWidth: 1080,
             placeholder: (_, __) => const _BannerSkeleton(),
             errorWidget: (_, __, ___) => _gradientBg(gradient),
           )
@@ -662,6 +663,7 @@ class _SubHeroBannerState extends State<_SubHeroBanner> {
               imageUrl: banner.imageUrl!,
               fit: BoxFit.cover,
               width: double.infinity,
+              memCacheWidth: 1080,
               placeholder: (_, __) => Container(color: context.col.surfaceSoft),
               errorWidget: (_, __, ___) => const SizedBox.shrink(),
             ),
@@ -739,6 +741,7 @@ class _DuoBannerRow extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   CachedNetworkImage(imageUrl: url, fit: BoxFit.cover,
+                    memCacheWidth: 1080,
                     placeholder: (_, __) => Container(color: Colors.grey.shade100),
                     errorWidget: (_, __, ___) => Container(color: Colors.grey.shade200),
                   ),
@@ -843,6 +846,7 @@ class _SingleBannerSection extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               CachedNetworkImage(imageUrl: item.imageUrl!, fit: BoxFit.cover,
+                memCacheWidth: 1080,
                 placeholder: (_, __) => Container(color: Colors.grey.shade100),
                 errorWidget: (_, __, ___) => Container(color: Colors.grey.shade200),
               ),
@@ -957,6 +961,7 @@ class _CategoryImagesCarousel extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         child: CachedNetworkImage(
                           imageUrl: cat.image!,
+                          memCacheWidth: 216,
                           width: 72, height: 72,
                           fit: BoxFit.cover,
                           placeholder: (_, __) => Container(
@@ -1182,6 +1187,7 @@ class _CategoriesGridState extends State<_CategoriesGrid> {
                   child: ClipOval(
                     child: item.cat.image != null
                         ? CachedNetworkImage(imageUrl: item.cat.image!, fit: BoxFit.cover,
+                            memCacheWidth: 300,
                             errorWidget: (_, __, ___) => Center(
                               child: Icon(icon, size: 26, color: context.col.ink3)))
                         : Center(child: Icon(icon, size: 20, color: context.col.ink3)),
@@ -1252,6 +1258,7 @@ class _DynFashionCardsSection extends StatelessWidget {
                       CachedNetworkImage(
                         imageUrl: cardImg,
                         fit: BoxFit.cover,
+                        memCacheWidth: 600,
                         placeholder: (_, __) => Container(color: context.col.surfaceSoft),
                         errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)),
                       ),
@@ -1363,6 +1370,7 @@ class _FashionTile extends StatelessWidget {
           child: Stack(fit: StackFit.expand, children: [
             if (imgUrl != null && imgUrl.isNotEmpty)
               CachedNetworkImage(imageUrl: imgUrl, fit: BoxFit.cover,
+                memCacheWidth: 600,
                 errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)))
             else
               Container(color: const Color(0xFF1A1A3E)),
@@ -1630,6 +1638,7 @@ class _DynTileCarouselState extends State<_DynTileCarousel> {
                   CachedNetworkImage(
                     imageUrl: img.imageUrl,
                     fit: BoxFit.cover,
+                    memCacheWidth: 1080,
                     placeholder: (_, __) => Container(
                       decoration: BoxDecoration(gradient: LinearGradient(
                         begin: Alignment.topLeft, end: Alignment.bottomRight,
@@ -1813,6 +1822,7 @@ class _BudgetCarousel extends StatelessWidget {
               child: Stack(fit: StackFit.expand, children: [
                 p.firstImage != null
                     ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover,
+                        memCacheWidth: 400,
                         errorWidget: (_, __, ___) => Container(color: context.col.surfaceSoft))
                     : Container(color: context.col.surfaceSoft),
                 Positioned(
