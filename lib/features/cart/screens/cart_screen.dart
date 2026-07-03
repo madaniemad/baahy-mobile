@@ -479,6 +479,9 @@ class _CartBodyState extends ConsumerState<_CartBody> {
             // ── Coupon section ────────────────────────────────────────────
             _CouponSection(cart: cart),
 
+            // ── Wallet balance teaser (only when balance > 0) ─────────────
+            const _WalletTeaser(),
+
             const SizedBox(height: 16),
 
             // ── Loyalty points banner ─────────────────────────────────────
@@ -887,6 +890,26 @@ class _CartItemCard extends ConsumerWidget {
                     ),
                   ]);
                 }),
+                // Rating (only when the product has reviews)
+                Builder(builder: (_) {
+                  final rating = item.product.averageRating ?? 0;
+                  final reviews = item.product.reviewsCount ?? 0;
+                  if (rating <= 0 || reviews <= 0) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Row(children: [
+                      const Icon(Icons.star_rounded, size: 13, color: AppColors.gold),
+                      const SizedBox(width: 2),
+                      Text(rating.toStringAsFixed(1),
+                        style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 11.5,
+                          fontWeight: FontWeight.w700, color: context.col.ink1)),
+                      const SizedBox(width: 3),
+                      Text('($reviews)',
+                        style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 11,
+                          color: context.col.ink3)),
+                    ]),
+                  );
+                }),
                 const SizedBox(height: 4),
                 Builder(builder: (_) {
                   final onSale = item.product.salePrice != null &&
@@ -915,6 +938,28 @@ class _CartItemCard extends ConsumerWidget {
                         ),
                       ],
                     ],
+                  );
+                }),
+                // Low-stock urgency badge (only when few units left)
+                Builder(builder: (_) {
+                  int? stock;
+                  if (item.variationId != null) {
+                    final v = item.variation;
+                    if (v != null && v.isActive && v.inStock) stock = v.stockQuantity;
+                  } else if (item.product.manageStock) {
+                    stock = item.product.stockQuantity;
+                  }
+                  if (stock == null || stock <= 0 || stock >= 5) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.local_fire_department_rounded, size: 14, color: AppColors.danger),
+                      const SizedBox(width: 3),
+                      Text(
+                        context.isAr ? 'بقي $stock قطع فقط' : 'Only $stock left',
+                        style: const TextStyle(fontFamily: 'Cairo', fontSize: 11.5,
+                          fontWeight: FontWeight.w700, color: AppColors.danger)),
+                    ]),
                   );
                 }),
                 const SizedBox(height: 8),
@@ -1058,6 +1103,49 @@ class _LoyaltyPointsBanner extends ConsumerWidget {
               color: AppColors.success, fontFamily: 'Cairo')),
         ),
       ]),
+    );
+  }
+}
+
+// ── Wallet balance teaser ─────────────────────────────────────────────────────
+class _WalletTeaser extends ConsumerWidget {
+  const _WalletTeaser();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final balance = ref.watch(currentUserProvider)?.walletBalance ?? 0.0;
+    if (balance <= 0) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.transparent : AppColors.primary.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary.withValues(alpha: isDark ? 0.4 : 0.25)),
+        ),
+        child: Row(children: [
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.transparent : AppColors.primary,
+              shape: BoxShape.circle,
+              border: isDark ? Border.all(color: AppColors.primary.withValues(alpha: 0.5)) : null,
+            ),
+            child: Icon(Icons.account_balance_wallet_rounded, size: 19,
+              color: isDark ? AppColors.primary : Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              context.s.nudgeWallet(fmtPrice(balance)),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                color: AppColors.primary, fontFamily: 'Cairo')),
+          ),
+        ]),
+      ),
     );
   }
 }

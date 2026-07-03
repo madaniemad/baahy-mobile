@@ -343,9 +343,34 @@ class _StepItems extends ConsumerWidget {
 
     return dataAsync.when(
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-      error: (_, __) => Center(child: Text(
-        context.isAr ? 'فشل تحميل المنتجات' : 'Failed to load items',
-        style: TextStyle(color: context.col.ink2))),
+      error: (_, __) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.wifi_off_rounded, size: 40, color: context.col.ink3),
+              const SizedBox(height: 12),
+              Text(
+                context.isAr ? 'فشل تحميل المنتجات' : 'Failed to load items',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontFamily: 'Cairo', color: context.col.ink2)),
+              const SizedBox(height: 4),
+              Text(
+                context.isAr ? 'تحقق من اتصالك وحاول مجدداً' : 'Check your connection and try again',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: context.col.ink3)),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () => ref.invalidate(_orderDataProvider(orderId)),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(context.isAr ? 'إعادة المحاولة' : 'Retry',
+                    style: const TextStyle(fontFamily: 'Cairo')),
+                style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary),
+              ),
+            ],
+          ),
+        )),
       data: (data) {
         final items        = (data['items'] as List).cast<Map<String, dynamic>>();
         final shippingCost = data['shipping_cost'] as double;
