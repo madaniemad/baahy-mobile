@@ -131,12 +131,13 @@ Admin controls sections at `/admin/home-section-resources`. Sections API: `GET /
 
 Hero images should be uploaded at **1400×480 px**. Sub-hero at any wide landscape ratio.
 
-## Onboarding Flow
-- Splash → checks `onboarding_v2_done` + `city` SharedPreferences keys → routes to `/city`, `/rewards-intro`, or `/home`
-- **City screen** (`city_screen.dart`): Column layout — language pill row → `Expanded(SingleChildScrollView)` → `_BottomBar`. SafeArea handles insets. Button never overlaps list. 28px side padding.
-- **Rewards intro** (`rewards_intro_screen.dart`): solid white `_BenefitCard` (navy text, teal `0xFFE8F9FB` icon bg); 5 floating background icons with staggered sin-phase animation (`_floatCtrl` 7 s loop); `onb-pattern.png` at 0.06 opacity texture. Uses `TickerProviderStateMixin`.
-- **Onboarding screen** (`onboarding_screen.dart`): final slide, calls `_start()` which sets `onboarding_v2_done = true` then navigates to `/home`.
-- To review onboarding from scratch: `xcrun simctl uninstall B764355C-AE75-49CC-8E30-8B5089A32CAB com.baahy.app` then `flutter run`.
+## Onboarding Flow (reordered 2026-07-03)
+- **Order:** Splash → intro carousel (products → rewards) → **city picker (final step)** → home.
+- Splash (`splash_screen.dart`) routing is now simply `v2Done ? '/home' : '/rewards-intro'` (no longer routes to `/city` first).
+- **Rewards intro** (`rewards_intro_screen.dart`) is a **swipeable `PageView`** with 2 pages built as `_productsSlide` (page 0: "آلاف المنتجات", `onb-products.png`) then `_rewardsSlide` (page 1: "تسوّق واكسب", 3 `_BenefitCard`s). Swipe OR tap Next; dots are tappable (`count:3, active:_page`; dot 2 = city). Shared gradient + `onb-pattern.png` (0.06) + floating icons behind the pages. `_finish()`/Skip → `context.go('/city')`.
+- **City screen** (`city_screen.dart`) is now the **last** onboarding step. `_proceed()` sets `city`, and (first-time only) `onboarding_v2_done = true` + requests push, then → `/home`. Layout: language pill → `Expanded(Padding(AnimatedBuilder(Column)))` → `_Dots(count:3, active:2)` → `_BottomBar`. City list is a solid **white card** capped at `height*0.44` with an internal `Scrollbar` + `SingleChildScrollView`; rows are plain text + hairline `Divider(0xFFEDF1F2)`, selected row = `_teal.withOpacity(0.10)` tint + navy bold + teal `check_circle`. Search + list capped at `maxWidth 320`, centered.
+- `onboarding_screen.dart` + the `/onboarding` route are now **orphaned/dead** (nothing navigates there) — the products slide lives inside `rewards_intro_screen.dart`. Safe to delete later.
+- To review onboarding from scratch: `xcrun simctl uninstall B764355C-AE75-49CC-8E30-8B5089A32CAB com.baahy.app` then `flutter run` (prefs reset — `onboarding_v2_done`/`city` cleared).
 
 ## Rewards / Loyalty Hub
 - Route: `/rewards` — `RewardsHubScreen` in `lib/features/rewards/screens/`
