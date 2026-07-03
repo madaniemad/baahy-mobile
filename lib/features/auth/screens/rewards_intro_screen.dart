@@ -11,6 +11,8 @@ const _teal      = AppColors.primary;
 const _tealLight = Color(0xFF53E2E9);
 const _tealDark  = Color(0xFF2FCED5);
 
+/// Swipeable onboarding carousel: rewards benefits → products.
+/// Users can swipe between pages or tap the Next button; dots are tappable.
 class RewardsIntroScreen extends ConsumerStatefulWidget {
   const RewardsIntroScreen({super.key});
   @override
@@ -19,6 +21,10 @@ class RewardsIntroScreen extends ConsumerStatefulWidget {
 
 class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
     with TickerProviderStateMixin {
+  final _pageCtrl = PageController();
+  int _page = 0;
+  static const _pageCount = 2;
+
   late AnimationController _entryCtrl;
   late Animation<double> _fade;
   late Animation<double> _slideY;
@@ -40,22 +46,32 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
 
   @override
   void dispose() {
+    _pageCtrl.dispose();
     _entryCtrl.dispose();
     _floatCtrl.dispose();
     super.dispose();
   }
 
-  void _next() => context.go('/onboarding');
-  void _skip() => context.go('/home');
+  // Intro carousel finishes into the city picker (the final onboarding step),
+  // which marks onboarding done. Skip jumps straight there too.
+  void _finish() => context.go('/city');
+
+  void _next() {
+    if (_page < _pageCount - 1) {
+      _pageCtrl.nextPage(
+        duration: const Duration(milliseconds: 340), curve: Curves.easeInOutCubic);
+    } else {
+      _finish();
+    }
+  }
+
+  void _goToPage(int i) => _pageCtrl.animateToPage(i,
+      duration: const Duration(milliseconds: 340), curve: Curves.easeInOutCubic);
 
   @override
   Widget build(BuildContext context) {
-    final bottom  = MediaQuery.of(context).padding.bottom;
-    final top     = MediaQuery.of(context).padding.top;
-    final s       = context.s;
-    final config  = ref.watch(appConfigProvider);
-    final platCashback = config.tierPlatinumCashback.toStringAsFixed(0);
-    final referralAmt  = config.referralGiverAmount.toString();
+    final bottom = MediaQuery.of(context).padding.bottom;
+    final top    = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       backgroundColor: _teal,
@@ -83,7 +99,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
           ),
         ),
 
-        // Floating background icons
+        // Floating background icons (behind pages)
         AnimatedBuilder(
           animation: _floatCtrl,
           builder: (_, __) {
@@ -105,65 +121,24 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
                 child: Opacity(opacity: 0.09, child: Transform.translate(
                   offset: Offset(0, sin(t + pi * 1.2) * 9),
                   child: const Icon(Icons.account_balance_wallet_rounded, size: 60, color: Colors.white)))),
-              Positioned(top: top + 175, left: 0, right: 0,
-                child: Align(alignment: Alignment.topCenter,
-                  child: Opacity(opacity: 0.07, child: Transform.translate(
-                    offset: Offset(0, sin(t + pi * 1.6) * 11),
-                    child: const Icon(Icons.workspace_premium_rounded, size: 48, color: Colors.white))))),
             ]);
           },
         ),
 
-        // Content
-        Positioned(
-          top: top + 64, left: 22, right: 22, bottom: 160 + bottom,
+        // Swipeable pages
+        Positioned.fill(
           child: AnimatedBuilder(
             animation: Listenable.merge([_fade, _slideY]),
             builder: (_, child) => Opacity(
               opacity: _fade.value,
               child: Transform.translate(
                 offset: Offset(0, _slideY.value), child: child)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: PageView(
+              controller: _pageCtrl,
+              onPageChanged: (i) => setState(() => _page = i),
               children: [
-                // Headline
-                RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: const TextStyle(fontFamily: 'Cairo', fontSize: 36,
-                      fontWeight: FontWeight.w900, height: 1.12),
-                    children: [
-                      TextSpan(text: s.onbRewardsHeadline1,
-                        style: const TextStyle(color: Colors.white,
-                          shadows: [Shadow(color: Color(0x2E0E3C46),
-                            blurRadius: 14, offset: Offset(0, 3))])),
-                      const TextSpan(text: '\n'),
-                      TextSpan(text: s.onbRewardsHeadline2,
-                        style: const TextStyle(color: _navy)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // Benefit cards
-                _BenefitCard(
-                  icon: Icons.account_balance_wallet_rounded,
-                  title: s.onbCashbackTitle,
-                  subtitle: s.onbCashbackSub(platCashback),
-                ),
-                const SizedBox(height: 12),
-                _BenefitCard(
-                  icon: Icons.star_rounded,
-                  title: s.onbTiersTitle,
-                  subtitle: s.onbTiersSub,
-                ),
-                const SizedBox(height: 12),
-                _BenefitCard(
-                  icon: Icons.group_rounded,
-                  title: s.onbReferralTitle,
-                  subtitle: s.onbReferralSub(referralAmt),
-                ),
+                _productsSlide(top, bottom),
+                _rewardsSlide(top, bottom),
               ],
             ),
           ),
@@ -173,7 +148,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
         Positioned(
           top: top + 14, left: 16,
           child: GestureDetector(
-            onTap: _skip,
+            onTap: _finish,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
@@ -182,22 +157,117 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
               ),
               child: Text(context.s.skipBtn,
                 style: const TextStyle(fontFamily: 'Cairo',
-                  fontSize: 13, fontWeight: FontWeight.w700,
-                  color: Colors.white)),
+                  fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
             ),
           ),
         ),
 
-        // Pagination dots (slide 1 of 3 → active=1)
+        // Pagination dots (tappable). 3 steps: products, rewards, city (last).
         Positioned(
           bottom: 88 + bottom, left: 0, right: 0,
-          child: _Dots(count: 3, active: 1),
+          child: _Dots(count: 3, active: _page,
+            onTap: (i) { if (i < _pageCount) _goToPage(i); else _finish(); }),
         ),
 
         // Bottom action bar
         Positioned(
           bottom: 0, left: 0, right: 0,
           child: _ActionBar(label: context.s.nextBtn, onTap: _next),
+        ),
+      ]),
+    );
+  }
+
+  // ── Slide 1: rewards benefits ──────────────────────────────────────────────
+  Widget _rewardsSlide(double top, double bottom) {
+    final s = context.s;
+    final config = ref.watch(appConfigProvider);
+    final platCashback = config.tierPlatinumCashback.toStringAsFixed(0);
+    final referralAmt  = config.referralGiverAmount.toString();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(22, top + 64, 22, 150 + bottom),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: const TextStyle(fontFamily: 'Cairo', fontSize: 36,
+                fontWeight: FontWeight.w900, height: 1.12),
+              children: [
+                TextSpan(text: s.onbRewardsHeadline1,
+                  style: const TextStyle(color: Colors.white,
+                    shadows: [Shadow(color: Color(0x2E0E3C46),
+                      blurRadius: 14, offset: Offset(0, 3))])),
+                const TextSpan(text: '\n'),
+                TextSpan(text: s.onbRewardsHeadline2,
+                  style: const TextStyle(color: _navy)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          _BenefitCard(
+            icon: Icons.account_balance_wallet_rounded,
+            title: s.onbCashbackTitle,
+            subtitle: s.onbCashbackSub(platCashback),
+          ),
+          const SizedBox(height: 12),
+          _BenefitCard(
+            icon: Icons.star_rounded,
+            title: s.onbTiersTitle,
+            subtitle: s.onbTiersSub,
+          ),
+          const SizedBox(height: 12),
+          _BenefitCard(
+            icon: Icons.group_rounded,
+            title: s.onbReferralTitle,
+            subtitle: s.onbReferralSub(referralAmt),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Slide 2: products ──────────────────────────────────────────────────────
+  Widget _productsSlide(double top, double bottom) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(22, top + 72, 22, 150 + bottom),
+      child: Column(children: [
+        RichText(
+          textAlign: TextAlign.center,
+          text: const TextSpan(
+            style: TextStyle(fontFamily: 'Cairo', fontSize: 36,
+              fontWeight: FontWeight.w900, height: 1.12),
+            children: [
+              TextSpan(text: 'آلاف المنتجات',
+                style: TextStyle(color: Colors.white,
+                  shadows: [Shadow(color: Color(0x2E0E3C46),
+                    blurRadius: 14, offset: Offset(0, 3))])),
+              TextSpan(text: '\n'),
+              TextSpan(text: 'بانتظارك', style: TextStyle(color: _navy)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(context.s.discoverCategories,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontFamily: 'Cairo', fontSize: 16,
+            fontWeight: FontWeight.w700, color: _navy, height: 1.5)),
+        Expanded(
+          child: AnimatedBuilder(
+            animation: _floatCtrl,
+            builder: (_, child) => Transform.translate(
+              offset: Offset(0, sin(_floatCtrl.value * 2 * pi) * 9), child: child),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Image.asset('assets/images/onb-products.png',
+                width: MediaQuery.of(context).size.width * 1.08,
+                fit: BoxFit.fitWidth,
+                alignment: Alignment.bottomCenter),
+            ),
+          ),
         ),
       ]),
     );
@@ -251,23 +321,28 @@ class _BenefitCard extends StatelessWidget {
   }
 }
 
-// ── Dots ───────────────────────────────────────────────────────────────────────
+// ── Dots (tappable) ──────────────────────────────────────────────────────────
 class _Dots extends StatelessWidget {
   final int count;
   final int active;
-  const _Dots({required this.count, required this.active});
+  final ValueChanged<int>? onTap;
+  const _Dots({required this.count, required this.active, this.onTap});
   @override
   Widget build(BuildContext context) {
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
       for (int i = 0; i < count; i++)
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          height: 8,
-          width: i == active ? 26 : 8,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: i == active ? Colors.white : Colors.white.withValues(alpha: 0.45),
+        GestureDetector(
+          onTap: onTap == null ? null : () => onTap!(i),
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            height: 8,
+            width: i == active ? 26 : 8,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              color: i == active ? Colors.white : Colors.white.withValues(alpha: 0.45),
+            ),
           ),
         ),
     ]);

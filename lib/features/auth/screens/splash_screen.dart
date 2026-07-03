@@ -141,15 +141,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
     final prefs = await SharedPreferences.getInstance();
     final v2Done  = prefs.getBool('onboarding_v2_done') ?? false;
-    final hasCity = prefs.getString('city') != null;
     if (!mounted) return;
-    if (v2Done) {
-      context.go('/home');
-    } else if (hasCity) {
-      context.go('/rewards-intro');
-    } else {
-      context.go('/city');
-    }
+    // Onboarding intro (products → rewards) runs first; the city picker is the
+    // final step and marks onboarding done.
+    context.go(v2Done ? '/home' : '/rewards-intro');
   }
 
   @override
@@ -172,15 +167,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       onTap: () async {
         final prefs = await SharedPreferences.getInstance();
         final v2Done = prefs.getBool('onboarding_v2_done') ?? false;
-        final hasCity = prefs.getString('city') != null;
         if (!context.mounted) return;
-        if (v2Done) {
-          context.go('/home');
-        } else if (hasCity) {
-          context.go('/rewards-intro');
-        } else {
-          context.go('/city');
-        }
+        context.go(v2Done ? '/home' : '/rewards-intro');
       },
       child: Scaffold(
         backgroundColor: _teal,

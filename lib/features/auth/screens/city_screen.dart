@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/address_provider.dart';
 import '../../../core/providers/app_pages_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -22,6 +23,7 @@ class CityScreen extends ConsumerStatefulWidget {
 class _CityScreenState extends ConsumerState<CityScreen>
     with SingleTickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
+  final _listCtrl   = ScrollController();
   String _query      = '';
   String _selected   = 'طرابلس';
   bool _isReturning  = false;
@@ -53,6 +55,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _listCtrl.dispose();
     _entryCtrl.dispose();
     super.dispose();
   }
@@ -66,8 +69,14 @@ class _CityScreenState extends ConsumerState<CityScreen>
 
   Future<void> _proceed() async {
     await ref.read(cityProvider.notifier).setCity(_selected);
+    // City is the final onboarding step — mark done + ask for push (first time only).
+    if (!_isReturning) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_v2_done', true);
+      try { PushNotificationService.instance.requestPermissionIfNeeded(); } catch (_) {}
+    }
     if (!mounted) return;
-    context.go(_isReturning ? '/home' : '/rewards-intro');
+    context.go('/home');
   }
 
   @override
@@ -139,20 +148,21 @@ class _CityScreenState extends ConsumerState<CityScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          const SizedBox(height: 48),
                           // Heading
                           Text(isAr ? 'اختار مدينتك' : 'Choose Your City',
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontFamily: 'Cairo', fontSize: 26,
                               fontWeight: FontWeight.w900, color: Colors.white,
                               shadows: [Shadow(color: Color(0x2E0E3C46), blurRadius: 14, offset: Offset(0, 3))])),
-                          const SizedBox(height: 5),
+                          const SizedBox(height: 10),
                           Text(isAr
                               ? 'لنتمكن من عرض المنتجات والعروض المناسبة لك'
                               : 'To show you relevant products and offers',
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
                               fontWeight: FontWeight.w700, color: _navy, height: 1.4)),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 24),
 
                           // Search bar
                           ConstrainedBox(
@@ -178,6 +188,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                   onChanged: (v) => setState(() => _query = v),
                                   style: const TextStyle(fontFamily: 'Cairo',
                                     fontSize: 13.5, fontWeight: FontWeight.w600, color: _navy),
+                                  cursorColor: _teal,
                                   decoration: InputDecoration(
                                     hintText: isAr ? 'ابحث عن مدينتك' : 'Search cities',
                                     hintStyle: const TextStyle(fontFamily: 'Cairo',
@@ -193,7 +204,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
                               const SizedBox(width: 14),
                             ]),
                           )),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 18),
 
                           // City list — clean white card, scrolls internally
                           ConstrainedBox(
@@ -222,7 +233,11 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                           textAlign: TextAlign.center,
                                           style: const TextStyle(color: _navy, fontWeight: FontWeight.w700)),
                                       )
-                                    : SingleChildScrollView(
+                                    : Scrollbar(
+                                        controller: _listCtrl,
+                                        thumbVisibility: true,
+                                        child: SingleChildScrollView(
+                                        controller: _listCtrl,
                                         physics: const BouncingScrollPhysics(),
                                         child: Column(children: [
                                           for (int i = 0; i < filtered.length; i++) ...[
@@ -231,7 +246,6 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                               cityEn: filtered[i].en,
                                               selected: _selected == filtered[i].ar,
                                               isAr: isAr,
-                                              teal: _teal,
                                               onTap: () => setState(() => _selected = filtered[i].ar),
                                             ),
                                             if (i < filtered.length - 1)
@@ -239,9 +253,10 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                                 indent: 16, endIndent: 16, color: Color(0xFFEDF1F2)),
                                           ],
                                         ]),
-                                      ),
+                                      )),
                           )),
                           const Spacer(),
+                          const _Dots(count: 3, active: 2),
                         ],
                       ),
                     ),
@@ -271,16 +286,14 @@ class _CityRow extends StatelessWidget {
   final String cityEn;
   final bool selected;
   final bool isAr;
-  final Color teal;
   final VoidCallback onTap;
   const _CityRow({required this.cityAr, required this.cityEn,
-    required this.selected, required this.isAr,
-    required this.teal, required this.onTap});
+    required this.selected, required this.isAr, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? teal.withValues(alpha: 0.10) : Colors.transparent,
+      color: selected ? _teal.withValues(alpha: 0.10) : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -295,12 +308,38 @@ class _CityRow extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             if (selected)
-              Icon(Icons.check_circle_rounded, size: 20, color: teal)
+              const Icon(Icons.check_circle_rounded, size: 20, color: _teal)
             else
               const SizedBox(width: 20),
           ]),
         ),
       ),
+    );
+  }
+}
+
+// ── Pagination dots ─────────────────────────────────────────────────────────────
+class _Dots extends StatelessWidget {
+  final int count;
+  final int active;
+  const _Dots({required this.count, required this.active});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
+      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        for (int i = 0; i < count; i++)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            height: 8,
+            width: i == active ? 26 : 8,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              color: i == active ? Colors.white : Colors.white.withValues(alpha: 0.45),
+            ),
+          ),
+      ]),
     );
   }
 }
