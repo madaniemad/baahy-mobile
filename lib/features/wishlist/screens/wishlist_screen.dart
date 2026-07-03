@@ -182,7 +182,7 @@ class _WishlistCard extends ConsumerWidget {
             decoration: BoxDecoration(
               color: context.col.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E4E4), width: 1),
+              border: Border.all(color: context.col.border, width: 1),
             ),
             child: Row(children: [
               // Square image + discount badge

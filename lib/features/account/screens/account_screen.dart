@@ -462,7 +462,7 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: const Color(0xFFE2E4E4)),
+        border: Border.all(color: context.col.border),
       ),
       child: Row(children: [
         // Avatar
@@ -588,7 +588,7 @@ class _StatTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: context.col.surface,
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: const Color(0xFFE2E4E4)),
+            border: Border.all(color: context.col.border),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -784,7 +784,7 @@ class _TierCard extends ConsumerWidget {
           decoration: BoxDecoration(
             color: context.col.surface,
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: const Color(0xFFE2E4E4)),
+            border: Border.all(color: context.col.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -886,7 +886,7 @@ class _ReferralCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: context.col.surface,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(color: const Color(0xFFE2E4E4)),
+          border: Border.all(color: context.col.border),
         ),
         child: Row(children: [
           Builder(builder: (ctx) {
@@ -962,7 +962,7 @@ class _MenuGroup extends StatelessWidget {
     decoration: BoxDecoration(
       color: context.col.surface,
       borderRadius: BorderRadius.circular(AppRadius.card),
-      border: Border.all(color: const Color(0xFFE2E4E4)),
+      border: Border.all(color: context.col.border),
     ),
     child: Column(
       children: [
@@ -1090,7 +1090,7 @@ class _BirthdayRowState extends ConsumerState<_BirthdayRow> {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: const Color(0xFFE2E4E4)),
+        border: Border.all(color: context.col.border),
       ),
       child: GestureDetector(
         onTap: _birthday == null && !_saving ? _pickDate : null,

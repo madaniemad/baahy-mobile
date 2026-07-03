@@ -685,7 +685,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E4E4)),
+        border: Border.all(color: context.col.border),
       ),
       child: Column(children: [
         // Header row — always visible
@@ -824,7 +824,7 @@ class _CartItemCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E4E4)),
+        border: Border.all(color: context.col.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1306,7 +1306,7 @@ class _OrderSummary extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E4E4)),
+        border: Border.all(color: context.col.border),
       ),
       child: Column(children: [
         _Row(context.s.subtotal,

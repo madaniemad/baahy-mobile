@@ -880,7 +880,7 @@ class _PromiseStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E4E4)),
+        border: Border.all(color: context.col.border),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,

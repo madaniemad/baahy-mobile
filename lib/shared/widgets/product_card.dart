@@ -100,7 +100,7 @@ class ProductCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: context.col.surface,
           borderRadius: AppRadius.cardRadius,
-          border: Border.all(color: const Color(0xFFE2E4E4)),
+          border: Border.all(color: context.col.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

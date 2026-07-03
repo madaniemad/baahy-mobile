@@ -826,7 +826,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               decoration: BoxDecoration(
                                 color: _cardFill(context),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE2E4E4)),
+                                border: Border.all(color: context.col.border),
                               ),
                               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Padding(
@@ -872,7 +872,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         decoration: BoxDecoration(
                           color: _cardFill(context),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E4E4)),
+                          border: Border.all(color: context.col.border),
                         ),
                         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Builder(builder: (_) {
@@ -944,7 +944,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         decoration: BoxDecoration(
                           color: _cardFill(context),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E4E4)),
+                          border: Border.all(color: context.col.border),
                         ),
                         child: Row(children: [
                           Expanded(child: Text(
@@ -966,7 +966,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         decoration: BoxDecoration(
                           color: _cardFill(context),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E4E4)),
+                          border: Border.all(color: context.col.border),
                         ),
                         child: Column(
                           children: effectiveItems.map((item) {
@@ -1047,7 +1047,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       decoration: BoxDecoration(
                         color: _cardFill(context),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E4E4)),
+                        border: Border.all(color: context.col.border),
                       ),
                       child: Column(children: [
                         _SummaryRow(context.s.subtotalLabel,
@@ -1123,7 +1123,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       decoration: BoxDecoration(
                         color: _cardFill(context),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E4E4)),
+                        border: Border.all(color: context.col.border),
                       ),
                       child: const _TrustRow(),
                     ),
@@ -1755,7 +1755,7 @@ class _CollapsibleHeader extends StatelessWidget {
         decoration: BoxDecoration(
           color: _cardFill(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2E4E4)),
+          border: Border.all(color: context.col.border),
         ),
         child: Row(children: [
           Expanded(child: Column(
