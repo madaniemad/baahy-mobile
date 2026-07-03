@@ -88,7 +88,9 @@ class ProductCard extends ConsumerWidget {
             : null;
     final rawBrand = (_brandRaw != null && _brandRaw.isNotEmpty) ? _brandRaw : null;
     final name = rawName;
-    final inWishlist = ref.watch(wishlistProvider).contains(product.id);
+    // .select so only the card whose membership changed rebuilds — not every mounted
+    // card on every wishlist toggle (the Set identity changes on each toggle).
+    final inWishlist = ref.watch(wishlistProvider.select((s) => s.contains(product.id)));
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final imagePlaceholder = isDark ? context.col.surfaceSoft : context.col.cardImageBg;
 

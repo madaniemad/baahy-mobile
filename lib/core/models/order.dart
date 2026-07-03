@@ -117,7 +117,11 @@ class OrderVendorGroup {
   });
 
   factory OrderVendorGroup.fromJson(Map<String, dynamic> j) => OrderVendorGroup(
-    vendor: Vendor.fromJson(j['vendor']),
+    // A deleted/unlinked vendor comes back as null — fall back to a placeholder so it
+    // doesn't crash the whole orders / tracking screen.
+    vendor: j['vendor'] != null
+        ? Vendor.fromJson(Map<String, dynamic>.from(j['vendor'] as Map))
+        : const Vendor(id: 0, storeName: '', storeNameAr: ''),
     items: (j['items'] as List?)
         ?.map((i) => OrderItem.fromJson(i)).toList() ?? [],
     status: j['status'] ?? 'pending',

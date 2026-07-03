@@ -9,6 +9,7 @@ import '../models/app_config.dart';
 import '../models/shipping_rate.dart';
 import 'app_config_provider.dart';
 import 'shipping_provider.dart';
+import 'auth_provider.dart';
 
 const _kCartKey = 'baahy_cart';
 
@@ -327,6 +328,11 @@ final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) {
   });
   ref.listen<ShippingRate?>(cityShippingRateProvider, (_, next) {
     notifier.updateCityRate(next);
+  });
+  // Clear the local cart on logout so the next user on a shared device doesn't
+  // inherit it (the server retains each user's authed cart).
+  ref.listen<AuthState>(authProvider, (prev, next) {
+    if (prev?.isLoggedIn == true && !next.isLoggedIn) notifier.clear();
   });
   // Apply immediately if city rate is already available
   final initialRate = ref.read(cityShippingRateProvider);

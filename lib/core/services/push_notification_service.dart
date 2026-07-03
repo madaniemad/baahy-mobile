@@ -222,7 +222,7 @@ class PushNotificationService {
       case 'favourite_vendor_sale':
       case 'favourite_vendor_new_arrivals':
         final vid = data['vendor_id']?.toString();
-        return vid != null ? '/vendor/$vid' : '/home';
+        return vid != null ? '/vendors/$vid' : '/home';
       // Delivery
       case 'delivery_attempt_failed':
         final oid = data['order_id']?.toString();

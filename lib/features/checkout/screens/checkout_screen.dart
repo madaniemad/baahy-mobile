@@ -296,18 +296,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     try {
       final orderItems = isReorder ? reorderSession.items : ref.read(cartProvider).items;
-      final orderSubtotal = isReorder ? reorderSession.subtotal : ref.read(cartProvider).subtotal;
       final cart = ref.read(cartProvider);
+      final orderSubtotal = isReorder ? reorderSession.subtotal : cart.subtotal;
+      // Wallet coverage must use the SAME base the UI shows the customer: the full
+      // payable total INCLUDING shipping (and any coupon), not the subtotal. Otherwise an
+      // order whose balance sits between subtotal and total is sent as "fully covered by
+      // wallet" with the shipping fee silently unaccounted (mirrors effectiveTotal in build).
+      final orderDeliveryFee = isReorder
+          ? (_selectedRate != null
+              ? _selectedRate!.effectiveRate(orderSubtotal)
+              : (cart.cityRate?.effectiveRate(orderSubtotal) ?? cart.fallbackShippingFee))
+          : cart.deliveryFee;
+      final orderTotal = isReorder ? orderSubtotal + orderDeliveryFee : cart.total;
       final couponCode = isReorder ? null : cart.couponCode;
       final addr = _selectedAddress!;
       final walletActive = _useWallet && _walletBalance > 0;
       final maxUse = walletActive
-          ? (_walletBalance < orderSubtotal ? _walletBalance : orderSubtotal)
+          ? (_walletBalance < orderTotal ? _walletBalance : orderTotal)
           : 0.0;
       final walletDeduct = walletActive
           ? (double.tryParse(_walletAmountCtrl.text) ?? maxUse).clamp(0.0, maxUse)
           : 0.0;
-      final walletCoversAll = walletActive && walletDeduct >= orderSubtotal;
+      final walletCoversAll = walletActive && walletDeduct >= orderTotal;
 
       final res = await ApiClient.instance.dio.post('/orders', data: {
         'items': orderItems.map((i) => {

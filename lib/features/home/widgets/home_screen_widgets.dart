@@ -377,13 +377,19 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
     }
   }
 
+  bool _precached = false;
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Eagerly precache all banner images so scroll transitions are instant.
-    for (final b in widget.banners) {
+    // Precache only the first two banners, and SIZED — so the initial transition is
+    // instant without pinning full-resolution decodes (which would defeat the
+    // memCacheWidth:1080 cap on the visible widget). Guard against re-running.
+    if (_precached) return;
+    _precached = true;
+    for (final b in widget.banners.take(2)) {
       if (b.hasImage) {
-        precacheImage(CachedNetworkImageProvider(b.imageUrl!), context);
+        precacheImage(
+          ResizeImage(CachedNetworkImageProvider(b.imageUrl!), width: 1080), context);
       }
     }
   }

@@ -296,7 +296,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 minScale: 1.0,
                                 maxScale: 4.0,
                                 child: CachedNetworkImage(
-                                  imageUrl: product.images[i], fit: BoxFit.contain));
+                                  imageUrl: product.images[i], fit: BoxFit.contain,
+                                  memCacheWidth: 1200));
                             },
                           )),
                           if (product.images.length > 1)
@@ -391,6 +392,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                     child: CachedNetworkImage(
                                       imageUrl: product.images[i],
                                       fit: BoxFit.cover,
+                                      memCacheWidth: 140,
                                       errorWidget: (_, __, ___) =>
                                         Container(color: context.col.surfaceSoft)),
                                   ),

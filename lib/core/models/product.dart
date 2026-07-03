@@ -335,7 +335,7 @@ class Vendor {
   };
 
   factory Vendor.fromJson(Map<String, dynamic> j) => Vendor(
-    id: j['id'],
+    id: (j['id'] as num?)?.toInt() ?? 0,
     storeName: j['store_name'] ?? j['name'] ?? '',
     storeNameAr: j['store_name_ar'] ?? j['store_name'] ?? j['name'] ?? '',
     logo: j['logo'],

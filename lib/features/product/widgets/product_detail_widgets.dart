@@ -311,7 +311,8 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                         opacity: _checked[all[i].id] == true ? 1 : 0.3,
                         child: all[i].firstImage != null
                             ? CachedNetworkImage(
-                                imageUrl: all[i].firstImage!, fit: BoxFit.cover)
+                                imageUrl: all[i].firstImage!, fit: BoxFit.cover,
+                                memCacheWidth: 240)
                             : Container(color: context.col.surfaceSoft),
                       ),
                     ),
@@ -928,7 +929,7 @@ class _VendorRow extends StatelessWidget {
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: CachedNetworkImage(
-                  imageUrl: vendor.logo!, fit: BoxFit.cover))
+                  imageUrl: vendor.logo!, fit: BoxFit.cover, memCacheWidth: 120))
             : Icon(Icons.store_outlined, size: 22, color: context.col.ink2),
       ),
       const SizedBox(width: 12),
