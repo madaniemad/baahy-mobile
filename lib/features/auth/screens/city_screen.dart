@@ -156,7 +156,9 @@ class _CityScreenState extends ConsumerState<CityScreen>
                           const SizedBox(height: 12),
 
                           // Search bar
-                          Container(
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 300),
+                            child: Container(
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.92),
                               borderRadius: BorderRadius.circular(12),
@@ -191,11 +193,13 @@ class _CityScreenState extends ConsumerState<CityScreen>
                               ),
                               const SizedBox(width: 14),
                             ]),
-                          ),
+                          )),
                           const SizedBox(height: 10),
 
                           // City list
-                          Container(
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 300),
+                            child: Container(
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.20),
                               borderRadius: BorderRadius.circular(16),
@@ -224,7 +228,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                           style: const TextStyle(color: _navy, fontWeight: FontWeight.w700)),
                                       ),
                                   ]),
-                          ),
+                          )),
                         ],
                       ),
                     ),
