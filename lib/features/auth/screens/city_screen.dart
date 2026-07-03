@@ -126,11 +126,10 @@ class _CityScreenState extends ConsumerState<CityScreen>
                   ),
                 ),
 
-                // Scrollable content
+                // Content — fixed header, list scrolls inside its own box
                 Expanded(
-                  child: SingleChildScrollView(
+                  child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
-                    physics: const BouncingScrollPhysics(),
                     child: AnimatedBuilder(
                       animation: Listenable.merge([_slideY, _fade]),
                       builder: (_, child) => Opacity(
@@ -196,10 +195,13 @@ class _CityScreenState extends ConsumerState<CityScreen>
                           )),
                           const SizedBox(height: 10),
 
-                          // City list
+                          // City list — fixed-height card, scrolls internally
                           ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 300),
+                            constraints: BoxConstraints(
+                              maxWidth: 300,
+                              maxHeight: MediaQuery.sizeOf(context).height * 0.42),
                             child: Container(
+                            clipBehavior: Clip.antiAlias,
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.20),
                               borderRadius: BorderRadius.circular(16),
@@ -211,7 +213,9 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                     child: Center(child: CircularProgressIndicator(
                                       color: Colors.white, strokeWidth: 2.5)),
                                   )
-                                : Column(children: [
+                                : SingleChildScrollView(
+                                    physics: const BouncingScrollPhysics(),
+                                    child: Column(children: [
                                     ...filtered.map((city) => _CityRow(
                                       cityAr: city.ar,
                                       cityEn: city.en,
@@ -228,7 +232,9 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                           style: const TextStyle(color: _navy, fontWeight: FontWeight.w700)),
                                       ),
                                   ]),
+                                  ),
                           )),
+                          const Spacer(),
                         ],
                       ),
                     ),
