@@ -142,8 +142,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final prefs = await SharedPreferences.getInstance();
     final v2Done  = prefs.getBool('onboarding_v2_done') ?? false;
     if (!mounted) return;
-    // Onboarding intro (products → rewards) runs first; the city picker is the
-    // final step and marks onboarding done.
+    // Onboarding is one swipeable flow (city → products → rewards); city is its
+    // first page, so route straight there for any non-finished user.
     context.go(v2Done ? '/home' : '/rewards-intro');
   }
 

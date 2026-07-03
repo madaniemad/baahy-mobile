@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/address_provider.dart';
 import '../../../core/providers/app_pages_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
-import '../../../core/services/push_notification_service.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -69,14 +68,10 @@ class _CityScreenState extends ConsumerState<CityScreen>
 
   Future<void> _proceed() async {
     await ref.read(cityProvider.notifier).setCity(_selected);
-    // City is the final onboarding step — mark done + ask for push (first time only).
-    if (!_isReturning) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('onboarding_v2_done', true);
-      try { PushNotificationService.instance.requestPermissionIfNeeded(); } catch (_) {}
-    }
     if (!mounted) return;
-    context.go('/home');
+    // City is first (its language toggle sets the onboarding language); go to
+    // the intro carousel next, or straight home when changing city later.
+    context.go(_isReturning ? '/home' : '/rewards-intro');
   }
 
   @override
@@ -256,7 +251,6 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                       )),
                           )),
                           const Spacer(),
-                          const _Dots(count: 3, active: 2),
                         ],
                       ),
                     ),
@@ -314,32 +308,6 @@ class _CityRow extends StatelessWidget {
           ]),
         ),
       ),
-    );
-  }
-}
-
-// ── Pagination dots ─────────────────────────────────────────────────────────────
-class _Dots extends StatelessWidget {
-  final int count;
-  final int active;
-  const _Dots({required this.count, required this.active});
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 8),
-      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        for (int i = 0; i < count; i++)
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            height: 8,
-            width: i == active ? 26 : 8,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              color: i == active ? Colors.white : Colors.white.withValues(alpha: 0.45),
-            ),
-          ),
-      ]),
     );
   }
 }

@@ -131,12 +131,15 @@ Admin controls sections at `/admin/home-section-resources`. Sections API: `GET /
 
 Hero images should be uploaded at **1400×480 px**. Sub-hero at any wide landscape ratio.
 
-## Onboarding Flow (reordered 2026-07-03)
-- **Order:** Splash → intro carousel (products → rewards) → **city picker (final step)** → home.
-- Splash (`splash_screen.dart`) routing is now simply `v2Done ? '/home' : '/rewards-intro'` (no longer routes to `/city` first).
-- **Rewards intro** (`rewards_intro_screen.dart`) is a **swipeable `PageView`** with 2 pages built as `_productsSlide` (page 0: "آلاف المنتجات", `onb-products.png`) then `_rewardsSlide` (page 1: "تسوّق واكسب", 3 `_BenefitCard`s). Swipe OR tap Next; dots are tappable (`count:3, active:_page`; dot 2 = city). Shared gradient + `onb-pattern.png` (0.06) + floating icons behind the pages. `_finish()`/Skip → `context.go('/city')`.
-- **City screen** (`city_screen.dart`) is now the **last** onboarding step. `_proceed()` sets `city`, and (first-time only) `onboarding_v2_done = true` + requests push, then → `/home`. Layout: language pill → `Expanded(Padding(AnimatedBuilder(Column)))` → `_Dots(count:3, active:2)` → `_BottomBar`. City list is a solid **white card** capped at `height*0.44` with an internal `Scrollbar` + `SingleChildScrollView`; rows are plain text + hairline `Divider(0xFFEDF1F2)`, selected row = `_teal.withOpacity(0.10)` tint + navy bold + teal `check_circle`. Search + list capped at `maxWidth 320`, centered.
-- `onboarding_screen.dart` + the `/onboarding` route are now **orphaned/dead** (nothing navigates there) — the products slide lives inside `rewards_intro_screen.dart`. Safe to delete later.
+## Onboarding Flow (unified swipeable carousel, 2026-07-03)
+- **One swipeable `PageView`** in `rewards_intro_screen.dart` (route `/rewards-intro`) with **3 mandatory pages: city → products → rewards**. No Skip button — city is page 0 so it can't be bypassed; every page is reachable by swipe OR by tapping the dots (`_Dots count:3, active:_page`, tappable to any page).
+  - **Page 0 `_citySlide`** — language toggle (`localeProvider.toggle()`, sets the language the whole onboarding renders in), title/subtitle, white search field, white city-list card (`Flexible` + internal `Scrollbar`/`SingleChildScrollView`, rows = plain text + hairline `Divider(0xFFEDF1F2)`, selected = `_teal.withOpacity(0.10)` tint + navy bold + teal `check_circle`). Cities from `shippingRatesProvider`; selection held in `_selectedCity` (default `طرابلس`). Search + list capped `maxWidth 320`.
+  - **Page 1 `_productsSlide`** — "آلاف المنتجات", `onb-products.png` (float animation).
+  - **Page 2 `_rewardsSlide`** — "تسوّق واكسب", 3 `_BenefitCard`s from `appConfigProvider`.
+  - Bottom `_ActionBar` label: last page = `startShopping`, else `nextBtn`. `_finish()` persists the city (`cityProvider.setCity(_selectedCity)`), sets `onboarding_v2_done=true`, requests push → `/home`.
+- Splash (`splash_screen.dart`): `v2Done ? '/home' : '/rewards-intro'` (city lives inside the carousel now).
+- `city_screen.dart` (route `/city`) is now **only** the standalone "change city" screen used later from the home header (returning mode → `/home`). It keeps the same white-card list + scrollbar; onboarding does NOT use it.
+- `onboarding_screen.dart` + the `/onboarding` route are **orphaned/dead** (nothing navigates there). Safe to delete later.
 - To review onboarding from scratch: `xcrun simctl uninstall B764355C-AE75-49CC-8E30-8B5089A32CAB com.baahy.app` then `flutter run` (prefs reset — `onboarding_v2_done`/`city` cleared).
 
 ## Rewards / Loyalty Hub
