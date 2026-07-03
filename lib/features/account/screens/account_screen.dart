@@ -654,13 +654,9 @@ class _WalletCard extends StatelessWidget {
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
         // wallet icon — first = physical RIGHT in RTL
-        Container(
-          width: 48, height: 48,
-          decoration: BoxDecoration(
-            color: isDark ? context.col.surfaceSoft : AppColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(Icons.account_balance_wallet_outlined, color: accent, size: 24),
+        Image.asset(
+          'assets/images/wallet_3d.png',
+          width: 48, height: 48, fit: BoxFit.contain,
         ),
         const SizedBox(width: 14),
 
