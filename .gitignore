@@ -42,3 +42,8 @@ firebase-credentials.json
 *.iws
 .vscode/
 .vercel
+
+# onboarding dev refs/backups
+design_ref/
+assets/onboarding/full_orig/
+assets/onboarding/source/

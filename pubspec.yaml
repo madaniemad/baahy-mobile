@@ -55,6 +55,9 @@ dependencies:
   geolocator: ^12.0.0
   http: ^1.2.2
 
+  # Vector graphics (onboarding stylized coast map)
+  flutter_svg: ^2.0.10+1
+
   # Social / QR
   qr_flutter: ^4.1.0
   app_links: ^6.3.4
@@ -86,6 +89,9 @@ flutter:
     - assets/images/
     - assets/images/payment/
     - assets/icons/
+    - assets/onboarding/
+    - assets/onboarding/heroes/
+    - assets/onboarding/full/
 
   fonts:
     - family: Cairo

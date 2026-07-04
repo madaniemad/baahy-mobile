@@ -8,6 +8,7 @@ import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/city_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
 import '../../features/auth/screens/rewards_intro_screen.dart';
+import '../../features/onboarding/onboarding_flow.dart';
 import '../../features/auth/screens/auth_landing_screen.dart';
 import '../../features/auth/screens/phone_signin_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
@@ -71,7 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/splash',   builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/city',          builder: (_, __) => const CityScreen()),
-      GoRoute(path: '/rewards-intro', builder: (_, __) => const RewardsIntroScreen()),
+      GoRoute(path: '/rewards-intro', builder: (_, __) => const OnboardingFlow()),
       GoRoute(path: '/onboarding',    builder: (_, __) => const OnboardingScreen()),
       GoRoute(path: '/signin',       builder: (_, __) => const AuthLandingScreen()),
       GoRoute(path: '/phone-signin', builder: (_, __) => const PhoneSignInScreen()),
