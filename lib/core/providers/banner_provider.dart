@@ -7,6 +7,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import '../api/api_client.dart';
 import '../models/banner.dart';
 import '../services/cache_service.dart';
+import '../utils/image_url.dart';
 
 // Banners: show stale cache instantly on cold start, always fetch fresh in background.
 // No TTL gate — admin changes must reflect on every app launch.
@@ -46,7 +47,7 @@ class BannersNotifier extends StateNotifier<BannersData> {
     if (url == null) return;
 
     try {
-      final provider = CachedNetworkImageProvider(url);
+      final provider = CachedNetworkImageProvider(optimizeImg(url, width: 1080));
       final completer = Completer<void>();
       final stream = provider.resolve(ImageConfiguration.empty);
       late final ImageStreamListener listener;

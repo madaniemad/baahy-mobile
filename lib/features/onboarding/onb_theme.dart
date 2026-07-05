@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 /// Design tokens for the onboarding flow — taken verbatim from the design handoff
 /// (design_handoff_baahy_onboarding/README.md). Keep in sync with the PNG designs.
 class Onb {
-  // Brand
+  // Brand — a single tiffany everywhere, per brand spec.
   static const teal = Color(0xFF1FD7E2); // brand / "Tiffany"
-  static const tealDeep = Color(0xFF0FA9B8); // buttons, active text, icons
+  static const tealDeep = Color(0xFF1FD7E2); // buttons, active text, icons — same tiffany
   static const navy = Color(0xFF0E3C46); // headings & primary text
   static const inkMuted = Color(0xFF8A9591); // secondary text
   static const inkMuted2 = Color(0xFF5E6B6E); // map labels
@@ -40,23 +40,19 @@ class Onb {
     stops: [0.0, 0.42, 1.0],
   );
 
-  static const cardShadow = [
-    BoxShadow(color: Color(0x24073C46), blurRadius: 30, offset: Offset(0, -12)),
-  ];
-  static const calloutShadow = [
-    BoxShadow(color: Color(0x2E073C46), blurRadius: 24, offset: Offset(0, 10)),
-  ];
-  static const ctaShadow = [
-    BoxShadow(color: Color(0x521FD7E2), blurRadius: 26, offset: Offset(0, 12)),
-  ];
+  // No shadows anywhere in onboarding (per design direction). Kept as empty
+  // lists so existing references compile without change.
+  static const cardShadow = <BoxShadow>[];
+  static const calloutShadow = <BoxShadow>[];
+  static const ctaShadow = <BoxShadow>[];
 
   static const font = 'Cairo';
 
   static TextStyle h1(Color c) => const TextStyle(
-        fontFamily: font, fontSize: 30, fontWeight: FontWeight.w800, height: 1.15,
+        fontFamily: font, fontSize: 25, fontWeight: FontWeight.w800, height: 1.15,
       ).copyWith(color: c);
   static TextStyle sub(Color c) => const TextStyle(
-        fontFamily: font, fontSize: 15, fontWeight: FontWeight.w500, height: 1.5,
+        fontFamily: font, fontSize: 13, fontWeight: FontWeight.w500, height: 1.45,
       ).copyWith(color: c);
 }
 

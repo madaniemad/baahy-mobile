@@ -19,6 +19,7 @@ import '../../../core/models/app_config.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/banner.dart';
 import '../../../core/utils/banner_link.dart';
+import '../../../core/utils/image_url.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -232,8 +233,9 @@ class HomeScreen extends ConsumerWidget {
                           child: AspectRatio(
                             aspectRatio: 1920 / 350,
                             child: CachedNetworkImage(
-                              imageUrl: item.imageUrl,
+                              imageUrl: optimizeImg(item.imageUrl, width: 1080),
                               fit: BoxFit.cover,
+                              memCacheWidth: 1080,
                               placeholder: (_, __) => Container(color: const Color(0xFF1FD7E2)),
                               errorWidget: (_, __, ___) => Container(color: const Color(0xFF1FD7E2)),
                             ),
