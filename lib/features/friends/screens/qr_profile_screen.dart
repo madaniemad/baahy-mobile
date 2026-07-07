@@ -26,7 +26,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
       await Clipboard.setData(ClipboardData(text: text));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم نسخ الرابط', style: TextStyle(fontFamily: 'Cairo'))),
+          const SnackBar(content: Text('تم نسخ الرابط', style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
         );
       }
     }
@@ -44,7 +44,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
         backgroundColor: context.col.surface,
         elevation: 0,
         title: Text(context.tr('كود QR الخاص بي', 'My QR Code'),
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: context.col.ink0),
           onPressed: () => Navigator.of(context).pop(),
@@ -61,7 +61,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
                 const SizedBox(height: 16),
                 Text(
                   context.tr('أنت بحاجة إلى اسم مستخدم أولاً', 'You need a username first'),
-                  style: TextStyle(fontFamily: 'Cairo', color: context.col.ink2, fontSize: 16),
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink2, fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -73,7 +73,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   ),
                   child: Text(context.tr('اختر اسم مستخدم', 'Set Username'),
-                    style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
                 ),
               ] else ...[
                 Container(
@@ -92,18 +92,18 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text('@$username',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800, color: context.col.ink0)),
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 18, fontWeight: FontWeight.w800, color: context.col.ink0)),
                 const SizedBox(height: 8),
                 Text(
                   context.tr('اسمح لأصدقائك بمسح هذا الكود لإضافتك', 'Let friends scan this to add you'),
-                  style: TextStyle(fontSize: 13, color: context.col.ink3, fontFamily: 'Cairo'),
+                  style: TextStyle(fontSize: 13, color: context.col.ink3, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.share_outlined),
                   label: Text(context.tr('مشاركة', 'Share'),
-                    style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
                   onPressed: () => _share(username, reward),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,

@@ -35,7 +35,7 @@ class ReturnPolicyScreen extends ConsumerWidget {
         ),
         title: Text(
           isAr ? 'الإرجاعات والاسترداد' : 'Returns & Refunds',
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800),
         ),
       ),
       body: ListView(
@@ -104,7 +104,7 @@ class ReturnPolicyScreen extends ConsumerWidget {
             icon: const Icon(Icons.shopping_bag_outlined, size: 18),
             label: Text(
               isAr ? 'عرض طلباتي' : 'View My Orders',
-              style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 15),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 15),
             ),
             onPressed: () => safePush(context, '/orders'),
           ),
@@ -146,7 +146,7 @@ class _PolicyCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title, style: const TextStyle(
-                fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 14)),
+                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 14)),
               const SizedBox(height: 6),
               Text(body, style: TextStyle(
                 fontSize: 13, color: context.col.ink2, height: 1.6)),

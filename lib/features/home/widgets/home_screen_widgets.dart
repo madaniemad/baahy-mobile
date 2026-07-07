@@ -42,7 +42,7 @@ class _CityLabel extends ConsumerWidget {
         const SizedBox(width: 3),
         Text(displayLabel, style: TextStyle(
             fontSize: 13, fontWeight: FontWeight.w700,
-            fontFamily: 'Cairo', color: labelColor)),
+            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: labelColor)),
         const SizedBox(width: 2),
         Icon(Icons.keyboard_arrow_down_rounded, size: 15, color: labelColor.withValues(alpha: 0.7)),
       ]),
@@ -946,7 +946,7 @@ class _CategoryImagesCarousel extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
             child: Text(title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Cairo')),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
           ),
         SizedBox(
           height: 110,
@@ -982,7 +982,7 @@ class _CategoryImagesCarousel extends StatelessWidget {
                       Text(
                         isAr ? cat.nameAr : cat.name,
                         style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                          fontFamily: 'Cairo', color: context.col.ink1),
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink1),
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -2012,7 +2012,7 @@ class _RewardsNudgeCard extends ConsumerWidget {
                     child: Text(
                       message,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                         color: color,
@@ -2072,7 +2072,7 @@ class _SeasonalBanner extends StatelessWidget {
             Text(
               '${config.seasonalLabelAr} 🎉',
               style: const TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -2083,7 +2083,7 @@ class _SeasonalBanner extends StatelessWidget {
               Text(
                 context.isAr ? 'ينتهي خلال $days يوم' : 'Ends in $days days',
                 style: const TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                   fontSize: 11,
                   color: Colors.white70,
                 ),
@@ -2214,7 +2214,7 @@ class _RewardsModal extends StatelessWidget {
         // Title
         Text(s.rewardsArrived,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontFamily: 'Cairo', fontSize: 22,
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 22,
             fontWeight: FontWeight.w900, color: _navy, height: 1.2)),
         const SizedBox(height: 10),
 
@@ -2224,7 +2224,7 @@ class _RewardsModal extends StatelessWidget {
               ? 'احصل على استرداد نقدي على كل طلب، وارتقِ للمستويات الأعلى لمزايا أكبر'
               : 'Earn cashback on every order and level up for bigger perks',
           textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 14,
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14,
             fontWeight: FontWeight.w600, color: const Color(0xFF0E3C46).withValues(alpha: 0.70),
             height: 1.5)),
         const SizedBox(height: 24),
@@ -2247,7 +2247,7 @@ class _RewardsModal extends StatelessWidget {
             ),
             child: Text(s.discoverBenefits,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontFamily: 'Cairo', fontSize: 17,
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 17,
                 fontWeight: FontWeight.w900, color: Colors.white)),
           ),
         ),
@@ -2260,7 +2260,7 @@ class _RewardsModal extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(s.startShoppingNow,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 14,
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: _navy.withValues(alpha: 0.55))),
           ),
@@ -2298,7 +2298,7 @@ class _WelcomeCouponBanner extends ConsumerWidget {
               Clipboard.setData(ClipboardData(text: coupon.code));
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('تم نسخ الكود', style: TextStyle(fontFamily: 'Cairo')),
+                  content: Text('تم نسخ الكود', style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                   duration: Duration(seconds: 2),
                 ),
               );
@@ -2323,13 +2323,13 @@ class _WelcomeCouponBanner extends ConsumerWidget {
                       Text(
                         'خصم $discountLabel على طلبك الأول',
                         style: const TextStyle(
-                          fontFamily: 'Cairo', fontSize: 13,
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                           fontWeight: FontWeight.w700, color: Colors.white),
                       ),
                       Text(
                         'استخدم كود ${coupon.code} عند الدفع',
                         style: const TextStyle(
-                          fontFamily: 'Cairo', fontSize: 11.5,
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5,
                           color: Color(0xFF004D54)),
                       ),
                     ],

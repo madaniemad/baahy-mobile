@@ -42,7 +42,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         elevation: 0,
         scrolledUnderElevation: 0.5,
         title: Text(context.s.activity,
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: Icon(Icons.arrow_back, color: context.col.ink0)),
@@ -53,7 +53,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   ref.read(notificationsProvider.notifier).markAllRead(),
               child: Text(context.s.markAllRead,
                   style: const TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                       fontSize: 13)),
@@ -70,7 +70,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   const SizedBox(height: 12),
                   Text(context.s.upToDate,
                       style: TextStyle(
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: context.col.ink2)),

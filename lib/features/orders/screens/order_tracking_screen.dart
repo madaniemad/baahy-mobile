@@ -71,9 +71,9 @@ class OrderTrackingScreen extends ConsumerWidget {
         titleSpacing: 0,
         title: orderAsync.maybeWhen(
           data: (o) => Text(context.s.orderNumber(o.orderNumber),
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
           orElse: () => Text(context.s.orderDetails,
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         ),
         actions: [
           orderAsync.maybeWhen(
@@ -244,6 +244,15 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 color: AppColors.success, ctx: context),
             Divider(height: 20, color: context.col.border),
             _SumRow(context.s.totalLabel, '${fmtPrice(order.total)} ${context.s.lydUnit}', bold: true, ctx: context),
+            const SizedBox(height: 10),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Text(context.tr('طريقة الدفع', 'Payment method'),
+                style: TextStyle(fontSize: 13.5, color: context.col.ink2,
+                  fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'])),
+              Text(_paymentMethodLabel(context, order.paymentMethod),
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: context.col.ink0,
+                  fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'])),
+            ]),
           ]),
         ),
 
@@ -278,7 +287,7 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                         size: 15, color: color),
                       const SizedBox(width: 8),
                       Expanded(child: Text(label,
-                        style: TextStyle(fontFamily: 'Cairo', fontSize: 12.5,
+                        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12.5,
                           fontWeight: FontWeight.w600, color: color))),
                     ]),
                   ),
@@ -291,7 +300,7 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                   extra: order.returnDeadline),
                 icon: const Icon(Icons.assignment_return_outlined, size: 16),
                 label: Text(context.s.returnItems,
-                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -313,7 +322,7 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 const SizedBox(width: 8),
                 Text(
                   context.isAr ? 'انتهت مدة الإرجاع' : 'Return window has closed',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink3)),
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink3)),
               ]),
             ),
           ],
@@ -330,7 +339,7 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 : const Icon(Icons.shopping_bag_outlined, size: 16),
             label: Text(
               context.isAr ? 'إعادة الطلب' : 'Reorder',
-              style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -348,7 +357,7 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 extra: 'أحتاج مساعدة بخصوص طلب رقم ${order.orderNumber}'),
             icon: const Icon(Icons.help_outline_rounded, size: 16),
             label: Text(context.s.orderHelp,
-              style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 13),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -422,13 +431,13 @@ class _HeroCard extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(info.badge,
-            style: const TextStyle(fontFamily: 'Cairo', color: AppColors.primary,
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: AppColors.primary,
               fontSize: 12, fontWeight: FontWeight.w700)),
           Text(info.title,
-            style: TextStyle(fontFamily: 'Cairo', color: context.col.ink0,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink0,
               fontSize: 15, fontWeight: FontWeight.w800)),
           Text(info.subtitle,
-            style: TextStyle(fontFamily: 'Cairo', color: context.col.ink3, fontSize: 12)),
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink3, fontSize: 12)),
         ])),
       ]),
     );
@@ -568,6 +577,20 @@ Widget _SummaryRow(String label, String value, {Color? color, bool bold = false,
 
 Widget _SumRow(String label, String value, {Color? color, bool bold = false, required BuildContext ctx}) =>
   _SummaryRow(label, value, color: color, bold: bold, ctx: ctx);
+
+String _paymentMethodLabel(BuildContext ctx, String m) {
+  final ar = ctx.isAr;
+  switch (m) {
+    case 'cash_on_delivery':
+    case 'cash':     return ar ? 'الدفع عند الاستلام' : 'Cash on Delivery';
+    case 'wallet':   return ar ? 'المحفظة'            : 'Wallet';
+    case 'tadawel':  return ar ? 'تداول'              : 'Tadawel';
+    case 'moamlat':  return ar ? 'معاملات'            : 'Moamlat';
+    case 'mobicash': return ar ? 'موبي كاش'           : 'Mobicash';
+    case 'paypal':   return 'PayPal';
+    default:         return m.isEmpty ? (ar ? 'غير محدد' : 'Not specified') : m;
+  }
+}
 
 class _OrderItemRow extends StatelessWidget {
   final OrderItem item;

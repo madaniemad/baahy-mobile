@@ -791,7 +791,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ? (context.isAr ? 'إعادة الطلب' : 'Reorder')
                           : context.s.cartTitle,
                         style: TextStyle(
-                          fontFamily: 'Cairo', fontWeight: FontWeight.w600,
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600,
                           fontSize: 15, color: context.col.ink2)),
                     ]),
                   ),
@@ -1098,7 +1098,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               fmtPrice(effectiveSubtotal * config.cashbackRate / 100),
                               (effectiveSubtotal * config.cashbackRate / 10).round().clamp(1, 9999).toString()),
                             style: const TextStyle(
-                              fontFamily: 'Cairo', fontSize: 12.5,
+                              fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                               color: AppColors.success))),
                         ]),
@@ -1120,7 +1120,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           const Expanded(child: Text(
                             '✓ خصم الطلب الأول مطبّق — هذا العرض لن يتكرر',
                             style: TextStyle(
-                              fontFamily: 'Cairo', fontSize: 12.5,
+                              fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               color: AppColors.success))),
                         ]),
@@ -1179,13 +1179,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE5E7EB),
+                      color: context.col.surfaceSoft,
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.col.border),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text('اختر طريقة الدفع',
-                        style: TextStyle(fontFamily: 'Cairo', fontSize: 15,
-                          fontWeight: FontWeight.w700, color: Color(0xFF9CA3AF))),
+                        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 15,
+                          fontWeight: FontWeight.w700, color: context.col.ink3)),
                     ),
                   )
                 else
@@ -1207,7 +1208,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           else
                             Row(mainAxisSize: MainAxisSize.min, children: [
                               Text(context.s.placeOrder,
-                                style: const TextStyle(fontFamily: 'Cairo',
+                                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                   fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
                             ]),
                           if (!_loading)
@@ -1320,7 +1321,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
           ),
           const SizedBox(height: 16),
           Text(context.s.paymentMethod,
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
 
           if (!widget.codAllowed) ...[
@@ -1394,7 +1395,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                       Icon(Icons.add, size: 10, color: context.col.ink2),
                       const SizedBox(width: 2),
                       Text(context.s.topUpShort,
-                        style: TextStyle(fontFamily: 'Cairo', fontSize: 10,
+                        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 10,
                           fontWeight: FontWeight.w700, color: context.col.ink2)),
                     ]),
                   ),
@@ -1426,7 +1427,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
                   Text('استخدم',
-                    style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                       color: context.col.ink2, fontWeight: FontWeight.w600)),
                   const SizedBox(width: 8),
                   Expanded(
@@ -1526,7 +1527,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text('تأكيد',
-                style: TextStyle(fontFamily: 'Cairo',
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                   fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
             ),
           ),
@@ -1561,7 +1562,7 @@ class _AddressSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(context.s.shippingAddr,
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
           ...addresses.map((addr) {
             final isSelected = selected?['id'] == addr['id'];
@@ -1645,7 +1646,7 @@ class _TrustRow extends StatelessWidget {
           const SizedBox(height: 6),
           Text(item.$2,
             textAlign: TextAlign.center, maxLines: 2,
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 10.5,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 10.5,
               fontWeight: FontWeight.w600, color: context.col.ink2)),
         ]),
       )).toList(),

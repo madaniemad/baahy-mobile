@@ -82,7 +82,7 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
                 ),
                 Text(widget.title,
                   style: TextStyle(
-                    fontFamily: 'Cairo', fontWeight: FontWeight.w600,
+                    fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600,
                     fontSize: 15, color: context.col.ink2)),
               ]),
             ),

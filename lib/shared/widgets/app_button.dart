@@ -90,7 +90,7 @@ class _AppButtonState extends State<AppButton> {
                     Text(
                       widget.label,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: fg,

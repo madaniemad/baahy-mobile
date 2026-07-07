@@ -119,7 +119,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
             title: _loadingVendor
                 ? const SizedBox.shrink()
                 : Text(vendorName.isNotEmpty ? vendorName : context.s.storeLabel,
-                    style: const TextStyle(color: Colors.white, fontFamily: 'Cairo',
+                    style: const TextStyle(color: Colors.white, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontSize: 17, fontWeight: FontWeight.w700)),
           ),
 
@@ -223,7 +223,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: Text(context.s.viewMore,
-                          style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,
+                          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700,
                             color: context.col.ink0)),
                       ),
               ),
@@ -257,7 +257,7 @@ class _CatChip extends StatelessWidget {
       ),
       child: Text(label,
         style: TextStyle(
-          fontFamily: 'Cairo',
+          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: selected ? Colors.white : context.col.ink1)),

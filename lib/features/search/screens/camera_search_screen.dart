@@ -274,7 +274,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white70, fontSize: 13,
-                fontFamily: 'Cairo', fontWeight: FontWeight.w500,
+                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w500,
                 shadows: [Shadow(blurRadius: 6, color: Colors.black87)],
               ),
             ),
@@ -289,7 +289,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white, fontSize: 16,
-                fontFamily: 'Cairo', fontWeight: FontWeight.w600,
+                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600,
                 shadows: [Shadow(blurRadius: 10, color: Colors.black)],
               ),
             ),
@@ -327,7 +327,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
                             ? 'لا يوجد $_altBrand في باهي'
                             : '$_altBrand not available on Baahy',
                         style: TextStyle(
-                          fontFamily: 'Cairo', fontSize: 14,
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14,
                           fontWeight: FontWeight.w600, color: context.col.ink1),
                       ),
                     ),
@@ -365,7 +365,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
                             ? 'شاهد ${_altQuery ?? "منتجات"} مشابهة'
                             : 'See similar ${_altQuery ?? "products"}',
                         style: const TextStyle(
-                          fontFamily: 'Cairo', fontWeight: FontWeight.w700,
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700,
                           fontSize: 15),
                       ),
                     ),
@@ -376,7 +376,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
                     child: Text(
                       context.isAr ? 'ابحث بصورة أخرى' : 'Try another photo',
                       style: TextStyle(
-                        fontFamily: 'Cairo', fontSize: 13,
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                         color: context.col.ink3),
                     ),
                   ),
@@ -397,14 +397,14 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
                 const SizedBox(height: 16),
                 Text(_error ?? '',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, fontFamily: 'Cairo',
+                  style: const TextStyle(color: Colors.white70, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                     fontSize: 15, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 28),
                 ElevatedButton.icon(
                   onPressed: _retry,
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: Text(context.isAr ? 'حاول مجدداً' : 'Try again',
-                    style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.teal,
                     foregroundColor: Colors.black87, elevation: 0,
@@ -419,7 +419,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
                   label: Text(
                     context.isAr ? 'اختر من المعرض' : 'Choose from gallery',
                     style: const TextStyle(color: Colors.white60,
-                      fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600)),
                 ),
               ]),
             ),

@@ -192,7 +192,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('المحادثات القديمة لا يمكن استعادتها',
-              style: TextStyle(fontFamily: 'Cairo'),
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
               textDirection: TextDirection.rtl),
           duration: Duration(seconds: 2),
         ),
@@ -272,7 +272,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
               leading: const Icon(Icons.camera_alt_outlined),
               title: const Text('الكاميرا',
                   style: TextStyle(
-                      fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.camera);
@@ -282,7 +282,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
               leading: const Icon(Icons.photo_library_outlined),
               title: const Text('معرض الصور',
                   style: TextStyle(
-                      fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
@@ -420,7 +420,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
         elevation: 0,
         title: Text(context.s.assistantTitle,
             style: const TextStyle(
-                fontFamily: 'Cairo',
+                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
                 letterSpacing: 0.3)),
@@ -571,7 +571,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: context.col.ink0),
@@ -581,7 +581,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
           'اسألني عن طلباتك، الشحن، الإرجاع، المكافآت، أو أي مساعدة تحتاجها',
           textAlign: TextAlign.center,
           style: TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
               fontSize: 12,
               fontWeight: FontWeight.w400,
               color: context.col.ink3),
@@ -605,7 +605,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
             const Spacer(),
             Text('يمكنني مساعدتك في',
                 style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: context.col.ink0)),
@@ -640,7 +640,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
               const Spacer(),
               Text('المحادثات السابقة',
                   style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                       color: context.col.ink0)),
@@ -674,7 +674,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
                 onPressed: () => setState(() => _showAll = true),
                 child: const Text('عرض المزيد',
                     style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
                         fontSize: 13)),
@@ -793,11 +793,11 @@ class _InlineInput extends StatelessWidget {
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => onSend(),
                     style: TextStyle(
-                        fontFamily: 'Cairo', fontSize: 14, color: context.col.ink0),
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14, color: context.col.ink0),
                     decoration: InputDecoration(
                       hintText: 'اسأل عن منتج، هدية، مقاس، طلب...',
                       hintStyle: TextStyle(
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                           fontSize: 13,
                           color: context.col.ink3),
                       filled: true,
@@ -857,7 +857,7 @@ class _SuggestionCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: context.col.ink0),
@@ -868,7 +868,7 @@ class _SuggestionCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontSize: 10,
                         color: context.col.ink3),
                   ),
@@ -940,7 +940,7 @@ class _HistoryRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
                     color: context.col.ink0),
               ),
@@ -949,7 +949,7 @@ class _HistoryRow extends StatelessWidget {
             Text(
               _formatTime(convo.time),
               style: TextStyle(
-                  fontFamily: 'Cairo',
+                  fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                   fontSize: 11,
                   color: context.col.ink3),
             ),
@@ -1036,7 +1036,7 @@ class _UserBubble extends StatelessWidget {
                 ),
                 child: Text(msg.content,
                     style: const TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: AppColors.ink0)),
@@ -1076,7 +1076,7 @@ class _AssistantBubble extends StatelessWidget {
               ),
               child: Text(msg.content,
                   style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                       color: context.col.ink0)),
@@ -1121,7 +1121,7 @@ class _AssistantBubble extends StatelessWidget {
                             Text(
                               'تصفح ${cat['name_ar']}',
                               style: const TextStyle(
-                                fontFamily: 'Cairo',
+                                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.primary,
@@ -1175,7 +1175,7 @@ class _LimitHitBubble extends StatelessWidget {
                 Flexible(
                   child: Text(msg.content,
                       style: const TextStyle(
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                           color: AppColors.ink0)),
@@ -1197,7 +1197,7 @@ class _LimitHitBubble extends StatelessWidget {
                 icon: const Icon(Icons.chat_rounded, size: 16),
                 label: Text(context.s.assistantWhatsapp,
                     style: const TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontSize: 13,
                         fontWeight: FontWeight.w600)),
                 onPressed: () async {
@@ -1283,7 +1283,7 @@ class _AssistantProductCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: context.col.ink0)),
@@ -1492,13 +1492,13 @@ class _InputBar extends StatelessWidget {
                   minLines: 1,
                   textInputAction: TextInputAction.newline,
                   style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontSize: 14,
                       color: context.col.ink0),
                   decoration: InputDecoration(
                     hintText: context.s.assistantInputHint,
                     hintStyle: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontSize: 14,
                         color: context.col.ink3),
                     fillColor: Theme.of(context).brightness == Brightness.dark

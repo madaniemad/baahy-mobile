@@ -138,7 +138,7 @@ class CartScreen extends ConsumerWidget {
             : null,
         title: Text(
           context.tr('السلة (${cart.count})', 'Cart (${cart.count})'),
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800, fontSize: 17),
         ),
         actions: [
           if (cart.items.isNotEmpty)
@@ -148,7 +148,7 @@ class CartScreen extends ConsumerWidget {
                   context: context,
                   builder: (dlgCtx) => AlertDialog(
                     title: Text(context.s.clearCart,
-                      style: const TextStyle(fontFamily: 'Cairo')),
+                      style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                     content: Text(context.s.clearCartMsg),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(dlgCtx, false),
@@ -164,7 +164,7 @@ class CartScreen extends ConsumerWidget {
               child: Text(context.s.clearAll,
                 maxLines: 1,
                 style: const TextStyle(
-                  color: AppColors.danger, fontFamily: 'Cairo',
+                  color: AppColors.danger, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                   fontWeight: FontWeight.w600, fontSize: 13)),
             ),
         ],
@@ -185,7 +185,7 @@ class _EmptyCart extends StatelessWidget {
       Icon(Icons.shopping_bag_outlined, size: 72, color: context.col.ink4),
       const SizedBox(height: 12),
       Text(context.s.emptyCart,
-        style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: context.col.ink2)),
+        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, color: context.col.ink2)),
       const SizedBox(height: 20),
       GestureDetector(
         onTap: () => context.go('/home'),
@@ -197,7 +197,7 @@ class _EmptyCart extends StatelessWidget {
           ),
           child: Text(context.s.shopNow,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
-              color: Colors.white, fontFamily: 'Cairo')),
+              color: Colors.white, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
         ),
       ),
     ]),
@@ -274,14 +274,14 @@ class _CartBodyState extends ConsumerState<_CartBody> {
         context: context,
         builder: (dlgCtx) => AlertDialog(
           title: Text(context.s.cartUpdateTitle,
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (unavailable.isNotEmpty) ...[
                 Text(context.s.itemsUnavailable,
-                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                     fontWeight: FontWeight.w600, color: AppColors.danger)),
                 const SizedBox(height: 8),
                 ...unavailable.map((u) {
@@ -298,11 +298,11 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(isAr ? u.item.product.nameAr : u.item.product.name,
-                            style: const TextStyle(fontFamily: 'Cairo', fontSize: 13)),
+                            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13)),
                           if (varLabel != null)
                             Text(varLabel,
                               style: const TextStyle(
-                                fontFamily: 'Cairo', fontSize: 11.5,
+                                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5,
                                 color: AppColors.danger, fontWeight: FontWeight.w500)),
                         ],
                       )),
@@ -313,7 +313,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
               if (priceChanged.isNotEmpty) ...[
                 if (unavailable.isNotEmpty) const SizedBox(height: 12),
                 Text(context.s.priceChangedItems,
-                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                     fontWeight: FontWeight.w600, color: AppColors.warn)),
                 const SizedBox(height: 8),
                 ...priceChanged.map((u) => Padding(
@@ -325,7 +325,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(isAr ? u.item.product.nameAr : u.item.product.name,
-                          style: const TextStyle(fontFamily: 'Cairo', fontSize: 13)),
+                          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13)),
                         if (u.oldPrice != null && u.newPrice != null)
                           Directionality(textDirection: TextDirection.ltr,
                             child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -351,14 +351,14 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                 unavailable.isNotEmpty
                     ? context.s.willRemoveUnavailable
                     : context.s.continueUpdatedPrices,
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink2)),
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink2)),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dlgCtx, false),
               child: Text(context.s.cancel,
-                style: TextStyle(fontFamily: 'Cairo', color: context.col.ink2))),
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink2))),
             ElevatedButton(
               onPressed: () => Navigator.pop(dlgCtx, true),
               style: ElevatedButton.styleFrom(
@@ -366,7 +366,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               child: Text(
                 unavailable.isNotEmpty ? context.s.removeAndContinue : context.s.continueBtn,
-                style: const TextStyle(fontFamily: 'Cairo',
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                   fontWeight: FontWeight.w700, color: Colors.white))),
           ],
         ),
@@ -420,7 +420,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                   Expanded(
                     child: Text(etaStr,
                       style: TextStyle(fontSize: 11, color: context.col.ink2,
-                        fontFamily: 'Cairo', height: 1.4)),
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.4)),
                   ),
                 ]),
               );
@@ -450,7 +450,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                     Expanded(
                       child: Text.rich(
                         TextSpan(
-                          style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, height: 1.4),
+                          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, height: 1.4),
                           children: [
                             TextSpan(
                               text: context.s.isAr
@@ -537,7 +537,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                   Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(context.tr('متابعة', 'Continue'),
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
-                        color: Color(0xFFE8FFFE), fontFamily: 'Cairo')),
+                        color: Color(0xFFE8FFFE), fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                   ]),
                 if (!_checking)
                   Positioned(
@@ -635,14 +635,14 @@ class _FreeShippingAchievedBanner extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(context.tr('مبروك! حصلت على شحن مجاني', 'Congrats! You got free shipping'),
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800,
-              color: _green, fontFamily: 'Cairo')),
+              color: _green, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
           if (saved > 0) ...[
             const SizedBox(height: 1),
             Text(
               context.tr('وفرت ${fmtPrice(saved)} ${context.s.lydUnit} من رسوم الشحن',
                 'You saved ${fmtPrice(saved)} ${context.s.lydUnit} in shipping'),
               style: TextStyle(fontSize: 11, color: _green.withValues(alpha: 0.75),
-                fontFamily: 'Cairo')),
+                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
           ],
         ]),
       ),
@@ -706,13 +706,13 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                     const SizedBox(width: 6),
                     Text(context.tr('لديك كوبون خصم؟', 'Have a coupon?'),
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                        color: context.col.ink0, fontFamily: 'Cairo')),
+                        color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                   ]),
                   if (!hasCoupon)
                     Text(context.tr('أدخل كود الخصم للحصول على خصم إضافي',
                       'Enter coupon code for extra discount'),
                       style: TextStyle(fontSize: 11, color: context.col.ink3,
-                        fontFamily: 'Cairo')),
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                 ]),
               ),
               // Chevron (LEFT in RTL = last child)
@@ -775,7 +775,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                       ? const SizedBox(width: 16, height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : Text(context.s.apply,
-                          style: const TextStyle(fontFamily: 'Cairo',
+                          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                             fontWeight: FontWeight.w700, color: Colors.white)),
                 ),
               ),
@@ -787,7 +787,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                   textAlign: TextAlign.right,
                   decoration: InputDecoration(
                     hintText: context.s.couponHint,
-                    hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                    hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                       color: context.col.ink3),
                     filled: true, fillColor: context.col.bg,
                     errorText: _error,
@@ -957,7 +957,7 @@ class _CartItemCard extends ConsumerWidget {
                       const SizedBox(width: 3),
                       Text(
                         context.isAr ? 'بقي $stock قطع فقط' : 'Only $stock left',
-                        style: const TextStyle(fontFamily: 'Cairo', fontSize: 11.5,
+                        style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5,
                           fontWeight: FontWeight.w700, color: AppColors.danger)),
                     ]),
                   );
@@ -1023,7 +1023,7 @@ class _CartItemCard extends ConsumerWidget {
                       const SizedBox(width: 3),
                       Text(context.s.saveForLater,
                         style: TextStyle(fontSize: 11.5, color: context.col.ink3,
-                          fontFamily: 'Cairo')),
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                     ]),
                   ),
                   const SizedBox(width: 10),
@@ -1100,7 +1100,7 @@ class _LoyaltyPointsBanner extends ConsumerWidget {
               cashback.round().toString(),
               points.toString()),
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-              color: AppColors.success, fontFamily: 'Cairo')),
+              color: AppColors.success, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
         ),
       ]),
     );
@@ -1142,7 +1142,7 @@ class _WalletTeaser extends ConsumerWidget {
             child: Text(
               context.s.nudgeWallet(fmtPrice(balance)),
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                color: AppColors.primary, fontFamily: 'Cairo')),
+                color: AppColors.primary, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
           ),
         ]),
       ),
@@ -1166,7 +1166,7 @@ class _MayAlsoLikeSection extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 10),
             child: Text(context.tr('قد يعجبك أيضاً', 'You may also like'),
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
-                color: context.col.ink0, fontFamily: 'Cairo')),
+                color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
           ),
           SizedBox(
             height: 148,
@@ -1225,7 +1225,7 @@ class _RecommendedCard extends ConsumerWidget {
                 Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
                   style: TextStyle(fontSize: 11, color: context.col.ink1,
-                    fontFamily: 'Cairo')),
+                    fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                 const SizedBox(height: 2),
                 Text('${fmtPrice(displayPrice)} ${context.s.lydUnit}',
                   style: TextStyle(fontFamily: 'PlusJakartaSans',
@@ -1305,7 +1305,7 @@ class _TrustBadges extends StatelessWidget {
             Text(b.$2,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 10, color: context.col.ink1,
-                fontFamily: 'Cairo', height: 1.3)),
+                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.3)),
           ],
         )).toList(),
       ),
@@ -1368,12 +1368,12 @@ class _FirstOrderCouponBanner extends ConsumerWidget {
             Text(headline,
               style: const TextStyle(
                 color: Colors.white, fontSize: 13,
-                fontWeight: FontWeight.w800, fontFamily: 'Cairo')),
+                fontWeight: FontWeight.w800, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             const SizedBox(height: 2),
             Text(sub,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.9),
-                fontSize: 11, fontFamily: 'Cairo')),
+                fontSize: 11, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
           ]),
         ),
       ]),
@@ -1415,7 +1415,7 @@ class _OrderSummary extends StatelessWidget {
         const SizedBox(height: 2),
         Row(children: [
           Text(context.tr('شامل ضريبة القيمة المضافة', 'VAT included'),
-            style: TextStyle(fontSize: 10.5, color: context.col.ink3, fontFamily: 'Cairo')),
+            style: TextStyle(fontSize: 10.5, color: context.col.ink3, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
         ]),
       ]),
     );
@@ -1440,7 +1440,7 @@ class _Row extends StatelessWidget {
         fontSize: fontSize,
         fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
         color: bold ? context.col.ink0 : context.col.ink1,
-        fontFamily: 'Cairo')),
+        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
       const Spacer(),
       // Value (second = LEFT in RTL)
       Text(value, style: TextStyle(

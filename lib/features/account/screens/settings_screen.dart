@@ -23,7 +23,7 @@ class SettingsScreen extends ConsumerWidget {
           icon: Icon(Icons.arrow_back, color: context.col.ink0),
         ),
         title: Text(isAr ? 'الإعدادات' : 'Settings',
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 18)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800, fontSize: 18)),
         centerTitle: true,
       ),
       body: ListView(
@@ -45,7 +45,7 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () {
                 final msg = isAr ? 'Language changed to English' : 'تم التغيير إلى العربية';
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(msg, style: const TextStyle(fontFamily: 'Cairo')),
+                  content: Text(msg, style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                   duration: const Duration(seconds: 2),
                 ));
                 ref.read(localeProvider.notifier).toggle();
@@ -187,7 +187,7 @@ class _AppVersionBadge extends StatelessWidget {
         isDark ? 'assets/images/logo_white.png' : 'assets/images/logo.png',
         height: 56,
         errorBuilder: (_, __, ___) => const Text('baahy', style: TextStyle(
-          fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary)),
+          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary)),
       ),
       const SizedBox(height: 6),
       Text(context.s.versionN('1.0.0'),

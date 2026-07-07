@@ -49,7 +49,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
         backgroundColor: context.col.ink0,
         icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 18),
         label: Text(context.s.writeYourReview,
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: Colors.white)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, color: Colors.white)),
       ),
       appBar: AppBar(
         backgroundColor: context.col.surface,
@@ -60,7 +60,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(context.s.reviews,
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800, fontSize: 17)),
       ),
       body: reviewsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -222,7 +222,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
         ),
         child: Text(label,
           style: TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
             fontSize: 12.5,
             fontWeight: FontWeight.w700,
             color: isSelected ? Colors.white : context.col.ink1,
@@ -367,7 +367,7 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
           ),
           const SizedBox(height: 16),
           Text(context.s.writeYourReview,
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
           Center(
             child: RatingBar.builder(
@@ -385,7 +385,7 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
             textDirection: TextDirection.rtl,
             decoration: InputDecoration(
               hintText: context.s.shareThoughtsHint,
-              hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink3),
+              hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink3),
               filled: true,
               fillColor: context.col.bg,
               border: OutlineInputBorder(
@@ -416,7 +416,7 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
                 ? const SizedBox(width: 20, height: 20,
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                 : Text(context.s.publishReview,
-                    style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 15)),
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 15)),
             ),
           ),
         ],

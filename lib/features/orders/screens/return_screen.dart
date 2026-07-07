@@ -128,7 +128,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
           context.isAr ? 'انتهت فترة الإرجاع المسموح بها لهذا الطلب' : 'Return period has expired',
-          style: const TextStyle(fontFamily: 'Cairo'))));
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))));
       return;
     }
     final items = _selected.entries
@@ -166,7 +166,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
       }
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg, style: const TextStyle(fontFamily: 'Cairo'))));
+        SnackBar(content: Text(msg, style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))));
     }
   }
 
@@ -190,7 +190,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
           context.isAr
             ? ['اختر المنتجات', 'سبب الإرجاع', 'تم الإرسال'][_step]
             : ['Select Items', 'Return Reason', 'Done'][_step],
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
       ),
       body: Column(
         children: [
@@ -316,7 +316,7 @@ class _ReturnPolicyBanner extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(label,
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.w600,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, fontWeight: FontWeight.w600,
               color: color)),
         ),
       ]),
@@ -354,18 +354,18 @@ class _StepItems extends ConsumerWidget {
               Text(
                 context.isAr ? 'فشل تحميل المنتجات' : 'Failed to load items',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Cairo', color: context.col.ink2)),
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink2)),
               const SizedBox(height: 4),
               Text(
                 context.isAr ? 'تحقق من اتصالك وحاول مجدداً' : 'Check your connection and try again',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: context.col.ink3)),
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, color: context.col.ink3)),
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () => ref.invalidate(_orderDataProvider(orderId)),
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: Text(context.isAr ? 'إعادة المحاولة' : 'Retry',
-                    style: const TextStyle(fontFamily: 'Cairo')),
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                 style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary),
               ),
             ],
@@ -400,7 +400,7 @@ class _StepItems extends ConsumerWidget {
                         ? '$returnableCount منتج متاح للإرجاع'
                         : '$returnableCount item${returnableCount == 1 ? '' : 's'} returnable',
                       style: TextStyle(
-                        fontFamily: 'Cairo', fontSize: 12.5,
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12.5,
                         color: context.col.ink2, fontWeight: FontWeight.w500),
                     ),
                     GestureDetector(
@@ -410,7 +410,7 @@ class _StepItems extends ConsumerWidget {
                           ? (context.isAr ? 'إلغاء الكل' : 'Deselect all')
                           : (context.isAr ? 'اختر الكل' : 'Select all'),
                         style: const TextStyle(
-                          fontFamily: 'Cairo', fontSize: 13,
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                           color: AppColors.primary, fontWeight: FontWeight.w700),
                       ),
                     ),
@@ -474,13 +474,13 @@ class _StepItems extends ConsumerWidget {
                       const SizedBox(width: 10),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(item['product_name'] ?? item['name'] ?? '',
-                          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600)),
+                          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600)),
                         Text(
                           maxQty == 0
                             ? (context.isAr ? 'تم إرجاعه مسبقاً' : 'Already returned')
                             : (context.isAr ? 'الكمية: $maxQty' : 'Qty: $maxQty'),
                           style: TextStyle(
-                            fontFamily: 'Cairo', fontSize: 12,
+                            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                             color: maxQty == 0 ? AppColors.danger : context.col.ink3)),
                       ])),
                       if (qty > 0) Row(mainAxisSize: MainAxisSize.min, children: [
@@ -596,7 +596,7 @@ class _StepReason extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(isAr ? r.labelAr : r.labelEn,
-                          style: const TextStyle(fontFamily: 'Cairo',
+                          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                             fontWeight: FontWeight.w600, fontSize: 14)),
                       ),
                     ]),
@@ -622,7 +622,7 @@ class _StepReason extends StatelessWidget {
                         isAr
                             ? 'سيتم تحديد رسوم الاستلام وصافي الاسترداد بعد مراجعة الطلب من قِبل الفريق'
                             : 'Collection fee and net refund will be confirmed after admin reviews your request',
-                        style: TextStyle(fontFamily: 'Cairo',
+                        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                           fontSize: 12, color: context.col.ink2, height: 1.4),
                       ),
                     ),
@@ -640,7 +640,7 @@ class _StepReason extends StatelessWidget {
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: isAr ? 'صف المشكلة بمزيد من التفصيل...' : 'Describe the issue in more detail...',
-                  hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink3),
+                  hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink3),
                   filled: true, fillColor: context.col.bg,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -754,7 +754,7 @@ class _FeeLine extends StatelessWidget {
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
       Text(label, style: TextStyle(
-        fontFamily: 'Cairo', fontSize: 13,
+        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
         color: context.col.ink2, fontWeight: bold ? FontWeight.w700 : FontWeight.w400)),
       Text(value, style: TextStyle(
         fontFamily: 'PlusJakartaSans', fontSize: 13,
@@ -788,14 +788,14 @@ class _StepDone extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(isAr ? 'تم إرسال طلب الإرجاع' : 'Return Request Submitted',
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 22, fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 10),
           Text(
             isAr
               ? 'سنراجع طلبك ونردّ خلال 24 ساعة. عند الموافقة، سيمرّ سائقنا لاستلام المنتجات من باب منزلك.'
               : 'We\'ll review and respond within 24 hours. Upon approval, our driver will pick up the items from your door.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: context.col.ink2, height: 1.5, fontFamily: 'Cairo'),
+            style: TextStyle(fontSize: 14, color: context.col.ink2, height: 1.5, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
           ),
           const SizedBox(height: 20),
           Container(
@@ -808,12 +808,12 @@ class _StepDone extends StatelessWidget {
             child: Column(children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Text(isAr ? 'طريقة الاسترداد' : 'Refund method',
-                  style: TextStyle(fontSize: 12.5, color: context.col.ink2, fontFamily: 'Cairo')),
+                  style: TextStyle(fontSize: 12.5, color: context.col.ink2, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                 Text(
                   isFreeReturn
                       ? (isAr ? 'يدوي (يحدده الإدارة)' : 'Manual (admin decides)')
                       : (isAr ? 'رصيد المحفظة فوراً' : 'Wallet credit instantly'),
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, fontFamily: 'Cairo')),
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
               ]),
             ]),
           ),

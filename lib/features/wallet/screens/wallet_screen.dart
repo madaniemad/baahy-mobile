@@ -66,7 +66,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
           onPressed: () => context.canPop() ? context.pop() : context.go('/account'),
         ),
         title: Text(context.s.myWallet,
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800, fontSize: 17)),
       ),
       body: RefreshIndicator(
         color: const Color(0xFF1FD7E2),
@@ -129,7 +129,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 Icon(Icons.shield_outlined, size: 13, color: context.col.ink3),
                 const SizedBox(width: 6),
                 Text(context.tr('رصيدك آمن ١٠٠٪ ويمكنك استخدامه في أي وقت', 'Your balance is 100% secure — use it anytime'),
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5, color: context.col.ink2)),
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5, color: context.col.ink2)),
               ]),
             ),
           ]),
@@ -257,7 +257,7 @@ class _HeroBalanceCard extends StatelessWidget {
               const SizedBox(height: 18),
               Text(context.tr('رصيدك المتاح', 'Your Balance'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, fontWeight: FontWeight.w500,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, fontWeight: FontWeight.w500,
                   color: Colors.white)),
               const SizedBox(height: 6),
               Row(mainAxisAlignment: MainAxisAlignment.center,
@@ -269,13 +269,13 @@ class _HeroBalanceCard extends StatelessWidget {
                     letterSpacing: -1, height: 1)),
                 const SizedBox(width: 7),
                 const Text('د.ل',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w600,
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w600,
                     color: Colors.white)),
               ]),
               const SizedBox(height: 5),
               Text(context.tr('✦  أنت تكسب مع كل طلب', '✦  You earn on every order'),
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Colors.white,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, color: Colors.white,
                   fontWeight: FontWeight.w500)),
               const SizedBox(height: 14),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -321,7 +321,7 @@ class _CardButton extends StatelessWidget {
           Icon(icon, size: 13, color: outlined ? Colors.white : tiffanyDeep),
           const SizedBox(width: 5),
           Text(label,
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
               fontWeight: FontWeight.w800,
               color: outlined ? Colors.white : tiffanyDeep)),
         ]),
@@ -435,7 +435,7 @@ class _StatItem extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontFamily: 'Cairo',
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
             fontSize: 9.5, color: context.col.ink2, height: 1.3)),
         const SizedBox(height: 3),
         Text('${fmtPrice(amount)} د.ل',
@@ -460,9 +460,9 @@ class _TierProgressCard extends StatelessWidget {
   const _TierProgressCard({required this.tier});
 
   static const _tiers = ['bronze', 'silver', 'gold', 'platinum'];
-  static const _tierLabels = ['برونزي', 'فضي', 'ذهبي', 'بلاتيني'];
+  static const _tierLabels = ['Silver', 'Gold', 'Platinum', 'Black'];
   static const _tierColors = [
-    Color(0xFFCD7F32), Color(0xFF9E9E9E), Color(0xFFD4A82E), Color(0xFF4FC3F7),
+    Color(0xFF8AA0B4), Color(0xFFE0B44A), Color(0xFF5AA8CC), Color(0xFFA99FD6),
   ];
 
   @override
@@ -498,14 +498,14 @@ class _TierProgressCard extends StatelessWidget {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(context.tr('المستوى الحالي', 'Current Tier'),
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: context.col.ink2)),
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11, color: context.col.ink2)),
               const SizedBox(height: 2),
-              Text(_tierLabels[currentIndex],
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 20, fontWeight: FontWeight.w800,
+              Text('⁦${_tierLabels[currentIndex]}⁩',
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 20, fontWeight: FontWeight.w800,
                   color: _tierColors[currentIndex], height: 1.1)),
               if (nextIndex != null)
-                Text(context.isAr ? 'استمر للتقدم للمستوى ${_tierLabels[nextIndex]}' : 'Keep going to reach ${_tierLabels[nextIndex]}',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: context.col.ink2)),
+                Text(context.isAr ? 'استمر للتقدم للمستوى ⁦${_tierLabels[nextIndex]}⁩' : 'Keep going to reach ⁦${_tierLabels[nextIndex]}⁩',
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11, color: context.col.ink2)),
             ]),
           ),
           const SizedBox(width: 8),
@@ -561,7 +561,7 @@ class _TierProgressCard extends StatelessWidget {
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.chevron_left_rounded, size: 16, color: AppColors.primary),
             Text(context.tr('عرض جميع المزايا', 'View all benefits'),
-              style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.primary,
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, color: AppColors.primary,
                 fontWeight: FontWeight.w600)),
           ]),
         ),
@@ -593,7 +593,7 @@ class _DualProgressRow extends StatelessWidget {
         Icon(icon, size: 13, color: color),
         const SizedBox(width: 5),
         Text(label,
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5,
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5,
             fontWeight: FontWeight.w600, color: context.col.ink1)),
         const Spacer(),
         if (done)
@@ -601,7 +601,7 @@ class _DualProgressRow extends StatelessWidget {
             const Icon(Icons.check_circle_rounded, size: 14, color: AppColors.success),
             const SizedBox(width: 3),
             Text(context.tr('مكتمل', 'Done'),
-              style: const TextStyle(fontFamily: 'Cairo', fontSize: 11,
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11,
                 color: AppColors.success, fontWeight: FontWeight.w700)),
           ])
         else
@@ -637,7 +637,7 @@ class _EarnMoreSection extends StatelessWidget {
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         child: Text(context.tr('اكسب أكثر', 'Earn More'),
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800,
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w800,
             color: context.col.ink0)),
       ),
       Padding(
@@ -717,17 +717,17 @@ class _EarnCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(title,
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5, fontWeight: FontWeight.w800,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5, fontWeight: FontWeight.w800,
               color: context.col.ink0, height: 1.3)),
           const SizedBox(height: 3),
           Text(subtitle,
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 9.5, color: context.col.ink2,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 9.5, color: context.col.ink2,
               height: 1.35)),
           const SizedBox(height: 8),
           Row(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.chevron_left_rounded, size: 13, color: iconColor),
             Text(actionLabel,
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 10.5,
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 10.5,
                 fontWeight: FontWeight.w700, color: iconColor)),
           ]),
         ]),
@@ -749,14 +749,14 @@ class _TransactionsSection extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Text(context.tr('آخر المعاملات', 'Recent Transactions'),
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w800,
               color: context.col.ink0)),
           const Spacer(),
           if (txns.isNotEmpty)
             Row(mainAxisSize: MainAxisSize.min, children: [
               const Icon(Icons.chevron_left_rounded, size: 15, color: AppColors.primary),
               Text(context.s.seeAll,
-                style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.primary,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, color: AppColors.primary,
                   fontWeight: FontWeight.w600)),
             ]),
         ]),
@@ -769,7 +769,7 @@ class _TransactionsSection extends StatelessWidget {
                 Icon(Icons.receipt_long_outlined, size: 60, color: context.col.ink4),
                 const SizedBox(height: 12),
                 Text(context.s.noTransactions,
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 15, color: context.col.ink2)),
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 15, color: context.col.ink2)),
               ]),
             ),
           )
@@ -1149,7 +1149,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                           ? (_amount > 0 ? 'متابعة · ${fmtPrice(_amount)} د.ل' : 'متابعة')
                           : _step == 1 ? 'إرسال OTP'
                           : 'تأكيد الشحن',
-                      style: TextStyle(fontFamily: 'Cairo',
+                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
             ),
           ),
@@ -1276,12 +1276,12 @@ class _TransactionRow extends StatelessWidget {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(_buildDescription(type, isCredit),
-              style: const TextStyle(fontFamily: 'Cairo',
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                 fontSize: 13.5, fontWeight: FontWeight.w600, height: 1.3)),
             if (tx['created_at'] != null)
               Text(
                 _formatDate(tx['created_at']),
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 11, color: context.col.ink3),
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11, color: context.col.ink3),
               ),
           ]),
         ),
@@ -1317,11 +1317,11 @@ class _WalletQrSheet extends StatelessWidget {
           decoration: BoxDecoration(color: context.col.border, borderRadius: BorderRadius.circular(2)))),
         const SizedBox(height: 20),
         const Text('كود QR محفظتك',
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 18, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
         Text('يمكن لأي شخص مسح هذا الكود لإرسال مبلغ لمحفظتك',
           textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 12.5, color: Colors.grey.shade600)),
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12.5, color: Colors.grey.shade600)),
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(16),
@@ -1347,7 +1347,7 @@ class _WalletQrSheet extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text(name,
-          style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w700)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         Text(phone,
           textDirection: TextDirection.ltr,
@@ -1524,7 +1524,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                 _step == 0 ? 'تحويل رصيد'
                     : _step == 1 ? 'المبلغ والملاحظة'
                     : 'تأكيد التحويل',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 20, fontWeight: FontWeight.w800,
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 20, fontWeight: FontWeight.w800,
                   color: context.col.ink0)),
             ),
           ]),
@@ -1533,7 +1533,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
             _step == 0 ? 'أدخل رقم هاتف المستلم'
                 : _step == 1 ? 'رصيدك المتاح: ${fmtPrice(balance)} د.ل'
                 : 'راجع التفاصيل قبل التأكيد',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink2)),
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink2)),
           const SizedBox(height: 20),
 
           if (_step == 0) ...[
@@ -1555,7 +1555,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                       const Icon(Icons.person_outline_rounded, size: 13, color: Color(0xFF08AAAC)),
                       const SizedBox(width: 5),
                       Text(c['name'] as String? ?? '',
-                        style: const TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                        style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                           fontWeight: FontWeight.w600, color: Color(0xFF08AAAC))),
                     ]),
                   ),
@@ -1598,7 +1598,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                 const SizedBox(width: 10),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(_recipientName ?? '',
-                    style: const TextStyle(fontFamily: 'Cairo', fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF08AAAC))),
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF08AAAC))),
                   Text(_recipientPhoneMasked ?? '',
                     textDirection: TextDirection.ltr,
                     style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 11.5, color: Colors.grey.shade600)),
@@ -1625,7 +1625,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   suffixText: 'د.ل',
-                  suffixStyle: TextStyle(fontFamily: 'Cairo', fontSize: 14,
+                  suffixStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14,
                     fontWeight: FontWeight.w600, color: Colors.grey.shade500),
                 ),
                 onChanged: (_) => setState(() {}),
@@ -1643,7 +1643,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                 maxLength: 200,
                 decoration: InputDecoration(
                   hintText: 'ملاحظة (اختياري)',
-                  hintStyle: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: Colors.grey.shade400),
+                  hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: Colors.grey.shade400),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(14),
                   counterText: '',
@@ -1668,7 +1668,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                 ),
                 const SizedBox(width: 8),
                 Text('حفظ المستلم للتحويل السريع لاحقاً',
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink1)),
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink1)),
               ]),
             ),
           ],
@@ -1695,7 +1695,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
 
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Text(_error!, style: const TextStyle(fontFamily: 'Cairo', color: AppColors.danger, fontSize: 13)),
+            Text(_error!, style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: AppColors.danger, fontSize: 13)),
           ],
           const SizedBox(height: 16),
 
@@ -1726,7 +1726,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                       _step == 0 ? 'بحث عن المستلم'
                           : _step == 1 ? 'متابعة'
                           : 'تأكيد التحويل',
-                      style: const TextStyle(fontFamily: 'Cairo',
+                      style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
             ),
           ),
@@ -1749,12 +1749,13 @@ class _ConfirmRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(children: [
         Text(label,
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: Colors.grey.shade600)),
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: Colors.grey.shade600)),
         const Spacer(),
         Text(value,
           textDirection: ltr ? TextDirection.ltr : null,
           style: TextStyle(
-            fontFamily: ltr ? 'PlusJakartaSans' : 'Cairo',
+            fontFamily: ltr ? 'PlusJakartaSans' : 'Manrope',
+            fontFamilyFallback: const ['Tajawal'],
             fontSize: 13.5,
             fontWeight: highlight ? FontWeight.w800 : FontWeight.w600,
             color: highlight ? const Color(0xFF08AAAC) : Colors.black87)),

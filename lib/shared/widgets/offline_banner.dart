@@ -31,7 +31,7 @@ class OfflineBanner extends ConsumerWidget {
                 const Expanded(
                   child: Text('لا يوجد اتصال بالإنترنت',
                     style: TextStyle(
-                      fontFamily: 'Cairo', fontSize: 13,
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                       fontWeight: FontWeight.w600, color: Colors.white)),
                 ),
               ]),

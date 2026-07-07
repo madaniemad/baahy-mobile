@@ -32,7 +32,7 @@ class PolicyScreen extends ConsumerWidget {
           icon: Icon(Icons.arrow_back, color: context.col.ink0),
         ),
         title: Text(title,
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
       ),
       body: _buildBody(context, pages, isAr),
     );
@@ -90,12 +90,12 @@ class _TextBody extends StatelessWidget {
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (title.isNotEmpty) ...[
               Text(title, style: TextStyle(
-                fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w700,
+                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 15, fontWeight: FontWeight.w700,
                 color: context.col.ink0)),
               const SizedBox(height: 6),
             ],
             Text(body, style: TextStyle(
-              fontFamily: 'Cairo', fontSize: 13.5,
+              fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13.5,
               color: context.col.ink1, height: 1.7)),
           ]);
         },
@@ -112,7 +112,7 @@ class _TextBody extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 14),
           child: Text(para, style: TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
             fontSize: isHeader ? 15 : 13.5,
             fontWeight: isHeader ? FontWeight.w700 : FontWeight.w400,
             color: isHeader ? context.col.ink0 : context.col.ink1,
@@ -152,7 +152,7 @@ class _ReturnPolicyBody extends StatelessWidget {
             children: [
               Text(isAr ? (s['title_ar'] ?? '') : (s['title_en']?.isNotEmpty == true ? s['title_en']! : (s['title_ar'] ?? '')),
                   style: const TextStyle(
-                      fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 14)),
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 14)),
               const SizedBox(height: 8),
               Text(isAr ? (s['body_ar'] ?? '') : (s['body_en']?.isNotEmpty == true ? s['body_en']! : (s['body_ar'] ?? '')),
                   style: TextStyle(

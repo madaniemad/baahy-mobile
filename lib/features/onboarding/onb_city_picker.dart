@@ -24,13 +24,13 @@ class OnbCityPicker extends ConsumerStatefulWidget {
 const _navy = Onb.navy;                    // card text
 const _ink = Color(0xFF161719);            // main titles — black
 const _muted = Color(0xFF4B4E54);          // secondary text — dark grey
-const _teal = Color(0xFF1FD7E2);           // brand tiffany
+const _teal = Color(0xFF3FD6E4);           // brand tiffany
 const _boxBg = Color(0xFFF0F6F7);          // inner tint
 const _cardShadow = [BoxShadow(color: Color(0x12023A42), blurRadius: 22, offset: Offset(0, 8))];
 // Solid tiffany for the top half; fade through the third quarter; white bottom quarter.
 const _cityGradient = LinearGradient(
   begin: Alignment.topCenter, end: Alignment.bottomCenter,
-  colors: [Color(0xFF1FD7E2), Color(0xFF1FD7E2), Color(0xFFEAF9FB), Color(0xFFEAF9FB)],
+  colors: [Color(0xFF3FD6E4), Color(0xFF3FD6E4), Color(0xFFEAF9FB), Color(0xFFEAF9FB)],
   stops: [0.0, 0.5, 0.78, 1.0],
 );
 
@@ -160,9 +160,9 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
             padding: const EdgeInsets.fromLTRB(30, 20, 30, 18),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               // ── language ──
-              Text(t.langTitle, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontSize: 15, fontWeight: FontWeight.w800, color: _ink)),
+              Text(t.langTitle, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15, fontWeight: FontWeight.w800, color: _ink)),
               const SizedBox(height: 3),
-              Text(t.langSub, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontSize: 11.5, fontWeight: FontWeight.w600, color: _muted)),
+              Text(t.langSub, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 11.5, fontWeight: FontWeight.w600, color: _muted)),
               const SizedBox(height: 14),
               FractionallySizedBox(widthFactor: 0.72, child: _LangSegment(isAr: isAr, onSelect: (ar) { if (ar != isAr) ref.read(localeProvider.notifier).toggle(); })),
               const SizedBox(height: 46),
@@ -170,9 +170,9 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
               // ── city ──
               const _PinGlow(),
               const SizedBox(height: 16),
-              Text(t.title, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontSize: 23, fontWeight: FontWeight.w800, color: _ink)),
+              Text(t.title, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 23, fontWeight: FontWeight.w800, color: Colors.white)),
               const SizedBox(height: 8),
-              Text(t.sub, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontSize: 12.5, fontWeight: FontWeight.w500, color: _muted, height: 1.45)),
+              Text(t.sub, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 12.5, fontWeight: FontWeight.w500, color: _muted, height: 1.45)),
               const SizedBox(height: 26),
 
               if (_detecting) ...[ _DetectingRow(t: t), const SizedBox(height: 12) ],
@@ -218,7 +218,7 @@ class _LangSegment extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget label(String s, bool selected, VoidCallback onTap) => Expanded(child: GestureDetector(
       onTap: onTap, behavior: HitTestBehavior.opaque,
-      child: Center(child: Text(s, style: TextStyle(fontFamily: Onb.font, fontSize: 12.5,
+      child: Center(child: Text(s, style: TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 12.5,
           fontWeight: FontWeight.w800, color: selected ? _teal : Colors.white))),
     ));
     return SizedBox(height: 38, child: Stack(children: [
@@ -246,21 +246,44 @@ class _LangSegment extends StatelessWidget {
   }
 }
 
-class _PinGlow extends StatelessWidget {
+class _PinGlow extends StatefulWidget {
   const _PinGlow();
   @override
-  Widget build(BuildContext context) => Center(child: SizedBox(width: 116, height: 116, child: Stack(alignment: Alignment.center, children: [
-    // soft concentric glow
-    Container(width: 116, height: 116, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.10))),
-    Container(width: 90, height: 90, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.14))),
-    Container(width: 64, height: 64, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.2))),
-    // white pin with a teal centre dot
-    Stack(alignment: Alignment.center, children: [
-      const Icon(Icons.location_on, color: Colors.white, size: 56),
-      Transform.translate(offset: const Offset(0, -8),
-        child: Container(width: 15, height: 15, decoration: const BoxDecoration(shape: BoxShape.circle, color: _teal))),
+  State<_PinGlow> createState() => _PinGlowState();
+}
+
+class _PinGlowState extends State<_PinGlow> with SingleTickerProviderStateMixin {
+  // outward "radar" ping ripple around a stationary pin
+  late final AnimationController _ping =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1700))..repeat();
+
+  @override
+  void dispose() { _ping.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) => Center(child: SizedBox(width: 116, height: 116,
+    child: Stack(alignment: Alignment.center, children: [
+      // expanding radar ping (only this ripple animates; the pin stays put)
+      AnimatedBuilder(
+        animation: _ping,
+        builder: (context, _) {
+          final p = _ping.value;
+          return Container(width: 48 + p * 68, height: 48 + p * 68, decoration: BoxDecoration(
+              shape: BoxShape.circle, color: Colors.white.withValues(alpha: (1 - p) * 0.42)));
+        },
+      ),
+      // soft concentric glow
+      Container(width: 116, height: 116, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.10))),
+      Container(width: 90, height: 90, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.14))),
+      Container(width: 64, height: 64, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.2))),
+      // stationary white pin with a teal centre dot
+      Stack(alignment: Alignment.center, children: [
+        const Icon(Icons.location_on, color: Colors.white, size: 56),
+        Transform.translate(offset: const Offset(0, -8),
+          child: Container(width: 15, height: 15, decoration: const BoxDecoration(shape: BoxShape.circle, color: _teal))),
+      ]),
     ]),
-  ])));
+  ));
 }
 
 class _DetectingRow extends StatelessWidget {
@@ -271,10 +294,10 @@ class _DetectingRow extends StatelessWidget {
     Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
       const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: _navy)),
       const SizedBox(width: 9),
-      Text(t.locating, style: const TextStyle(fontFamily: Onb.font, fontSize: 13, fontWeight: FontWeight.w700, color: _navy)),
+      Text(t.locating, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13, fontWeight: FontWeight.w700, color: _navy)),
     ]),
     const SizedBox(height: 3),
-    Text(t.locatingSub, style: const TextStyle(fontFamily: Onb.font, fontSize: 11.5, fontWeight: FontWeight.w500, color: _muted)),
+    Text(t.locatingSub, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 11.5, fontWeight: FontWeight.w500, color: _muted)),
   ]);
 }
 
@@ -300,14 +323,14 @@ class _CityCard extends StatelessWidget {
         Container(width: 44, height: 44, decoration: const BoxDecoration(color: Color(0xFFFDECEC), shape: BoxShape.circle),
             child: const Icon(Icons.location_off_rounded, color: Onb.couponRed, size: 22)),
         const SizedBox(height: 10),
-        Text(title, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontSize: 15, fontWeight: FontWeight.w800, color: _navy)),
+        Text(title, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15, fontWeight: FontWeight.w800, color: _navy)),
         const SizedBox(height: 4),
-        Text(sub, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontSize: 12, fontWeight: FontWeight.w500, color: _muted, height: 1.4)),
+        Text(sub, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 12, fontWeight: FontWeight.w500, color: _muted, height: 1.4)),
         const SizedBox(height: 14),
         _Cta(label: t.chooseCity, onTap: onManual),
         if (denied) ...[
           const SizedBox(height: 9),
-          GestureDetector(onTap: onEnable, child: Text(t.enableLoc, style: const TextStyle(fontFamily: Onb.font, fontSize: 13, fontWeight: FontWeight.w700, color: _teal))),
+          GestureDetector(onTap: onEnable, child: Text(t.enableLoc, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13, fontWeight: FontWeight.w700, color: _teal))),
         ],
       ]);
     }
@@ -319,7 +342,7 @@ class _CityCard extends StatelessWidget {
             ? const Icon(Icons.check_rounded, color: _teal, size: 20)
             : const Padding(padding: EdgeInsets.all(10), child: CircularProgressIndicator(strokeWidth: 2, color: _teal))),
       const SizedBox(height: 7),
-      Text(t.currentCity, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontSize: 12, fontWeight: FontWeight.w800, color: _navy)),
+      Text(t.currentCity, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 12, fontWeight: FontWeight.w800, color: _navy)),
       const SizedBox(height: 10),
       // inner city box — text right, pin left
       Container(
@@ -328,10 +351,10 @@ class _CityCard extends StatelessWidget {
         child: Row(children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
             ready
-              ? Text(city, style: const TextStyle(fontFamily: Onb.font, fontSize: 17, fontWeight: FontWeight.w800, color: _navy))
+              ? Text(city, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 17, fontWeight: FontWeight.w800, color: _navy))
               : Container(width: 100, height: 18, decoration: BoxDecoration(color: const Color(0xFFE3EAEB), borderRadius: BorderRadius.circular(6))),
             const SizedBox(height: 1),
-            Text(t.autoDetected, style: const TextStyle(fontFamily: Onb.font, fontSize: 11, fontWeight: FontWeight.w500, color: _muted)),
+            Text(t.autoDetected, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 11, fontWeight: FontWeight.w500, color: _muted)),
           ])),
           const SizedBox(width: 9),
           const Icon(Icons.location_on, color: _teal, size: 19),
@@ -349,7 +372,7 @@ class _OrDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(children: [
     Expanded(child: Container(height: 1, color: _navy.withValues(alpha: 0.12))),
-    Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text(t.or, style: const TextStyle(fontFamily: Onb.font, fontSize: 13, fontWeight: FontWeight.w600, color: _muted))),
+    Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text(t.or, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13, fontWeight: FontWeight.w600, color: _muted))),
     Expanded(child: Container(height: 1, color: _navy.withValues(alpha: 0.12))),
   ]);
 }
@@ -362,28 +385,53 @@ class _ManualButton extends StatelessWidget {
     onTap: onTap, behavior: HitTestBehavior.opaque,
     child: Container(
       height: 46, alignment: Alignment.center,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), border: Border.all(color: _teal.withValues(alpha: 0.7), width: 1.5)),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), border: Border.all(color: _ink.withValues(alpha: 0.55), width: 1.5)),
       child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Icons.location_on_outlined, color: _teal, size: 16),
+        const Icon(Icons.location_on_outlined, color: _ink, size: 16),
         const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontFamily: Onb.font, fontSize: 13.5, fontWeight: FontWeight.w700, color: _teal)),
+        Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13.5, fontWeight: FontWeight.w700, color: _ink)),
       ]),
     ),
   );
 }
 
-class _Cta extends StatelessWidget {
+class _Cta extends StatefulWidget {
   final String label; final VoidCallback onTap; final bool disabled;
   const _Cta({required this.label, required this.onTap, this.disabled = false});
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: disabled ? null : onTap,
-    child: Opacity(opacity: disabled ? 0.5 : 1, child: Container(
-      height: 46, width: double.infinity, alignment: Alignment.center,
-      decoration: BoxDecoration(color: _teal, borderRadius: BorderRadius.circular(18)),
-      child: Text(label, style: const TextStyle(fontFamily: Onb.font, fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
-    )),
-  );
+  State<_Cta> createState() => _CtaState();
+}
+
+class _CtaState extends State<_Cta> with SingleTickerProviderStateMixin {
+  // "breathing" pulse so the primary action clearly draws the eye
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 620))..repeat(reverse: true);
+
+  @override
+  void dispose() { _c.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    final btn = GestureDetector(
+      onTap: widget.disabled ? null : widget.onTap,
+      child: Opacity(opacity: widget.disabled ? 0.5 : 1, child: Container(
+        height: 46, width: double.infinity, alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: _teal, borderRadius: BorderRadius.circular(18),
+          boxShadow: widget.disabled ? null : [BoxShadow(color: _teal.withValues(alpha: 0.38), blurRadius: 16, offset: const Offset(0, 6))]),
+        child: Text(widget.label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
+      )),
+    );
+    if (widget.disabled) return btn;
+    return AnimatedBuilder(
+      animation: _c,
+      child: btn,
+      builder: (context, ch) => Transform.scale(
+        scale: 1 + Curves.easeInOut.transform(_c.value) * 0.06, // breathe 1.0 → 1.06
+        child: ch,
+      ),
+    );
+  }
 }
 
 // ============================================================ strings
@@ -440,7 +488,7 @@ class _ManualSheet extends StatelessWidget {
           Container(width: 44, height: 5, margin: const EdgeInsets.only(bottom: 14), decoration: BoxDecoration(color: const Color(0xFFE1E5E7), borderRadius: BorderRadius.circular(3))),
           Row(children: [
             GestureDetector(onTap: onClose, child: const SizedBox(width: 28, height: 28, child: Icon(Icons.close, color: _navy, size: 21))),
-            Expanded(child: Text(t.sheetTitle, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontSize: 18, fontWeight: FontWeight.w800, color: _navy))),
+            Expanded(child: Text(t.sheetTitle, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 18, fontWeight: FontWeight.w800, color: _navy))),
             const SizedBox(width: 28),
           ]),
           const SizedBox(height: 14),
@@ -452,21 +500,21 @@ class _ManualSheet extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(child: TextField(
                 controller: controller, onChanged: onQuery, cursorColor: _teal,
-                style: const TextStyle(fontFamily: Onb.font, fontSize: 15, fontWeight: FontWeight.w500, color: _navy),
+                style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15, fontWeight: FontWeight.w500, color: _navy),
                 decoration: InputDecoration(
                   filled: false, fillColor: Colors.transparent,
                   border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
                   isDense: true, contentPadding: const EdgeInsets.symmetric(vertical: 13),
-                  hintText: t.search, hintStyle: const TextStyle(fontFamily: Onb.font, fontSize: 15, fontWeight: FontWeight.w500, color: Color(0xFF9AA39F)),
+                  hintText: t.search, hintStyle: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15, fontWeight: FontWeight.w500, color: Color(0xFF9AA39F)),
                 ),
               )),
             ]),
           ),
           Align(alignment: isAr ? Alignment.centerRight : Alignment.centerLeft, child: Padding(
             padding: const EdgeInsets.fromLTRB(2, 14, 2, 4),
-            child: Text(t.mainCities, style: const TextStyle(fontFamily: Onb.font, fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF9AA39F))))),
+            child: Text(t.mainCities, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF9AA39F))))),
           Flexible(child: filtered.isEmpty
-              ? Padding(padding: const EdgeInsets.symmetric(vertical: 22), child: Text(t.noResults, style: const TextStyle(fontFamily: Onb.font, fontWeight: FontWeight.w700, color: Color(0xFF9AA39F))))
+              ? Padding(padding: const EdgeInsets.symmetric(vertical: 22), child: Text(t.noResults, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontWeight: FontWeight.w700, color: Color(0xFF9AA39F))))
               : ListView.builder(shrinkWrap: true, itemCount: filtered.length, padding: EdgeInsets.zero, itemBuilder: (_, i) {
                   final c = filtered[i];
                   return GestureDetector(onTap: () => onPick(c), behavior: HitTestBehavior.opaque, child: Container(
@@ -475,7 +523,7 @@ class _ManualSheet extends StatelessWidget {
                     child: Row(children: [
                       const Icon(Icons.location_on, color: _teal, size: 19),
                       const SizedBox(width: 12),
-                      Expanded(child: Text(isAr ? c.ar : c.en, style: const TextStyle(fontFamily: Onb.font, fontSize: 16, fontWeight: FontWeight.w700, color: _navy))),
+                      Expanded(child: Text(isAr ? c.ar : c.en, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 16, fontWeight: FontWeight.w700, color: _navy))),
                     ]),
                   ));
                 })),
@@ -484,7 +532,7 @@ class _ManualSheet extends StatelessWidget {
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(showAll ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: _teal, size: 20),
               const SizedBox(width: 8),
-              Text(showAll ? t.showLess : t.showAll, style: const TextStyle(fontFamily: Onb.font, fontSize: 14.5, fontWeight: FontWeight.w700, color: _teal)),
+              Text(showAll ? t.showLess : t.showAll, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 14.5, fontWeight: FontWeight.w700, color: _teal)),
             ]))),
         ]),
       ),

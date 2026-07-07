@@ -205,7 +205,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   OutlinedButton(
                     onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
                     child: Text(context.isAr ? 'العودة' : 'Go Back',
-                      style: const TextStyle(fontFamily: 'Cairo'))),
+                      style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
                 ]),
               ),
             ),
@@ -502,7 +502,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                           child: Text(
                                             '${context.s.saveAmountPrefix} ${fmtPrice(product.price - displayPrice)} ${context.s.lydUnit}',
                                             style: const TextStyle(color: AppColors.danger,
-                                              fontFamily: 'Cairo',
+                                              fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                               fontSize: 11, fontWeight: FontWeight.w700)),
                                         ),
                                       ),
@@ -808,7 +808,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               icon: const Icon(Icons.shopping_cart_outlined,
                                 size: 18, color: Colors.white),
                               label: Text(context.s.addToCart,
-                                style: const TextStyle(fontFamily: 'Cairo',
+                                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                   fontWeight: FontWeight.w700, fontSize: 15, color: Colors.white)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
@@ -826,7 +826,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             onPressed: () => _notifyMe(product.id),
                             icon: const Icon(Icons.notifications_outlined, size: 18),
                             label: Text(context.s.notifyMe,
-                              style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+                              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(

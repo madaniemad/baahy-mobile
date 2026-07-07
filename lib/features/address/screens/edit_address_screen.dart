@@ -178,7 +178,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       appBar: AppBar(
         backgroundColor: context.col.surface, elevation: 0,
         title: Text(_isEdit ? 'تعديل عنوان' : 'عنوان جديد',
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: Icon(Icons.arrow_back, color: context.col.ink0)),
@@ -440,7 +440,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
         ),
         const SizedBox(height: 16),
         Text(context.s.selectCity,
-          style: const TextStyle(fontFamily: 'Cairo',
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
             fontSize: 17, fontWeight: FontWeight.w800)),
         const SizedBox(height: 12),
 

@@ -22,7 +22,7 @@ class FaqScreen extends ConsumerWidget {
           icon: Icon(Icons.arrow_back, color: context.col.ink0),
         ),
         title: Text(context.s.faqTitle,
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
       ),
       body: items.isEmpty
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
@@ -67,7 +67,7 @@ class _FaqTileState extends State<_FaqTile> {
                 Expanded(
                   child: Text(context.isAr ? (widget.item['q_ar'] ?? widget.item['q'] ?? '') : (widget.item['q_en']?.isNotEmpty == true ? widget.item['q_en']! : (widget.item['q_ar'] ?? widget.item['q'] ?? '')),
                       style: const TextStyle(
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                           fontWeight: FontWeight.w700,
                           fontSize: 13.5)),
                 ),

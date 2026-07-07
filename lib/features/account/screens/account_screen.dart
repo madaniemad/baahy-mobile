@@ -122,7 +122,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         title: Text(context.s.myAccount,
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800, fontSize: 17)),
         actions: [
           GestureDetector(
             onTap: () => safePush(context, '/notifications'),
@@ -219,53 +219,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
 
           const SizedBox(height: 20),
 
-          // ── AI assistant card ─────────────────────────────────────────────
-          if (config.aiEnabled)
-            GestureDetector(
-              onTap: () => safePush(context, '/chat'),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00C4BE), Color(0xFF00DEDA), Color(0xFF4DF5EF)],
-                    stops: [0.0, 0.55, 1.0],
-                    begin: Alignment.centerRight,
-                    end: Alignment.centerLeft,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(children: [
-                  Container(
-                    width: 40, height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.28),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.auto_awesome_rounded,
-                      color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('baahyAi',
-                        style: TextStyle(fontFamily: 'Cairo',
-                          fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
-                      Text(context.tr('تحتاج مساعدة اضافية؟ اسال مساعدك الذكي',
-                          'Need more help? Ask your AI assistant'),
-                        style: const TextStyle(fontFamily: 'Cairo', fontSize: 12,
-                          color: Color(0xFF004D54))),
-                    ],
-                  )),
-                  Icon(context.isAr ? Icons.arrow_back_ios_rounded : Icons.arrow_forward_ios_rounded,
-                    size: 14, color: Colors.white.withValues(alpha: 0.80)),
-                ]),
-              ),
-            ),
-
-          const SizedBox(height: 20),
-
           // ── Menu group 1 ─────────────────────────────────────────────────
           _MenuGroup([
             _MenuRow(
@@ -314,6 +267,24 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
 
           const SizedBox(height: 16),
 
+          // ── AI assistant banner (just above logout) ───────────────────────
+          if (config.aiEnabled) ...[
+            GestureDetector(
+              onTap: () => safePush(context, '/chat'),
+              child: Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: context.col.border),
+                  boxShadow: AppShadows.shadowCard,
+                ),
+                child: Image.asset('assets/images/ai_banner.png',
+                  width: double.infinity, fit: BoxFit.cover),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // ── Sign out ──────────────────────────────────────────────────────
           GestureDetector(
             onTap: () => ref.read(authProvider.notifier).logout(),
@@ -330,7 +301,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
                 const SizedBox(width: 8),
                 Text(context.s.signOut,
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
-                    color: AppColors.danger, fontFamily: 'Cairo')),
+                    color: AppColors.danger, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
               ]),
             ),
           ),
@@ -361,20 +332,20 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
 
   String _tierName(BuildContext context, String? tier) {
     switch (tier) {
-      case 'bronze':   return context.tr('برونزي', 'Bronze');
       case 'silver':   return context.s.silverTier;
       case 'gold':     return context.s.goldTier;
       case 'platinum': return context.s.platinumTier;
-      default:         return context.tr('برونزي', 'Bronze');
+      case 'bronze':
+      default:         return context.s.bronzeTier;
     }
   }
 
   Color _tierColor(String? tier) {
     switch (tier) {
-      case 'silver':   return Colors.grey.shade600;
-      case 'gold':     return const Color(0xFFD4A82E);
-      case 'platinum': return Colors.blueAccent;
-      default:         return const Color(0xFFCD7F32); // bronze
+      case 'silver':   return const Color(0xFFE0B44A); // Gold
+      case 'gold':     return const Color(0xFF5AA8CC); // Platinum (teal-blue)
+      case 'platinum': return const Color(0xFFA99FD6); // Black (jewel purple)
+      default:         return const Color(0xFF8AA0B4); // Silver (steel)
     }
   }
 
@@ -400,13 +371,13 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
           ListTile(
             leading: const Icon(Icons.camera_alt_outlined),
             title: Text(ctx.tr('التقاط صورة', 'Take photo'),
-              style: const TextStyle(fontFamily: 'Cairo')),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             onTap: () => Navigator.pop(ctx, ImageSource.camera),
           ),
           ListTile(
             leading: const Icon(Icons.photo_library_outlined),
             title: Text(ctx.tr('اختيار من المعرض', 'Choose from gallery'),
-              style: const TextStyle(fontFamily: 'Cairo')),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             onTap: () => Navigator.pop(ctx, ImageSource.gallery),
           ),
           const SizedBox(height: 8),
@@ -491,14 +462,14 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
                             width: 68, height: 68,
                             placeholder: (_, __) => Center(child: Text(initial,
                               style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800,
-                                color: AppColors.primary, fontFamily: 'Cairo'))),
+                                color: AppColors.primary, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
                             errorWidget: (_, __, ___) => Center(child: Text(initial,
                               style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800,
-                                color: AppColors.primary, fontFamily: 'Cairo'))),
+                                color: AppColors.primary, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
                           )
                         : Center(child: Text(initial,
                             style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800,
-                              color: AppColors.primary, fontFamily: 'Cairo'))),
+                              color: AppColors.primary, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
                 ),
               ),
               Positioned(
@@ -526,7 +497,7 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
             children: [
               Text(user.name as String,
                 style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800,
-                  color: context.col.ink0, fontFamily: 'Cairo', height: 1.2)),
+                  color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.2)),
               const SizedBox(height: 3),
               Text(user.phone as String,
                 textDirection: TextDirection.ltr,
@@ -539,14 +510,14 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
                 const SizedBox(width: 4),
                 Text(context.s.verified,
                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
-                    color: AppColors.success, fontFamily: 'Cairo')),
+                    color: AppColors.success, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                 const SizedBox(width: 12),
                 // Tier — icon + text, no border
                 Icon(_tierIcon(tier?.tier), size: 14, color: _tierColor(tier?.tier)),
                 const SizedBox(width: 4),
-                Text(_tierName(context, tier?.tier),
+                Text('⁦${_tierName(context, tier?.tier)}⁩',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
-                    color: _tierColor(tier?.tier), fontFamily: 'Cairo')),
+                    color: _tierColor(tier?.tier), fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
               ]),
             ],
           ),
@@ -608,7 +579,7 @@ class _StatTile extends StatelessWidget {
                     Text(label,
                       textAlign: TextAlign.start,
                       style: TextStyle(
-                        fontFamily: 'Cairo',
+                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontSize: 11, color: context.col.ink3),
                       maxLines: 1),
                   ],
@@ -664,7 +635,7 @@ class _WalletCard extends StatelessWidget {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(context.s.myWallet,
-              style: TextStyle(fontSize: 12, color: context.col.ink3, fontFamily: 'Cairo')),
+              style: TextStyle(fontSize: 12, color: context.col.ink3, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             const SizedBox(height: 2),
             Text('${balance.toStringAsFixed(0)} ${context.s.lyd}',
               style: TextStyle(fontFamily: 'PlusJakartaSans',
@@ -672,7 +643,7 @@ class _WalletCard extends StatelessWidget {
                 color: context.col.ink0, height: 1.1)),
             const SizedBox(height: 2),
             Text(context.tr('الرصيد المتاح', 'Available balance'),
-              style: TextStyle(fontSize: 11, color: context.col.ink3, fontFamily: 'Cairo')),
+              style: TextStyle(fontSize: 11, color: context.col.ink3, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
           ]),
         ),
         const SizedBox(width: 14),
@@ -689,13 +660,13 @@ class _WalletCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: accent,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center, children: [
                   Text(context.s.chargeWallet,
                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                      color: Colors.white, fontFamily: 'Cairo')),
+                      color: Colors.white, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                   const SizedBox(width: 4),
                   const Icon(Icons.add, size: 12, color: Colors.white),
                 ]),
@@ -708,14 +679,14 @@ class _WalletCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: context.col.borderStrong, width: 1.2),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center, children: [
                   Text(context.tr('تحويل', 'Transfer'),
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                      color: context.col.ink1, fontFamily: 'Cairo')),
+                      color: context.col.ink1, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                   const SizedBox(width: 4),
                   Icon(Icons.swap_horiz_rounded, size: 12, color: context.col.ink1),
                 ]),
@@ -735,20 +706,20 @@ class _TierCard extends ConsumerWidget {
 
   String _tierName(BuildContext context, String? tier) {
     switch (tier) {
-      case 'bronze':   return context.tr('برونزي', 'Bronze');
       case 'silver':   return context.s.silverTier;
       case 'gold':     return context.s.goldTier;
       case 'platinum': return context.s.platinumTier;
-      default:         return context.tr('برونزي', 'Bronze');
+      case 'bronze':
+      default:         return context.s.bronzeTier;
     }
   }
 
   Color _tierColor(String? tier) {
     switch (tier) {
-      case 'silver':   return Colors.grey.shade600;
-      case 'gold':     return const Color(0xFFD4A82E);
-      case 'platinum': return Colors.blueAccent;
-      default:         return const Color(0xFFCD7F32); // bronze
+      case 'silver':   return const Color(0xFFE0B44A); // Gold
+      case 'gold':     return const Color(0xFF5AA8CC); // Platinum (teal-blue)
+      case 'platinum': return const Color(0xFFA99FD6); // Black (jewel purple)
+      default:         return const Color(0xFF8AA0B4); // Silver (steel)
     }
   }
 
@@ -778,7 +749,7 @@ class _TierCard extends ConsumerWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: context.col.surface,
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(color: context.col.border),
           ),
@@ -793,13 +764,13 @@ class _TierCard extends ConsumerWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(tierName,
+                    Text('⁦$tierName⁩',
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
-                        color: context.col.ink0, fontFamily: 'Cairo', height: 1.2)),
+                        color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.2)),
                     const SizedBox(height: 3),
                     Text('${context.s.cashbackLabel} ${tier.cashbackRate == tier.cashbackRate.truncate().toDouble() ? tier.cashbackRate.toInt() : tier.cashbackRate.toStringAsFixed(1)}%',
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                        color: tierColor, fontFamily: 'Cairo')),
+                        color: tierColor, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                   ]),
                 ),
                 Icon(Icons.chevron_right,
@@ -812,7 +783,7 @@ class _TierCard extends ConsumerWidget {
               if (isPlatinum) ...[
                 Text(context.s.topTier,
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                    color: Colors.blueAccent, fontFamily: 'Cairo')),
+                    color: Colors.blueAccent, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
               ] else ...[
                 // Orders progress row
                 Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
@@ -880,28 +851,15 @@ class _ReferralCard extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: context.col.surface,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(color: context.col.border),
         ),
         child: Row(children: [
-          Builder(builder: (ctx) {
-            final isDark = Theme.of(ctx).brightness == Brightness.dark;
-            if (isDark) {
-              return Container(
-                width: 68, height: 68,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.group_rounded, size: 34, color: AppColors.primary),
-              );
-            }
-            return Image.asset(
-              'assets/images/referral_illustration.png',
-              width: 72, height: 72, fit: BoxFit.contain,
-            );
-          }),
+          Image.asset(
+            'assets/images/referral_gift.png',
+            width: 72, height: 72, fit: BoxFit.contain,
+          ),
           const SizedBox(width: 12),
 
           Expanded(
@@ -909,19 +867,19 @@ class _ReferralCard extends ConsumerWidget {
               Text(context.s.inviteTitle,
                 textAlign: TextAlign.start,
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
-                  color: context.col.ink0, fontFamily: 'Cairo')),
+                  color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
               const SizedBox(height: 2),
               Text(
                 context.isAr
                   ? 'اكسب $giverAmount ${context.s.lyd} لكل صديق'
                   : 'Earn $giverAmount ${context.s.lyd} per friend',
                 textAlign: TextAlign.start,
-                style: TextStyle(fontSize: 12, color: context.col.ink2, fontFamily: 'Cairo')),
+                style: TextStyle(fontSize: 12, color: context.col.ink2, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
               const SizedBox(height: 3),
               Text(
                 context.isAr ? '$count صديق' : '$count friends',
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                  color: AppColors.primary, fontFamily: 'Cairo')),
+                  color: AppColors.primary, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             ]),
           ),
           const SizedBox(width: 12),
@@ -938,7 +896,7 @@ class _ReferralCard extends ConsumerWidget {
               const SizedBox(width: 5),
               Text(context.tr('مشاركة الرمز', 'Share Code'),
                 style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                  color: Color(0xFF8B5CF6), fontFamily: 'Cairo')),
+                  color: Color(0xFF8B5CF6), fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             ]),
           ),
         ]),
@@ -1002,7 +960,7 @@ class _MenuRow extends StatelessWidget {
         const SizedBox(width: 13),
         Expanded(child: Text(label,
           style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w500,
-            fontFamily: 'Cairo'))),
+            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
         if (badge != null) ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1012,7 +970,7 @@ class _MenuRow extends StatelessWidget {
             ),
             child: Text(badge!,
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                color: Color(0xFF7C3AED), fontFamily: 'Cairo')),
+                color: Color(0xFF7C3AED), fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
           ),
           const SizedBox(width: 6),
         ],
@@ -1123,7 +1081,7 @@ class _BirthdayRowState extends ConsumerState<_BirthdayRow> {
             else
               Text(context.s.addBirthday,
                 style: TextStyle(fontSize: 12, color: AppColors.primary,
-                  fontWeight: FontWeight.w600, fontFamily: 'Cairo')),
+                  fontWeight: FontWeight.w600, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             const SizedBox(width: 4),
             if (_birthday == null)
               Icon(Icons.arrow_forward_ios, size: 13, color: context.col.ink4),
@@ -1202,7 +1160,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           ),
           const SizedBox(height: 16),
           Text(context.s.editProfileTitle,
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
           Text(context.s.nameLabel,
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.col.ink1)),
@@ -1212,7 +1170,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             textDirection: TextDirection.rtl,
             decoration: InputDecoration(
               hintText: context.s.fullNameHint,
-              hintStyle: TextStyle(fontFamily: 'Cairo', color: context.col.ink3),
+              hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink3),
               filled: true,
               fillColor: context.col.bg,
               border: OutlineInputBorder(
@@ -1243,7 +1201,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 ? const SizedBox(width: 20, height: 20,
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                 : Text(context.s.saveChanges,
-                    style: const TextStyle(fontFamily: 'Cairo',
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontWeight: FontWeight.w700, fontSize: 15)),
             ),
           ),

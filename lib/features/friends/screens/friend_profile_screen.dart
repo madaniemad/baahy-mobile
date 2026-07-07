@@ -52,7 +52,7 @@ class _ProfileBody extends ConsumerWidget {
             onPressed: () => Navigator.of(context).pop(),
           ),
           title: Text('@${user.username ?? user.name}',
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
           actions: [
             if (status == FriendshipStatus.accepted && user.friendshipId != null)
               PopupMenuButton<String>(
@@ -65,7 +65,7 @@ class _ProfileBody extends ConsumerWidget {
                 itemBuilder: (_) => [
                   PopupMenuItem(value: 'remove',
                     child: Text(context.tr('إزالة الصديق', 'Remove Friend'),
-                      style: const TextStyle(fontFamily: 'Cairo', color: AppColors.danger))),
+                      style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: AppColors.danger))),
                 ],
               ),
           ],
@@ -133,7 +133,7 @@ class _ProfileHeader extends StatelessWidget {
               ),
         const SizedBox(width: 16),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(u.name, style: const TextStyle(fontFamily: 'Cairo', fontSize: 20, fontWeight: FontWeight.w800)),
+          Text(u.name, style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 20, fontWeight: FontWeight.w800)),
           if (u.username != null)
             Text('@${u.username}', style: TextStyle(fontSize: 13, color: context.col.ink3)),
           if (tierColor != null && u.currentTier != null) ...[
@@ -146,7 +146,7 @@ class _ProfileHeader extends StatelessWidget {
                 border: Border.all(color: tierColor.withValues(alpha: 0.4)),
               ),
               child: Text(u.currentTier!,
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: tierColor, fontFamily: 'Cairo')),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: tierColor, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             ),
           ],
         ])),
@@ -171,11 +171,11 @@ class _PendingBanner extends ConsumerWidget {
       ),
       child: Row(children: [
         Expanded(child: Text(context.tr('أرسل لك هذا المستخدم طلب صداقة', 'This user sent you a friend request'),
-          style: const TextStyle(fontFamily: 'Cairo', fontSize: 13))),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13))),
         const SizedBox(width: 8),
         TextButton(
           onPressed: () async => await ref.read(friendsProvider.notifier).declineRequest(friendshipId),
-          child: Text(context.tr('رفض', 'Decline'), style: const TextStyle(fontFamily: 'Cairo', color: AppColors.danger)),
+          child: Text(context.tr('رفض', 'Decline'), style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: AppColors.danger)),
         ),
         ElevatedButton(
           onPressed: () async => await ref.read(friendsProvider.notifier).acceptRequest(friendshipId),
@@ -185,7 +185,7 @@ class _PendingBanner extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             minimumSize: const Size(0, 32),
           ),
-          child: Text(context.tr('قبول', 'Accept'), style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.w700)),
+          child: Text(context.tr('قبول', 'Accept'), style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, fontWeight: FontWeight.w700)),
         ),
       ]),
     );
@@ -218,7 +218,7 @@ class _AddFriendSectionState extends ConsumerState<_AddFriendSection> {
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
               : Icon(isPending ? Icons.hourglass_empty : Icons.person_add_outlined),
           label: Text(isPending ? context.tr('تم الإرسال', 'Request Sent') : context.tr('إضافة صديق', 'Add Friend'),
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
           style: ElevatedButton.styleFrom(
             backgroundColor: isPending ? context.col.surfaceSoft : AppColors.primary,
             foregroundColor: isPending ? context.col.ink2 : Colors.white,
@@ -278,7 +278,7 @@ class _WishlistSection extends StatelessWidget {
                     padding: const EdgeInsets.all(6),
                     child: Text(
                       context.isAr ? (product['name_ar'] ?? product['name'] ?? '') : (product['name'] ?? ''),
-                      style: TextStyle(fontSize: 11, fontFamily: 'Cairo', color: context.col.ink1),
+                      style: TextStyle(fontSize: 11, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink1),
                       maxLines: 2, overflow: TextOverflow.ellipsis),
                   ),
                 ]),
@@ -313,7 +313,7 @@ class _PurchasesSection extends StatelessWidget {
             child: Icon(Icons.shopping_bag_outlined, color: context.col.ink3),
           ),
           title: Text(context.tr('طلب', 'Order') + ' #${order['order_number']}',
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 13)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 13)),
           subtitle: Text('${items.length} ${context.tr('منتج', 'items')}',
             style: TextStyle(fontSize: 12, color: context.col.ink3)),
           trailing: Text('${order['total']} ${context.tr('د.ل', 'LYD')}',
@@ -339,7 +339,7 @@ class _ReviewsSection extends StatelessWidget {
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           title: Text(context.isAr ? (product['name_ar'] ?? product['name'] ?? '') : (product['name'] ?? ''),
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 13)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 13)),
           subtitle: Row(children: [
             ...List.generate(5, (i) => Icon(
               i < rating ? Icons.star : Icons.star_border,
@@ -365,7 +365,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Text(title, style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800)),
+      child: Text(title, style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w800)),
     );
   }
 }

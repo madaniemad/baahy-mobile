@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,16 +31,18 @@ final _hubReferralProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 // ── Tier colour palette ───────────────────────────────────────────────────────
 class _TierPalette {
   final String nameAr;
-  final Color gradA;
+  final Color gradA;   // card background gradient — the tier's own metal colour
   final Color gradB;
-  final Color accent;
-  const _TierPalette({required this.nameAr, required this.gradA,
-    required this.gradB, required this.accent});
+  final Color fg;      // text / icon colour ON the card (contrasts the metal bg)
+  final Color accent;  // saturated colour for white backgrounds (values, borders, inactive header)
+  final bool darkBg;   // dark card → icon needs a light halo; light card → a dark drop shadow
+  const _TierPalette({required this.nameAr, required this.gradA, required this.gradB,
+    required this.fg, required this.accent, required this.darkBg});
 }
 
 const _kTiers       = ['bronze', 'silver', 'gold', 'platinum'];
-const _kTierNamesAr = ['برونزي', 'فضي', 'ذهبي', 'بلاتيني'];
-const _kTierNamesEn = ['Bronze', 'Silver', 'Gold', 'Platinum'];
+const _kTierNamesAr = ['Silver', 'Gold', 'Platinum', 'Black'];
+const _kTierNamesEn = ['Silver', 'Gold', 'Platinum', 'Black'];
 
 // Shows "1.5" for fractional rates, "2" for whole numbers
 String _fmtRate(double r) {
@@ -47,14 +50,47 @@ String _fmtRate(double r) {
   return r == i.toDouble() ? '$i' : r.toStringAsFixed(1);
 }
 
+// Card bg = the tier's own metal colour; fg = readable text on it; accent = for white bg.
 const _palettes = <String, _TierPalette>{
-  'bronze':   _TierPalette(nameAr: 'برونزي',  gradA: Color(0xFFC07A3E), gradB: Color(0xFF8C4E14), accent: Color(0xFFCD7F32)),
-  'silver':   _TierPalette(nameAr: 'فضي',     gradA: Color(0xFF9E9E9E), gradB: Color(0xFF616161), accent: Color(0xFFBDBDBD)),
-  'gold':     _TierPalette(nameAr: 'ذهبي',    gradA: Color(0xFFD4A82E), gradB: Color(0xFFA07010), accent: Color(0xFFFFD54F)),
-  'platinum': _TierPalette(nameAr: 'بلاتيني', gradA: Color(0xFF26C5F3), gradB: Color(0xFF0A8EC0), accent: Color(0xFFB3E5FC)),
+  // gradA/gradB/fg = the metal hero card; accent = the tier's text/number colour (per reference)
+  'bronze':   _TierPalette(nameAr: 'Silver',   gradA: Color(0xFFEAEFF3), gradB: Color(0xFFB6C1CC), fg: Color(0xFF33404D), accent: Color(0xFF7C8894), darkBg: false),  // Silver → grey
+  'silver':   _TierPalette(nameAr: 'Gold',     gradA: Color(0xFFF4D06A), gradB: Color(0xFFCF9714), fg: Color(0xFF4A3608), accent: Color(0xFFC69320), darkBg: false),  // Gold → amber
+  'gold':     _TierPalette(nameAr: 'Platinum', gradA: Color(0xFFEDF3F8), gradB: Color(0xFFA6C0D2), fg: Color(0xFF2B4256), accent: Color(0xFF3B82C4), darkBg: false),  // Platinum → blue
+  'platinum': _TierPalette(nameAr: 'Black',    gradA: Color(0xFF40404C), gradB: Color(0xFF0E0E16), fg: Color(0xFFFFFFFF), accent: Color(0xFF1C1C22), darkBg: true),   // Black → near-black
 };
-const _bronzePalette = _TierPalette(nameAr: 'برونزي', gradA: Color(0xFFC07A3E), gradB: Color(0xFF8C4E14), accent: Color(0xFFCD7F32));
+const _bronzePalette = _TierPalette(nameAr: 'Silver', gradA: Color(0xFFEAEFF3), gradB: Color(0xFFB6C1CC), fg: Color(0xFF33404D), accent: Color(0xFF7C8894), darkBg: false);
 _TierPalette _pal(String? t) => _palettes[t?.toLowerCase()] ?? _bronzePalette;
+
+/// Tier badge PNG with a soft drop shadow so it never blends into a same-colour
+/// card: a dark shadow on light metals, a light halo on the dark onyx card.
+class _TierBadge extends StatelessWidget {
+  final String tierKey;
+  final double size;
+  final bool darkBg;
+  const _TierBadge({required this.tierKey, required this.size, required this.darkBg});
+  @override
+  Widget build(BuildContext context) {
+    final asset  = 'assets/images/tier_$tierKey.png';
+    final shadow = darkBg ? Colors.white.withValues(alpha: 0.40) : Colors.black.withValues(alpha: 0.32);
+    return SizedBox(
+      width: size, height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Transform.translate(
+            offset: darkBg ? Offset.zero : const Offset(1.2, 1.8),
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 4.5, sigmaY: 4.5),
+              child: Image.asset(asset, color: shadow, colorBlendMode: BlendMode.srcIn,
+                width: size, height: size, fit: BoxFit.contain),
+            ),
+          ),
+          Image.asset(asset, width: size, height: size, fit: BoxFit.contain),
+        ],
+      ),
+    );
+  }
+}
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 class RewardsHubScreen extends ConsumerWidget {
@@ -84,7 +120,7 @@ class RewardsHubScreen extends ConsumerWidget {
             title: Text(
               'برنامج الولاء',
               textDirection: TextDirection.rtl,
-              style: TextStyle(fontFamily: 'Cairo',
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                 fontWeight: FontWeight.w800, color: context.col.ink0),
             ),
             actions: [
@@ -163,10 +199,8 @@ class _HeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAr   = context.isAr;
-    final nameAr = _palettes[tier.tier?.toLowerCase()]?.nameAr ?? 'برونزي';
-    final nameEn = tier.tier != null
-        ? '${tier.tier![0].toUpperCase()}${tier.tier!.substring(1)}'
-        : 'Bronze';
+    final nameAr = _palettes[tier.tier?.toLowerCase()]?.nameAr ?? 'Silver';
+    final nameEn = nameAr; // brand tier names are identical in both languages
     final cashback = _fmtRate(tier.cashbackRate);
 
     return Container(
@@ -199,9 +233,9 @@ class _HeroCard extends StatelessWidget {
                   children: [
                     Text(
                       isAr ? 'مستواك الحالي' : 'Current Tier',
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.65)),
+                        color: palette.fg.withValues(alpha: 0.65)),
                     ),
                     const SizedBox(height: 8),
                     // Tier name + مميز chip inline
@@ -209,22 +243,23 @@ class _HeroCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          isAr ? nameAr : nameEn,
-                          style: const TextStyle(fontFamily: 'Cairo',
+                          '⁦${isAr ? nameAr : nameEn}⁩',
+                          textDirection: TextDirection.ltr,
+                          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
                             fontSize: 36, fontWeight: FontWeight.w900,
-                            color: Colors.white, height: 1),
+                            color: palette.fg, height: 1),
                         ),
                         const SizedBox(width: 10),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.22),
+                            color: palette.fg.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             isAr ? 'مميز' : 'Member',
-                            style: const TextStyle(fontFamily: 'Cairo', fontSize: 12,
-                              fontWeight: FontWeight.w700, color: Colors.white),
+                            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], fontSize: 12,
+                              fontWeight: FontWeight.w700, color: palette.fg),
                           ),
                         ),
                       ],
@@ -234,8 +269,8 @@ class _HeroCard extends StatelessWidget {
                       Text(
                         isAr ? 'استمر وارتقِ للمستوى التالي'
                              : 'Keep going to reach the next tier',
-                        style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
-                          color: Colors.white.withValues(alpha: 0.70)),
+                        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], fontSize: 12,
+                          color: palette.fg.withValues(alpha: 0.72)),
                       ),
                     ],
                   ],
@@ -244,11 +279,8 @@ class _HeroCard extends StatelessWidget {
 
               const SizedBox(width: 16),
 
-              // Medal icon (left in RTL = last child)
-              Image.asset(
-                'assets/images/tier_${tier.tier?.toLowerCase() ?? 'bronze'}.png',
-                width: 90, height: 90, fit: BoxFit.contain,
-              ),
+              // Medal icon (left in RTL = last child) — drop shadow so it stays visible on same-colour bg
+              _TierBadge(tierKey: tier.tier?.toLowerCase() ?? 'bronze', size: 90, darkBg: palette.darkBg),
             ],
           ),
 
@@ -256,7 +288,7 @@ class _HeroCard extends StatelessWidget {
 
           // Divider
           Container(height: 1,
-            color: Colors.white.withValues(alpha: 0.20)),
+            color: palette.fg.withValues(alpha: 0.18)),
 
           const SizedBox(height: 18),
 
@@ -264,21 +296,21 @@ class _HeroCard extends StatelessWidget {
           IntrinsicHeight(
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _HeroStat(
+                _HeroStat(fg: palette.fg,
                   value: '$cashback%',
                   label: isAr ? 'كاش باك' : 'Cashback',
                 ),
                 Container(width: 1,
-                  color: Colors.white.withValues(alpha: 0.25)),
-                _HeroStat(
+                  color: palette.fg.withValues(alpha: 0.22)),
+                _HeroStat(fg: palette.fg,
                   value: walletBalance.round().toString(),
                   label: isAr ? 'رصيد المكافآت' : 'Rewards',
                   suffix: isAr ? ' د.ل' : ' LYD',
                   icon: Icons.lock_outline_rounded,
                 ),
                 Container(width: 1,
-                  color: Colors.white.withValues(alpha: 0.25)),
-                _HeroStat(
+                  color: palette.fg.withValues(alpha: 0.22)),
+                _HeroStat(fg: palette.fg,
                   value: '${tier.returnDays}',
                   label: isAr ? 'أيام إرجاع' : 'Returns',
                   suffix: isAr ? '' : ' days',
@@ -297,7 +329,8 @@ class _HeroStat extends StatelessWidget {
   final String label;
   final String? suffix;
   final IconData? icon;
-  const _HeroStat({required this.value, required this.label,
+  final Color fg;
+  const _HeroStat({required this.value, required this.label, required this.fg,
     this.suffix, this.icon});
 
   @override
@@ -306,24 +339,24 @@ class _HeroStat extends StatelessWidget {
       Row(mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min, children: [
         if (icon != null) ...[
-          Icon(icon, size: 12, color: Colors.white.withValues(alpha: 0.75)),
+          Icon(icon, size: 12, color: fg.withValues(alpha: 0.75)),
           const SizedBox(width: 3),
         ],
         Text(value,
-          style: const TextStyle(fontFamily: 'PlusJakartaSans',
+          style: TextStyle(fontFamily: 'PlusJakartaSans',
             fontSize: 20, fontWeight: FontWeight.w800,
-            color: Colors.white, height: 1)),
+            color: fg, height: 1)),
         if (suffix != null && suffix!.isNotEmpty)
           Text(suffix!,
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 11,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.80))),
+              color: fg.withValues(alpha: 0.80))),
       ]),
       const SizedBox(height: 5),
       Text(label,
         textAlign: TextAlign.center,
-        style: TextStyle(fontFamily: 'Cairo', fontSize: 11,
-          color: Colors.white.withValues(alpha: 0.70))),
+        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], fontSize: 11,
+          color: fg.withValues(alpha: 0.72))),
     ]),
   );
 }
@@ -336,9 +369,9 @@ class _ProgressCard extends StatelessWidget {
 
   String _nextTierAr(String? t) {
     switch (t?.toLowerCase()) {
-      case 'silver':   return 'الفضي';
-      case 'gold':     return 'الذهبي';
-      case 'platinum': return 'البلاتيني';
+      case 'silver':   return 'Gold';
+      case 'gold':     return 'Platinum';
+      case 'platinum': return 'Black';
       default:         return '';
     }
   }
@@ -376,22 +409,19 @@ class _ProgressCard extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(
                 isAr ? 'للوصول إلى مستوى $nextName' : 'Progress to $nextName',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 15,
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 15,
                   fontWeight: FontWeight.w800, color: context.col.ink0),
               ),
               const SizedBox(height: 2),
               Text(
                 isAr ? 'استمر للتقدّم للمستوى التالي' : 'Keep going to reach the next tier',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                   color: context.col.ink3),
               ),
             ]),
           ),
           const SizedBox(width: 12),
-          Image.asset(
-            'assets/images/tier_${tier.nextTier?.toLowerCase() ?? 'bronze'}.png',
-            width: 44, height: 44, fit: BoxFit.contain,
-          ),
+          _TierBadge(tierKey: tier.nextTier?.toLowerCase() ?? 'bronze', size: 44, darkBg: false),
         ]),
 
         const SizedBox(height: 18),
@@ -458,7 +488,7 @@ class _ProgressRow extends StatelessWidget {
         Icon(icon, size: 15, color: color),
         const SizedBox(width: 5),
         Text(isAr ? labelAr : labelEn,
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
             fontWeight: FontWeight.w600, color: ctx.col.ink1)),
         const Spacer(),
         Text('$current / $total $suffix',
@@ -501,7 +531,7 @@ class _BenefitsSection extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             isAr ? 'مزايا كل مستوى' : 'Tier Benefits',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 16,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16,
               fontWeight: FontWeight.w800, color: context.col.ink0),
           ),
         ]),
@@ -519,6 +549,7 @@ class _BenefitsSection extends StatelessWidget {
               if (i > 0) const SizedBox(width: 8),
               Expanded(
                 child: _TierCard(
+                  tierKey: _kTiers[i],
                   nameAr: _kTierNamesAr[i],
                   nameEn: _kTierNamesEn[i],
                   cashback: '${_fmtRate(config.tierCashbacks[i])}%',
@@ -544,7 +575,7 @@ class _BenefitsSection extends StatelessWidget {
           Text(
             isAr ? 'كلما ارتقيت في المستوى، زادت مزاياك'
                 : 'More perks as you level up',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5,
               color: context.col.ink3),
           ),
         ]),
@@ -554,57 +585,64 @@ class _BenefitsSection extends StatelessWidget {
 }
 
 class _TierCard extends StatelessWidget {
+  final String tierKey;
   final String nameAr, nameEn;
   final String cashback, shipping, returns;
   final _TierPalette palette;
   final bool isActive, isAr;
-  const _TierCard({required this.nameAr, required this.nameEn,
+  const _TierCard({required this.tierKey, required this.nameAr, required this.nameEn,
     required this.cashback, required this.shipping, required this.returns,
     required this.palette, required this.isActive, required this.isAr});
 
   @override
   Widget build(BuildContext context) {
+    // Number/name colour per tier (Black adapts to theme so it stays visible in dark mode).
+    final tierColor = palette.darkBg ? context.col.ink0 : palette.accent;
+    final name = isAr ? nameAr : nameEn;
     return Container(
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isActive ? palette.gradA : context.col.border,
+          color: isActive ? AppColors.primary : context.col.border,
           width: isActive ? 2 : 1,
         ),
-        boxShadow: isActive ? AppShadows.shadowLifted : null,
+        boxShadow: isActive
+            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.28), blurRadius: 16, spreadRadius: 1, offset: const Offset(0, 4))]
+            : AppShadows.shadowCard,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(isActive ? 8 : 9),
+        borderRadius: BorderRadius.circular(isActive ? 14 : 15),
         child: Column(children: [
-          // Colored header
+          // Header — icon + "Baahy <Tier>" on a faint tint
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            color: isActive
-                ? palette.gradA
-                : palette.gradA.withValues(alpha: 0.10),
-            child: Text(
-              isAr ? nameAr : nameEn,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Cairo', fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: isActive ? Colors.white : palette.gradA,
-              ),
+            color: context.col.surfaceSoft,
+            padding: const EdgeInsets.fromLTRB(4, 14, 4, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _TierBadge(tierKey: tierKey, size: 46, darkBg: palette.darkBg),
+                const SizedBox(height: 9),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(name,
+                    textDirection: TextDirection.ltr,
+                    style: TextStyle(fontFamily: 'Manrope', fontSize: 13,
+                      fontWeight: FontWeight.w800, color: tierColor)),
+                ),
+              ],
             ),
           ),
-          // Benefit rows
-          _cardBenefit(cashback, isAr ? 'كاش باك' : 'Cash',
-            palette.gradA, context),
-          Divider(height: 1, color: context.col.border),
+          Divider(height: 1, thickness: 1, color: context.col.border),
+          // Benefit rows — big colored value + grey label
+          _cardBenefit(cashback, isAr ? 'كاش باك' : 'Cash', tierColor, context),
+          Divider(height: 1, color: context.col.border, indent: 14, endIndent: 14),
           _cardBenefit(isAr ? '$shipping د.ل' : 'LYD $shipping',
-            isAr ? 'شحن مجاني' : 'Ship.',
-            palette.gradA, context),
-          Divider(height: 1, color: context.col.border),
+            isAr ? 'شحن مجاني' : 'Ship.', tierColor, context),
+          Divider(height: 1, color: context.col.border, indent: 14, endIndent: 14),
           _cardBenefit('$returns ${isAr ? 'أيام' : 'd'}',
-            isAr ? 'إرجاع' : 'Return',
-            palette.gradA, context),
+            isAr ? 'إرجاع' : 'Return', tierColor, context),
         ]),
       ),
     );
@@ -612,17 +650,20 @@ class _TierCard extends StatelessWidget {
 
   Widget _cardBenefit(String value, String label, Color color, BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
       child: Column(children: [
-        Text(value,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          style: TextStyle(fontFamily: 'PlusJakartaSans',
-            fontSize: 13, fontWeight: FontWeight.w800, color: color)),
-        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(value,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: TextStyle(fontFamily: 'PlusJakartaSans',
+              fontSize: 16, fontWeight: FontWeight.w800, color: color)),
+        ),
+        const SizedBox(height: 3),
         Text(label,
           textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 10,
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], fontSize: 10.5,
             color: context.col.ink3)),
       ]),
     );
@@ -679,7 +720,7 @@ class _ReferralCardState extends ConsumerState<_ReferralCard> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم نسخ رابط الدعوة',
-            style: TextStyle(fontFamily: 'Cairo'))));
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))));
       }
     }
   }
@@ -710,7 +751,7 @@ class _ReferralCardState extends ConsumerState<_ReferralCard> {
               Text(
                 isAr ? 'ادعُ أصدقاءك واربح مكافآت'
                     : 'Invite Friends, Earn Rewards',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 16,
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16,
                   fontWeight: FontWeight.w800, color: context.col.ink0),
               ),
               const SizedBox(height: 6),
@@ -718,7 +759,7 @@ class _ReferralCardState extends ConsumerState<_ReferralCard> {
                 isAr
                     ? 'احصل على ${widget.giverAmount} د.ل لكل صديق\nبمجرد إتمام أول طلب له'
                     : 'Get ${widget.giverAmount} LYD per friend\nafter their first order',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                   color: context.col.ink2, height: 1.65),
               ),
             ]),
@@ -783,7 +824,7 @@ class _ReferralCardState extends ConsumerState<_ReferralCard> {
               const SizedBox(width: 8),
               Text(
                 isAr ? 'شارك رابط الدعوة' : 'Share invite link',
-                style: const TextStyle(fontFamily: 'Cairo', fontSize: 14,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14,
                   fontWeight: FontWeight.w800, color: Colors.white),
               ),
             ]),
@@ -820,7 +861,7 @@ class _RefStat extends StatelessWidget {
         color: context.col.ink0, height: 1)),
     const SizedBox(height: 3),
     Text(label,
-      style: TextStyle(fontFamily: 'Cairo', fontSize: 11,
+      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11,
         color: context.col.ink3)),
   ]);
 }
@@ -864,7 +905,7 @@ class _MilestonesSection extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             isAr ? 'مكافآت الرحلة' : 'Journey Rewards',
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 16,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16,
               fontWeight: FontWeight.w800, color: context.col.ink0),
           ),
         ]),
@@ -968,7 +1009,7 @@ class _StepNode extends StatelessWidget {
             isAr ? labelAr : labelEn,
             textAlign: TextAlign.center,
             maxLines: 2,
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 10,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 10,
               fontWeight: FontWeight.w600, height: 1.3,
               color: textColor),
           ),
@@ -1012,7 +1053,7 @@ class _FaqSection extends StatelessWidget {
           const Icon(Icons.help_outline_rounded, size: 16, color: AppColors.primary),
           const SizedBox(width: 6),
           Text(context.s.faqTitle,
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 16,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16,
               fontWeight: FontWeight.w800, color: context.col.ink0)),
         ]),
 
@@ -1039,14 +1080,14 @@ class _FaqSection extends StatelessWidget {
                     childrenPadding:
                         const EdgeInsets.fromLTRB(16, 0, 16, 14),
                     title: Text(faq.q,
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 14,
+                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: context.col.ink0)),
                     trailing: Icon(Icons.keyboard_arrow_down_rounded,
                       color: context.col.ink3, size: 22),
                     children: [
                       Text(faq.a,
-                        style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                           color: context.col.ink2, height: 1.65)),
                     ],
                   ),
@@ -1087,10 +1128,10 @@ class _FaqSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('تحتاج مساعدة؟',
-                    style: TextStyle(fontFamily: 'Cairo', fontSize: 14,
+                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14,
                       fontWeight: FontWeight.w800, color: context.col.ink0)),
                   Text('تواصل معنا وسنساعدك بكل سرور',
-                    style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                       color: context.col.ink3)),
                 ],
               )),
@@ -1150,17 +1191,17 @@ class _PendingRewardsBanner extends StatelessWidget {
               Text(
                 '${tier.pendingTotal.toStringAsFixed(0)} د.ل بانتظار التسليم',
                 style: const TextStyle(
-                  fontFamily: 'Cairo', fontSize: 14,
+                  fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14,
                   fontWeight: FontWeight.w800, color: Color(0xFFF57F17)),
               ),
             ]),
             const SizedBox(height: 4),
             ...lines.map((l) => Text('• $l',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                 color: context.col.ink2))),
             const SizedBox(height: 4),
             Text('ستُضاف تلقائياً لمحفظتك عند استلام طلبك',
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 11,
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11,
                 color: context.col.ink3)),
           ],
         )),

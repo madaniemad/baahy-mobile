@@ -58,7 +58,7 @@ class AddressesScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
           icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: context.col.ink0)),
         title: Text(context.s.addressesTitle,
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800, fontSize: 17)),
         actions: [
           IconButton(
             onPressed: () async {
@@ -93,7 +93,7 @@ class AddressesScreen extends ConsumerWidget {
                   context: context,
                   builder: (_) => AlertDialog(
                     title: Text(context.s.deleteAddrTitle,
-                      style: const TextStyle(fontFamily: 'Cairo')),
+                      style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                     content: Text(context.s.deleteAddrConf),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(context, false),
@@ -131,7 +131,7 @@ class AddressesScreen extends ConsumerWidget {
                   const SizedBox(width: 6),
                   Text(context.s.addNewAddress,
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700,
-                      color: context.col.ink0, fontFamily: 'Cairo')),
+                      color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                 ]),
               ),
             ),
@@ -161,7 +161,7 @@ class _InfoBanner extends StatelessWidget {
             Text(
               context.tr('اختر عنواناً سريعاً عند الطلب', 'Choose an address at checkout'),
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
-                color: context.col.ink0, fontFamily: 'Cairo'),
+                color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
             ),
             const SizedBox(height: 4),
             Text(
@@ -170,7 +170,7 @@ class _InfoBanner extends StatelessWidget {
                 'The selected address will be used when placing your order'),
               textAlign: TextAlign.right,
               style: TextStyle(fontSize: 12, color: context.col.ink2,
-                fontFamily: 'Cairo', height: 1.5),
+                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.5),
             ),
           ]),
         ),
@@ -274,18 +274,18 @@ class _AddressCard extends StatelessWidget {
                             children: [
                               Text(label,
                                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
-                                  color: context.col.ink0, fontFamily: 'Cairo')),
+                                  color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                               if (cityLine.isNotEmpty) ...[
                                 const SizedBox(height: 2),
                                 Text(cityLine,
                                   style: TextStyle(fontSize: 12.5,
-                                    color: context.col.ink2, fontFamily: 'Cairo')),
+                                    color: context.col.ink2, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                               ],
                               if (street.isNotEmpty) ...[
                                 const SizedBox(height: 1),
                                 Text(street,
                                   style: TextStyle(fontSize: 12.5,
-                                    color: context.col.ink2, fontFamily: 'Cairo')),
+                                    color: context.col.ink2, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                               ],
                             ],
                           ),
@@ -302,7 +302,7 @@ class _AddressCard extends StatelessWidget {
                                 textAlign: TextAlign.end,
                                 style: TextStyle(fontSize: 13,
                                   fontWeight: FontWeight.w600, color: context.col.ink1,
-                                  fontFamily: 'Cairo')),
+                                  fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                             if (phone.isNotEmpty)
                               Text(phone,
                                 textDirection: TextDirection.ltr,
@@ -362,7 +362,7 @@ class _AddressCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(context.s.editLabel,
                             style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600,
-                              color: context.col.ink1, fontFamily: 'Cairo')),
+                              color: context.col.ink1, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                         ]),
                       ),
                     ),
@@ -383,7 +383,7 @@ class _AddressCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(context.tr('مشاركة', 'Share'),
                             style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600,
-                              color: context.col.ink1, fontFamily: 'Cairo')),
+                              color: context.col.ink1, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                         ]),
                       ),
                     ),
@@ -445,7 +445,7 @@ class _DeliveryTipCard extends StatelessWidget {
               context.tr('توصيل أسرع لليبيا', 'Faster delivery in Libya'),
               textAlign: TextAlign.right,
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
-                color: context.col.ink0, fontFamily: 'Cairo'),
+                color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
             ),
             const SizedBox(height: 4),
             Text(
@@ -454,7 +454,7 @@ class _DeliveryTipCard extends StatelessWidget {
                 'Add multiple addresses to reach you faster, closer, and more accurately.'),
               textAlign: TextAlign.right,
               style: TextStyle(fontSize: 12, color: context.col.ink2,
-                fontFamily: 'Cairo', height: 1.5),
+                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.5),
             ),
           ]),
         ),

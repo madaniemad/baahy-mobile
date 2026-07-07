@@ -92,7 +92,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               RichText(
                 textAlign: TextAlign.center,
                 text: const TextSpan(
-                  style: TextStyle(fontFamily: 'Cairo', fontSize: 36,
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 36,
                     fontWeight: FontWeight.w900, height: 1.12),
                   children: [
                     TextSpan(text: 'آلاف المنتجات',
@@ -108,7 +108,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               const SizedBox(height: 14),
               Text(context.s.discoverCategories,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontFamily: 'Cairo', fontSize: 16,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16,
                   fontWeight: FontWeight.w700, color: _navy, height: 1.5)),
 
               // Floating products image
@@ -142,7 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(context.s.skipBtn,
-                style: const TextStyle(fontFamily: 'Cairo',
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                   fontSize: 13, fontWeight: FontWeight.w700,
                   color: Colors.white)),
             ),
@@ -215,7 +215,7 @@ class _ActionBar extends StatelessWidget {
                 child: Icon(Icons.arrow_forward_ios,
                   size: 18, color: _teal)),
             ),
-            Text(context.s.startShopping, style: const TextStyle(fontFamily: 'Cairo',
+            Text(context.s.startShopping, style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
               fontSize: 17, fontWeight: FontWeight.w900, color: _navy)),
           ]),
         ),

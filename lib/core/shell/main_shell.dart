@@ -154,7 +154,7 @@ class MainShell extends ConsumerWidget {
                         Text(
                           isAr ? tab.labelAr : tab.labelEn,
                           style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: isActive ? AppColors.primary : context.col.ink1,

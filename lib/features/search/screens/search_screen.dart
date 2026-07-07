@@ -196,14 +196,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           style: TextStyle(
                               fontSize: 14,
                               color: context.col.ink0,
-                              fontFamily: 'Cairo'),
+                              fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
                           textInputAction: TextInputAction.search,
                           decoration: InputDecoration(
                             hintText: context.s.searchHint,
                             hintStyle: TextStyle(
                                 color: context.col.ink3,
                                 fontSize: 14,
-                                fontFamily: 'Cairo'),
+                                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
                             filled: false,
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
@@ -391,7 +391,7 @@ class _SectionHeader extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: context.col.ink3,
           letterSpacing: 0.6,
-          fontFamily: 'Cairo',
+          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
         ),
       ),
     );
@@ -424,11 +424,11 @@ class _SuggestionRow extends StatelessWidget {
     if (idx < 0) {
       return Text(suggestion,
           style: TextStyle(
-              fontSize: 14, fontFamily: 'Cairo', color: ctx.col.ink0));
+              fontSize: 14, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: ctx.col.ink0));
     }
     return Text.rich(TextSpan(
       style: TextStyle(
-          fontSize: 14, fontFamily: 'Cairo', color: ctx.col.ink0),
+          fontSize: 14, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: ctx.col.ink0),
       children: [
         if (idx > 0) TextSpan(text: suggestion.substring(0, idx)),
         TextSpan(
@@ -498,9 +498,13 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAr = context.isAr;
-    return SingleChildScrollView(
+    return LayoutBuilder(builder: (context, constraints) {
+      return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      child: Column(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
+        child: IntrinsicHeight(
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Recent searches ───────────────────────────────────────────
@@ -519,7 +523,7 @@ class _EmptyState extends StatelessWidget {
                   child: Text(context.s.clearAll,
                       style: const TextStyle(
                           fontSize: 12,
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                           color: AppColors.teal,
                           fontWeight: FontWeight.w600)),
                 ),
@@ -537,7 +541,7 @@ class _EmptyState extends StatelessWidget {
                       Expanded(
                           child: Text(q,
                               style: TextStyle(
-                                  fontFamily: 'Cairo',
+                                  fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                   fontSize: 14,
                                   color: context.col.ink1))),
                       GestureDetector(
@@ -588,7 +592,7 @@ class _EmptyState extends StatelessWidget {
                     ),
                     child: Text(trending[i],
                         style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: AppColors.teal700)),
@@ -624,7 +628,7 @@ class _EmptyState extends StatelessWidget {
                           ),
                           child: Text(c,
                               style: const TextStyle(
-                                  fontFamily: 'Cairo',
+                                  fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500)),
                         ),
@@ -634,77 +638,29 @@ class _EmptyState extends StatelessWidget {
           ],
 
           // ── AI assistant card ─────────────────────────────────────────
+          // Pushes the AI banner to the bottom of the screen.
+          const Spacer(),
           if (aiEnabled) ...[
             const SizedBox(height: 24),
             GestureDetector(
               onTap: () => safePush(context, '/chat'),
               child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF00C4BE),
-                      Color(0xFF00DEDA),
-                      Color(0xFF4DF5EF)
-                    ],
-                    stops: [0.0, 0.55, 1.0],
-                    begin: Alignment.centerRight,
-                    end: Alignment.centerLeft,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                        color: const Color(0xFF00DEDA).withValues(alpha: 0.30),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4))
-                  ],
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: context.col.border),
+                  boxShadow: AppShadows.shadowCard,
                 ),
-                child: Row(children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.28),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.auto_awesome_rounded,
-                        color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                      child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('baahyAi',
-                          style: TextStyle(
-                              fontFamily: 'Cairo',
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white)),
-                      const SizedBox(height: 2),
-                      Text(
-                          isAr
-                              ? 'تحتاج مساعدة اضافية؟ اسال مساعدك الذكي'
-                              : 'Need more help? Ask your AI assistant',
-                          style: const TextStyle(
-                              fontFamily: 'Cairo',
-                              fontSize: 12,
-                              color: Color(0xFF004D54))),
-                    ],
-                  )),
-                  Icon(
-                      isAr
-                          ? Icons.arrow_back_ios_rounded
-                          : Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: Colors.white.withValues(alpha: 0.80)),
-                ]),
+                child: Image.asset('assets/images/ai_banner.png',
+                  width: double.infinity, fit: BoxFit.cover),
               ),
             ),
           ],
         ],
-      ),
-    );
+        ),
+        ),
+        ),
+      );
+    });
   }
 }

@@ -40,7 +40,7 @@ class ContactScreen extends ConsumerWidget {
           icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: context.col.ink0),
         ),
         title: Text(context.s.contactUs,
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800, fontSize: 17)),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
@@ -62,7 +62,7 @@ class ContactScreen extends ConsumerWidget {
               Text(context.s.hereToHelp,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontWeight: FontWeight.w800,
                       fontSize: 18,
                       color: context.col.ink0)),
@@ -76,7 +76,7 @@ class ContactScreen extends ConsumerWidget {
           // ── Contact cards ──────────────────────────────────────────────────
           Text(isAr ? 'تواصل معنا عبر' : 'Reach us via',
               style: TextStyle(
-                  fontFamily: 'Cairo', fontWeight: FontWeight.w700,
+                  fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700,
                   fontSize: 13, color: context.col.ink3)),
           const SizedBox(height: 10),
 
@@ -121,7 +121,7 @@ class ContactScreen extends ConsumerWidget {
               Icon(Icons.access_time_rounded, size: 16, color: context.col.ink3),
               const SizedBox(width: 8),
               Text(isAr ? 'الدعم متاح 7 أيام في الأسبوع' : 'Support available 7 days a week',
-                  style: TextStyle(fontSize: 12.5, color: context.col.ink2, fontFamily: 'Cairo')),
+                  style: TextStyle(fontSize: 12.5, color: context.col.ink2, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             ]),
           ),
 
@@ -200,7 +200,7 @@ class _ContactCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label, style: TextStyle(
-                  fontFamily: 'Cairo', fontWeight: FontWeight.w700,
+                  fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700,
                   fontSize: 14, color: context.col.ink0)),
               const SizedBox(height: 2),
               Text(subtitle, style: TextStyle(

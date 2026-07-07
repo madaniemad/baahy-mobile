@@ -105,7 +105,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           ),
           const SizedBox(height: 24),
           Text(context.s.confirmNumber,
-            style: const TextStyle(fontFamily: 'Cairo',
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
               fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
           const SizedBox(height: 8),
           // Phone number wrapped in LTR so +218... displays left-to-right
@@ -264,7 +264,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   ? const SizedBox(width: 20, height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87))
                   : Text(context.s.verify,
-                      style: const TextStyle(fontFamily: 'Cairo',
+                      style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
             ),
           ),

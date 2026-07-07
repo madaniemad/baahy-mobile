@@ -352,7 +352,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         elevation: 0,
         title: Text(
           widget.pageTitle ?? (widget.query.isNotEmpty ? widget.query : context.s.products),
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 16),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 16),
         ),
         actions: [
           Stack(
@@ -417,7 +417,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                             Icon(Icons.search_off, size: 64, color: context.col.ink4),
                             const SizedBox(height: 12),
                             Text(context.s.noResultsFound,
-                              style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: context.col.ink2)),
+                              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, color: context.col.ink2)),
                             if (_filters.isActive) ...[
                               const SizedBox(height: 12),
                               TextButton.icon(
@@ -438,7 +438,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                                 style: const TextStyle(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.w600,
-                                  fontFamily: 'Cairo')),
+                                  fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                             ),
                           ],
                         ),
@@ -542,7 +542,7 @@ class _Tab extends StatelessWidget {
         ),
         child: Text(label,
           style: TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
             fontSize: 13,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             color: selected ? const Color(0xFFF0F0F0) : context.col.ink1,
@@ -1150,7 +1150,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(context.s.applyFilters,
-                  style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800,
                     fontSize: 15, color: context.col.ink0)),
               ),
             ),
@@ -1235,7 +1235,7 @@ class _CategoryChipsRow extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       color: AppColors.teal600,
                     ),
                   ),
@@ -1263,7 +1263,7 @@ class _PriceField extends StatelessWidget {
       style: const TextStyle(fontFamily: 'PlusJakartaSans', fontWeight: FontWeight.w700),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(fontSize: 12, color: context.col.ink3, fontFamily: 'Cairo'),
+        hintStyle: TextStyle(fontSize: 12, color: context.col.ink3, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
         filled: true, fillColor: context.col.surfaceSoft,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

@@ -91,6 +91,15 @@ class BaahyApp extends ConsumerWidget {
       theme: buildAppTheme(),
       darkTheme: buildDarkTheme(),
       themeMode: themeMode,
+      // Distribute each text line's leading evenly above and below the glyphs so
+      // Arabic text (Tajawal reserves extra vertical space) sits vertically
+      // centred in pills/buttons instead of riding high. Applies app-wide.
+      builder: (context, child) => DefaultTextHeightBehavior(
+        textHeightBehavior: const TextHeightBehavior(
+          leadingDistribution: TextLeadingDistribution.even,
+        ),
+        child: child ?? const SizedBox.shrink(),
+      ),
       routerConfig: router,
       locale: locale,
       supportedLocales: const [Locale('ar'), Locale('en')],

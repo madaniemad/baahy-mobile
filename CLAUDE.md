@@ -16,7 +16,7 @@ Baahy (باهي) customer mobile app. Flutter for iOS and Android. Connects to t
 - **Images**: cached_network_image
 - **Push notifications**: Firebase Messaging + flutter_local_notifications
 - **Voice search**: `speech_to_text ^6.6.0` — locale preference: ar_LY → ar_SA → ar_AE → ar_EG → ar
-- **Fonts**: Cairo (primary), PlusJakartaSans (numbers/monospace)
+- **Fonts**: **Manrope** (English/Latin, primary) + **Tajawal** (Arabic) — `Manrope-VF.ttf` + `Tajawal-{Regular,Medium,Bold,ExtraBold}.ttf`. Manrope has NO Arabic glyphs, so every TextStyle sets `fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']` → Latin renders in Manrope, Arabic falls through to Tajawal at the glyph level. PlusJakartaSans still used for numbers/monospace; Outfit registered. (Replaced Cairo 2026-07-05; several trial Arabic fonts — Rubik/IBMPlex/Readex/Alexandria/Almarai — were tried then removed. **Tajawal metrics are patched** in the `.ttf` files: hhea/typo ascent 643→820, descent →-375, lineGap →0, USE_TYPO_METRICS on — so Arabic sits vertically centred in pills/buttons instead of riding high. `main.dart` also wraps the app in `DefaultTextHeightBehavior(leadingDistribution: even)`.)
 - **Bundle ID**: iOS `com.baahy.app` · Android `com.baahy.baahyapp` (production identity — adopted 2026-07-02 to match the existing live App Store / Play Store listings so the new app ships as an in-place UPDATE. Do NOT revert to the old `com.example.baahyCustomer` placeholder.)
 
 ## Backend
@@ -143,10 +143,13 @@ Hero images should be uploaded at **1400×480 px**. Sub-hero at any wide landsca
 - To review onboarding from scratch: `xcrun simctl uninstall B764355C-AE75-49CC-8E30-8B5089A32CAB com.baahy.app` then `flutter run` (prefs reset — `onboarding_v2_done`/`city` cleared).
 
 ## Rewards / Loyalty Hub
-- Route: `/rewards` — `RewardsHubScreen` in `lib/features/rewards/screens/`
-- Tiers: Bronze (`0xFFCD7F32`) → Silver (`0xFF9E9E9E`) → Gold (`0xFFD4A82E`) → Platinum (`0xFF4FC3F7`)
-- No-tier state (`_noTierDef`): Bronze — `Icons.workspace_premium_outlined`, color `0xFFCD7F32`
-- Cashback rates and referral amounts come from `appConfigProvider`
+- Route: `/rewards-hub` (also `/rewards`) — `RewardsHubScreen` in `lib/features/rewards/screens/`
+- **Tier display names (2026-07-06 rebrand): Silver → Gold → Platinum → Black.** The internal DB/API keys are UNCHANGED (`bronze`→Silver, `silver`→Gold, `gold`→Platinum, `platinum`→Black) — no migration; only labels changed (app + backend TierService/ChatController/TierSettingsPage).
+- **Tier badge icons**: `assets/images/tier_{bronze,silver,gold,platinum}.png` = the metal 3D `b` (white / gold / chrome / onyx). `_TierBadge` renders them with a drop shadow (dark on light bg, light halo on dark) so they never blend.
+- **Tier colors** (`_palettes` accent, used for names/numbers): Silver `#7C8894`, Gold `#C69320`, Platinum `#3B82C4`, Black `#1C1C22` (Black uses `ink0` at runtime so it flips white in dark mode).
+- **Benefits table** (`_TierCard`): copies a reference mockup — white card, subtle header tint with icon + tier name (bold, colored), colored value numbers + grey labels, light dividers, active card has a cyan `AppColors.primary` glow border. Hero card = the tier's metal gradient (`gradA/gradB/fg`).
+- Cashback rates and referral amounts come from `appConfigProvider`.
+- **Rewards only count post-launch delivered orders**: backend `rewards_start_date` site_setting (default `2026-06-15`) filters legacy WooCommerce imports (bulk-marked delivered 2026-06-14) out of tier stats/milestones.
 
 ## Product Card Details
 - "توصيل سريع" (fast delivery) badge: solid yellow `#FFF500`, black text, `fontSize: 8`, `icon size: 9`
@@ -203,12 +206,17 @@ The booted simulator UDID as of last session: `B764355C-AE75-49CC-8E30-8B5089A32
 - **Conversation history**: persisted to SharedPreferences as JSON list; trimmed to last 10 messages for API (4 when >10)
 - **Rate limits** (from backend): 15 msg/hr, 5 img/hr, 50 msg/day — `limit_hit:true` triggers WhatsApp fallback card
 
-## AI Cards (baahyAi branding)
-- **Design**: tiffany gradient `[Color(0xFF1BBFBC), Color(0xFF32DDE5), Color(0xFF6AECF0)]` + drop shadow
-- **Text**: "baahyAi" headline (white, w800) + "تحتاج مساعدة اضافية؟ اسال مساعدك الذكي" subtext in `Color(0xFF004D54)` (dark teal, NOT white)
-- **Icon box**: `Colors.white.withValues(alpha: 0.28)` background, `Icons.auto_awesome_rounded` white
-- **Locations**: search screen (bottom of empty state), account screen (after referral card)
-- Both conditional on `config.aiEnabled`
+## AI Cards / Banner (baahy AI branding — 2026-07-07)
+- **Now a single banner image** `assets/images/ai_banner.png` ("baahy AI" + tagline + sparkles + chevron), wrapped in a rounded `Container` (border + `AppShadows.shadowCard`), tappable → `/chat`. Replaced the old teal-gradient card.
+- Standalone `assets/images/ai_icon.png` (cyan `b` + sparkle, transparent bg) available for other AI touchpoints.
+- **Locations**: account screen (just above logout) + search screen (pinned to the BOTTOM via a `Spacer` inside a viewport-filling `LayoutBuilder`+`ConstrainedBox`+`IntrinsicHeight` scroll).
+- Both conditional on `config.aiEnabled`.
+
+## Dark Mode = outline style (2026-07-06)
+`BaahyColors.dark`: `surface`/`surfaceSoft` ≈ the scaffold `bg` (near-black) so cards have **no visible fill**; `border`/`borderStrong` are **white** (`0x80FFFFFF`/`0xB3FFFFFF`) → cards read as white outlines. Structural surfaces (appbar, sheets, inputs) stay opaque since they're near-bg, not transparent.
+
+## Invite / Referral link
+Share link is built in `friends_screen.dart` → `https://baahy-web.vercel.app/invite/CODE?from=&reward=` (the Next.js invite landing page that deep-links via `baahy://invite/CODE`). **NOT** `baahy.com` (that's the WordPress store, no `/invite` route → 404). Switch host to `baahy.com` at launch. `deep_link_service.dart` recognizes both hosts.
 
 ## Browse Screen (`browse_screen.dart`)
 - **Sidebar rail**: white background, teal left accent bar on active item, 1px right border divider, width 108px

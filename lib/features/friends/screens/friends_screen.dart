@@ -73,7 +73,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
         centerTitle: true,
         automaticallyImplyLeading: true,
         title: Text(context.s.friends,
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 17)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800, fontSize: 17)),
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_outlined, size: 22),
@@ -83,8 +83,8 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
         ],
         bottom: TabBar(
           controller: _tab,
-          labelStyle: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 14),
-          unselectedLabelStyle: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w500, fontSize: 14),
+          labelStyle: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 14),
+          unselectedLabelStyle: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w500, fontSize: 14),
           indicatorColor: _tiffany,
           labelColor: _tiffany,
           unselectedLabelColor: AppColors.ink2,
@@ -95,7 +95,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
             Tab(text: context.s.myFriends),
             Tab(
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(context.s.friendRequests, style: const TextStyle(fontFamily: 'Cairo')),
+                Text(context.s.friendRequests, style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                 if (pendingCount > 0) ...[
                   const SizedBox(width: 6),
                   Container(
@@ -137,7 +137,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 const SizedBox(height: 22),
 
                 Text(context.tr('أرباحك حتى الآن', 'Your Earnings'),
-                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800)),
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 10),
 
                 referralAsync.when(
@@ -155,7 +155,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 const SizedBox(height: 22),
 
                 Text(context.tr('أصدقاؤك', 'Your Friends'),
-                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, fontWeight: FontWeight.w800)),
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 10),
 
                 referralAsync.when(
@@ -193,7 +193,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                               _showAll ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
                               size: 18, color: _tiffanyDeep),
                             Text(_showAll ? context.tr('عرض أقل', 'Show Less') : context.s.viewMore,
-                              style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                                 color: _tiffanyDeep, fontWeight: FontWeight.w600)),
                           ]),
                         ),
@@ -246,9 +246,11 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
   Future<void> _share() async {
     final user = ref.read(currentUserProvider);
     final firstName = (user?.name ?? '').split(' ').first;
+    // baahy.com is the WordPress store (no /invite route); the invite landing
+    // page (which deep-links into the app) is served by the Next.js site.
     final inviteLink = Uri(
       scheme: 'https',
-      host: 'baahy.com',
+      host: 'baahy-web.vercel.app',
       path: '/invite/${widget.code}',
       queryParameters: {
         'from': firstName,
@@ -267,7 +269,7 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.tr('تم نسخ رابط الدعوة', 'Invite link copied'),
-              style: const TextStyle(fontFamily: 'Cairo'))),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
         );
       }
     }
@@ -293,13 +295,13 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(context.tr('ادع أصدقاءك واربح مكافآت', 'Invite friends & earn rewards'),
-                style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w800, height: 1.3)),
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 15, fontWeight: FontWeight.w800, height: 1.3)),
               const SizedBox(height: 5),
               Text(
                 context.isAr
                   ? 'يحصل كل منكما على ${widget.giver} د.ل\nعند إتمام أول طلب'
                   : 'You each earn ${widget.giver} LD\non first order completion',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 12,
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                   color: context.col.ink2, height: 1.45)),
               const SizedBox(height: 10),
               // Code box
@@ -330,7 +332,7 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
                             color: _copied ? AppColors.success : context.col.ink2),
                           const SizedBox(width: 4),
                           Text(_copied ? context.s.copied : context.s.copyBtn,
-                            style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5,
+                            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5,
                               color: _copied ? AppColors.success : context.col.ink2,
                               fontWeight: FontWeight.w700)),
                         ]),
@@ -357,7 +359,7 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
               const Icon(Icons.share_rounded, size: 16, color: Colors.white),
               const SizedBox(width: 8),
               Text(context.tr('شارك رابط الدعوة', 'Share Invite Link'),
-                style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800,
                   fontSize: 14, color: Colors.white)),
             ]),
           ),
@@ -425,7 +427,7 @@ class _EarnStat extends StatelessWidget {
           const SizedBox(height: 4),
           Text(label,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 10.5,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 10.5,
               color: context.col.ink2, height: 1.3)),
         ]),
       ),
@@ -473,30 +475,30 @@ class _ReferralRow extends StatelessWidget {
           radius: 20,
           backgroundColor: context.col.surfaceSoft,
           child: Text(initial,
-            style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700,
               fontSize: 15, color: context.col.ink1)),
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(name,
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 14, fontWeight: FontWeight.w700)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14, fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
           Text(isCompleted ? context.tr('اكتمل الطلب', 'Order completed') : context.tr('بانتظار إتمام الطلب', 'Awaiting first order'),
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5,
               color: isCompleted ? _tiffanyDeep : context.col.ink3,
               fontWeight: FontWeight.w500)),
         ])),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           if (dateStr != null)
             Text(_fmt(dateStr),
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 10.5, color: context.col.ink3)),
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 10.5, color: context.col.ink3)),
           const SizedBox(height: 3),
           isCompleted
             ? Text('+$giverAmount د.ل',
                 style: const TextStyle(fontFamily: 'PlusJakartaSans',
                   fontSize: 13, fontWeight: FontWeight.w800, color: _tiffanyDeep))
             : Text('—  —',
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink3)),
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink3)),
         ]),
       ]),
     );
@@ -519,10 +521,10 @@ class _EmptyFriends extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(context.tr('لم تدعُ أحداً بعد', 'No invites yet'),
-          style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w700)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 15, fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
         Text(context.tr('شارك كودك وابدأ بكسب المكافآت', 'Share your code and start earning'),
-          style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, color: AppColors.ink2)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: AppColors.ink2)),
       ])),
     );
   }
@@ -551,7 +553,7 @@ class _RequestsTab extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Text(context.tr('لا توجد طلبات معلقة', 'No pending requests'),
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 15, fontWeight: FontWeight.w700)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 15, fontWeight: FontWeight.w700)),
         ]),
       );
     }
@@ -575,7 +577,7 @@ class _RequestsTab extends ConsumerWidget {
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(req.name,
-                  style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 14)),
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 14)),
                 if (req.username != null)
                   Text('@${req.username}',
                     style: TextStyle(fontSize: 12, color: context.col.ink3)),
@@ -591,7 +593,7 @@ class _RequestsTab extends ConsumerWidget {
                     foregroundColor: context.col.ink2,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
-                  child: Text(context.tr('رفض', 'Decline'), style: const TextStyle(fontFamily: 'Cairo', fontSize: 12)),
+                  child: Text(context.tr('رفض', 'Decline'), style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12)),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -608,7 +610,7 @@ class _RequestsTab extends ConsumerWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(context.tr('قبول', 'Accept'),
-                    style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, fontWeight: FontWeight.w700)),
                 ),
               ]),
             ]),
@@ -635,7 +637,7 @@ class _FriendAvatar extends StatelessWidget {
       child: Text(
         name.isNotEmpty ? name[0] : '?',
         style: const TextStyle(color: _tiffanyDeep, fontWeight: FontWeight.w700,
-          fontSize: 16, fontFamily: 'Cairo'),
+          fontSize: 16, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
       ),
     );
   }
@@ -662,14 +664,14 @@ class _FaqCard extends StatelessWidget {
           Icon(Icons.info_outline_rounded, size: 17, color: context.col.ink2),
           const SizedBox(width: 7),
           Text(context.tr('كيف تعمل مكافآت الأصدقاء؟', 'How do friend rewards work?'),
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 13.5, fontWeight: FontWeight.w700)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13.5, fontWeight: FontWeight.w700)),
         ]),
         const SizedBox(height: 10),
         Text(
           context.isAr
             ? 'سيتم إضافة المكافأة إلى رصيدك بعد أن يُكمل صديقك أول طلب له ويتم استلامه بنجاح. ستحصل أنت على $giver د.ل وصديقك على $giver د.ل.'
             : 'The reward is added to your wallet once your friend completes their first order and it is delivered. You each get $giver LD.',
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
             color: context.col.ink2, height: 1.55)),
       ]),
     );

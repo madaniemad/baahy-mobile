@@ -429,9 +429,10 @@ class AppStrings {
 
   // ── Tier / Loyalty ───────────────────────────────────────────────────────────
   String get tierLevel          => isAr ? 'مستوى الولاء'           : 'Loyalty Tier';
-  String get silverTier         => isAr ? 'Silver'                  : 'Silver';
-  String get goldTier           => isAr ? 'Gold'                    : 'Gold';
-  String get platinumTier       => isAr ? 'Platinum'                : 'Platinum';
+  String get silverTier         => 'Gold';
+  String get goldTier           => 'Platinum';
+  String get platinumTier       => 'Black';
+  String get bronzeTier         => 'Silver';
   String get noTier             => isAr ? 'بدون مستوى'             : 'No Tier';
   String get ordersToNextTier   => isAr ? 'طلب للمستوى التالي'     : 'orders to next tier';
   String get spendToNextTier    => isAr ? 'د.ل للمستوى التالي'     : 'LYD to next tier';
@@ -448,7 +449,7 @@ class AppStrings {
   String get onbRewardsHeadline2 => isAr ? 'واكسب'                        : 'and earn';
   String get onbCashbackTitle    => isAr ? 'استرداد نقدي على كل طلب'      : 'Cashback on every order';
   String onbCashbackSub(String rate) => isAr ? 'حتى $rate% تُضاف لمحفظتك تلقائياً' : 'Up to $rate% added to your wallet automatically';
-  String get onbTiersTitle       => 'Bronze · Silver · Gold · Platinum';
+  String get onbTiersTitle       => 'Silver · Gold · Platinum · Black';
   String get onbTiersSub         => isAr ? 'كلما تسوّقت أكثر — مزايا أكبر وكاش باك أعلى' : 'The more you shop — bigger perks and higher cashback';
   String get onbReferralTitle    => isAr ? 'ادعُ صديقاً واكسبا معاً'      : 'Invite a friend, both earn';
   String onbReferralSub(String amount) => isAr ? 'كل منكما يحصل على $amount د.ل عند أول توصيل' : 'You each get $amount LYD on first delivery';
@@ -478,9 +479,9 @@ class AppStrings {
 
   String nudgeMilestone1(String amount) => isAr ? 'طلب واحد فقط وتحصل على $amount د.ل' : '1 order away from earning $amount LD';
   String nudgeMilestone2(String amount) => isAr ? 'طلبان فقط وتحصل على $amount د.ل'    : '2 orders away from earning $amount LD';
-  String nudgeNoTier(int orders, String spend) => isAr ? 'تسوّق $orders طلبات بـ $spend د.ل للوصول لمستوى Silver 🥈' : 'Place $orders orders & spend $spend LD to reach Silver 🥈';
-  String nudgeSilver(int orders, String spend) => isAr ? 'مستواك Silver 🥈 — $orders طلب و $spend د.ل من Gold'       : 'Silver 🥈 — $orders orders & $spend LD from Gold';
-  String nudgeGold(int orders, String spend)   => isAr ? 'مستواك Gold 🥇 — $orders طلب و $spend د.ل من Platinum'    : 'Gold 🥇 — $orders orders & $spend LD from Platinum';
+  String nudgeNoTier(int orders, String spend) => isAr ? 'تسوّق $orders طلبات بـ $spend د.ل للوصول لمستوى Gold' : 'Place $orders orders & spend $spend LD to reach Gold';
+  String nudgeSilver(int orders, String spend) => isAr ? 'مستواك Gold — $orders طلب و $spend د.ل من Platinum'       : 'Gold — $orders orders & $spend LD from Platinum';
+  String nudgeGold(int orders, String spend)   => isAr ? 'مستواك Platinum — $orders طلب و $spend د.ل من Black'    : 'Platinum — $orders orders & $spend LD from Black';
   String nudgePlatinum(String cashback)        => isAr ? 'أعلى مستوى 💎 — تمتع بـ $cashback% استرداد نقدي على كل طلب' : 'Top tier 💎 — enjoy $cashback% cashback on every order';
   String nudgeCashback(String pct)             => isAr ? 'تحصل على $pct% استرداد نقدي مع كل طلب'   : 'Earn $pct% cashback on every order';
   String nudgeReferral(String amount)          => isAr ? 'ادعُ صديقاً واكسب $amount د.ل'            : 'Invite a friend & earn $amount LD';

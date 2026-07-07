@@ -24,7 +24,17 @@ final _ordersProvider = FutureProvider.autoDispose<List<Order>>((ref) async {
   } else if (d is List) {
     raw = d;
   }
-  return raw?.map((o) => Order.fromJson(o as Map<String, dynamic>)).toList() ?? [];
+  // Parse defensively — one malformed (usually legacy-imported) order must not
+  // take down the entire list.
+  final out = <Order>[];
+  for (final o in (raw ?? [])) {
+    try {
+      out.add(Order.fromJson(o as Map<String, dynamic>));
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
+  }
+  return out;
 });
 
 class OrdersScreen extends ConsumerStatefulWidget {
@@ -176,7 +186,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(isAr ? 'ملاحظات على إعادة الطلب' : 'Reorder Notes',
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -186,7 +196,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   isAr
                     ? 'سيتم طلب ${toAdd.length} من ${order.allItems.length} منتجات.'
                     : '${toAdd.length} of ${order.allItems.length} items will be ordered.',
-                  style: const TextStyle(fontFamily: 'Cairo', fontSize: 13),
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13),
                 ),
                 const SizedBox(height: 12),
                 ...notices.map((n) => _NoticeRow(notice: n, isAr: isAr)),
@@ -197,12 +207,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
               child: Text(isAr ? 'إلغاء' : 'Cancel',
-                style: TextStyle(fontFamily: 'Cairo', color: context.col.ink2)),
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink2)),
             ),
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),
               child: Text(isAr ? 'متابعة' : 'Continue',
-                style: const TextStyle(fontFamily: 'Cairo', color: AppColors.primary,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: AppColors.primary,
                   fontWeight: FontWeight.w700)),
             ),
           ],
@@ -239,7 +249,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       appBar: AppBar(
         backgroundColor: context.col.surface, elevation: 0,
         title: Text(context.s.myOrders,
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.canPop() ? context.pop() : context.go('/account'),
           icon: Icon(Icons.arrow_back, color: context.col.ink0)),
@@ -457,7 +467,7 @@ class _OrderCard extends StatelessWidget {
                     Icon(Icons.refresh_rounded, size: 16, color: context.col.ink0),
                     const SizedBox(width: 6),
                     Text(context.s.reorder,
-                      style: TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700,
+                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700,
                         fontSize: 13, color: context.col.ink0)),
                   ],
                 ),
@@ -520,10 +530,10 @@ class _NoticeRow extends StatelessWidget {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(notice.name,
-              style: const TextStyle(fontFamily: 'Cairo', fontSize: 12.5,
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12.5,
                 fontWeight: FontWeight.w600)),
             Text(detail,
-              style: TextStyle(fontFamily: 'Cairo', fontSize: 11.5, color: color)),
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5, color: color)),
           ]),
         ),
       ]),

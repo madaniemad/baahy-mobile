@@ -49,7 +49,7 @@ class ReferralScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: context.col.surface, elevation: 0,
         title: Text(context.s.inviteTitle,
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
           icon: Icon(Icons.arrow_back, color: context.col.ink0)),
@@ -68,7 +68,7 @@ class ReferralScreen extends ConsumerWidget {
               const SizedBox(height: 8),
               Text(context.isAr ? config.referralTextAr : config.referralTextEn,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontFamily: 'Cairo',
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                   fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
               const SizedBox(height: 6),
               Text(

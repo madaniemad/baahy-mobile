@@ -6,6 +6,16 @@ double _d(dynamic v) {
   return 0.0;
 }
 
+// Coerce anything (int, num, numeric string, null) to an int — legacy imported
+// orders sometimes return ids/quantities as strings or null, which would throw
+// when assigned to a non-nullable int field.
+int _i(dynamic v, [int fallback = 0]) {
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v) ?? double.tryParse(v)?.toInt() ?? fallback;
+  return fallback;
+}
+
 class OrderStatusEntry {
   final String toStatus;
   final DateTime? createdAt;
@@ -78,7 +88,7 @@ class Order {
   }
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
-    id: j['id'],
+    id: _i(j['id']),
     orderNumber: j['order_number'] ?? '#${j['id']}',
     status: j['status'] ?? 'pending',
     total: _d(j['total']),
@@ -169,14 +179,14 @@ class OrderItem {
       }
     }
     return OrderItem(
-      id: j['id'],
-      productId: j['product_id'],
+      id: _i(j['id']),
+      productId: _i(j['product_id']),
       productName: j['product_name'] ?? product?['name'] ?? '',
       productNameAr: j['product_name_ar'] ?? product?['name_ar'] ?? j['product_name'] ?? '',
       productImage: productImage,
-      variationId: j['variation_id'],
+      variationId: (j['variation_id'] as num?)?.toInt(),
       variationLabel: j['variation_label'],
-      quantity: j['quantity'] ?? 1,
+      quantity: _i(j['quantity'], 1),
       price: _d(j['price']),
       total: _d(j['total'] ?? j['subtotal'] ?? (_d(j['price']) * (j['quantity'] ?? 1))),
     );

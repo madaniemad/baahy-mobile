@@ -84,7 +84,7 @@ class _UsernameSetupScreenState extends ConsumerState<UsernameSetupScreen> {
         backgroundColor: context.col.surface,
         elevation: 0,
         title: Text(context.tr('اختر اسم مستخدم', 'Choose Username'),
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: context.col.ink0),
           onPressed: () => Navigator.of(context).pop(),
@@ -96,14 +96,14 @@ class _UsernameSetupScreenState extends ConsumerState<UsernameSetupScreen> {
           Icon(Icons.alternate_email, size: 48, color: AppColors.primary),
           const SizedBox(height: 16),
           Text(context.tr('اسم مستخدم فريد', 'Unique Username'),
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 22, fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           Text(
             context.tr(
               'يستخدمه أصدقاؤك للعثور عليك. 3-30 حرف، أرقام وشرطة سفلية فقط.',
               'Friends use this to find you. 3–30 chars, letters, numbers and underscore only.',
             ),
-            style: TextStyle(fontSize: 13, color: context.col.ink2, fontFamily: 'Cairo', height: 1.5),
+            style: TextStyle(fontSize: 13, color: context.col.ink2, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.5),
           ),
           const SizedBox(height: 24),
           TextField(
@@ -127,7 +127,7 @@ class _UsernameSetupScreenState extends ConsumerState<UsernameSetupScreen> {
               suffixIcon: _suffixIcon(),
               errorText: _errorText(context),
             ),
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 16, letterSpacing: 0.5),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, letterSpacing: 0.5),
           ),
           const Spacer(),
           SizedBox(
@@ -144,7 +144,7 @@ class _UsernameSetupScreenState extends ConsumerState<UsernameSetupScreen> {
               child: _saving
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : Text(context.tr('تأكيد', 'Confirm'),
-                      style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800, fontSize: 16)),
+                      style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800, fontSize: 16)),
             ),
           ),
           const SizedBox(height: 32),

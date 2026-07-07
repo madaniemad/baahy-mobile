@@ -44,7 +44,7 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
           onChanged: (v) => ref.read(userSearchProvider.notifier).search(v),
           decoration: InputDecoration(
             hintText: context.tr('ابحث عن اسم المستخدم...', 'Search username...'),
-            hintStyle: TextStyle(fontFamily: 'Cairo', color: context.col.ink3, fontSize: 14),
+            hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink3, fontSize: 14),
             border: InputBorder.none,
             suffixIcon: _controller.text.isNotEmpty
                 ? IconButton(
@@ -56,7 +56,7 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
                   )
                 : null,
           ),
-          style: TextStyle(fontFamily: 'Cairo', color: context.col.ink0, fontSize: 15),
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink0, fontSize: 15),
         ),
       ),
       body: searchState.loading
@@ -67,7 +67,7 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
                     Icon(Icons.search, size: 56, color: context.col.ink3),
                     const SizedBox(height: 12),
                     Text(context.tr('ابحث عن صديق بالاسم المستخدم', 'Search by username'),
-                      style: TextStyle(fontFamily: 'Cairo', color: context.col.ink2, fontSize: 14)),
+                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink2, fontSize: 14)),
                   ]),
                 )
               : ListView.builder(
@@ -103,7 +103,7 @@ class _SearchResultTileState extends ConsumerState<_SearchResultTile> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: _avatar(),
       title: Text(widget.friend.name,
-        style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, fontSize: 15)),
+        style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 15)),
       subtitle: widget.friend.username != null
           ? Text('@${widget.friend.username}', style: TextStyle(fontSize: 12, color: context.col.ink3))
           : null,
@@ -136,7 +136,7 @@ class _SearchResultTileState extends ConsumerState<_SearchResultTile> {
             border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
           ),
           child: Text(context.tr('أصدقاء', 'Friends'),
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w700)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w700)),
         ),
       FriendshipStatus.pendingSent => Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -146,7 +146,7 @@ class _SearchResultTileState extends ConsumerState<_SearchResultTile> {
             border: Border.all(color: context.col.border),
           ),
           child: Text(context.tr('معلق', 'Pending'),
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 12, color: context.col.ink2)),
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, color: context.col.ink2)),
         ),
       _ => GestureDetector(
           onTap: _sendRequest,
@@ -157,7 +157,7 @@ class _SearchResultTileState extends ConsumerState<_SearchResultTile> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(context.tr('إضافة', 'Add'),
-              style: const TextStyle(fontFamily: 'Cairo', fontSize: 12, color: Colors.white, fontWeight: FontWeight.w700)),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, color: Colors.white, fontWeight: FontWeight.w700)),
           ),
         ),
     };

@@ -88,7 +88,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
             ),
             const SizedBox(height: 24),
             Text(context.s.enterPhone,
-              style: const TextStyle(fontFamily: 'Cairo',
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                 fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
             const SizedBox(height: 8),
             Text(context.s.phoneSub,
@@ -154,7 +154,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   Icon(Icons.card_giftcard_outlined, size: 15, color: context.col.ink3),
                   const SizedBox(width: 5),
                   Text('لديك كود دعوة؟',
-                    style: TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                       color: context.col.ink3, fontWeight: FontWeight.w600)),
                 ]),
               )
@@ -175,7 +175,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   decoration: InputDecoration(
                     hintText: 'كود الدعوة',
                     hintStyle: TextStyle(
-                      fontFamily: 'Cairo', fontSize: 13,
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                       color: context.col.ink4, fontWeight: FontWeight.w400,
                       letterSpacing: 0),
                     prefixIcon: Icon(Icons.card_giftcard_outlined,
@@ -203,7 +203,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87))
                       : const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
                   label: Text(context.s.sendCode,
-                    style: const TextStyle(fontFamily: 'Cairo',
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -237,7 +237,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                       borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(context.s.continueGuest,
-                    style: TextStyle(fontFamily: 'Cairo',
+                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontWeight: FontWeight.w700, fontSize: 14,
                       color: context.col.ink0)),
                 ),

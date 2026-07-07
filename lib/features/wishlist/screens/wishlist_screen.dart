@@ -38,7 +38,7 @@ class WishlistScreen extends ConsumerWidget {
         backgroundColor: context.col.bg,
         appBar: AppBar(
           title: Text(context.s.wishlistTitle,
-              style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
           backgroundColor: context.col.surface,
           elevation: 0,
         ),
@@ -55,7 +55,7 @@ class WishlistScreen extends ConsumerWidget {
               const SizedBox(height: 14),
               Text(context.s.wishlistEmpty,
                   style: const TextStyle(
-                      fontFamily: 'Cairo', fontSize: 18, fontWeight: FontWeight.w700)),
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 6),
               Text(context.s.wishlistSub,
                   textAlign: TextAlign.center,
@@ -77,7 +77,7 @@ class WishlistScreen extends ConsumerWidget {
         backgroundColor: context.col.surface,
         elevation: 0,
         title: Text('${context.s.wishlistTitle} ($displayCount)',
-            style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
       ),
       body: productsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -102,7 +102,7 @@ class WishlistScreen extends ConsumerWidget {
                   Icon(Icons.favorite_outline, size: 72, color: context.col.ink4),
                   const SizedBox(height: 12),
                   Text(context.s.wishlistEmpty,
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 16, color: context.col.ink2)),
+                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, color: context.col.ink2)),
                   const SizedBox(height: 6),
                   Text(context.s.wishlistSub,
                       textAlign: TextAlign.center,
@@ -259,7 +259,7 @@ class _WishlistCard extends ConsumerWidget {
                           const SizedBox(width: 5),
                           Text(stockLabel,
                               style: TextStyle(
-                                  fontFamily: 'Cairo', fontSize: 12,
+                                  fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                                   fontWeight: FontWeight.w600, color: stockColor)),
                         ]),
                         if (isVariable)
@@ -336,7 +336,7 @@ class _WishBtn extends StatelessWidget {
           child: Center(
             child: Text(label,
                 style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: context.col.ink3)),
@@ -366,7 +366,7 @@ class _WishBtn extends StatelessWidget {
             children: [
               Text(label,
                   style: TextStyle(
-                      fontFamily: 'Cairo',
+                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontSize: isVariable ? 10 : 12,
                       fontWeight: FontWeight.w600,
                       color: isVariable ? context.col.ink2 : Colors.white)),
@@ -404,7 +404,7 @@ class _PriceDropBanner extends StatelessWidget {
         Expanded(
           child: Text.rich(
             TextSpan(
-              style: const TextStyle(fontFamily: 'Cairo', fontSize: 13, height: 1.4),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, height: 1.4),
               children: [
                 TextSpan(
                   text: context.s.isAr

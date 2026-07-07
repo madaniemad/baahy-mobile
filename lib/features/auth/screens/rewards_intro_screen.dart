@@ -174,7 +174,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
                   const Icon(Icons.language_rounded, size: 16, color: _teal),
                   const SizedBox(width: 6),
                   Text(isAr ? 'English' : 'العربية',
-                    style: const TextStyle(fontFamily: 'Cairo',
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontSize: 13, fontWeight: FontWeight.w800, color: _navy)),
                 ]),
               ),
@@ -183,7 +183,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
           const SizedBox(height: 40),
           Text(isAr ? 'اختار مدينتك' : 'Choose Your City',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 26,
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 26,
               fontWeight: FontWeight.w900, color: Colors.white,
               shadows: [Shadow(color: Color(0x2E0E3C46), blurRadius: 14, offset: Offset(0, 3))])),
           const SizedBox(height: 10),
@@ -191,7 +191,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
               ? 'لنتمكن من عرض المنتجات والعروض المناسبة لك'
               : 'To show you relevant products and offers',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
               fontWeight: FontWeight.w700, color: _navy, height: 1.4)),
           const SizedBox(height: 22),
 
@@ -216,12 +216,12 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
                     textAlign: isAr ? TextAlign.right : TextAlign.left,
                     textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
                     onChanged: (v) => setState(() => _query = v),
-                    style: const TextStyle(fontFamily: 'Cairo',
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontSize: 13.5, fontWeight: FontWeight.w600, color: _navy),
                     cursorColor: _teal,
                     decoration: InputDecoration(
                       hintText: isAr ? 'ابحث عن مدينتك' : 'Search cities',
-                      hintStyle: const TextStyle(fontFamily: 'Cairo',
+                      hintStyle: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         color: Color(0xFF2A6E78), fontSize: 13.5, fontWeight: FontWeight.w500),
                       border: InputBorder.none,
                       isDense: true,
@@ -298,7 +298,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
         RichText(
           textAlign: TextAlign.center,
           text: const TextSpan(
-            style: TextStyle(fontFamily: 'Cairo', fontSize: 36,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 36,
               fontWeight: FontWeight.w900, height: 1.12),
             children: [
               TextSpan(text: 'آلاف المنتجات',
@@ -313,7 +313,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
         const SizedBox(height: 14),
         Text(context.s.discoverCategories,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontFamily: 'Cairo', fontSize: 16,
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16,
             fontWeight: FontWeight.w700, color: _navy, height: 1.5)),
         Expanded(
           child: AnimatedBuilder(
@@ -349,7 +349,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
           RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
-              style: const TextStyle(fontFamily: 'Cairo', fontSize: 36,
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 36,
                 fontWeight: FontWeight.w900, height: 1.12),
               children: [
                 TextSpan(text: s.onbRewardsHeadline1,
@@ -407,7 +407,7 @@ class _CityRow extends StatelessWidget {
             Expanded(
               child: Text(label,
                 textAlign: isAr ? TextAlign.right : TextAlign.left,
-                style: TextStyle(fontFamily: 'Cairo', fontSize: 14.5,
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14.5,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   color: selected ? _navy : const Color(0xFF33565C))),
             ),
@@ -456,11 +456,11 @@ class _BenefitCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title,
-                style: const TextStyle(fontFamily: 'Cairo', fontSize: 15,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 15,
                   fontWeight: FontWeight.w800, color: _navy)),
               const SizedBox(height: 2),
               Text(subtitle,
-                style: const TextStyle(fontFamily: 'Cairo', fontSize: 13,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                   fontWeight: FontWeight.w600, color: Color(0xFF2A6E78))),
             ],
           ),
@@ -525,7 +525,7 @@ class _ActionBar extends StatelessWidget {
               child: Opacity(opacity: 0.5,
                 child: Icon(Icons.arrow_forward_ios, size: 18, color: _teal)),
             ),
-            Text(label, style: const TextStyle(fontFamily: 'Cairo',
+            Text(label, style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
               fontSize: 17, fontWeight: FontWeight.w900, color: _navy)),
           ]),
         ),

@@ -42,7 +42,7 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
         backgroundColor: context.col.surface,
         elevation: 0,
         title: Text(context.tr('إعدادات الخصوصية', 'Privacy Settings'),
-          style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w800)),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: context.col.ink0),
           onPressed: () => Navigator.of(context).pop(),
@@ -54,7 +54,7 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
               : TextButton(
                   onPressed: _save,
                   child: Text(context.tr('حفظ', 'Save'),
-                    style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w700, color: AppColors.primary)),
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, color: AppColors.primary)),
                 ),
         ],
       ),
@@ -115,7 +115,7 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr('تم الحفظ', 'Saved'), style: const TextStyle(fontFamily: 'Cairo')),
+          SnackBar(content: Text(context.tr('تم الحفظ', 'Saved'), style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             backgroundColor: AppColors.success, duration: const Duration(seconds: 2)),
         );
       }
@@ -123,7 +123,7 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
       Sentry.captureException(e, stackTrace: st);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr('حدث خطأ', 'Error occurred'), style: const TextStyle(fontFamily: 'Cairo')),
+          SnackBar(content: Text(context.tr('حدث خطأ', 'Error occurred'), style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             backgroundColor: AppColors.danger),
         );
       }
@@ -140,7 +140,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 4),
-    child: Text(title, style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink3, fontWeight: FontWeight.w600)),
+    child: Text(title, style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink3, fontWeight: FontWeight.w600)),
   );
 }
 
@@ -171,11 +171,11 @@ class _PrivacyTile extends StatelessWidget {
       child: Row(children: [
         Icon(icon, size: 20, color: context.col.ink2),
         const SizedBox(width: 12),
-        Expanded(child: Text(label, style: const TextStyle(fontFamily: 'Cairo', fontWeight: FontWeight.w600, fontSize: 14))),
+        Expanded(child: Text(label, style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600, fontSize: 14))),
         DropdownButton<String>(
           value: value,
           underline: const SizedBox.shrink(),
-          style: TextStyle(fontFamily: 'Cairo', fontSize: 13, color: context.col.ink1),
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink1),
           items: options.map((o) => DropdownMenuItem(value: o, child: Text(optionLabels[o] ?? o))).toList(),
           onChanged: (v) { if (v != null) onChanged(v); },
         ),

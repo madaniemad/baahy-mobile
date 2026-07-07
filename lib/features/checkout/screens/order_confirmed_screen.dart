@@ -124,7 +124,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                   isAr ? 'تم تسجيل الطلب' : 'Order Placed!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: context.col.ink0,
@@ -138,7 +138,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                       : 'Your order has been saved successfully',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Cairo',
+                    fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
                     color: context.col.ink2,
                     height: 1.4,
@@ -172,7 +172,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                       Text(
                         isAr ? 'رقم الطلب' : 'Order #',
                         style: TextStyle(
-                          fontFamily: 'Cairo',
+                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: context.col.ink1,
@@ -207,7 +207,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                             Text(
                               isAr ? 'موعد التوصيل المتوقع' : 'Expected Delivery',
                               style: TextStyle(
-                                fontFamily: 'Cairo',
+                                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: context.col.ink0,
@@ -217,7 +217,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                             Text(
                               isAr ? '$deliveryDays يوم' : '$deliveryDays days',
                               style: const TextStyle(
-                                fontFamily: 'Cairo',
+                                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.primary,
@@ -230,7 +230,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                                   ? 'سنوافيك بتحديثات الطلب'
                                   : "We'll keep you updated",
                               style: TextStyle(
-                                fontFamily: 'Cairo',
+                                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 12,
                                 color: context.col.ink3,
                               ),
@@ -286,7 +286,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                                     Text(
                                       isAr ? 'نقاط الولاء' : 'Loyalty',
                                       style: TextStyle(
-                                        fontFamily: 'Cairo',
+                                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
                                         color: context.col.ink0,
@@ -298,7 +298,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                                           ? '$loyaltyRemaining طلب أكثر'
                                           : '$loyaltyRemaining more order',
                                       style: TextStyle(
-                                        fontFamily: 'Cairo',
+                                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                         fontSize: 12,
                                         color: context.col.ink2,
                                       ),
@@ -308,7 +308,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                                           ? 'لتحصل على ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit}'
                                           : 'to earn ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit}',
                                       style: const TextStyle(
-                                        fontFamily: 'Cairo',
+                                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.primary,
@@ -348,7 +348,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                                     Text(
                                       isAr ? 'كاش باك' : 'Cashback',
                                       style: TextStyle(
-                                        fontFamily: 'Cairo',
+                                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
                                         color: context.col.ink0,
@@ -358,7 +358,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                                     Text(
                                       isAr ? 'ستحصل على' : "You'll receive",
                                       style: TextStyle(
-                                        fontFamily: 'Cairo',
+                                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                         fontSize: 12,
                                         color: context.col.ink2,
                                       ),
@@ -368,7 +368,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                                           ? '$cashbackAmount ${context.s.lydUnit} عند التوصيل'
                                           : '$cashbackAmount ${context.s.lydUnit} on delivery',
                                       style: const TextStyle(
-                                        fontFamily: 'Cairo',
+                                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.primary,
@@ -403,7 +403,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                               : "We'll notify you when your order is prepared, shipped and delivered",
                           textAlign: TextAlign.start,
                           style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             color: context.col.ink1,
@@ -456,7 +456,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                         Text(
                           isAr ? 'تتبع الطلب' : 'Track Order',
                           style: const TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -489,7 +489,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                         Text(
                           isAr ? 'مواصلة التسوق' : 'Keep Shopping',
                           style: TextStyle(
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: context.col.ink0,
