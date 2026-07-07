@@ -230,16 +230,16 @@ class _CodeCardState extends State<_CodeCard> {
         Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
           _ShareBtn(label: context.s.whatsapp, color: const Color(0xFF25D366),
             icon: Icons.chat_rounded,
-            onTap: () => Share.share(
-              context.s.referralShareWhatsApp(widget.code, widget.receiverAmount))),
+            onTap: () => SharePlus.instance.share(ShareParams(text:
+              context.s.referralShareWhatsApp(widget.code, widget.receiverAmount)))),
           _ShareBtn(label: context.s.viaSMS, color: const Color(0xFF1f8a5b),
             icon: Icons.sms_outlined,
-            onTap: () => Share.share(
-              context.s.referralShareSMS(widget.code, widget.receiverAmount))),
+            onTap: () => SharePlus.instance.share(ShareParams(text:
+              context.s.referralShareSMS(widget.code, widget.receiverAmount)))),
           _ShareBtn(label: context.s.moreOptions, color: context.col.ink2,
             icon: Icons.share_outlined,
-            onTap: () => Share.share(
-              context.s.referralShareGeneral(widget.code, widget.receiverAmount))),
+            onTap: () => SharePlus.instance.share(ShareParams(text:
+              context.s.referralShareGeneral(widget.code, widget.receiverAmount)))),
         ]),
 
         // Stats

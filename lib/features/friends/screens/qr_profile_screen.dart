@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:share_plus/share_plus.dart' show Share;
+import 'package:share_plus/share_plus.dart' show SharePlus, ShareParams;
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/utils/l10n.dart';
@@ -21,7 +21,7 @@ class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
     final link = 'https://baahy.com/u/$username?reward=$reward';
     final text = 'أضفني على تطبيق باهي 👋\nستحصل على $reward د.ل عند إتمام أول طلب 🎁\n$link';
     try {
-      await Share.share(text);
+      await SharePlus.instance.share(ShareParams(text: text));
     } catch (_) {
       await Clipboard.setData(ClipboardData(text: text));
       if (mounted) {

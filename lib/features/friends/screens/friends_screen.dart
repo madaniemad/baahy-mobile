@@ -262,7 +262,7 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
         'ستحصل على ${widget.receiver} د.ل عند إتمام أول طلب 🎁\n'
         '$inviteLink';
     try {
-      await Share.share(text);
+      await SharePlus.instance.share(ShareParams(text: text));
     } catch (_) {
       // Simulator can't open share sheet — copy to clipboard as fallback
       await Clipboard.setData(ClipboardData(text: text));

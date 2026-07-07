@@ -738,8 +738,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       children: [
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
-                          onTap: () => Share.share(
-                            '${context.isAr ? product.nameAr : product.name}\nhttps://baahy.com/products/${product.id}'),
+                          onTap: () => SharePlus.instance.share(ShareParams(text:
+                            '${context.isAr ? product.nameAr : product.name}\nhttps://baahy.com/products/${product.id}')),
                           child: Container(
                             margin: const EdgeInsets.only(right: 4),
                             padding: const EdgeInsets.all(8),

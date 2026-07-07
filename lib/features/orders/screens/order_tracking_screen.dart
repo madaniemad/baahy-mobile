@@ -33,11 +33,11 @@ Future<void> _shareOrderPdf(BuildContext context, Order order) async {
     if (!context.mounted) return;
     final box = context.findRenderObject() as RenderBox?;
     final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-    await Share.shareXFiles(
-      [XFile(file.path, mimeType: 'application/pdf')],
+    await SharePlus.instance.share(ShareParams(
+      files: [XFile(file.path, mimeType: 'application/pdf')],
       subject: 'فاتورة ${order.orderNumber}',
       sharePositionOrigin: origin,
-    );
+    ));
   } catch (e, st) {
     Sentry.captureException(e, stackTrace: st);
     if (context.mounted) {

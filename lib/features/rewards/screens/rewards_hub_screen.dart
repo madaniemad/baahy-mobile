@@ -714,7 +714,7 @@ class _ReferralCardState extends ConsumerState<_ReferralCard> {
           'Get ${widget.receiverAmount} LYD added to your wallet on signup 🎁\n'
           '$inviteLink';
     try {
-      await Share.share(text);
+      await SharePlus.instance.share(ShareParams(text: text));
     } catch (_) {
       await Clipboard.setData(ClipboardData(text: text));
       if (mounted) {

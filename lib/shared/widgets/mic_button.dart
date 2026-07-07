@@ -79,7 +79,6 @@ class _MicButtonState extends ConsumerState<MicButton>
 
     setState(() => _listening = true);
     _speech.listen(
-      localeId: _preferredLocale,
       onResult: (result) {
         if (result.finalResult &&
             result.recognizedWords.isNotEmpty &&
@@ -89,9 +88,12 @@ class _MicButtonState extends ConsumerState<MicButton>
           safePush(context, '/search/results?q=$q');
         }
       },
-      listenFor: const Duration(seconds: 10),
-      pauseFor: const Duration(seconds: 3),
       onSoundLevelChange: null,
+      listenOptions: SpeechListenOptions(
+        localeId: _preferredLocale,
+        listenFor: const Duration(seconds: 10),
+        pauseFor: const Duration(seconds: 3),
+      ),
     );
   }
 

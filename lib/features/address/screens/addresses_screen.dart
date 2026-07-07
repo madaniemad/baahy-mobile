@@ -215,7 +215,7 @@ class _AddressCard extends StatelessWidget {
       if (addr['notes'] != null && addr['notes'].toString().isNotEmpty)
         addr['notes'] as String,
     ];
-    Share.share(parts.join('\n'));
+    SharePlus.instance.share(ShareParams(text: parts.join('\n')));
   }
 
   @override

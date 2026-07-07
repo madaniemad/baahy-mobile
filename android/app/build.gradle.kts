@@ -20,6 +20,18 @@ if (hasReleaseKeystore) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// Fail fast: never let a Play Store bundle (bundleRelease) be produced with the debug
+// fallback key. `flutter run --release` (assembleRelease) is unaffected, so local release
+// testing without the keystore still works.
+gradle.taskGraph.whenReady {
+    if (!hasReleaseKeystore && allTasks.any { it.name.contains("bundleRelease") }) {
+        throw GradleException(
+            "Refusing to build a store bundle without the release keystore — android/key.properties " +
+            "is missing, so this AAB would be signed with the debug key. See android/key.properties.example."
+        )
+    }
+}
+
 android {
     namespace = "com.baahy.baahyapp"
     compileSdk = flutter.compileSdkVersion
