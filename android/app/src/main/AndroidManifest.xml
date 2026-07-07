@@ -32,13 +32,15 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="baahy"/>
             </intent-filter>
-            <!-- HTTPS App Links: https://baahy.com/product/123 (requires assetlinks.json on domain) -->
+            <!-- HTTPS App Links: only /invite/* (the only https path the app routes) so other
+                 baahy.com links (WordPress pages, product pages) keep opening in the browser.
+                 Requires assetlinks.json hosted on the domain to auto-verify. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="baahy.com"/>
-                <data android:scheme="https" android:host="www.baahy.com"/>
+                <data android:scheme="https" android:host="baahy.com" android:pathPrefix="/invite"/>
+                <data android:scheme="https" android:host="www.baahy.com" android:pathPrefix="/invite"/>
             </intent-filter>
         </activity>
         <!-- FCM notification handling -->

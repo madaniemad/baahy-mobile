@@ -169,7 +169,10 @@ Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
   );
   if (confirmed != true || !context.mounted) return;
 
-  // Blocking progress while the server deletes the account.
+  // Blocking progress while the server deletes the account. Capture the root
+  // navigator up-front so the spinner is always dismissable, even if the screen
+  // unmounts during the await.
+  final rootNav = Navigator.of(context, rootNavigator: true);
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -178,8 +181,8 @@ Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
 
   try {
     await ref.read(authProvider.notifier).deleteAccount();
+    rootNav.pop(); // dismiss progress (no context needed)
     if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).pop(); // dismiss progress
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(s.deleteAccountDone,
         style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
@@ -187,8 +190,8 @@ Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
     context.go('/signin');
   } catch (e, st) {
     Sentry.captureException(e, stackTrace: st);
+    rootNav.pop(); // dismiss progress
     if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).pop(); // dismiss progress
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(s.deleteAccountFailed,
         style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
