@@ -565,7 +565,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
         // ── Greeting ──
         Text(
           firstName.isNotEmpty
-              ? '👋 أهلين $firstName، كيف أقدر أساعدك؟'
+              ? 'أهلين $firstName، كيف أقدر أساعدك؟'
               : 'كيف أقدر أساعدك؟',
           textAlign: TextAlign.center,
           maxLines: 1,

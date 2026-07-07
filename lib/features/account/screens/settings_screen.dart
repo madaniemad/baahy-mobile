@@ -41,7 +41,7 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsRow(
               icon: Icons.language_outlined,
               label: isAr ? 'اللغة' : 'Language',
-              trailing: Text(isAr ? 'العربية' : 'English',
+              trailing: Text(isAr ? 'English' : 'العربية',
                 style: TextStyle(fontSize: 13, color: context.col.ink2)),
               onTap: () {
                 final msg = isAr ? 'Language changed to English' : 'تم التغيير إلى العربية';
