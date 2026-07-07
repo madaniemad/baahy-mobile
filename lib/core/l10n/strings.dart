@@ -391,6 +391,16 @@ class AppStrings {
   String get freeShipTag       => isAr ? 'شحن'                    : 'Free Ship';
   String get loadAddressesFailed => isAr ? 'تعذر تحميل العناوين'  : 'Failed to load addresses';
   String get deleteAddrTitle   => isAr ? 'حذف العنوان'            : 'Delete Address';
+  // Account deletion (App Store / Play Store requirement)
+  String get deleteAccount     => isAr ? 'حذف الحساب'             : 'Delete Account';
+  String get deleteAccountTitle => isAr ? 'حذف حسابك نهائياً؟'    : 'Permanently delete your account?';
+  String get deleteAccountBody => isAr
+      ? 'سيتم حذف حسابك وبياناتك الشخصية وطلباتك ومحفظتك ومكافآتك بشكل نهائي. لا يمكن التراجع عن هذا الإجراء.'
+      : 'Your account, personal data, orders, wallet balance and rewards will be permanently deleted. This cannot be undone.';
+  String get deleteAccountConfirm => isAr ? 'نعم، احذف حسابي'     : 'Yes, delete my account';
+  String get deleteAccountCancel  => isAr ? 'إلغاء'               : 'Cancel';
+  String get deleteAccountFailed  => isAr ? 'تعذّر حذف الحساب، حاول لاحقاً' : 'Could not delete account, please try again';
+  String get deleteAccountDone    => isAr ? 'تم حذف حسابك'        : 'Your account has been deleted';
   String get storeLabel        => isAr ? 'المتجر'                 : 'Store';
   String get storeProducts     => isAr ? 'منتجات المتجر'          : 'Store Products';
   String get loadProductsFailed => isAr ? 'تعذّر تحميل المنتجات' : 'Failed to load products';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../core/utils/l10n.dart';
@@ -118,6 +119,13 @@ class SettingsScreen extends ConsumerWidget {
               trailing: const SizedBox.shrink(),
               onTap: () => ref.read(authProvider.notifier).logout(),
             ),
+            _SettingsRow(
+              icon: Icons.delete_forever_outlined,
+              label: context.s.deleteAccount,
+              accent: true,
+              trailing: const SizedBox.shrink(),
+              onTap: () => _confirmDeleteAccount(context, ref),
+            ),
           ]),
 
           const SizedBox(height: 24),
@@ -126,6 +134,66 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+  final s = context.s;
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogCtx) => AlertDialog(
+      backgroundColor: dialogCtx.col.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text(s.deleteAccountTitle,
+        style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+          fontWeight: FontWeight.w800, fontSize: 17)),
+      content: Text(s.deleteAccountBody,
+        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+          fontSize: 13.5, height: 1.5, color: dialogCtx.col.ink1)),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogCtx).pop(false),
+          child: Text(s.deleteAccountCancel,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+              fontWeight: FontWeight.w600, color: dialogCtx.col.ink1)),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialogCtx).pop(true),
+          child: Text(s.deleteAccountConfirm,
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+              fontWeight: FontWeight.w800, color: AppColors.danger)),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+
+  // Blocking progress while the server deletes the account.
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+  );
+
+  try {
+    await ref.read(authProvider.notifier).deleteAccount();
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // dismiss progress
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(s.deleteAccountDone,
+        style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+    ));
+    context.go('/signin');
+  } catch (e, st) {
+    Sentry.captureException(e, stackTrace: st);
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // dismiss progress
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(s.deleteAccountFailed,
+        style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+      backgroundColor: AppColors.danger,
+    ));
   }
 }
 

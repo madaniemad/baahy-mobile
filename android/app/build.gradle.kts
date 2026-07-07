@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,6 +8,16 @@ plugins {
     id("com.google.gms.google-services")
     // Crashlytics stays disabled until firebase_crashlytics is enabled in pubspec
     // id("com.google.firebase.crashlytics")
+}
+
+// Release signing — reads android/key.properties (git-ignored). If it's absent
+// (local dev, CI without secrets) the release build falls back to the debug key
+// so `flutter run --release` still works. Play Store uploads MUST use the real key.
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+val hasReleaseKeystore = keystorePropertiesFile.exists()
+if (hasReleaseKeystore) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -29,9 +42,28 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = keystoreProperties["storeFile"]?.let { file(it) }
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                // Fallback so `flutter run --release` works without the upload key.
+                // Do NOT ship a store build produced with this fallback.
+                signingConfigs.getByName("debug")
+            }
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

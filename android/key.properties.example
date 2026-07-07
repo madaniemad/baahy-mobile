@@ -1,0 +1,13 @@
+# Copy this file to `android/key.properties` and fill in your real values.
+# key.properties is git-ignored — NEVER commit the real file or the .jks keystore.
+#
+# Generate the upload keystore once:
+#   keytool -genkey -v -keystore ~/baahy-upload-keystore.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias baahy-upload
+#
+# Then set storeFile to that path (absolute, or relative to android/app/).
+
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=baahy-upload
+storeFile=/absolute/path/to/baahy-upload-keystore.jks

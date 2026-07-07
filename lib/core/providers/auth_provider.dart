@@ -103,6 +103,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState();
   }
 
+  /// Permanently deletes the account server-side, then clears the local session.
+  /// Throws if the server call fails so the UI can surface an error (we do NOT
+  /// clear the session on failure — the account still exists).
+  Future<void> deleteAccount() async {
+    await _api.dio.delete('/account');
+    await _api.clearToken();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kCachedUser);
+    state = const AuthState();
+  }
+
   Future<void> refreshProfile() async {
     try {
       final res = await _api.dio.get('/auth/me');
