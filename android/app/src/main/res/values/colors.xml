@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="splashBg">#32DDE5</color>
+    <!-- Firebase push notification accent color (referenced from AndroidManifest) -->
+    <color name="ic_launcher_background">#1FD7E2</color>
 </resources>

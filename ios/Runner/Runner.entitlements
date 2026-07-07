@@ -6,6 +6,8 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
+		<string>applinks:baahy.com</string>
+		<string>applinks:www.baahy.com</string>
 		<string>applinks:baahy-web.vercel.app</string>
 	</array>
 </dict>

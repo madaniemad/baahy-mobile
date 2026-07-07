@@ -32,12 +32,13 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="baahy"/>
             </intent-filter>
-            <!-- HTTPS App Links: https://baahy.ly/product/123 (requires assetlinks.json on domain) -->
+            <!-- HTTPS App Links: https://baahy.com/product/123 (requires assetlinks.json on domain) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="baahy.ly"/>
+                <data android:scheme="https" android:host="baahy.com"/>
+                <data android:scheme="https" android:host="www.baahy.com"/>
             </intent-filter>
         </activity>
         <!-- FCM notification handling -->
