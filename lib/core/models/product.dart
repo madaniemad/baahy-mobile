@@ -24,6 +24,11 @@ class Product {
   final String? brand;
   final String fulfillmentType;
   final bool manageStock;
+  /// Admin/backend-assigned promo badge keys. Only the *manual* editorial
+  /// badges live here (e.g. 'original','warranty'); baahy+, trending,
+  /// fast-moving, new and big-deal are derived automatically.
+  final List<String> badges;
+  final DateTime? createdAt;
 
   const Product({
     required this.id,
@@ -51,7 +56,16 @@ class Product {
     this.brand,
     this.fulfillmentType = 'inherit',
     this.manageStock = false,
+    this.badges = const [],
+    this.createdAt,
   });
+
+  /// True for products created within the last 14 days.
+  bool get isNewArrival {
+    final c = createdAt;
+    if (c == null) return false;
+    return DateTime.now().difference(c).inDays <= 14;
+  }
 
   double get displayPrice => currentPrice ?? salePrice ?? price;
   bool get hasDiscount => salePrice != null && salePrice! < price;
@@ -136,7 +150,28 @@ class Product {
     descriptionAr: j['description_ar'],
     brand: j['brand'] as String?,
     fulfillmentType: j['fulfillment_type'] as String? ?? 'inherit',
+    badges: _parseBadges(j['badges']),
+    createdAt: _parseDate(j['created_at']),
   );
+
+  static DateTime? _parseDate(dynamic raw) {
+    if (raw is String && raw.isNotEmpty) return DateTime.tryParse(raw);
+    return null;
+  }
+
+  static List<String> _parseBadges(dynamic raw) {
+    if (raw is List) {
+      return raw.map((e) => e.toString().trim().toLowerCase())
+          .where((e) => e.isNotEmpty).toList();
+    }
+    if (raw is String && raw.trim().isNotEmpty) {
+      // tolerate CSV or JSON-ish string from the API
+      return raw.split(RegExp(r'[,\s]+'))
+          .map((e) => e.replaceAll(RegExp(r'[\[\]"]'), '').trim().toLowerCase())
+          .where((e) => e.isNotEmpty).toList();
+    }
+    return const [];
+  }
 
   static List<ProductAttribute> _parseAttrs(dynamic raw) {
     try {

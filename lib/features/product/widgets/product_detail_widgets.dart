@@ -58,21 +58,15 @@ class _StockEtaStrip extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.bolt_rounded, size: 13, color: AppColors.primary),
-                      const SizedBox(width: 4),
-                      Text(context.s.deliveredDirect,
-                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
-                          color: AppColors.primary)),
-                    ]),
+                  const BaahyPlusBadge(height: 14, tappable: true),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(context.s.deliveredDirect,
+                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
+                        color: context.col.ink2)),
                   ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.info_outline_rounded, size: 14, color: context.col.ink3),
                 ]),
               ),
             Row(children: [

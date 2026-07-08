@@ -9,6 +9,7 @@ import '../../core/utils/format.dart';
 import '../../core/utils/l10n.dart';
 import '../../core/utils/navigation.dart';
 import '../theme/app_theme.dart';
+import 'product_badges.dart';
 
 class ProductCard extends ConsumerWidget {
   final Product product;
@@ -249,39 +250,14 @@ class ProductCard extends ConsumerWidget {
                       ],
                     ],
                   ),
-                  if (product.fulfilledByBaahy) ...[
-                    const SizedBox(height: 5),
-                    Builder(builder: (ctx) {
-                      final badgeColor = Theme.of(ctx).brightness == Brightness.dark
-                          ? const Color(0xFFFFCC00)
-                          : const Color(0xFFFFF500);
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: badgeColor,
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.bolt_rounded, size: 9, color: Colors.black87),
-                            const SizedBox(width: 2),
-                            Text(
-                              context.tr('اكسبرس', 'Express'),
-                              style: const TextStyle(
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.black87,
-                                height: 1.1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ] else
-                    const SizedBox(height: 22),
+                  Builder(builder: (_) {
+                    final badges = resolveProductBadges(product);
+                    if (badges.isEmpty) return const SizedBox(height: 22);
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: RotatingProductBadges(badges: badges),
+                    );
+                  }),
                 ],
               ),
             ),
@@ -299,21 +275,23 @@ class _StarRating extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (rating == null || count == 0) return const SizedBox(height: 13);
-    final filled = rating!.round().clamp(0, 5);
+    final hasReviews = rating != null && count > 0;
+    final filled = hasReviews ? rating!.round().clamp(0, 5) : 0;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         for (int i = 1; i <= 5; i++)
           Icon(Icons.star_rounded, size: 13,
             color: i <= filled ? AppColors.gold : context.col.border),
-        const SizedBox(width: 3),
-        Text(rating!.toStringAsFixed(1),
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-            color: context.col.ink1, height: 1.0)),
-        const SizedBox(width: 2),
-        Text('($count)',
-          style: TextStyle(fontSize: 10, color: context.col.ink3, height: 1.0)),
+        if (hasReviews) ...[
+          const SizedBox(width: 3),
+          Text(rating!.toStringAsFixed(1),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+              color: context.col.ink1, height: 1.0)),
+          const SizedBox(width: 2),
+          Text('($count)',
+            style: TextStyle(fontSize: 10, color: context.col.ink3, height: 1.0)),
+        ],
       ],
     );
   }

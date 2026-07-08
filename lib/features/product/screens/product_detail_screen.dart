@@ -20,6 +20,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
+import '../../../shared/widgets/baahy_plus_badge.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 part '../widgets/product_detail_widgets.dart';
@@ -602,6 +603,22 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             boxShadow: AppShadows.shadowLifted,
                           ),
                           child: Column(children: [
+                            if (product.fulfilledByBaahy) ...[
+                              Row(children: [
+                                const BaahyPlusBadge(height: 16, tappable: true),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(context.s.deliveredDirect,
+                                    style: TextStyle(fontSize: 11.5,
+                                      fontWeight: FontWeight.w600, color: context.col.ink2)),
+                                ),
+                                Icon(Icons.info_outline_rounded, size: 14,
+                                  color: context.col.ink3),
+                              ]),
+                              const SizedBox(height: 12),
+                              Divider(height: 1, color: context.col.border),
+                              const SizedBox(height: 12),
+                            ],
                             const _DeliveryCard(),
                             const SizedBox(height: 14),
                             Divider(height: 1, color: context.col.border),
