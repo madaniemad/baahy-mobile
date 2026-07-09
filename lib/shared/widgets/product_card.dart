@@ -214,6 +214,14 @@ class ProductCard extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 5),
+                  // Badge first — always reserve the row height so cards stay equal
+                  // height when a product has no badge (empty space instead of collapsing).
+                  Builder(builder: (_) {
+                    final badges = resolveProductBadges(product);
+                    if (badges.isEmpty) return const SizedBox(height: 20);
+                    return RotatingProductBadges(badges: badges);
+                  }),
+                  const SizedBox(height: 5),
                   _StarRating(
                     rating: product.averageRating,
                     count: product.reviewsCount ?? 0,
@@ -250,14 +258,6 @@ class ProductCard extends ConsumerWidget {
                       ],
                     ],
                   ),
-                  Builder(builder: (_) {
-                    final badges = resolveProductBadges(product);
-                    if (badges.isEmpty) return const SizedBox(height: 22);
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 5),
-                      child: RotatingProductBadges(badges: badges),
-                    );
-                  }),
                 ],
               ),
             ),
