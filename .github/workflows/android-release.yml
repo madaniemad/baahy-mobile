@@ -1,0 +1,85 @@
+name: Android Release Build
+
+# Produces a Play-Store-ready, upload-key-signed .aab (and optional .apk) in the cloud,
+# so a machine without the Android SDK can still ship. Signing key, key.properties and
+# google-services.json are injected from repo secrets (all git-ignored locally).
+#
+# Run it: Actions tab → "Android Release Build" → Run workflow.
+# Download the result from the run's Artifacts, then upload the .aab to Play Console.
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact:
+        description: "What to build"
+        type: choice
+        default: aab
+        options: [aab, apk, both]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.9
+          channel: stable
+          cache: true
+
+      - name: Restore signing key (upload keystore)
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$GITHUB_WORKSPACE/android/app/baahy-upload.jks"
+
+      - name: Write key.properties
+        run: |
+          {
+            echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}"
+            echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}"
+            echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "storeFile=$GITHUB_WORKSPACE/android/app/baahy-upload.jks"
+          } > "$GITHUB_WORKSPACE/android/key.properties"
+
+      - name: Restore google-services.json
+        run: echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > "$GITHUB_WORKSPACE/android/app/google-services.json"
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build App Bundle (.aab)
+        if: ${{ inputs.artifact == 'aab' || inputs.artifact == 'both' }}
+        run: flutter build appbundle --release
+
+      - name: Build APK (.apk)
+        if: ${{ inputs.artifact == 'apk' || inputs.artifact == 'both' }}
+        run: flutter build apk --release
+
+      - name: Upload .aab
+        if: ${{ inputs.artifact == 'aab' || inputs.artifact == 'both' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: baahy-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Upload .apk
+        if: ${{ inputs.artifact == 'apk' || inputs.artifact == 'both' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: baahy-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+      # Cleanup: never leave decoded secrets on the runner FS image cache
+      - name: Scrub secrets from workspace
+        if: always()
+        run: rm -f "$GITHUB_WORKSPACE/android/app/baahy-upload.jks" "$GITHUB_WORKSPACE/android/key.properties" "$GITHUB_WORKSPACE/android/app/google-services.json"
