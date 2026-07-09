@@ -354,6 +354,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           await _handleGatewayPayment('moamlat', pendingRef, clearCart: !isReorder);
         } else if (_paymentMethod == 'mobicash') {
           await _handleMobicashPayment(pendingRef, clearCart: !isReorder);
+        } else {
+          // Unknown/unsupported gateway id from the backend — never strand the user on an infinite spinner.
+          setState(() => _loading = false);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(context.s.orderError), backgroundColor: AppColors.danger));
+          }
         }
       } else {
         // COD / wallet — order created immediately
