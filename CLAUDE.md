@@ -297,6 +297,35 @@ All search logic is in `app/Http/Controllers/API/ProductController.php`:
 - **`index()` (product listing)**: FULLTEXT AGAINST + LIKE OR fallback for Arabic; Arabic plural stem map; SKU/code queries (contains `-` + digits) bypass FULLTEXT and use exact `sku LIKE`
 - **MySQL FULLTEXT**: broken for Arabic (returns 0). LIKE fallback is the primary Arabic match path.
 
+## Android CI — GitHub Actions (2026-07-09, LIVE)
+
+Signed `.aab` built entirely in the cloud — no local JDK/keystore needed.
+
+- **Workflow**: `.github/workflows/android-release.yml` (commit `ab393d5`)
+- **Trigger**: Actions tab → Run workflow (manual dispatch)
+- **Output**: signed `.aab` artifact downloadable from the Actions run; also auto-downloaded to `~/Desktop/baahy-builds/app-release.aab`
+- **Secrets** (set in GitHub repo settings — never shown in chat):
+  - `KEYSTORE_BASE64` — baahy-upload.jks
+  - `KEY_ALIAS`, `KEY_PASSWORD`, `STORE_PASSWORD`
+  - `GOOGLE_SERVICES_JSON` — com.baahy.baahyapp Firebase config
+- **Upload key verified**: SHA-256 `AF:7F:21:F7:B1:F2:4A:F1:6F:8B:92:AA:A4:8E:82:93:01:14:66:F7:4C:87:F9:1B:95:EE:04:D6:71:D3:6C:6F` matches Play Console ✅
+- **App signing key SHA-256**: `6C:93:FE:35:7D:F2:42:BF…` (for `assetlinks.json` + Firebase Android restriction)
+- **App signing key SHA-1**: `96:8A:5D:62:D3:40:EA:03…` (for Google Maps Android key)
+
+## WhatsApp OTP (2026-07-09, FULLY LIVE ✅)
+
+- **App**: "Baahy WtsOTP" (Facebook App ID `3086550571539456`)
+- **Number**: `+218 93-5589486` — verified, registered, active, end-to-end tested
+- **Template**: `baahy_otp` (Arabic, copy-code button) — approved and active
+- **Backend**: `WHATSAPP_PHONE_NUMBER_ID` + `WHATSAPP_ACCESS_TOKEN` wired in `.env`
+- **Flow**: WhatsApp OTP first → Sendly SMS fallback. Both channels confirmed working.
+
+## WooCommerce Migration — Backend Status (2026-07-10)
+
+The backend (`api.baahy.com`) already holds the full migrated Woo data. **No mobile code changes needed** — app already points to `api.baahy.com` and will work after DNS cutover.
+
+Migration state: 46,471 orders · 8,887 products · 47,238 users. Order numbers still `BH-{id}` until cutover seeds the sequence. See baahy-web `CLAUDE.md` for full migration details.
+
 ## Known Issues / TODO
 - Bundle ID adopted production identity 2026-07-02 (iOS `com.baahy.app`, Android `com.baahy.baahyapp`) — ships as an in-place UPDATE to the live listings. Android **versionCode** (`+N` in pubspec `version:`) MUST be set higher than the live Play Console versionCode before Android release, and the iOS version must be > 4.4.18 (currently `5.0.0+1`).
 - Firebase **WIRED (2026-07-02)**: `google-services.json` (Android, package `com.baahy.baahyapp`) and `GoogleService-Info.plist` (iOS, bundle `com.baahy.app`) are present; the `com.google.gms.google-services` Gradle plugin is enabled in `android/app/build.gradle.kts` + declared in `settings.gradle.kts`. `main.dart` calls `Firebase.initializeApp()`; `push_notification_service.dart` fetches the FCM token and POSTs it to `/device-token`. iOS has APNs capability + `UIBackgroundModes: remote-notification`. **Crashlytics stays deferred** (`firebase_crashlytics` commented out in pubspec + Gradle).
