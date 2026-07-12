@@ -335,6 +335,57 @@ Migration state: 46,471 orders · 8,887 products · 47,238 users. Order numbers 
 - Order tracking shows mock timeline steps (backend returns status string only, no step history)
 - Map picker in address flow needs real Google Maps API key
 
+## Admin Panel — Dashboard & Filters (2026-07-13)
+
+Backend admin at `https://api.baahy.com/admin` — Laravel Filament v2. All changes applied directly on server via SSH (commit `edd2b3c4` on server git).
+
+### Dashboard (`app/Filament/Pages/Dashboard.php` + `resources/views/filament/pages/dashboard.blade.php`)
+
+**Role scoping:**
+- Hub staff (hub_manager, warehouse_staff, dispatcher, customer_support, finance, seller_manager, accounts, fulfillment, marketing) → auto-locked to their `user_hubs.hub_id` on mount; hub switcher hidden; only see Live Operations rows
+- Vendors → see their own data (filtered by `vendor_id`)
+- admin/super_admin → see everything (Business Overview, charts, Customer Insights, Operations Health, vendor/product tables)
+- The `@if(auth()->user()->hasAnyRole(['super_admin','admin']))` gate starts right after the Logistics row
+
+**Live Operations row (all roles):** Pending Orders, In Delivery, Delivered Today, Orders Today, Revenue Today
+
+**Live Logistics row (all roles):** Active Drivers (`drivers` table), Open Returns (`return_requests`), COD Pending (`payment_collections`), COD Collected Today, Collection Jobs (`collection_jobs` pending+assigned)
+
+**All stat cards are clickable** (`data-href` + JS event delegation) — each opens the exact filtered admin page:
+- Pending Orders → `/admin/orders?tableFilters[status][value]=pending_confirmation`
+- In Delivery → `/admin/orders?tableFilters[status][value]=out_for_delivery`
+- Delivered/Orders/Revenue Today → `/admin/orders?tableFilters[date_from][from]={{ now()->toDateString() }}&...`
+- Open Returns → `/admin/return-requests`
+- COD Pending → `/admin/payment-collections?tableFilters[status][value]=pending`
+- Collection Jobs → `/admin/collection-jobs?tableFilters[status][value]=pending`
+- Active Drivers → `/admin/drivers`
+
+**Data fixes:**
+- `$newUsers` excludes WooCommerce migration batch: reads `rewards_start_date` site_setting (`2026-06-15`) and uses `MAX(from30, rewardsStart)` as the lower bound
+- Commission chart uses `order_vendor_groups.commission_amount` (same source as KPI card)
+- `orders.hub_id` backfilled: all 46,471 historical orders set to hub_id=1 (Tripoli Hub) — new orders use `$zone?->hub_id ?? 1` in OrderController
+
+### Operational Tables (backend)
+| Table | Purpose |
+|---|---|
+| `drivers` | Driver profiles — `status` enum: active/inactive/on_shift, `hub_id` |
+| `delivery_jobs` | Per-order delivery assignments to drivers |
+| `payment_collections` | COD cash collection records — `status`: pending/collected |
+| `collection_jobs` | Vendor pickup jobs — `status`: pending/assigned/in_progress/completed/failed |
+| `return_requests` | Customer return requests — `status`: pending/approved/collected/completed/rejected |
+| `return_collection_jobs` | Driver jobs for return pickups |
+
+### Admin Resource URLs
+`/admin/drivers` · `/admin/collection-jobs` · `/admin/return-requests` · `/admin/payment-collections` · `/admin/withdrawal-requests`
+
+### Orders Filter UI (`resources/views/filament/orders/status-tabs.blade.php`)
+- Choices.js `×` clear button abs-positioned (`right: 28px`) so it never overlaps long filter labels
+- `.choices__inner` right padding `30px → 50px`; item text truncates with ellipsis
+
+### Products Filter UI (`resources/views/filament/list-products-header.blade.php`)
+- Unified filter card merged with Filament table into single border frame (negative margin trick)
+- Alpine.js multi-select dropdowns persist state via `window._bfv` across Livewire re-renders
+
 ## What This App Does NOT Own
 - Backend PHP code → lives only on Cloudways server (no local git); SSH via Cloudways dashboard
 - Admin panel → at `https://api.baahy.com/admin`
