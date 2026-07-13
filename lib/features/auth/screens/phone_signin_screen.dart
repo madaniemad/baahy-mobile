@@ -48,9 +48,13 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
     try {
       final phone = '+218 ${_ctrl.text.trim()}';
       final ref2 = _refCtrl.text.trim();
-      await ref.read(authProvider.notifier).requestOtp(phone);
+      final channel = await ref.read(authProvider.notifier).requestOtp(phone);
       if (mounted) await safePush(context, '/otp',
-          extra: <String, dynamic>{'phone': phone, 'ref': ref2.isNotEmpty ? ref2 : null});
+          extra: <String, dynamic>{
+            'phone': phone,
+            'ref': ref2.isNotEmpty ? ref2 : null,
+            'channel': channel,
+          });
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
       setState(() => _error = 'تعذر الإرسال، حاول مجدداً');

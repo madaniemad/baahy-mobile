@@ -84,6 +84,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return OtpScreen(
             phone: extra['phone'] as String,
             referralCode: extra['ref'] as String?,
+            channel: extra['channel'] as String? ?? 'whatsapp',
           );
         }
         return OtpScreen(phone: extra as String);

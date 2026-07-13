@@ -12,7 +12,12 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 class OtpScreen extends ConsumerStatefulWidget {
   final String phone;
   final String? referralCode;
-  const OtpScreen({required this.phone, this.referralCode, super.key});
+  /// Where the code was actually sent — 'whatsapp' or 'sms'. The backend tells
+  /// us; without showing it, users sat waiting for an SMS that never comes
+  /// (iOS cannot autofill a WhatsApp code, so they must fetch it themselves).
+  final String channel;
+  const OtpScreen({required this.phone, this.referralCode,
+    this.channel = 'whatsapp', super.key});
 
   @override
   ConsumerState<OtpScreen> createState() => _OtpScreenState();
@@ -143,6 +148,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 style: const TextStyle(fontFamily: 'PlusJakartaSans',
                   fontWeight: FontWeight.w700, fontSize: 15,
                   color: AppColors.primary))),
+            const SizedBox(height: 10),
+            // Say WHERE the code went. iOS cannot autofill a WhatsApp code (it
+            // only reads SMS), so without this people sit waiting for an SMS
+            // that is never coming.
+            _ChannelChip(channel: widget.channel),
           ]),
           const SizedBox(height: 32),
 
@@ -298,6 +308,43 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           ),
         );
       }),
+    );
+  }
+}
+
+/// "Sent via WhatsApp / SMS" chip. The backend reports which channel it actually
+/// used (it tries WhatsApp first, falls back to SMS), so this reflects reality
+/// rather than an assumption.
+class _ChannelChip extends StatelessWidget {
+  final String channel;
+  const _ChannelChip({required this.channel});
+
+  @override
+  Widget build(BuildContext context) {
+    final isWhatsApp = channel == 'whatsapp';
+    const waGreen = Color(0xFF25D366);
+    final color = isWhatsApp ? waGreen : AppColors.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(isWhatsApp ? Icons.chat_rounded : Icons.sms_outlined,
+          size: 14, color: color),
+        const SizedBox(width: 6),
+        Text(
+          isWhatsApp
+              ? context.tr('أُرسل عبر واتساب', 'Sent via WhatsApp')
+              : context.tr('أُرسل عبر رسالة نصية', 'Sent via SMS'),
+          style: TextStyle(
+            fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+            fontSize: 12, fontWeight: FontWeight.w700, color: color),
+        ),
+      ]),
     );
   }
 }

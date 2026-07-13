@@ -80,8 +80,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> requestOtp(String phone) async {
-    await _api.dio.post('/auth/otp/send', data: {'phone': phone});
+  /// Sends the OTP and returns the channel the backend actually used
+  /// ('whatsapp' or 'sms'), so the OTP screen can tell the user where to look.
+  Future<String> requestOtp(String phone) async {
+    final res = await _api.dio.post('/auth/otp/send', data: {'phone': phone});
+    final channel = res.data?['channel']?.toString();
+    return (channel == 'sms' || channel == 'whatsapp') ? channel! : 'whatsapp';
   }
 
   Future<void> verifyOtp(String phone, String code, {String? referralCode}) async {
