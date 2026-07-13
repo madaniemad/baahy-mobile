@@ -1069,7 +1069,7 @@ class _HorizontalProductList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 340,
+      height: kCardDesignH,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1684,7 +1684,7 @@ class _DynTileCarouselState extends State<_DynTileCarousel> {
   }
 }
 
-// ── 2-col product grid ────────────────────────────────────────────────────────
+// ── responsive product grid ───────────────────────────────────────────────────
 
 class _TwoColGrid extends StatelessWidget {
   final List<Product> products;
@@ -1693,17 +1693,24 @@ class _TwoColGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GridView.builder(
-        shrinkWrap: true,
-        padding: EdgeInsets.zero,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 364,
-        ),
-        itemCount: products.length,
-        itemBuilder: (_, i) => ProductCard(product: products[i]),
-      ),
+      child: LayoutBuilder(builder: (_, box) {
+        final cols = productGridColumns(box.maxWidth);
+        final colW = productColumnWidth(
+          maxWidth: box.maxWidth, columns: cols, spacing: 12);
+        return GridView.builder(
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            mainAxisExtent: productCellHeight(colW).ceilToDouble(),
+          ),
+          itemCount: products.length,
+          itemBuilder: (_, i) => ProductCard(product: products[i]),
+        );
+      }),
     );
   }
 }
@@ -1731,7 +1738,7 @@ class _CategoryCarouselSection extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: 340,
+          height: kCardDesignH,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1757,17 +1764,24 @@ class _BestsellerGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GridView.builder(
-        shrinkWrap: true,
-        padding: EdgeInsets.zero,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12,
-          mainAxisExtent: 364,
-        ),
-        itemCount: products.length,
-        itemBuilder: (_, i) => ProductCard(product: products[i]),
-      ),
+      child: LayoutBuilder(builder: (_, box) {
+        final cols = productGridColumns(box.maxWidth);
+        final colW = productColumnWidth(
+          maxWidth: box.maxWidth, columns: cols, spacing: 12);
+        return GridView.builder(
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            mainAxisExtent: productCellHeight(colW).ceilToDouble(),
+          ),
+          itemCount: products.length,
+          itemBuilder: (_, i) => ProductCard(product: products[i]),
+        );
+      }),
     );
   }
 }
@@ -1780,7 +1794,7 @@ class _NewArrivalsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 340,
+      height: kCardDesignH,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1925,7 +1939,7 @@ class _RecentlyViewedSection extends ConsumerWidget {
           onAll: null,
         ),
         SizedBox(
-          height: 340,
+          height: kCardDesignH,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -1116,26 +1116,28 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
           const SizedBox(height: 12),
           LayoutBuilder(builder: (_, box) {
-            const srcW = 165.0;
-            const srcH = 345.0;
-            final colW = (box.maxWidth - 12) / 2;
-            final cellH = srcH * (colW / srcW);
+            final cols = productGridColumns(box.maxWidth);
+            final colW = productColumnWidth(
+              maxWidth: box.maxWidth, columns: cols, spacing: 12);
+            final cellH = productCellHeight(colW);
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+                crossAxisCount: cols,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
                 mainAxisExtent: cellH.ceilToDouble(),
               ),
-              itemCount: _products.length % 2 == 0 ? _products.length : _products.length - 1,
+              // Keep the last row full so a lone trailing card doesn't sit
+              // alone; with a responsive column count the divisor is `cols`.
+              itemCount: _products.length - (_products.length % cols),
               itemBuilder: (_, i) => FittedBox(
                 fit: BoxFit.contain,
                 alignment: Alignment.topCenter,
                 child: SizedBox(
-                  width: srcW,
-                  child: ProductCard(product: _products[i], width: srcW),
+                  width: kCardDesignW,
+                  child: ProductCard(product: _products[i], width: kCardDesignW),
                 ),
               ),
             );

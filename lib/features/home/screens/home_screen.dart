@@ -28,6 +28,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/models/tier_status.dart';
 import '../../../core/providers/welcome_coupon_provider.dart';
+import '../../../core/utils/responsive.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 

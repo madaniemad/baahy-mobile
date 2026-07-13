@@ -183,7 +183,12 @@ class ProductCard extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
-                    height: 34,
+                    // Two lines at fontSize 13 x height 1.3 = 33.8, so the old
+                    // 34 left 0.2px of headroom — and Tajawal's metrics are
+                    // patched taller (ascent 820, USE_TYPO_METRICS) to centre
+                    // Arabic, so a 2-line Arabic name overflowed and got sliced
+                    // by the badge below it. 38 gives it real room.
+                    height: 38,
                     child: Text.rich(
                       TextSpan(
                         children: [

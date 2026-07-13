@@ -8,6 +8,7 @@ import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import '../../../core/utils/responsive.dart';
 
 class VendorStoreScreen extends ConsumerStatefulWidget {
   final int vendorId;
@@ -28,6 +29,8 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
   bool _hasMore = false;
   int _page = 1;
   static const _perPage = 20;
+  int _gridCols = 2;
+  double _gridColW = kCardDesignW;
 
   @override
   void initState() {
@@ -103,6 +106,13 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
     final vendorName = _vendor != null
         ? (isAr && _vendor!.storeNameAr.isNotEmpty ? _vendor!.storeNameAr : _vendor!.storeName)
         : '';
+
+    // The grid is a sliver, so there's no LayoutBuilder box to measure — take
+    // the width from MediaQuery (grid spans the screen minus its 12+12 padding).
+    final gridW = MediaQuery.sizeOf(context).width - 24;
+    _gridCols = productGridColumns(gridW);
+    _gridColW = productColumnWidth(
+      maxWidth: gridW, columns: _gridCols, spacing: 12);
 
     return Scaffold(
       backgroundColor: context.col.bg,
@@ -197,11 +207,11 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                   (_, i) => ProductCard(product: _products[i]),
                   childCount: _products.length,
                 ),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: _gridCols,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  mainAxisExtent: 344,
+                  mainAxisExtent: productCellHeight(_gridColW).ceilToDouble(),
                 ),
               ),
             ),

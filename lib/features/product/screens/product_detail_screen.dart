@@ -22,6 +22,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 import '../../../shared/widgets/baahy_plus_badge.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import '../../../core/utils/responsive.dart';
 
 part '../widgets/product_detail_widgets.dart';
 

@@ -9,6 +9,7 @@ import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
+import '../../../core/utils/responsive.dart';
 
 class _SuggestedCategory {
   final int id;
@@ -444,15 +445,19 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                         ),
                       )
                     : LayoutBuilder(builder: (_, box) {
-                        const srcW = 165.0;
-                        const srcH = 345.0;
-                        final colW = (box.maxWidth - 12 - 24) / 2;
-                        final cellH = srcH * (colW / srcW);
+                        final cols = productGridColumns(box.maxWidth);
+                        final colW = productColumnWidth(
+                          maxWidth: box.maxWidth,
+                          columns: cols,
+                          spacing: 12,
+                          horizontalPadding: 24,
+                        );
+                        final cellH = productCellHeight(colW);
                         return GridView.builder(
                           controller: _scrollCtrl,
                           padding: const EdgeInsets.all(12),
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
+                            crossAxisCount: cols,
                             mainAxisSpacing: 12,
                             crossAxisSpacing: 12,
                             mainAxisExtent: cellH.ceilToDouble(),
@@ -464,8 +469,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                               fit: BoxFit.contain,
                               alignment: Alignment.topCenter,
                               child: SizedBox(
-                                width: srcW,
-                                child: ProductCard(product: _products[i], width: srcW),
+                                width: kCardDesignW,
+                                child: ProductCard(product: _products[i], width: kCardDesignW),
                               ),
                             );
                           },
