@@ -1132,14 +1132,7 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
               // Keep the last row full so a lone trailing card doesn't sit
               // alone; with a responsive column count the divisor is `cols`.
               itemCount: _products.length - (_products.length % cols),
-              itemBuilder: (_, i) => FittedBox(
-                fit: BoxFit.contain,
-                alignment: Alignment.topCenter,
-                child: SizedBox(
-                  width: kCardDesignW,
-                  child: ProductCard(product: _products[i], width: kCardDesignW),
-                ),
-              ),
+              itemBuilder: (_, i) => ProductCard(product: _products[i]),
             );
           }),
           if (_loading) ...[

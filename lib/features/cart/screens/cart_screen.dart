@@ -1079,6 +1079,43 @@ class _LoyaltyPointsBanner extends ConsumerWidget {
     final points = (subtotal * rate / 10).round().clamp(1, 9999);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Cashback only applies above cashback_min_order (checkout already honours
+    // this; the cart did not, so a small basket advertised "you'll earn 0 LYD").
+    // Below the threshold, tell the shopper what it takes to qualify instead.
+    final minOrder = config.cashbackMinOrder;
+    if (subtotal < minOrder) {
+      final remaining = minOrder - subtotal;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.transparent : AppColors.success.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.success.withValues(alpha: isDark ? 0.4 : 0.25)),
+        ),
+        child: Row(children: [
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.transparent : AppColors.success,
+              shape: BoxShape.circle,
+              border: isDark ? Border.all(color: AppColors.success.withValues(alpha: 0.5)) : null,
+            ),
+            child: Icon(Icons.stars_rounded, size: 20,
+              color: isDark ? AppColors.success : Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              context.tr(
+                'أضف ${fmtPrice(remaining)} ${context.s.lydUnit} لتحصل على كاش باك',
+                'Add ${fmtPrice(remaining)} ${context.s.lydUnit} more to earn cashback'),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                color: AppColors.success, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+          ),
+        ]),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(

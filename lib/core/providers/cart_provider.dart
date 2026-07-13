@@ -128,28 +128,40 @@ class CartNotifier extends StateNotifier<CartState> {
     } catch (_) {}
   }
 
+  /// Re-fetch every cart item's product so the cached copy (price, sale price,
+  /// stock, vendor collection fee) matches reality.
+  ///
+  /// This used to only refresh VENDOR-fulfilled items, purely to correct stale
+  /// collection fees — so a price change was invisible in the cart and only
+  /// surfaced at checkout as a red "price changed" toast, while the cart went on
+  /// displaying the old price. Refreshing everything means the cart shows the
+  /// true price, and the checkout validation stops firing for items that are
+  /// simply stale in local storage.
   Future<void> _refreshVendorFees(List<CartItem> items) async {
-    // Refresh all vendor-fulfilled items so stale cached collection_fee values are corrected
-    final staleItems = items.where((i) =>
-        !i.product.fulfilledByBaahy &&
-        i.product.vendor != null).toList();
-    if (staleItems.isEmpty) return;
+    if (items.isEmpty) return;
     state = state.copyWith(feesRefreshing: true);
-    final uniqueProductIds = staleItems.map((i) => i.productId).toSet();
+    final uniqueProductIds = items.map((i) => i.productId).toSet();
     for (final pid in uniqueProductIds) {
       try {
         final res = await ApiClient.instance.dio.get('/products/$pid');
         final fresh = Product.fromJson(res.data['data'] as Map<String, dynamic>);
-        if (fresh.vendor == null) continue;
         state = state.copyWith(
           items: state.items.map((i) {
             if (i.productId == pid) {
+              // Re-resolve the variation from the FRESH product too — its price
+              // can move independently of the parent, and keeping the stale one
+              // would leave the cart showing an old variation price.
+              final freshVariation = i.variationId == null
+                  ? null
+                  : fresh.variations
+                      .where((v) => v.id == i.variationId)
+                      .firstOrNull ?? i.variation;
               return CartItem(
                 productId: i.productId,
                 variationId: i.variationId,
                 quantity: i.quantity,
                 product: fresh,
-                variation: i.variation,
+                variation: freshVariation,
               );
             }
             return i;
@@ -158,6 +170,9 @@ class CartNotifier extends StateNotifier<CartState> {
       } catch (_) {}
     }
     state = state.copyWith(feesRefreshing: false);
+    // Persist the refreshed prices, and re-price the coupon against the new subtotal.
+    await _save();
+    await _refreshCouponDiscount();
   }
 
   Future<void> _save() async {
@@ -185,6 +200,7 @@ class CartNotifier extends StateNotifier<CartState> {
     }
     state = state.copyWith(items: items);
     await _save();
+    await _refreshCouponDiscount();
   }
 
   Future<void> updateQty(String key, int qty) async {
@@ -197,18 +213,55 @@ class CartNotifier extends StateNotifier<CartState> {
         .toList();
     state = state.copyWith(items: items);
     await _save();
+    await _refreshCouponDiscount();
   }
 
   Future<void> remove(String key) async {
     final items = state.items.where((i) => i.key != key).toList();
     state = state.copyWith(items: items);
     await _save();
+    await _refreshCouponDiscount();
   }
 
   Future<void> clear() async {
     state = CartState(fallbackShippingFee: state.fallbackShippingFee, collectionFee: state.collectionFee);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kCartKey);
+  }
+
+  /// Re-ask the server what the coupon is worth against the CURRENT subtotal.
+  ///
+  /// applyCoupon() stores a fixed discount computed at the moment it was
+  /// applied. Without this, changing the cart left the discount pinned to the
+  /// old subtotal (apply on a 38 cart -> 4; swap to a 53 cart -> still 4,
+  /// instead of ~5). The server recomputes at checkout anyway, so the app was
+  /// showing a total that wouldn't match what was actually charged.
+  Future<void> _refreshCouponDiscount() async {
+    final code = state.couponCode;
+    if (code == null || code.trim().isEmpty) return;
+
+    // Empty cart -> nothing to discount.
+    if (state.items.isEmpty) {
+      state = state.copyWith(clearCoupon: true);
+      return;
+    }
+
+    try {
+      final res = await ApiClient.instance.dio.post('/coupons/apply', data: {
+        'code': code,
+        'order_total': state.subtotal,
+      });
+      final raw = res.data['data']?['discount'] ?? res.data['data']?['discount_amount'];
+      final discount =
+          raw is num ? raw.toDouble() : double.tryParse(raw?.toString() ?? '') ?? 0.0;
+      state = state.copyWith(discountAmount: discount);
+    } catch (e, st) {
+      // The coupon no longer applies to this cart (min order no longer met,
+      // vendor's items removed, ...). Drop it rather than keep showing a stale
+      // discount the server will refuse.
+      Sentry.captureException(e, stackTrace: st);
+      state = state.copyWith(clearCoupon: true);
+    }
   }
 
   Future<String?> applyCoupon(String code) async {

@@ -1124,9 +1124,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         child: Row(children: [
                           const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.success),
                           const SizedBox(width: 8),
-                          const Expanded(child: Text(
-                            '✓ خصم الطلب الأول مطبّق — هذا العرض لن يتكرر',
-                            style: TextStyle(
+                          Expanded(child: Text(
+                            context.tr(
+                              '✓ خصم الطلب الأول مطبّق — هذا العرض لن يتكرر',
+                              "✓ First-order discount applied — this offer won't repeat"),
+                            style: const TextStyle(
                               fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               color: AppColors.success))),

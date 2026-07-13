@@ -465,14 +465,10 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                           itemCount: _products.length + (_loadingMore ? 2 : 0),
                           itemBuilder: (_, i) {
                             if (i >= _products.length) return const ProductCardSkeleton();
-                            return FittedBox(
-                              fit: BoxFit.contain,
-                              alignment: Alignment.topCenter,
-                              child: SizedBox(
-                                width: kCardDesignW,
-                                child: ProductCard(product: _products[i], width: kCardDesignW),
-                              ),
-                            );
+                            // Render at the column's real width (no FittedBox
+                            // upscaling) — the cell height is sized exactly for
+                            // it, so it fits with no dead space and stays crisp.
+                            return ProductCard(product: _products[i]);
                           },
                         );
                       }),

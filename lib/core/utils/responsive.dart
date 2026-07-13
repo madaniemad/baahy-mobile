@@ -11,12 +11,14 @@ import 'package:flutter/widgets.dart';
 
 const double kCardDesignW = 165;
 
-/// Design height of a product card at [kCardDesignW].
+/// Everything in a ProductCard BELOW the image, which does NOT scale with width.
 ///
-/// Budget: image 206 (165 / 0.8 AspectRatio) + 8 pad + 38 name (2 lines) + 5
-/// + 20 badge + 5 + 14 stars + 5 + 18 price + 8 pad = ~327, rounded up for
-/// headroom.
-const double kCardDesignH = 350;
+/// 8 top pad + 38 name (2 lines) + 5 + 20 badge row + 5 + 14 stars + 5 + 18
+/// price + 8 bottom pad = 121, plus a little headroom.
+const double kCardChromeH = 124;
+
+/// Design height of a product card at [kCardDesignW] (image + chrome).
+const double kCardDesignH = kCardDesignW / 0.8 + kCardChromeH; // ~330
 
 /// Columns for a product grid at [width].
 ///
@@ -32,8 +34,14 @@ int productGridColumns(double width) {
   return 6; // 13" iPad landscape and wider
 }
 
-/// Cell height for a column of [colW], preserving the card's design ratio.
-double productCellHeight(double colW) => kCardDesignH * (colW / kCardDesignW);
+/// Cell height for a column of [colW].
+///
+/// The card's IMAGE is an AspectRatio(0.8), so it grows with the column width;
+/// everything under it (name/badge/stars/price) is a FIXED height. Scaling the
+/// whole card proportionally therefore overshoots on wide columns and left dead
+/// space under the price (visible on the store page). Size the image by width
+/// and simply add the chrome.
+double productCellHeight(double colW) => colW / 0.8 + kCardChromeH;
 
 /// Column width given the space available to the grid.
 double productColumnWidth({
