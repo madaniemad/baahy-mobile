@@ -47,3 +47,4 @@ firebase-credentials.json
 design_ref/
 assets/onboarding/full_orig/
 assets/onboarding/source/
+.claude/worktrees/
