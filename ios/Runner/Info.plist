@@ -37,6 +37,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -54,22 +56,18 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>باهي تحتاج الوصول للكاميرا لمشاركة صور المنتجات مع المساعد الذكي</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>باهي تحتاج الوصول للمكتبة لاختيار صور المنتجات ومشاركتها مع المساعد الذكي</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>باهي تحتاج الإذن لحفظ الصور في مكتبتك</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>باهي تحتاج الوصول للميكروفون للبحث بالصوت والتقاط مقاطع فيديو</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>باهي تستخدم التعرف على الصوت للبحث عن المنتجات بصوتك</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>باهي تحتاج موقعك لتحديد مدينة التوصيل تلقائياً</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>باهي تحتاج موقعك لتحديد مدينة التوصيل تلقائياً</string>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>باهي تحتاج الوصول للميكروفون للبحث بالصوت والتقاط مقاطع فيديو</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>باهي تحتاج الإذن لحفظ الصور في مكتبتك</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>باهي تحتاج الوصول للمكتبة لاختيار صور المنتجات ومشاركتها مع المساعد الذكي</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>باهي تستخدم التعرف على الصوت للبحث عن المنتجات بصوتك</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -93,6 +91,10 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

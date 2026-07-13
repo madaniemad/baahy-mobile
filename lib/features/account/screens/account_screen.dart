@@ -98,7 +98,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
     final config = ref.watch(appConfigProvider);
     final unread = ref.watch(unreadNotificationCountProvider);
 
-    if (!auth.isLoggedIn) return const AuthLandingScreen();
+    // Guests get a signed-out account tab rather than a hard sign-in wall.
+    // Most of what lives here (appearance, language, city, FAQ, contact,
+    // privacy, terms, return policy) is app-level, not account-level — locking
+    // it behind login meant a guest couldn't even switch language or read the
+    // privacy policy. Only the genuinely personal rows are withheld.
+    if (!auth.isLoggedIn) return const _GuestAccountView();
 
     final user          = auth.user!;
 
@@ -1205,6 +1210,119 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                       fontWeight: FontWeight.w700, fontSize: 15)),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Guest (signed-out) account tab ───────────────────────────────────────────
+//
+// A guest still needs everything in here that isn't tied to an account:
+// appearance, language, city, FAQ, contact, privacy, terms, return policy —
+// all of which live under /settings and were previously unreachable because the
+// whole tab was replaced by the sign-in wall. Personal rows (orders, wallet,
+// rewards, addresses, friends) are simply omitted rather than teasing a tap
+// that bounces to sign-in.
+class _GuestAccountView extends ConsumerWidget {
+  const _GuestAccountView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final config = ref.watch(appConfigProvider);
+
+    return Scaffold(
+      backgroundColor: context.col.bg,
+      appBar: AppBar(
+        backgroundColor: context.col.bg,
+        elevation: 0,
+        title: Text(context.tr('حسابي', 'My Account'),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+            fontSize: 17, fontWeight: FontWeight.w800)),
+        centerTitle: true,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        children: [
+          // Sign-in prompt in place of the profile card
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: context.col.surface,
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              border: Border.all(color: context.col.border),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(context.tr('سجّل دخولك إلى باهي', 'Sign in to baahy'),
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                  fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 6),
+              Text(
+                context.tr('احفظ مفضلاتك، تابع طلباتك، واكسب مكافآت مع كل طلب.',
+                  'Save favourites, track orders, and earn rewards on every order.'),
+                style: TextStyle(fontSize: 13.5, color: context.col.ink2, height: 1.5)),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => safePush(context, '/signin'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(context.tr('تسجيل الدخول', 'Sign in'),
+                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                      fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
+                ),
+              ),
+            ]),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Everything below needs no account.
+          _MenuGroup([
+            _MenuRow(
+              icon: Icons.settings_outlined,
+              label: context.tr('الإعدادات', 'Settings'),
+              onTap: () => safePush(context, '/settings'),
+            ),
+            _MenuRow(
+              icon: Icons.location_city_outlined,
+              label: context.tr('المدينة', 'City'),
+              onTap: () => safePush(context, '/city'),
+            ),
+            _MenuRow(
+              icon: Icons.assignment_return_outlined,
+              label: context.tr('سياسة الإرجاع', 'Return policy'),
+              onTap: () => safePush(context, '/return-policy'),
+            ),
+            _MenuRow(
+              icon: Icons.help_outline_rounded,
+              label: context.tr('الأسئلة الشائعة', 'FAQ'),
+              onTap: () => safePush(context, '/faq'),
+            ),
+            _MenuRow(
+              icon: Icons.headset_mic_outlined,
+              label: context.tr('تواصل معنا', 'Contact us'),
+              onTap: () => safePush(context, '/contact'),
+            ),
+          ]),
+
+          if (config.aiEnabled) ...[
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () => safePush(context, '/chat'),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                child: Image.asset('assets/images/ai_banner.png',
+                  fit: BoxFit.cover),
+              ),
+            ),
+          ],
         ],
       ),
     );

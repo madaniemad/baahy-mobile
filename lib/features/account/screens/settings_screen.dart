@@ -108,25 +108,28 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => safePush(context, '/return-policy'),
             ),
           ]),
-          const SizedBox(height: 12),
-
-          // Danger zone
-          _Section([
-            _SettingsRow(
-              icon: Icons.logout_rounded,
-              label: isAr ? 'تسجيل الخروج' : 'Sign out',
-              accent: true,
-              trailing: const SizedBox.shrink(),
-              onTap: () => ref.read(authProvider.notifier).logout(),
-            ),
-            _SettingsRow(
-              icon: Icons.delete_forever_outlined,
-              label: context.s.deleteAccount,
-              accent: true,
-              trailing: const SizedBox.shrink(),
-              onTap: () => _confirmDeleteAccount(context, ref),
-            ),
-          ]),
+          // Danger zone — only meaningful when signed in. Guests can reach
+          // Settings now (appearance/language/legal are not account-level), so
+          // sign-out / delete-account must not render for them.
+          if (ref.watch(authProvider).isLoggedIn) ...[
+            const SizedBox(height: 12),
+            _Section([
+              _SettingsRow(
+                icon: Icons.logout_rounded,
+                label: isAr ? 'تسجيل الخروج' : 'Sign out',
+                accent: true,
+                trailing: const SizedBox.shrink(),
+                onTap: () => ref.read(authProvider.notifier).logout(),
+              ),
+              _SettingsRow(
+                icon: Icons.delete_forever_outlined,
+                label: context.s.deleteAccount,
+                accent: true,
+                trailing: const SizedBox.shrink(),
+                onTap: () => _confirmDeleteAccount(context, ref),
+              ),
+            ]),
+          ],
 
           const SizedBox(height: 24),
           Center(child: _AppVersionBadge()),

@@ -191,7 +191,14 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
             ),
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(24, 0, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+            // Do NOT add viewInsets.bottom here: this block is in the Scaffold
+            // body, and Scaffold.resizeToAvoidBottomInset (default true) has
+            // already shrunk the body by the keyboard height. Adding it again
+            // double-counts the keyboard — it shoved this block up by a whole
+            // keyboard-height and pushed the title/phone field off-screen.
+            // (Invisible on the Simulator, whose software keyboard is off by
+            // default, so viewInsets.bottom was always 0 there.)
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SizedBox(
                 width: double.infinity,
@@ -214,34 +221,8 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              // "أو" divider
-              Row(children: [
-                Expanded(child: Divider(color: context.col.border, thickness: 1)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(context.s.orDivider,
-                    style: TextStyle(fontSize: 13, color: context.col.ink3)),
-                ),
-                Expanded(child: Divider(color: context.col.border, thickness: 1)),
-              ]),
-              const SizedBox(height: 12),
-              // Continue as guest
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: OutlinedButton(
-                  onPressed: () => context.go('/home'),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: context.col.borderStrong),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(context.s.continueGuest,
-                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                      fontWeight: FontWeight.w700, fontSize: 14,
-                      color: context.col.ink0)),
-                ),
-              ),
+              // No "أو / continue as guest" here: once the user is in the
+              // sign-in/sign-up flow they must complete one of the two.
               const SizedBox(height: 16),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Icon(Icons.lock_outline_rounded, size: 12, color: context.col.ink3),

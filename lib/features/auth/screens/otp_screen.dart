@@ -80,6 +80,17 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     }
   }
 
+  /// Width of one OTP box.
+  ///
+  /// 6 x 46 = 276, but an iPhone SE only offers 320 - 24 - 24 = 272 of content
+  /// width — a 4px RenderFlex overflow. Cap to what actually fits; this stays
+  /// at 46 on every other phone.
+  double _otpBoxWidth(BuildContext context) {
+    const gap = 6.0, maxBox = 46.0, hPadding = 48.0;
+    final avail = MediaQuery.sizeOf(context).width - hPadding;
+    return ((avail - gap * 5) / 6).clamp(24.0, maxBox);
+  }
+
   @override
   Widget build(BuildContext context) {
     final code = _ctrl.text;
@@ -91,9 +102,23 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           onPressed: () => context.pop(),
           icon: Icon(Icons.arrow_back, color: context.col.ink0)),
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // NOTE: don't use a LayoutBuilder for the OTP box width — the body below
+      // is wrapped in IntrinsicHeight (so Spacer() still works inside the
+      // scroll view), and IntrinsicHeight cannot measure through a LayoutBuilder.
+      // The keyboard is ALWAYS open on this screen, and the body is a Column
+      // with a Spacer(). Once Scaffold shrinks the body by the keyboard height
+      // the Spacer collapses to zero and the Column overflows (proven on
+      // iPhone SE by test/keyboard_overflow_test.dart). Making the body scroll
+      // while still filling the viewport keeps the Spacer layout when there is
+      // room, and scrolls instead of overflowing when there isn't.
+      body: LayoutBuilder(builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: ConstrainedBox(
+            // minus the vertical padding above (8 + 24)
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
+            child: IntrinsicHeight(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
             width: 56, height: 56,
             decoration: BoxDecoration(
@@ -158,7 +183,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       final filled = i < code.length;
                       final active = _focus.hasFocus && i == code.length;
                       return Container(
-                        width: 46, height: 56,
+                        width: _otpBoxWidth(context), height: 56,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: context.col.surfaceSoft,
@@ -268,8 +293,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
             ),
           ),
-        ]),
-      ),
+              ]),
+            ),
+          ),
+        );
+      }),
     );
   }
 }

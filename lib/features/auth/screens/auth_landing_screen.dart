@@ -99,24 +99,9 @@ class AuthLandingScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 16),
-
-              // Continue as guest
-              Center(
-                child: GestureDetector(
-                  onTap: () => context.go('/home'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(context.s.continueGuest,
-                      style: TextStyle(
-                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                        fontSize: 14, fontWeight: FontWeight.w600,
-                        color: context.col.ink2,
-                        decoration: TextDecoration.underline,
-                        decorationColor: context.col.ink2)),
-                  ),
-                ),
-              ),
+              // No "continue as guest" here: once the user is sent to
+              // sign-in/sign-up they must complete one of the two. Guest
+              // browsing is reached by not entering this flow at all.
             ],
           ),
         ),

@@ -70,7 +70,11 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
     await ref.read(cityProvider.notifier).setCity(_selectedCity);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_v2_done', true);
-    try { PushNotificationService.instance.requestPermissionIfNeeded(); } catch (_) {}
+    // MUST be awaited. Fire-and-forget meant we navigated to /home immediately
+    // and tore this screen down while the iOS permission request was still in
+    // flight — so the system Allow/Don't Allow dialog never appeared and the
+    // button looked like it did nothing.
+    try { await PushNotificationService.instance.requestPermissionIfNeeded(); } catch (_) {}
     if (mounted) context.go('/home');
   }
 

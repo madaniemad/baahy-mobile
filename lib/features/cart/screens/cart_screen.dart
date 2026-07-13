@@ -456,7 +456,11 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                               text: context.s.isAr
                                   ? '$saleCount منتجات انخفضت سعرها  '
                                   : '$saleCount items on sale  ',
-                              style: TextStyle(color: context.col.ink1, fontWeight: FontWeight.w600),
+                              // The banner background is a hardcoded light peach
+                              // (0xFFFFF1EB), so the text must be fixed-dark too.
+                              // Using context.col.ink1 made it light-grey in dark
+                              // mode — light grey on light peach, unreadable.
+                              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
                             ),
                             TextSpan(
                               text: context.s.isAr ? '•  وفر حتى $savedStr' : '•  Save up to $savedStr',
