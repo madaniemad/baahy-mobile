@@ -62,7 +62,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     // Handle deep links from baahy:// scheme and https://baahy.ly/
     redirect: (context, state) {
       final path = state.uri.path;
-      const _socialPaths = ['/friends', '/settings/privacy', '/username-setup'];
+      // '/chat' is here too: baahy AI is signed-in only, and gating it at the
+      // router means a deep link can't bypass the hidden entry points.
+      const _socialPaths = ['/friends', '/settings/privacy', '/username-setup', '/chat'];
       if (_socialPaths.any((p) => path == p || path.startsWith('$p/'))) {
         final isLoggedIn = ref.read(authProvider).isLoggedIn;
         if (!isLoggedIn) return '/signin';

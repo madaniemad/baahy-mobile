@@ -1312,17 +1312,7 @@ class _GuestAccountView extends ConsumerWidget {
             ),
           ]),
 
-          if (config.aiEnabled) ...[
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: () => safePush(context, '/chat'),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                child: Image.asset('assets/images/ai_banner.png',
-                  fit: BoxFit.cover),
-              ),
-            ),
-          ],
+          // No baahy AI banner here — the assistant is for signed-in users only.
         ],
       ),
     );

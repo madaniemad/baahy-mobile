@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/utils/l10n.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
@@ -254,7 +255,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       onTap: _onSuggestionTap,
                     )
                   : _EmptyState(
-                      aiEnabled: config.aiEnabled,
+                      // baahy AI is for signed-in users only.
+                      aiEnabled: config.aiEnabled && ref.watch(authProvider).isLoggedIn,
                       trending: config.trendingSearches,
                       categories: categories
                           .map((c) => context.isAr ? c.nameAr : c.name)
