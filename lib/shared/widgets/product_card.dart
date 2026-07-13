@@ -6,6 +6,7 @@ import '../../core/models/product.dart';
 import '../../core/providers/wishlist_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/format.dart';
+import '../../core/utils/image_url.dart';
 import '../../core/utils/l10n.dart';
 import '../../core/utils/navigation.dart';
 import '../theme/app_theme.dart';
@@ -53,13 +54,25 @@ class ProductCard extends ConsumerWidget {
     final ph = placeholderColor ?? bgColor;
     Widget img = p.firstImage != null
         ? CachedNetworkImage(
-            imageUrl: p.firstImage!,
+            // Pre-generated 400px WebP (~35 KB) instead of the full-res original
+            // (~500 KB). A 20-card grid drops from ~10 MB to ~1 MB — the
+            // difference between 3 minutes and 20 seconds on Libyan 3G.
+            imageUrl: optimizeImg(p.firstImage!, width: 400),
             fit: fit,
             memCacheWidth: 400,
             placeholder: (_, __) => Container(color: ph),
-            errorWidget: (_, __, ___) => Container(
-              color: ph,
-              child: Icon(Icons.image_not_supported_outlined, color: ph, size: 28),
+            // A variant can legitimately be missing (broken source image, or the
+            // generation batch hasn't reached it). Fall back to the original
+            // rather than showing a broken box.
+            errorWidget: (_, __, ___) => CachedNetworkImage(
+              imageUrl: p.firstImage!,
+              fit: fit,
+              memCacheWidth: 400,
+              placeholder: (_, __) => Container(color: ph),
+              errorWidget: (_, __, ___) => Container(
+                color: ph,
+                child: Icon(Icons.image_not_supported_outlined, color: ph, size: 28),
+              ),
             ),
           )
         : Container(
