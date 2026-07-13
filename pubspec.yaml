@@ -1,7 +1,7 @@
 name: baahy_customer
 description: baahy — Libya's marketplace. Customer app.
 publish_to: 'none'
-version: 5.0.0+119
+version: 5.0.0+120
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -80,6 +80,18 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.1
+
+# App launcher icons. Source art is the LIVE store icon (teal square, white "b")
+# so the update keeps the same icon users already have.
+# Regenerate with: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+  ios: true
+  remove_alpha_ios: true          # App Store rejects icons with an alpha channel
+  android: "ic_launcher"
+  adaptive_icon_background: "#30EADF"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
 
 flutter:
   uses-material-design: true
