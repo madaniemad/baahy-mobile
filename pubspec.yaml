@@ -1,7 +1,7 @@
 name: baahy_customer
 description: baahy — Libya's marketplace. Customer app.
 publish_to: 'none'
-version: 5.0.0+126
+version: 5.0.0+127
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -34,7 +34,6 @@ dependencies:
   camera: ^0.11.0
 
   # Thin variable-weight icons for nav bar
-  material_symbols_icons: ^4.2719.1
 
   # UI & UX
   shimmer: ^3.0.0
@@ -106,6 +105,11 @@ flutter:
     - assets/onboarding/full/
 
   fonts:
+    # Bottom-nav icons — 5 glyphs subset from Material Symbols Outlined
+    # (10 MB -> 14 KB). See lib/shared/widgets/nav_icons.dart.
+    - family: BaahyNavIcons
+      fonts:
+        - asset: assets/fonts/BaahyNavIcons.ttf
     # English / Latin — Manrope (variable font, wght axis)
     - family: Manrope
       fonts:

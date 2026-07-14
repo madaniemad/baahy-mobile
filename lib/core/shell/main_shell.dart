@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:badges/badges.dart' as badges;
-import 'package:material_symbols_icons/symbols.dart';
+import '../../shared/widgets/nav_icons.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
@@ -53,11 +53,11 @@ class _AppLifecycleRefreshState extends ConsumerState<_AppLifecycleRefresh>
 // Branch indices must match router.dart: 0=home 1=wishlist 2=browse 3=cart 4=account
 typedef _Tab = ({IconData icon, String labelAr, String labelEn, int branchIdx});
 
-const _Tab _tabHome     = (icon: Symbols.home,          labelAr: 'الرئيسية', labelEn: 'Home',       branchIdx: 0);
-const _Tab _tabWishlist = (icon: Symbols.favorite,      labelAr: 'المفضلة',  labelEn: 'Wishlist',   branchIdx: 1);
-const _Tab _tabBrowse   = (icon: Symbols.grid_view,     labelAr: 'الأقسام',  labelEn: 'Categories', branchIdx: 2);
-const _Tab _tabCart     = (icon: Symbols.shopping_cart, labelAr: 'السلة',    labelEn: 'Cart',       branchIdx: 3);
-const _Tab _tabAccount  = (icon: Symbols.person,        labelAr: 'حسابي',    labelEn: 'Me',         branchIdx: 4);
+const _Tab _tabHome     = (icon: NavIcons.home,          labelAr: 'الرئيسية', labelEn: 'Home',       branchIdx: 0);
+const _Tab _tabWishlist = (icon: NavIcons.favorite,      labelAr: 'المفضلة',  labelEn: 'Wishlist',   branchIdx: 1);
+const _Tab _tabBrowse   = (icon: NavIcons.grid_view,     labelAr: 'الأقسام',  labelEn: 'Categories', branchIdx: 2);
+const _Tab _tabCart     = (icon: NavIcons.shopping_cart, labelAr: 'السلة',    labelEn: 'Cart',       branchIdx: 3);
+const _Tab _tabAccount  = (icon: NavIcons.person,        labelAr: 'حسابي',    labelEn: 'Me',         branchIdx: 4);
 
 const _tabs = [_tabHome, _tabWishlist, _tabBrowse, _tabCart, _tabAccount];
 

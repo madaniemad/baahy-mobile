@@ -57,11 +57,11 @@ jobs:
 
       - name: Build App Bundle (.aab)
         if: ${{ inputs.artifact == 'aab' || inputs.artifact == 'both' }}
-        run: flutter build appbundle --release --no-tree-shake-icons
+        run: flutter build appbundle --release
 
       - name: Build APK (.apk)
         if: ${{ inputs.artifact == 'apk' || inputs.artifact == 'both' }}
-        run: flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release
 
       - name: Upload .aab
         if: ${{ inputs.artifact == 'aab' || inputs.artifact == 'both' }}
