@@ -36,7 +36,7 @@ class BaahyColors extends ThemeExtension<BaahyColors> {
     surface:       Color(0xFFFFFFFF),
     surfaceSoft:   Color(0xFFF8F9F9),
     cardImageBg:   Color(0xFFF4F5F5),
-    border:        Color(0xFFECEFEF),
+    border:        Color(0xFFE4E7E7),
     borderStrong:  Color(0xFFD8DDDD),
     ink0:          Color(0xFF0A1A1A),
     ink1:          Color(0xFF1A2A2A),
@@ -137,7 +137,7 @@ class AppColors {
   static const surface     = Color(0xFFFFFFFF);
   static const surfaceSoft = Color(0xFFF8F9F9);  // lighter containers (search box, etc.)
   static const cardImageBg = Color(0xFFF4F5F5);  // card image section — distinct from white info
-  static const border      = Color(0xFFECEFEF);
+  static const border      = Color(0xFFE4E7E7);
   static const borderStrong= Color(0xFFD8DDDD);
 
   // Semantic
