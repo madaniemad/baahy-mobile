@@ -734,7 +734,10 @@ class _DuoBannerRow extends StatelessWidget {
       String? title, String? subtitle, String? button, String side,
     ) {
       if (url == null || url.isEmpty) return const SizedBox.shrink();
-      final hasText = section.showOverlay && (title?.isNotEmpty == true || subtitle?.isNotEmpty == true || button?.isNotEmpty == true);
+      // Treat control-char / whitespace-only strings as empty — a stray \x08 in a
+      // title field would otherwise force text-overlay mode and hide the badge pill.
+      bool has(String? s) => s != null && s.replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '').trim().isNotEmpty;
+      final hasText = section.showOverlay && (has(title) || has(subtitle) || has(button));
       final alignEnd = side == 'right' ? CrossAxisAlignment.end : CrossAxisAlignment.start;
       return Expanded(
         child: GestureDetector(

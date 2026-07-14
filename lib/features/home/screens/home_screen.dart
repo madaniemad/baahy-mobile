@@ -312,14 +312,6 @@ class HomeScreen extends ConsumerWidget {
               // Recently viewed
               const SliverToBoxAdapter(child: _RecentlyViewedSection()),
 
-              // baahy promise closing block
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                  child: _BaahyPromiseCard(),
-                ),
-              ),
-
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
             ],
           ],

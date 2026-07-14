@@ -726,6 +726,17 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   // The category driving filter-option scoping: user's in-sheet pick, else page scope.
   int? get _effectiveCategoryId => _categoryId ?? widget.scopeCategoryId;
 
+  // Localized name of the scope category (searches top level + one level of children).
+  String? _scopeCategoryName(List<Category> cats, int id, bool isAr) {
+    for (final c in cats) {
+      if (c.id == id) return isAr ? c.nameAr : c.name;
+      for (final ch in c.children) {
+        if (ch.id == id) return isAr ? ch.nameAr : ch.name;
+      }
+    }
+    return null;
+  }
+
   // Cascade-clear dependent selections when category changes.
   void _selectCategory(int? catId, String? catName) {
     setState(() {
@@ -840,6 +851,23 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
               controller: scrollCtrl,
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
               children: [
+
+                // ── Current category (context) — shown when we're scoped to a
+                //    category that has no subcategories to narrow into.
+                if (scopedCats.isEmpty && widget.scopeCategoryId != null &&
+                    _scopeCategoryName(allCategories, widget.scopeCategoryId!, isAr) != null) ...[
+                  _sectionHeader(context.s.category, true, () {}),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: _CatChip(
+                      label: _scopeCategoryName(allCategories, widget.scopeCategoryId!, isAr)!,
+                      selected: true,
+                      onTap: () {},
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                ],
 
                 // ── Category chips ─────────────────────────────────────
                 if (scopedCats.isNotEmpty) ...[
@@ -1151,8 +1179,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(context.s.applyFilters,
-                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800,
-                    fontSize: 15, color: context.col.ink0)),
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800,
+                    fontSize: 15, color: Colors.white)),
               ),
             ),
           ),
