@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -82,7 +84,16 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   // "Activate Notifications" button (awaited, so the dialog shows there — not
   // later on the home screen). "Later" / finishing never requests it.
   Future<void> _activateNotifications() async {
-    try { await PushNotificationService.instance.requestPermissionIfNeeded(); } catch (_) {}
+    AuthorizationStatus? status;
+    try {
+      status = await PushNotificationService.instance.requestPermissionIfNeeded();
+    } catch (_) {}
+    // If already denied, iOS won't show its dialog again — the tap would look
+    // like it did nothing. Send them to the app's notification settings instead.
+    if (status == AuthorizationStatus.denied) {
+      final uri = Uri.parse('app-settings:');
+      if (await canLaunchUrl(uri)) await launchUrl(uri);
+    }
     if (mounted) _next();
   }
 

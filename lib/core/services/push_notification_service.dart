@@ -94,22 +94,35 @@ class PushNotificationService {
   }
 
   // Call this after onboarding completes or after first order/login.
-  Future<void> requestPermissionIfNeeded() async {
+  //
+  // Returns the resulting authorization status so the UI can react — in
+  // particular, when it comes back `denied`, iOS will NOT show the system
+  // dialog again (a denial is permanent until the user flips it in Settings),
+  // so the caller should send them to Settings rather than appear to do nothing.
+  // `null` means the request failed (e.g. Firebase/APNs unavailable on the
+  // simulator).
+  Future<AuthorizationStatus?> requestPermissionIfNeeded() async {
     try {
       final current = await _fcm.getNotificationSettings();
       if (current.authorizationStatus == AuthorizationStatus.authorized ||
           current.authorizationStatus == AuthorizationStatus.provisional) {
         await _uploadToken();
-        return;
+        return current.authorizationStatus;
       }
-      if (current.authorizationStatus == AuthorizationStatus.denied) return;
+      // Already denied — iOS won't re-prompt; the caller opens Settings.
+      if (current.authorizationStatus == AuthorizationStatus.denied) {
+        return AuthorizationStatus.denied;
+      }
+      // notDetermined -> this shows the system dialog.
       final settings = await _fcm.requestPermission(
         alert: true, badge: true, sound: true, provisional: false);
       if (settings.authorizationStatus != AuthorizationStatus.denied) {
         await _uploadToken();
       }
+      return settings.authorizationStatus;
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
+      return null;
     }
   }
 
