@@ -499,9 +499,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (result == null) {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('لم يتم تأكيد الدفع — يمكنك المحاولة مجدداً أو تتبع الطلب'),
-          backgroundColor: AppColors.danger,
-          duration: Duration(seconds: 4),
+          content: Text('قد يستغرق تأكيد الدفع بضع دقائق. تحقق من طلباتك بعد قليل — لا تُعِد المحاولة لتجنّب الدفع مرتين.'),
+          backgroundColor: AppColors.ink1,
+          duration: Duration(seconds: 6),
         ));
         return;
       }

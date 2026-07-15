@@ -128,7 +128,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Icon(Icons.shield_outlined, size: 13, color: context.col.ink3),
                 const SizedBox(width: 6),
-                Text(context.tr('رصيدك آمن ١٠٠٪ ويمكنك استخدامه في أي وقت', 'Your balance is 100% secure — use it anytime'),
+                Text(context.tr('رصيدك آمن 100٪ ويمكنك استخدامه في أي وقت', 'Your balance is 100% secure — use it anytime'),
                   style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5, color: context.col.ink2)),
               ]),
             ),
