@@ -353,7 +353,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
           RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
-              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 36,
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 30,
                 fontWeight: FontWeight.w900, height: 1.12),
               children: [
                 TextSpan(text: s.onbRewardsHeadline1,
