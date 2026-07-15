@@ -61,13 +61,11 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>باهي تحتاج موقعك لتحديد مدينة التوصيل تلقائياً</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>باهي تحتاج الوصول للميكروفون للبحث بالصوت والتقاط مقاطع فيديو</string>
+	<string>باهي تطلب إذن الميكروفون عند استخدام الكاميرا</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>باهي تحتاج الإذن لحفظ الصور في مكتبتك</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>باهي تحتاج الوصول للمكتبة لاختيار صور المنتجات ومشاركتها مع المساعد الذكي</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>باهي تستخدم التعرف على الصوت للبحث عن المنتجات بصوتك</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

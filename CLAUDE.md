@@ -15,7 +15,6 @@ Baahy (باهي) customer mobile app. Flutter for iOS and Android. Connects to t
 - **Storage**: SharedPreferences (general), flutter_secure_storage (tokens)
 - **Images**: cached_network_image
 - **Push notifications**: Firebase Messaging + flutter_local_notifications
-- **Voice search**: `speech_to_text ^6.6.0` — locale preference: ar_LY → ar_SA → ar_AE → ar_EG → ar
 - **Fonts**: **Manrope** (English/Latin, primary) + **Tajawal** (Arabic) — `Manrope-VF.ttf` + `Tajawal-{Regular,Medium,Bold,ExtraBold}.ttf`. Manrope has NO Arabic glyphs, so every TextStyle sets `fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']` → Latin renders in Manrope, Arabic falls through to Tajawal at the glyph level. PlusJakartaSans still used for numbers/monospace; Outfit registered. (Replaced Cairo 2026-07-05; several trial Arabic fonts — Rubik/IBMPlex/Readex/Alexandria/Almarai — were tried then removed. **Tajawal metrics are patched** in the `.ttf` files: hhea/typo ascent 643→820, descent →-375, lineGap →0, USE_TYPO_METRICS on — so Arabic sits vertically centred in pills/buttons instead of riding high. `main.dart` also wraps the app in `DefaultTextHeightBehavior(leadingDistribution: even)`.)
 - **Bundle ID**: iOS `com.baahy.app` · Android `com.baahy.baahyapp` (production identity — adopted 2026-07-02 to match the existing live App Store / Play Store listings so the new app ships as an in-place UPDATE. Do NOT revert to the old `com.example.baahyCustomer` placeholder.)
 
@@ -256,8 +255,7 @@ Required keys already present:
 - `NSCameraUsageDescription` — for assistant image capture
 - `NSPhotoLibraryUsageDescription` — for assistant image picker
 - `NSPhotoLibraryAddUsageDescription` — for saving images
-- `NSMicrophoneUsageDescription` — required alongside camera AND for voice search
-- `NSSpeechRecognitionUsageDescription` — for voice search (added with ar-LY preference)
+- `NSMicrophoneUsageDescription` — kept for the `camera` plugin (links mic APIs even with `enableAudio:false`; App Store wants the string). Voice search was REMOVED 2026-07-16 (dead feature — `speech_to_text` dep + `mic_button.dart` widget + `NSSpeechRecognitionUsageDescription` all deleted).
 - `NSLocationWhenInUseUsageDescription` / `NSLocationAlwaysAndWhenInUseUsageDescription` — city detection
 
 ## Product Detail — Delivery ETA
