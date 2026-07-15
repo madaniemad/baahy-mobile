@@ -74,7 +74,7 @@ All from `lib/shared/theme/app_theme.dart`:
 - `AppColors.success` — `#1F8A5B` green (delivered, in-stock)
 - `AppColors.gold` — `#D4A82E` star ratings
 
-**Radius:** All corners **12px** (standardized 2026-07-01 — screens use `BorderRadius.circular(12)`; note `AppRadius.card` constant still reads 6 but the app UI is 12px). Cards use a flat border (`Color(0xFFE2E4E4)`) instead of `AppShadows.shadowCard`. Pills use `AppRadius.pill = 9999`.
+**Radius:** All corners **12px** (standardized 2026-07-01 — screens use `BorderRadius.circular(12)`; note `AppRadius.card` constant still reads 6 but the app UI is 12px). Cards use a flat border via `context.col.border` = **`#E4E7E7`** light / `borderStrong` `#D8DDDD` (nudged darker from `#ECEFEF` on 2026-07-15) instead of `AppShadows.shadowCard`. Pills use `AppRadius.pill = 9999`.
 
 **Shadows:** `AppShadows.shadowCard` — 2-layer subtle shadow for cards.
 
@@ -149,6 +149,8 @@ Hero images should be uploaded at **1400×480 px**. Sub-hero at any wide landsca
 - **Tier colors** (`_palettes` accent, used for names/numbers): Silver `#7C8894`, Gold `#C69320`, Platinum `#3B82C4`, Black `#1C1C22` (Black uses `ink0` at runtime so it flips white in dark mode).
 - **Benefits table** (`_TierCard`): copies a reference mockup — white card, subtle header tint with icon + tier name (bold, colored), colored value numbers + grey labels, light dividers, active card has a cyan `AppColors.primary` glow border. Hero card = the tier's metal gradient (`gradA/gradB/fg`).
 - Cashback rates and referral amounts come from `appConfigProvider`.
+- **Tier benefits card shows ONLY cashback + return-days** (2026-07-15). The **free-shipping tier benefit was removed** app-wide (backend can't promise the same free-ship bracket across all cities) — no "شحن مجاني" row, tier API no longer returns `free_shipping_threshold`, checkout uses only the per-city `shipping_rates.free_shipping_threshold`. Per-CITY free shipping is unchanged.
+- The hardcoded "وعد باهي / Baahy Promise" closing card was removed from the home screen (2026-07-15).
 - **Rewards only count post-launch delivered orders**: backend `rewards_start_date` site_setting (default `2026-06-15`) filters legacy WooCommerce imports (bulk-marked delivered 2026-06-14) out of tier stats/milestones.
 
 ## Product Card Details
