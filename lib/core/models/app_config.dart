@@ -45,6 +45,7 @@ class AppConfig {
   final double minWalletTopup;
   final int referralGiverAmount;
   final int referralReceiverAmount;
+  final double referralMinOrder;
   final String referralTextAr;
   final String referralTextEn;
   final double cashbackRate;
@@ -80,8 +81,9 @@ class AppConfig {
     required this.minWalletTopup,
     required this.referralGiverAmount,
     required this.referralReceiverAmount,
+    this.referralMinOrder = 80.0,
     required this.referralTextAr,
-    this.referralTextEn = 'Give 10, Get 10',
+    this.referralTextEn = 'Give 20, Get 20',
     this.cashbackRate = 2.0,
     this.cashbackMinOrder = 80.0,
     this.welcomeBonusAmount = 10.0,
@@ -127,6 +129,7 @@ class AppConfig {
     minWalletTopup: 5,
     referralGiverAmount: 10,
     referralReceiverAmount: 10,
+    referralMinOrder: 80.0,
     referralTextAr: 'أعطِ 10، احصل على 10',
     cashbackRate: 2.0,
     cashbackMinOrder: 80.0,
@@ -192,6 +195,7 @@ class AppConfig {
       minWalletTopup: _d(j['min_wallet_topup'] ?? defaults.minWalletTopup),
       referralGiverAmount: (referral?['giver_discount'] as num?)?.toInt() ?? defaults.referralGiverAmount,
       referralReceiverAmount: (referral?['receiver_discount'] as num?)?.toInt() ?? defaults.referralReceiverAmount,
+      referralMinOrder: _d(referral?['min_order'] ?? defaults.referralMinOrder),
       referralTextAr: referral?['text_ar'] as String? ?? defaults.referralTextAr,
       referralTextEn: referral?['text_en'] as String? ?? defaults.referralTextEn,
       cashbackRate: bronzeCb,

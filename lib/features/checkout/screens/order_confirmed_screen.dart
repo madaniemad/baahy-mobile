@@ -59,8 +59,10 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
     final rawSubtotal = data['subtotal'];
     final subtotal =
         rawSubtotal is num ? rawSubtotal.toDouble() : (total ?? 0.0);
-    final cashbackAmount = subtotal >= config.cashbackMinOrder
-        ? (subtotal * config.cashbackRate / 100).round()
+    // Use the shopper's own tier rate (Silver 1.5 → Black 5), not the base rate.
+    final cbRate = (tier?.cashbackRate ?? 0) > 0 ? tier!.cashbackRate : config.cashbackRate;
+    final cashbackAmount = subtotal >= config.cashbackMinOrder && cbRate > 0
+        ? subtotal * cbRate / 100
         : null;
     final loyaltyRemaining = tier?.nextMilestoneRemaining;
     final loyaltyReward = tier?.nextMilestoneReward;
@@ -365,8 +367,8 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                                     ),
                                     Text(
                                       isAr
-                                          ? '$cashbackAmount ${context.s.lydUnit} عند التوصيل'
-                                          : '$cashbackAmount ${context.s.lydUnit} on delivery',
+                                          ? '${fmtPrice(cashbackAmount)} ${context.s.lydUnit} عند التوصيل'
+                                          : '${fmtPrice(cashbackAmount)} ${context.s.lydUnit} on delivery',
                                       style: const TextStyle(
                                         fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                         fontSize: 12,

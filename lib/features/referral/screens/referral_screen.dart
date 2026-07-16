@@ -42,7 +42,10 @@ class ReferralScreen extends ConsumerWidget {
     final referralAsync = ref.watch(_referralProvider);
     final config = ref.watch(appConfigProvider);
     final giver = config.referralGiverAmount;
-    final receiver = config.referralReceiverAmount;
+    // The friend's benefit is the standard new-user welcome bonus (instant on
+    // signup), not a separate referral reward — referral_receiver_amount is 0.
+    final friendBonus = config.welcomeBonusAmount.round();
+    final minOrder = config.referralMinOrder.round();
 
     return Scaffold(
       backgroundColor: context.col.bg,
@@ -72,7 +75,7 @@ class ReferralScreen extends ConsumerWidget {
                   fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
               const SizedBox(height: 6),
               Text(
-                context.s.referralSubtitle(receiver, giver),
+                context.s.referralSubtitle(friendBonus, giver, minOrder),
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: context.col.ink2,
                   height: 1.5)),
@@ -88,13 +91,13 @@ class ReferralScreen extends ConsumerWidget {
                 loading: () => const SizedBox(height: 80,
                   child: Center(child: CircularProgressIndicator(color: AppColors.primary))),
                 error: (_, __) => _CodeCard(code: user?.referralCode ?? 'BAAHY10',
-                  giverAmount: giver, receiverAmount: receiver),
+                  giverAmount: giver, receiverAmount: friendBonus),
                 data: (data) => _CodeCard(
                   code: data['code'] as String? ?? user?.referralCode ?? 'BAAHY10',
                   invited: _parseInt(data['invited_count']),
                   joined: _parseInt(data['used_count']),
                   earned: _parseDouble(data['earned_amount']),
-                  giverAmount: giver, receiverAmount: receiver,
+                  giverAmount: giver, receiverAmount: friendBonus,
                 ),
               ),
             ),
@@ -112,8 +115,8 @@ class ReferralScreen extends ConsumerWidget {
               ),
               ...[
                 (1, context.s.referralStep1),
-                (2, context.s.referralStep2),
-                (3, context.s.referralStep3(giver)),
+                (2, context.s.referralStep2(friendBonus)),
+                (3, context.s.referralStep3(giver, minOrder)),
               ].map((s) => Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Row(children: [

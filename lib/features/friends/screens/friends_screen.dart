@@ -59,7 +59,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
     final user = ref.watch(currentUserProvider);
     final config = ref.watch(appConfigProvider);
     final giver = config.referralGiverAmount;
-    final receiver = config.referralReceiverAmount;
+    // Friend's benefit = standard new-user welcome bonus (instant on signup),
+    // not a stacked referral reward (referral_receiver_amount is 0).
+    final friendBonus = config.welcomeBonusAmount.round();
+    final minOrder = config.referralMinOrder.round();
     final friendsState = ref.watch(friendsProvider);
     final pendingCount = friendsState.incomingRequests.length;
 
@@ -126,11 +129,11 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
                 referralAsync.when(
-                  loading: () => _InviteCard(code: user?.referralCode ?? '', giver: giver, receiver: receiver),
-                  error: (_, __) => _InviteCard(code: user?.referralCode ?? '', giver: giver, receiver: receiver),
+                  loading: () => _InviteCard(code: user?.referralCode ?? '', giver: giver, receiver: friendBonus, minOrder: minOrder),
+                  error: (_, __) => _InviteCard(code: user?.referralCode ?? '', giver: giver, receiver: friendBonus, minOrder: minOrder),
                   data: (d) => _InviteCard(
                     code: (d['code'] as String).isNotEmpty ? d['code'] as String : (user?.referralCode ?? ''),
-                    giver: giver, receiver: receiver,
+                    giver: giver, receiver: friendBonus, minOrder: minOrder,
                   ),
                 ),
 
@@ -203,7 +206,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
                 ),
 
                 const SizedBox(height: 20),
-                _FaqCard(giver: giver),
+                _FaqCard(giver: giver, friendBonus: friendBonus, minOrder: minOrder),
 
               ]),
             ),
@@ -226,7 +229,8 @@ class _InviteCard extends ConsumerStatefulWidget {
   final String code;
   final int giver;
   final int receiver;
-  const _InviteCard({required this.code, required this.giver, required this.receiver});
+  final int minOrder;
+  const _InviteCard({required this.code, required this.giver, required this.receiver, required this.minOrder});
 
   @override
   ConsumerState<_InviteCard> createState() => _InviteCardState();
@@ -259,7 +263,7 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
     ).toString();
     final text =
         '$firstName دعاك للانضمام لباهي!\n'
-        'ستحصل على ${widget.receiver} د.ل عند إتمام أول طلب 🎁\n'
+        'احصل على ${widget.receiver} د.ل هدية ترحيبية فور انضمامك 🎁\n'
         '$inviteLink';
     try {
       await SharePlus.instance.share(ShareParams(text: text));
@@ -299,8 +303,8 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
               const SizedBox(height: 5),
               Text(
                 context.isAr
-                  ? 'يحصل كل منكما على ${widget.giver} د.ل\nعند إتمام أول طلب'
-                  : 'You each earn ${widget.giver} LD\non first order completion',
+                  ? 'صديقك يحصل على ${widget.receiver} د.ل عند انضمامه،\nوتحصل أنت على ${widget.giver} د.ل بعد أول طلب له'
+                  : 'Your friend gets ${widget.receiver} LD when they join,\nand you get ${widget.giver} LD after their first order',
                 style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                   color: context.col.ink2, height: 1.45)),
               const SizedBox(height: 10),
@@ -647,7 +651,9 @@ class _FriendAvatar extends StatelessWidget {
 
 class _FaqCard extends StatelessWidget {
   final int giver;
-  const _FaqCard({required this.giver});
+  final int friendBonus;
+  final int minOrder;
+  const _FaqCard({required this.giver, required this.friendBonus, required this.minOrder});
 
   @override
   Widget build(BuildContext context) {
@@ -669,8 +675,8 @@ class _FaqCard extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           context.isAr
-            ? 'سيتم إضافة المكافأة إلى رصيدك بعد أن يُكمل صديقك أول طلب له ويتم استلامه بنجاح. ستحصل أنت على $giver د.ل وصديقك على $giver د.ل.'
-            : 'The reward is added to your wallet once your friend completes their first order and it is delivered. You each get $giver LD.',
+            ? 'يحصل صديقك على $friendBonus د.ل رصيد ترحيبي فور انضمامه للتطبيق. أمّا مكافأتك أنت ($giver د.ل) فتُضاف إلى رصيدك بعد أن يُكمل صديقك أول طلب له بقيمة $minOrder د.ل أو أكثر ويتم استلامه بنجاح.'
+            : 'Your friend gets a $friendBonus LD welcome credit the moment they join. Your own $giver LD reward is added to your wallet after your friend completes and receives their first order of $minOrder LD or more.',
           style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
             color: context.col.ink2, height: 1.55)),
       ]),

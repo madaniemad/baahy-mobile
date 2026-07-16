@@ -6,6 +6,7 @@ import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
+import '../../../core/providers/tier_provider.dart';
 import '../../../core/models/cart.dart';
 import '../../../core/models/product.dart';
 import 'package:dio/dio.dart' show Response;
@@ -1074,7 +1075,10 @@ class _LoyaltyPointsBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final config = ref.watch(appConfigProvider);
-    final rate = config.cashbackRate > 0 ? config.cashbackRate : 2.0;
+    // Show the shopper THEIR tier's cashback rate (Silver 1.5 → Black 5), not a
+    // flat base rate. Falls back to the base rate when the tier hasn't loaded.
+    final tierRate = ref.watch(tierProvider).valueOrNull?.cashbackRate ?? 0;
+    final rate = tierRate > 0 ? tierRate : config.cashbackRate;
     final cashback = subtotal * rate / 100;
     final points = (subtotal * rate / 10).round().clamp(1, 9999);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1138,7 +1142,7 @@ class _LoyaltyPointsBanner extends ConsumerWidget {
         Expanded(
           child: Text(
             context.s.orderCashbackEarn(
-              cashback.round().toString(),
+              fmtPrice(cashback),
               points.toString()),
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
               color: AppColors.success, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),

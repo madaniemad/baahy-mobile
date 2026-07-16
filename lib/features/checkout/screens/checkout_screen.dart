@@ -10,6 +10,7 @@ import '../../../core/models/shipping_rate.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/reorder_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
+import '../../../core/providers/tier_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
 import '../../../core/providers/welcome_coupon_provider.dart';
 import '../../../core/utils/format.dart';
@@ -732,6 +733,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final reorderSession = ref.watch(reorderSessionProvider);
     final isReorder = reorderSession != null;
     final config = ref.watch(appConfigProvider);
+    // Cashback shown at checkout uses the shopper's own tier rate, not the base rate.
+    final _cbTierRate = ref.watch(tierProvider).valueOrNull?.cashbackRate ?? 0;
+    final cbRate = _cbTierRate > 0 ? _cbTierRate : config.cashbackRate;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = _accent(context);
 
@@ -1087,7 +1091,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ]),
                     ),
                     // Cashback earned on this order
-                    if (effectiveSubtotal >= config.cashbackMinOrder && config.cashbackRate > 0)
+                    if (effectiveSubtotal >= config.cashbackMinOrder && cbRate > 0)
                       Container(
                         margin: const EdgeInsets.only(top: 10),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1102,8 +1106,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           const SizedBox(width: 8),
                           Expanded(child: Text(
                             context.s.orderCashbackEarn(
-                              fmtPrice(effectiveSubtotal * config.cashbackRate / 100),
-                              (effectiveSubtotal * config.cashbackRate / 10).round().clamp(1, 9999).toString()),
+                              fmtPrice(effectiveSubtotal * cbRate / 100),
+                              (effectiveSubtotal * cbRate / 10).round().clamp(1, 9999).toString()),
                             style: const TextStyle(
                               fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12.5,
                               fontWeight: FontWeight.w600,

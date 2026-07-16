@@ -325,27 +325,29 @@ class AppStrings {
   String get whatsapp          => isAr ? 'واتساب'                  : 'WhatsApp';
   String get viaSMS            => isAr ? 'رسالة'                   : 'Message';
   String get moreOptions       => isAr ? 'المزيد'                  : 'More';
-  String referralSubtitle(int receiver, int giver) => isAr
-      ? 'شارك رمزك. صديقك يحصل على خصم $receiver د.ل في طلبه الأول، وأنت تحصل على $giver د.ل عند شرائه.'
-      : 'Share your code. Your friend gets $receiver LD off their first order, and you get $giver LD when they buy.';
+  String referralSubtitle(int friendGets, int youGet, int minOrder) => isAr
+      ? 'شارك رمزك — يحصل صديقك على $friendGets د.ل فور انضمامه، وتحصل أنت على $youGet د.ل بعد أول طلب له بقيمة $minOrder د.ل أو أكثر ويتم استلامه.'
+      : 'Share your code — your friend gets $friendGets LD when they join, and you get $youGet LD after their first order of $minOrder LD or more is delivered.';
   String get referralStep1     => isAr ? 'شارك رمزك مع صديق'      : 'Share your code with a friend';
-  String get referralStep2     => isAr ? 'يسجّل ويقوم بطلبه الأول' : 'They sign up and place their first order';
-  String referralStep3(int giver) => isAr
-      ? 'تحصلان معاً على $giver د.ل في المحفظة'
-      : 'You both get $giver LD in your wallet';
+  String referralStep2(int friendGets) => isAr
+      ? 'ينضم صديقك ويحصل على $friendGets د.ل رصيد ترحيبي'
+      : 'Your friend joins and gets $friendGets LD welcome credit';
+  String referralStep3(int youGet, int minOrder) => isAr
+      ? 'بعد أول طلب له بقيمة $minOrder د.ل أو أكثر واستلامه، تحصل أنت على $youGet د.ل'
+      : 'After their first order of $minOrder LD or more is delivered, you get $youGet LD';
   String get statInvited       => isAr ? 'دعوة'                    : 'Invites';
   String get statJoined        => isAr ? 'انضموا'                  : 'Joined';
   String get statEarned        => isAr ? 'ربحت'                    : 'Earned';
   String get lydUnit           => isAr ? 'د.ل'                     : 'LD';
   String referralShareWhatsApp(String code, int amount) => isAr
-      ? 'جرّب تطبيق باهي للتسوق! استخدم رمزي $code واحصل على $amount د.ل خصم على أول طلب 🛍️'
-      : 'Try the Baahy shopping app! Use my code $code and get $amount LD off your first order 🛍️';
+      ? 'جرّب تطبيق باهي للتسوق! سجّل برمزي $code واحصل على $amount د.ل هدية ترحيبية فور انضمامك 🛍️'
+      : 'Try the Baahy shopping app! Sign up with my code $code and get a $amount LD welcome gift 🛍️';
   String referralShareSMS(String code, int amount) => isAr
-      ? 'رمز باهي: $code · خصم $amount د.ل'
-      : 'Baahy code: $code · $amount LD off';
+      ? 'رمز باهي: $code · $amount د.ل هدية ترحيبية'
+      : 'Baahy code: $code · $amount LD welcome gift';
   String referralShareGeneral(String code, int amount) => isAr
-      ? 'جرّب تطبيق باهي للتسوق! استخدم رمزي $code واحصل على $amount د.ل خصم على أول طلب'
-      : 'Try the Baahy shopping app! Use my code $code and get $amount LD off your first order';
+      ? 'جرّب تطبيق باهي للتسوق! سجّل برمزي $code واحصل على $amount د.ل هدية ترحيبية فور انضمامك'
+      : 'Try the Baahy shopping app! Sign up with my code $code and get a $amount LD welcome gift';
 
   // ── Onboarding extras ────────────────────────────────────────────────────────
   String get startShopping     => isAr ? 'ابدأ التسوق'            : 'Start Shopping';
