@@ -22,7 +22,7 @@ Baahy (باهي) customer mobile app. Flutter for iOS and Android. Connects to t
 - **API base URL**: `https://api.baahy.com/api`
 - Hardcoded in `lib/core/api/api_client.dart` (can be overridden via `--dart-define=API_BASE_URL=...`)
 - Mobile hits Cloudways **directly** — no Vercel proxy (unlike web). Imunify360 can block IPs.
-- Auth token stored in `SharedPreferences` under key `auth_token`
+- Auth token stored in `flutter_secure_storage` (Keychain/EncryptedSharedPreferences) under key `auth_token` — NOT plain SharedPreferences
 - OTP dev bypass exists — see backend `.env` (disabled once WhatsApp/Sendly live)
 - Backend SSH credentials: see Cloudways dashboard (do not commit here)
 

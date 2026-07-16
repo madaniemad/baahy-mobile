@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/utils/l10n.dart';
+import '../../../core/utils/format.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -1289,20 +1290,20 @@ class _AssistantProductCard extends StatelessWidget {
                           color: context.col.ink0)),
                   const SizedBox(height: 4),
                   if (hasSale) ...[
-                    Text('${salePrice.toStringAsFixed(0)} ${context.s.lyd}',
+                    Text('${fmtPrice(salePrice)} ${context.s.lyd}',
                         style: const TextStyle(
                             fontFamily: 'PlusJakartaSans',
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: AppColors.danger)),
-                    Text('${price.toStringAsFixed(0)} ${context.s.lyd}',
+                    Text('${fmtPrice(price)} ${context.s.lyd}',
                         style: const TextStyle(
                             fontFamily: 'PlusJakartaSans',
                             fontSize: 10,
                             decoration: TextDecoration.lineThrough,
                             color: AppColors.ink3)),
                   ] else
-                    Text('${price.toStringAsFixed(0)} ${context.s.lyd}',
+                    Text('${fmtPrice(price)} ${context.s.lyd}',
                         style: TextStyle(
                             fontFamily: 'PlusJakartaSans',
                             fontSize: 12,
