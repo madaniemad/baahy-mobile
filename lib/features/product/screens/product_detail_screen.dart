@@ -814,7 +814,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             children: [
                               Text(context.s.priceLabel,
                                 style: TextStyle(fontSize: 10, color: context.col.ink3)),
-                              Text('${displayPrice.toStringAsFixed(0)} ${context.s.lydUnit}',
+                              Text('${fmtPrice(displayPrice)} ${context.s.lydUnit}',
                                 style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                   fontSize: 16, fontWeight: FontWeight.w800)),
                             ],
