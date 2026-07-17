@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
+import '../services/version_gate.dart';
+import '../../features/misc/force_update_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/city_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
@@ -73,6 +75,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/splash',   builder: (_, __) => const SplashScreen()),
+      GoRoute(path: '/force-update', builder: (_, state) {
+        final g = state.extra as VersionGateResult?;
+        return ForceUpdateScreen(message: g?.message ?? '', storeUrl: g?.storeUrl ?? '');
+      }),
       GoRoute(path: '/city',          builder: (_, __) => const CityScreen()),
       GoRoute(path: '/rewards-intro', builder: (_, __) => const OnboardingFlow()),
       GoRoute(path: '/onboarding',    builder: (_, __) => const OnboardingScreen()),

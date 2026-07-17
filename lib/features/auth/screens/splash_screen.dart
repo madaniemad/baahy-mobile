@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/app_config_provider.dart';
+import '../../../core/services/version_gate.dart';
 import '../../../shared/theme/app_theme.dart';
 
 // ─── Background widget — swaps to admin image when configured ──────────────────
@@ -139,6 +140,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // Navigate as the entry animation finishes (2 000 ms total from start)
     await Future.delayed(const Duration(milliseconds: 1300));
     if (!mounted) return;
+    // Force-update gate (fail-open): block below the backend min_version.
+    final gate = await VersionGate.check();
+    if (!mounted) return;
+    if (gate.forceUpdate) {
+      context.go('/force-update', extra: gate);
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     final v2Done  = prefs.getBool('onboarding_v2_done') ?? false;
     if (!mounted) return;
@@ -165,6 +173,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
+        final gate = await VersionGate.check();
+        if (!context.mounted) return;
+        if (gate.forceUpdate) {
+          context.go('/force-update', extra: gate);
+          return;
+        }
         final prefs = await SharedPreferences.getInstance();
         final v2Done = prefs.getBool('onboarding_v2_done') ?? false;
         if (!context.mounted) return;
