@@ -77,7 +77,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash',   builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/force-update', builder: (_, state) {
         final g = state.extra as VersionGateResult?;
-        return ForceUpdateScreen(message: g?.message ?? '', storeUrl: g?.storeUrl ?? '');
+        return ForceUpdateScreen(messageAr: g?.messageAr ?? '', messageEn: g?.messageEn ?? '', storeUrl: g?.storeUrl ?? '');
       }),
       GoRoute(path: '/city',          builder: (_, __) => const CityScreen()),
       GoRoute(path: '/rewards-intro', builder: (_, __) => const OnboardingFlow()),

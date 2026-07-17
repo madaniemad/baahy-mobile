@@ -7,12 +7,14 @@ class VersionGateResult {
   final bool forceUpdate; // installed < min_version → block
   final bool softUpdate;  // installed < latest_version (but >= min) → suggest
   final String storeUrl;
-  final String message;
+  final String messageAr;
+  final String messageEn;
   const VersionGateResult({
     this.forceUpdate = false,
     this.softUpdate = false,
     this.storeUrl = '',
-    this.message = '',
+    this.messageAr = '',
+    this.messageEn = '',
   });
   static const none = VersionGateResult();
 }
@@ -45,14 +47,16 @@ class VersionGate {
         return VersionGateResult(
           forceUpdate: true,
           storeUrl: storeUrl,
-          message: (d['force_message'] ?? '').toString(),
+          messageAr: (d['force_message'] ?? '').toString(),
+          messageEn: (d['force_message_en'] ?? '').toString(),
         );
       }
       if (_lt(current, latest)) {
         return VersionGateResult(
           softUpdate: true,
           storeUrl: storeUrl,
-          message: (d['soft_message'] ?? '').toString(),
+          messageAr: (d['soft_message'] ?? '').toString(),
+          messageEn: (d['soft_message_en'] ?? '').toString(),
         );
       }
       return VersionGateResult.none;

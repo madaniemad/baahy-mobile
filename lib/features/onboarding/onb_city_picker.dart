@@ -27,12 +27,6 @@ const _muted = Color(0xFF4B4E54);          // secondary text — dark grey
 const _teal = Color(0xFF3FD6E4);           // brand tiffany
 const _boxBg = Color(0xFFF0F6F7);          // inner tint
 const _cardShadow = [BoxShadow(color: Color(0x12023A42), blurRadius: 22, offset: Offset(0, 8))];
-// Solid tiffany for the top half; fade through the third quarter; white bottom quarter.
-const _cityGradient = LinearGradient(
-  begin: Alignment.topCenter, end: Alignment.bottomCenter,
-  colors: [Color(0xFF3FD6E4), Color(0xFF3FD6E4), Color(0xFFEAF9FB), Color(0xFFEAF9FB)],
-  stops: [0.0, 0.5, 0.78, 1.0],
-);
 
 class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
   bool _detecting = true;
@@ -154,7 +148,7 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
     return Directionality(
       textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
       child: DecoratedBox(
-        decoration: const BoxDecoration(gradient: _cityGradient),
+        decoration: const BoxDecoration(color: Colors.white),
         child: Stack(children: [
           SafeArea(child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(30, 20, 30, 18),
@@ -165,12 +159,10 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
               Text(t.langSub, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 11.5, fontWeight: FontWeight.w600, color: _muted)),
               const SizedBox(height: 14),
               FractionallySizedBox(widthFactor: 0.72, child: _LangSegment(isAr: isAr, onSelect: (ar) { if (ar != isAr) ref.read(localeProvider.notifier).toggle(); })),
-              const SizedBox(height: 46),
+              const SizedBox(height: 52),
 
               // ── city ──
-              const _PinGlow(),
-              const SizedBox(height: 16),
-              Text(t.title, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 23, fontWeight: FontWeight.w800, color: Colors.white)),
+              Text(t.title, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 24, fontWeight: FontWeight.w800, color: _navy)),
               const SizedBox(height: 8),
               Text(t.sub, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 12.5, fontWeight: FontWeight.w500, color: _muted, height: 1.45)),
               const SizedBox(height: 26),
@@ -218,23 +210,23 @@ class _LangSegment extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget label(String s, bool selected, VoidCallback onTap) => Expanded(child: GestureDetector(
       onTap: onTap, behavior: HitTestBehavior.opaque,
-      child: Center(child: Text(s, style: TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 12.5,
-          fontWeight: FontWeight.w800, color: selected ? _teal : Colors.white))),
+      child: Center(child: Text(s, style: TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13,
+          fontWeight: FontWeight.w800, color: selected ? Colors.white : _teal))),
     ));
-    return SizedBox(height: 38, child: Stack(children: [
-      // thin white outline track
+    return SizedBox(height: 42, child: Stack(children: [
+      // teal outline track
       Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.75), width: 1.3),
+        border: Border.all(color: _teal.withValues(alpha: 0.55), width: 1.5),
       ))),
-      // selected white pill — sits OVER the outline (white on white hides it there)
+      // selected teal pill (inset so the outline track shows around it)
       AnimatedAlign(
         duration: const Duration(milliseconds: 200), curve: Curves.easeOut,
         alignment: isAr ? Alignment.centerLeft : Alignment.centerRight,
         child: FractionallySizedBox(widthFactor: 0.53, heightFactor: 1.0,
-          child: Container(decoration: const BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.all(Radius.circular(999)),
-            boxShadow: [BoxShadow(color: Color(0x1A023A42), blurRadius: 7, offset: Offset(0, 2))],
+          child: Container(margin: const EdgeInsets.all(3.5), decoration: BoxDecoration(
+            color: _teal, borderRadius: BorderRadius.circular(999),
+            boxShadow: [BoxShadow(color: _teal.withValues(alpha: 0.35), blurRadius: 8, offset: const Offset(0, 3))],
           ))),
       ),
       // labels
@@ -244,46 +236,6 @@ class _LangSegment extends StatelessWidget {
       ])),
     ]));
   }
-}
-
-class _PinGlow extends StatefulWidget {
-  const _PinGlow();
-  @override
-  State<_PinGlow> createState() => _PinGlowState();
-}
-
-class _PinGlowState extends State<_PinGlow> with SingleTickerProviderStateMixin {
-  // outward "radar" ping ripple around a stationary pin
-  late final AnimationController _ping =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1700))..repeat();
-
-  @override
-  void dispose() { _ping.dispose(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) => Center(child: SizedBox(width: 116, height: 116,
-    child: Stack(alignment: Alignment.center, children: [
-      // expanding radar ping (only this ripple animates; the pin stays put)
-      AnimatedBuilder(
-        animation: _ping,
-        builder: (context, _) {
-          final p = _ping.value;
-          return Container(width: 48 + p * 68, height: 48 + p * 68, decoration: BoxDecoration(
-              shape: BoxShape.circle, color: Colors.white.withValues(alpha: (1 - p) * 0.42)));
-        },
-      ),
-      // soft concentric glow
-      Container(width: 116, height: 116, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.10))),
-      Container(width: 90, height: 90, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.14))),
-      Container(width: 64, height: 64, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.2))),
-      // stationary white pin with a teal centre dot
-      Stack(alignment: Alignment.center, children: [
-        const Icon(Icons.location_on, color: Colors.white, size: 56),
-        Transform.translate(offset: const Offset(0, -8),
-          child: Container(width: 15, height: 15, decoration: const BoxDecoration(shape: BoxShape.circle, color: _teal))),
-      ]),
-    ]),
-  ));
 }
 
 class _DetectingRow extends StatelessWidget {
@@ -310,8 +262,8 @@ class _CityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), boxShadow: _cardShadow),
-    padding: const EdgeInsets.fromLTRB(15, 15, 15, 15),
+    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xFFEDF1F2)), boxShadow: _cardShadow),
+    padding: const EdgeInsets.fromLTRB(15, 18, 15, 18),
     child: _inner(),
   );
 
@@ -384,12 +336,12 @@ class _ManualButton extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap, behavior: HitTestBehavior.opaque,
     child: Container(
-      height: 46, alignment: Alignment.center,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), border: Border.all(color: _ink.withValues(alpha: 0.55), width: 1.5)),
+      height: 52, alignment: Alignment.center,
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: _teal, width: 1.6)),
       child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Icons.location_on_outlined, color: _ink, size: 16),
-        const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13.5, fontWeight: FontWeight.w700, color: _ink)),
+        Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 14.5, fontWeight: FontWeight.w700, color: _teal)),
+        const SizedBox(width: 10),
+        const Icon(Icons.search, color: _teal, size: 20),
       ]),
     ),
   );
