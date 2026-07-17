@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -88,10 +89,15 @@ class ForceUpdateScreen extends ConsumerWidget {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(999),
                         onTap: () {
-                          final url = storeUrl.trim();
-                          if (url.isNotEmpty) {
-                            launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                          // Fall back to the store listing directly if the backend
+                          // sent an empty/invalid URL — the button must never fail.
+                          var url = storeUrl.trim();
+                          if (url.isEmpty || Uri.tryParse(url)?.hasScheme != true) {
+                            url = Platform.isIOS
+                                ? 'https://apps.apple.com/app/id1567889057'
+                                : 'https://play.google.com/store/apps/details?id=com.baahy.baahyapp';
                           }
+                          launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 17),
