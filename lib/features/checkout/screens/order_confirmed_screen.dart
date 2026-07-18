@@ -34,10 +34,15 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
   void initState() {
     super.initState();
     // Pull the freshly-created "order received" notification so the bell badge
-    // and the notifications screen reflect it without an app restart.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(notificationsProvider.notifier).fetch();
-    });
+    // reflects it without an app restart. The backend creates it in an
+    // afterResponse handler (~1-3s after the order response), so a single
+    // immediate fetch would race it — retry a couple of times to catch it.
+    for (final ms in const [0, 3000, 7000]) {
+      Future.delayed(Duration(milliseconds: ms), () {
+        if (!mounted) return;
+        ref.read(notificationsProvider.notifier).fetch();
+      });
+    }
     // Haptic success burst so user feels payment went through even without looking
     // Wait for the route transition to finish (~350ms) so the vibration
     // fires exactly when the screen settles — giving the "payment done" feel.

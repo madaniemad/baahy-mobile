@@ -74,8 +74,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   SizedBox(height: MediaQuery.of(context).size.height * 0.28),
-                  Icon(Icons.notifications_none_rounded,
-                      size: 64, color: context.col.ink4),
+                  Center(
+                    child: Icon(Icons.notifications_none_rounded,
+                        size: 64, color: context.col.ink4),
+                  ),
                   const SizedBox(height: 12),
                   Text(context.s.upToDate,
                       textAlign: TextAlign.center,
