@@ -19,16 +19,27 @@ class OrderConfirmedScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
-  String _deliveryDays() {
+  String _deliveryLabel(bool isAr) {
     final rate = widget.data['shipping_rate'];
-    if (rate is Map) {
-      final days = rate['estimated_days'];
-      if (days != null) return days.toString();
-    }
     final city = (widget.data['city'] ?? widget.data['shipping_city'] ?? '').toString();
-    final isTripoli = city.toLowerCase().contains('طرابلس') ||
+    final zoneType = rate is Map ? rate['zone_type']?.toString() : null;
+    final isHubCity = zoneType == 'hub_city' ||
+        city.toLowerCase().contains('طرابلس') ||
         city.toLowerCase().contains('tripoli');
-    return isTripoli ? '1 - 2' : '2 - 5';
+    // Hub city: promise same/next-day honoring the 4pm cutoff + Friday skip,
+    // consistent with the cart strip and product-detail delivery card.
+    if (isHubCity) {
+      final now = DateTime.now();
+      final beforeCutoff = now.hour < 16 && now.weekday != DateTime.friday;
+      return isAr
+          ? (beforeCutoff ? 'اليوم' : 'غداً')
+          : (beforeCutoff ? 'Today' : 'By tomorrow');
+    }
+    // Other cities: their shipping-rate day range.
+    if (rate is Map && rate['estimated_days'] != null) {
+      return isAr ? '${rate['estimated_days']} يوم' : '${rate['estimated_days']} days';
+    }
+    return isAr ? '2 - 5 يوم' : '2 - 5 days';
   }
 
   @override
@@ -92,7 +103,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
     final loyaltyRemaining = tier?.nextMilestoneRemaining;
     final loyaltyReward = tier?.nextMilestoneReward;
     final isAr = context.isAr;
-    final deliveryDays = _deliveryDays();
+    final deliveryLabel = _deliveryLabel(isAr);
 
     return Scaffold(
       backgroundColor: context.col.bg,
@@ -242,7 +253,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              isAr ? '$deliveryDays يوم' : '$deliveryDays days',
+                              deliveryLabel,
                               style: const TextStyle(
                                 fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 18,
