@@ -85,7 +85,7 @@ class PushNotificationService {
       final settings = await _fcm.getNotificationSettings();
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
-        final token = await _fcm.getToken();
+        final token = await _getFcmToken();
         if (token != null) await _sendTokenToServer(token);
       }
     } catch (e, st) {
@@ -126,9 +126,30 @@ class PushNotificationService {
     }
   }
 
+  /// Fetch the FCM token. On iOS, `getToken()` returns null until the OS has
+  /// delivered the APNs token to the app — on a cold start that can take a few
+  /// seconds — so poll `getAPNSToken()` first (with a short backoff) before
+  /// asking for the FCM token. Without this, the very first `getToken()` call
+  /// returns null and the device never registers. Android has no such gate.
+  Future<String?> _getFcmToken() async {
+    if (Platform.isIOS) {
+      String? apns;
+      for (var i = 0; i < 15 && apns == null; i++) {
+        apns = await _fcm.getAPNSToken();
+        if (apns == null) await Future.delayed(const Duration(seconds: 1));
+      }
+      if (apns == null) {
+        // APNs never became available — surface it so we can see the failure.
+        Sentry.captureMessage('APNs token not available after wait; FCM token skipped');
+        return null;
+      }
+    }
+    return _fcm.getToken();
+  }
+
   Future<void> _uploadToken() async {
     try {
-      final token = await _fcm.getToken();
+      final token = await _getFcmToken();
       if (token != null) await _sendTokenToServer(token);
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
