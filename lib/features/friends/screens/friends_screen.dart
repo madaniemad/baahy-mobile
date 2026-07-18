@@ -250,11 +250,11 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
   Future<void> _share() async {
     final user = ref.read(currentUserProvider);
     final firstName = (user?.name ?? '').split(' ').first;
-    // baahy.com is the WordPress store (no /invite route); the invite landing
-    // page (which deep-links into the app) is served by the Next.js site.
+    // The invite landing page (which deep-links into the app) is served by the
+    // Next.js site, now live on the canonical baahy.com domain.
     final inviteLink = Uri(
       scheme: 'https',
-      host: 'baahy-web.vercel.app',
+      host: 'baahy.com',
       path: '/invite/${widget.code}',
       queryParameters: {
         'from': firstName,
