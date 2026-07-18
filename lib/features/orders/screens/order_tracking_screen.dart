@@ -585,7 +585,7 @@ String _paymentMethodLabel(BuildContext ctx, String m) {
     case 'cash':     return ar ? 'الدفع عند الاستلام' : 'Cash on Delivery';
     case 'wallet':   return ar ? 'المحفظة'            : 'Wallet';
     case 'tadawel':  return ar ? 'تداول'              : 'Tadawel';
-    case 'moamlat':  return ar ? 'معاملات'            : 'Moamlat';
+    case 'moamlat':  return ar ? 'بطاقة مصرفية'            : 'Bank Card';
     case 'mobicash': return ar ? 'موبي كاش'           : 'Mobicash';
     case 'paypal':   return 'PayPal';
     default:         return m.isEmpty ? (ar ? 'غير محدد' : 'Not specified') : m;

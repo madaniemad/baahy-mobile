@@ -477,7 +477,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
 
-      final title = gateway == 'tadawel' ? 'الدفع عبر تداول' : 'الدفع عبر معاملات';
+      final title = gateway == 'tadawel' ? 'الدفع عبر تداول' : 'الدفع بالبطاقة المصرفية';
       final Uri? deepLink = await Navigator.of(context).push<Uri?>(
         MaterialPageRoute(builder: (_) => PaymentWebViewScreen(url: paymentUrl, title: title)),
       );

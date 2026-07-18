@@ -825,7 +825,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
   static const _methods = [
     (id: 'mobicash', label: 'موبيكاش', desc: 'ادفع بكارت موبيكاش'),
     (id: 'tadawel',  label: 'تداول',   desc: 'دفع إلكتروني عبر تداول'),
-    (id: 'moamlat', label: 'معاملات', desc: 'دفع إلكتروني عبر معاملات'),
+    (id: 'moamlat', label: 'بطاقة مصرفية', desc: 'دفع إلكتروني بالبطاقة المصرفية'),
   ];
 
   double get _amount {
@@ -1205,7 +1205,7 @@ class _TransactionRow extends StatelessWidget {
       case 'topup':
       case 'deposit':
         if (gateway == 'tadawel' || gateway == 'tadawul') return 'إيداع عبر تداول';
-        if (gateway == 'moamlat') return 'إيداع عبر معاملات';
+        if (gateway == 'moamlat') return 'إيداع بالبطاقة المصرفية';
         if (gateway == 'mobicash') return 'إيداع عبر موبيكاش';
         if (gateway == 'admin' || gateway == 'manual' || gateway == 'baahy') return 'إيداع بواسطة باهي';
         if (raw.isNotEmpty) return raw;
