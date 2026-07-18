@@ -855,14 +855,41 @@ class _DeliveryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final city = ref.watch(cityProvider);
-    final (minDays, maxDays) = _daysForCity(city);
-    final now = DateTime.now();
+    final cityRate = ref.watch(cityShippingRateProvider);
+    // Prefer the live shipping rate's ETA; fall back to the static city map.
+    final (minDays, maxDays) = cityRate != null
+        ? (cityRate.etaMin ?? cityRate.deliveryDays,
+           cityRate.etaMax ?? cityRate.etaMin ?? cityRate.deliveryDays)
+        : _daysForCity(city);
     final isAr = context.isAr;
-    final minDate = _fmtDate(now.add(Duration(days: minDays)), isAr);
-    final maxDate = _fmtDate(now.add(Duration(days: maxDays)), isAr);
-    final estimate = isAr
-        ? (minDays == maxDays ? 'يصل يوم $minDate' : 'يصل بين $minDate و$maxDate')
-        : (minDays == maxDays ? 'Arrives $minDate' : 'Arrives between $minDate and $maxDate');
+    // Use the shared range helper so the 4pm cutoff, Friday skip, and "today counts as
+    // delivery day 1 before cutoff" all apply — instead of blindly adding days to now.
+    final (earliest, latest) = _deliveryRange(minDays, maxDays);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final earliestDay = DateTime(earliest.year, earliest.month, earliest.day);
+    final isToday = earliestDay == today;
+    final isTomorrow = earliestDay == today.add(const Duration(days: 1));
+
+    // Only when the customer is IN the hub city itself do we promise today/tomorrow.
+    final isHubCity = cityRate?.zoneType == 'hub_city';
+
+    String estimate;
+    // Hub city: punchy today/tomorrow message driven by the cutoff — "today" before 4pm,
+    // "by tomorrow" once it passes. Every other city follows its own delivery days below.
+    if (isHubCity && (isToday || isTomorrow)) {
+      estimate = isToday
+          ? (isAr ? 'احصل عليه اليوم' : 'Get it today')
+          : (isAr ? 'احصل عليه غداً' : 'Get it by tomorrow');
+    } else {
+      final minDate = _fmtDate(earliest, isAr);
+      final maxDate = _fmtDate(latest, isAr);
+      final sameDay = earliestDay ==
+          DateTime(latest.year, latest.month, latest.day);
+      estimate = isAr
+          ? (sameDay ? 'يصل يوم $minDate' : 'يصل بين $minDate و$maxDate')
+          : (sameDay ? 'Arrives $minDate' : 'Arrives between $minDate and $maxDate');
+    }
 
     return Container(
       padding: const EdgeInsets.all(12),
