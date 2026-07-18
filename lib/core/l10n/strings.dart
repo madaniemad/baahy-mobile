@@ -489,8 +489,8 @@ class AppStrings {
       ? 'ستكسب $cashback د.ل كاش باك من هذا الطلب'
       : "You'll earn $cashback LD cashback on this order";
 
-  String nudgeMilestone1(String amount) => isAr ? 'أكمل طلباً واحداً واحصل على $amount د.ل عند التوصيل' : 'Complete 1 order and get $amount LD on delivery';
-  String nudgeMilestone2(String amount) => isAr ? 'أكمل طلبين واحصل على $amount د.ل عند التوصيل'    : 'Complete 2 orders and get $amount LD on delivery';
+  String nudgeMilestone1(String amount) => isAr ? 'أكمل طلباً واحداً واحصل على $amount د.ل بعد الاستلام' : 'Complete 1 order and get $amount LD after receipt';
+  String nudgeMilestone2(String amount) => isAr ? 'أكمل طلبين واحصل على $amount د.ل بعد الاستلام'    : 'Complete 2 orders and get $amount LD after receipt';
   String nudgeNoTier(int orders, String spend) => isAr ? 'تسوّق $orders طلبات بـ $spend د.ل للوصول لمستوى Gold' : 'Place $orders orders & spend $spend LD to reach Gold';
   String nudgeSilver(int orders, String spend) => isAr ? 'مستواك Gold — $orders طلب و $spend د.ل من Platinum'       : 'Gold — $orders orders & $spend LD from Platinum';
   String nudgeGold(int orders, String spend)   => isAr ? 'مستواك Platinum — $orders طلب و $spend د.ل من Black'    : 'Platinum — $orders orders & $spend LD from Black';

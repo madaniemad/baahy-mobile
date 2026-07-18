@@ -57,30 +57,36 @@ class _NotificationBell extends ConsumerWidget {
     final unread = ref.watch(unreadNotificationCountProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final iconColor = isDark ? context.col.ink0 : Colors.white;
-    // Ring the dot in white (not the header's own teal, which made the badge
-    // blend into the background and look absent) so it's clearly visible.
+    // White ring so the red dot stands out on the teal header.
     final badgeBorder = isDark ? context.col.surface : Colors.white;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        IconButton(
-          onPressed: () => safePush(context, '/notifications'),
-          icon: Icon(Icons.notifications_none_rounded, color: iconColor, size: 22),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        if (unread > 0)
-          Positioned(
-            top: -2, right: -2,
-            child: Container(
-              width: 11, height: 11,
-              decoration: BoxDecoration(
-                color: AppColors.danger, shape: BoxShape.circle,
-                border: Border.all(color: badgeBorder, width: 1.5),
+    // The home header is a very tight toolbar (height 28), which clips anything
+    // overflowing the bell's box — that's why a badge positioned OUTSIDE the
+    // icon (negative top/right) was invisible here even though the identical
+    // account-screen badge shows. Keep the dot INSIDE the box (positive offsets)
+    // within a fixed 32×32 hit area so it can never be clipped.
+    return GestureDetector(
+      onTap: () => safePush(context, '/notifications'),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 32, height: 32,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(Icons.notifications_none_rounded, color: iconColor, size: 23),
+            if (unread > 0)
+              Positioned(
+                top: 3, right: 4,
+                child: Container(
+                  width: 10, height: 10,
+                  decoration: BoxDecoration(
+                    color: AppColors.danger, shape: BoxShape.circle,
+                    border: Border.all(color: badgeBorder, width: 1.5),
+                  ),
+                ),
               ),
-            ),
-          ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 }

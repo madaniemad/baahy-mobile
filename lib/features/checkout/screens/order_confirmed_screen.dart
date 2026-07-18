@@ -343,8 +343,8 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                                     ),
                                     Text(
                                       isAr
-                                          ? 'واحصل على ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit} عند التوصيل'
-                                          : 'and get ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit} on delivery',
+                                          ? 'واحصل على ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit} بعد الاستلام'
+                                          : 'and get ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit} after receipt',
                                       style: const TextStyle(
                                         fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                         fontSize: 12,
