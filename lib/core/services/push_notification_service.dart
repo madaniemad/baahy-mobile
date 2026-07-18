@@ -168,6 +168,11 @@ class PushNotificationService {
   }
 
   void _onForegroundMessage(RemoteMessage message) {
+    // On iOS the system itself presents the notification while the app is in the
+    // foreground (setForegroundNotificationPresentationOptions(alert:true)), so
+    // showing our own local copy here would double it. Android suppresses
+    // foreground FCM notifications, so there we DO need to show it manually.
+    if (Platform.isIOS) return;
     final notification = message.notification;
     if (notification == null) return;
     _localNotifications.show(
