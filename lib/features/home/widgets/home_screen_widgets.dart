@@ -57,7 +57,9 @@ class _NotificationBell extends ConsumerWidget {
     final unread = ref.watch(unreadNotificationCountProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final iconColor = isDark ? context.col.ink0 : Colors.white;
-    final badgeBorder = isDark ? context.col.surface : const Color(0xFF1FD7E2);
+    // Ring the dot in white (not the header's own teal, which made the badge
+    // blend into the background and look absent) so it's clearly visible.
+    final badgeBorder = isDark ? context.col.surface : Colors.white;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -69,9 +71,9 @@ class _NotificationBell extends ConsumerWidget {
         ),
         if (unread > 0)
           Positioned(
-            top: -1, right: -1,
+            top: -2, right: -2,
             child: Container(
-              width: 8, height: 8,
+              width: 11, height: 11,
               decoration: BoxDecoration(
                 color: AppColors.danger, shape: BoxShape.circle,
                 border: Border.all(color: badgeBorder, width: 1.5),
