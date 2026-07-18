@@ -17,6 +17,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
+    // Refetch whenever the screen opens — the provider only fetches once at
+    // app launch (for the header badge), so notifications created afterwards
+    // (e.g. a fresh order) wouldn't appear without this.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationsProvider.notifier).fetch();
+    });
   }
 
   @override
@@ -60,15 +66,19 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ),
         ],
       ),
-      body: notifications.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () => ref.read(notificationsProvider.notifier).fetch(),
+        child: notifications.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.28),
                   Icon(Icons.notifications_none_rounded,
                       size: 64, color: context.col.ink4),
                   const SizedBox(height: 12),
                   Text(context.s.upToDate,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                           fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                           fontSize: 16,
@@ -76,24 +86,26 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                           color: context.col.ink2)),
                   const SizedBox(height: 4),
                   Text(context.s.notifSub,
+                      textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 13, color: context.col.ink3)),
                 ],
+              )
+            : ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                children: [
+                  if (today.isNotEmpty) ...[
+                    _SectionLabel(context.s.today),
+                    ...today.map((n) => _NotifCard(n: n)),
+                    const SizedBox(height: 6),
+                  ],
+                  if (earlier.isNotEmpty) ...[
+                    _SectionLabel(context.s.earlier),
+                    ...earlier.map((n) => _NotifCard(n: n)),
+                  ],
+                ],
               ),
-            )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              children: [
-                if (today.isNotEmpty) ...[
-                  _SectionLabel(context.s.today),
-                  ...today.map((n) => _NotifCard(n: n)),
-                  const SizedBox(height: 6),
-                ],
-                if (earlier.isNotEmpty) ...[
-                  _SectionLabel(context.s.earlier),
-                  ...earlier.map((n) => _NotifCard(n: n)),
-                ],
-              ],
-            ),
+      ),
     );
   }
 }
@@ -117,9 +129,11 @@ class _NotifCard extends ConsumerWidget {
   final AppNotification n;
   const _NotifCard({required this.n});
 
+  static bool _isOrder(String? type) => type == 'order' || type == 'order_update';
+
   static Color _iconBg(String? type, BuildContext context) {
+    if (_isOrder(type)) return AppColors.primary.withValues(alpha: 0.08);
     switch (type) {
-      case 'order': return AppColors.primary.withValues(alpha: 0.08);
       case 'promo': return const Color(0xFFFFF3E0);
       case 'system': return context.col.surfaceSoft;
       default: return context.col.surfaceSoft;
@@ -127,8 +141,8 @@ class _NotifCard extends ConsumerWidget {
   }
 
   static Color _iconColor(String? type, BuildContext context) {
+    if (_isOrder(type)) return AppColors.primary;
     switch (type) {
-      case 'order': return AppColors.primary;
       case 'promo': return const Color(0xFFD97757);
       case 'system': return context.col.ink2;
       default: return context.col.ink2;
@@ -136,8 +150,8 @@ class _NotifCard extends ConsumerWidget {
   }
 
   static IconData _icon(String? type) {
+    if (_isOrder(type)) return Icons.local_shipping_rounded;
     switch (type) {
-      case 'order': return Icons.local_shipping_rounded;
       case 'promo': return Icons.local_offer_rounded;
       case 'system': return Icons.info_rounded;
       default: return Icons.notifications_rounded;
@@ -160,7 +174,7 @@ class _NotifCard extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         ref.read(notificationsProvider.notifier).markRead(n.id);
-        if (n.type == 'order' && n.data?['order_id'] != null) {
+        if (_isOrder(n.type) && n.data?['order_id'] != null) {
           safePush(context, '/orders/${n.data!['order_id']}');
         }
       },

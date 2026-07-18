@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/app_config_provider.dart';
+import '../../../core/providers/notifications_provider.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
@@ -32,6 +33,11 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
   @override
   void initState() {
     super.initState();
+    // Pull the freshly-created "order received" notification so the bell badge
+    // and the notifications screen reflect it without an app restart.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationsProvider.notifier).fetch();
+    });
     // Haptic success burst so user feels payment went through even without looking
     // Wait for the route transition to finish (~350ms) so the vibration
     // fires exactly when the screen settles — giving the "payment done" feel.

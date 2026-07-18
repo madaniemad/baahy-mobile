@@ -42,8 +42,14 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
     if (!await _api.isLoggedIn) return;
     try {
       final res = await _api.dio.get('/notifications');
-      state = (res.data['data'] as List?)
-          ?.map((n) => AppNotification.fromJson(n)).toList() ?? [];
+      // The API returns `data` as a Laravel paginator object
+      // ({current_page, data: [...], ...}), so the list lives at data.data.
+      // Stay resilient in case it's ever returned as a flat list.
+      final raw = res.data['data'];
+      final list = raw is List
+          ? raw
+          : (raw is Map && raw['data'] is List ? raw['data'] as List : const []);
+      state = list.map((n) => AppNotification.fromJson(n)).toList();
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
     }
@@ -51,7 +57,7 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
 
   Future<void> markRead(int id) async {
     try {
-      await _api.dio.post('/notifications/$id/read');
+      await _api.dio.put('/notifications/$id/read');
       state = state.map((n) => n.id == id
           ? AppNotification(id: n.id, title: n.title, body: n.body, type: n.type,
               data: n.data, isRead: true, createdAt: n.createdAt)
@@ -63,7 +69,7 @@ class NotificationsNotifier extends StateNotifier<List<AppNotification>> {
 
   Future<void> markAllRead() async {
     try {
-      await _api.dio.post('/notifications/read-all');
+      await _api.dio.put('/notifications/read-all');
       state = state.map((n) => AppNotification(
           id: n.id, title: n.title, body: n.body, type: n.type,
           data: n.data, isRead: true, createdAt: n.createdAt)).toList();
