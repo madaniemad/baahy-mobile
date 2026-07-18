@@ -404,9 +404,23 @@ class _CartBodyState extends ConsumerState<_CartBody> {
               final etaMin = rate?.etaMin ?? rate?.deliveryDays ?? 1;
               final etaMax = rate?.etaMax ?? (etaMin + 1);
               final codOk = rate?.codAllowed ?? false;
-              final etaStr = context.s.isAr
-                  ? 'توصيل خلال $etaMin-$etaMax يوم  •  شحنة واحدة${codOk ? '  •  الدفع عند الاستلام متاح' : ''}'
-                  : 'Delivery in $etaMin-$etaMax days  •  One shipment${codOk ? '  •  COD available' : ''}';
+              final isAr = context.s.isAr;
+              // In the hub city we promise same/next-day, matching the product-detail
+              // delivery card: "today" before the 4pm cutoff on a working day, else
+              // "by tomorrow". Every other city keeps its shipping-rate day range.
+              final isHubCity = rate?.zoneType == 'hub_city';
+              final now = DateTime.now();
+              final beforeCutoff = now.hour < 16 && now.weekday != DateTime.friday;
+              final etaPart = isHubCity
+                  ? (isAr
+                      ? (beforeCutoff ? 'توصيل اليوم' : 'توصيل غداً')
+                      : (beforeCutoff ? 'Get it today' : 'Get it by tomorrow'))
+                  : (isAr
+                      ? 'توصيل خلال $etaMin-$etaMax يوم'
+                      : 'Delivery in $etaMin-$etaMax days');
+              final etaStr = isAr
+                  ? '$etaPart  •  شحنة واحدة${codOk ? '  •  الدفع عند الاستلام متاح' : ''}'
+                  : '$etaPart  •  One shipment${codOk ? '  •  COD available' : ''}';
               return Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 8),
                 child: Row(children: [
