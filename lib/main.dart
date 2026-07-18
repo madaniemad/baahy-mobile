@@ -51,18 +51,35 @@ Future<void> main() async {
       DeepLinkService.instance.init();
 
       // Firebase init — fire-and-forget so runApp() is not blocked.
-      // FCM wiring happens in BaahyApp once this future settles.
-      _firebaseInit = Firebase.initializeApp()
-          .then((_) { _firebaseReady = true; })
-          .catchError((Object e) {
-            debugPrint('[Firebase] Not initialized — add config files to enable: $e');
-          });
+      // FCM wiring happens in BaahyApp once this future settles. Retry on the
+      // implicit-engine plugin-channel race: Dart can call initializeApp()
+      // before the native firebase_core channel is registered, which throws
+      // "channel-error". Without a retry, Firebase never initializes and the
+      // whole push pipeline (getToken → /device-token) never runs.
+      _firebaseInit = _initFirebaseWithRetry();
 
       final container = ProviderContainer();
       DeepLinkService.instance.setContainer(container);
       runApp(UncontrolledProviderScope(container: container, child: const BaahyApp()));
     },
   );
+}
+
+/// Initialize Firebase, retrying the plugin-channel race that the implicit-engine
+/// AppDelegate can trigger (initializeApp() called before the native channel is
+/// registered → PlatformException 'channel-error'). Retrying a few hundred ms
+/// later succeeds once GeneratedPluginRegistrant has run.
+Future<void> _initFirebaseWithRetry() async {
+  for (var attempt = 0; attempt < 8; attempt++) {
+    try {
+      await Firebase.initializeApp();
+      _firebaseReady = true;
+      return;
+    } catch (_) {
+      await Future.delayed(const Duration(milliseconds: 400));
+    }
+  }
+  debugPrint('[Firebase] not initialized after retries — push disabled');
 }
 
 class BaahyApp extends ConsumerWidget {
