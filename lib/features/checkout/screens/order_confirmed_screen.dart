@@ -333,8 +333,8 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                                     const SizedBox(height: 3),
                                     Text(
                                       isAr
-                                          ? '$loyaltyRemaining طلب أكثر'
-                                          : '$loyaltyRemaining more order',
+                                          ? 'أكمل $loyaltyRemaining طلب'
+                                          : 'Complete $loyaltyRemaining order',
                                       style: TextStyle(
                                         fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                         fontSize: 12,
@@ -343,8 +343,8 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                                     ),
                                     Text(
                                       isAr
-                                          ? 'لتحصل على ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit}'
-                                          : 'to earn ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit}',
+                                          ? 'واحصل على ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit} عند التوصيل'
+                                          : 'and get ${loyaltyReward.toStringAsFixed(0)} ${context.s.lydUnit} on delivery',
                                       style: const TextStyle(
                                         fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                         fontSize: 12,
