@@ -32,6 +32,18 @@ bool _fcmInited = false;
 Future<void>? _firebaseInit;
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+  ));
+
+  // Initialize Firebase up front so the push pipeline (getToken → /device-token)
+  // can start as soon as it's ready.
+  _firebaseInit = _initFirebaseWithRetry();
+  await _firebaseInit;
+
   await SentryFlutter.init(
     (options) {
       options.dsn = 'https://2cec46307e2718d20887b9719687b2f5@o4511447317807104.ingest.de.sentry.io/4511453087793232';
@@ -39,25 +51,9 @@ Future<void> main() async {
       options.tracesSampleRate = kReleaseMode ? 0.1 : 0.0;
       options.enableAutoSessionTracking = true;
     },
-    appRunner: () async {
-      WidgetsFlutterBinding.ensureInitialized();
-
-      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ));
-
+    appRunner: () {
       // Deep links — init early so cold-start URIs are captured before runApp.
       DeepLinkService.instance.init();
-
-      // Firebase init — fire-and-forget so runApp() is not blocked.
-      // FCM wiring happens in BaahyApp once this future settles. Retry on the
-      // implicit-engine plugin-channel race: Dart can call initializeApp()
-      // before the native firebase_core channel is registered, which throws
-      // "channel-error". Without a retry, Firebase never initializes and the
-      // whole push pipeline (getToken → /device-token) never runs.
-      _firebaseInit = _initFirebaseWithRetry();
-
       final container = ProviderContainer();
       DeepLinkService.instance.setContainer(container);
       runApp(UncontrolledProviderScope(container: container, child: const BaahyApp()));
@@ -65,10 +61,13 @@ Future<void> main() async {
   );
 }
 
-/// Initialize Firebase, retrying the plugin-channel race that the implicit-engine
-/// AppDelegate can trigger (initializeApp() called before the native channel is
-/// registered → PlatformException 'channel-error'). Retrying a few hundred ms
-/// later succeeds once GeneratedPluginRegistrant has run.
+/// Initialize Firebase with a short retry as defensive hardening against a
+/// transient plugin-channel race at startup.
+///
+/// NOTE: the months-long "channel-error, Unable to establish connection on
+/// channel" that left Firebase (and all push) dead was NOT a race — it was
+/// firebase_core 3.15.0 being incompatible with Flutter 3.41's UIScene/implicit
+/// engine. Upgrading to firebase_core 4.x / firebase_messaging 16.x fixed it.
 Future<void> _initFirebaseWithRetry() async {
   for (var attempt = 0; attempt < 8; attempt++) {
     try {
