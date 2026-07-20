@@ -384,7 +384,7 @@ class _HeroCard extends StatelessWidget {
         subtitle: context.s.isAr ? 'سيتم مراجعة طلبك قريباً' : 'We\'ll review your order soon',
       );
     }
-    if (s == 'pending') {
+    if (s == 'confirmed' || s == 'pending') {
       return _HeroInfo(
         icon: Icons.check_circle_outline_rounded,
         badge: context.s.isAr ? 'مؤكد' : 'Confirmed',
@@ -392,8 +392,8 @@ class _HeroCard extends StatelessWidget {
         subtitle: context.s.isAr ? 'سيبدأ تجهيز طلبك قريباً' : 'Preparing soon',
       );
     }
-    // Confirmed = preparation already underway → same customer-facing state as processing.
-    if (s == 'confirmed' || s == 'processing' || s == 'fulfilled') {
+    // Processing / fulfilled both read as "being prepared" for the customer.
+    if (s == 'processing' || s == 'fulfilled') {
       return _HeroInfo(
         icon: Icons.inventory_2_outlined,
         badge: context.s.isAr ? 'قيد التجهيز' : 'Processing',
@@ -462,9 +462,8 @@ class _Timeline extends StatelessWidget {
   static const _extraMap = {
     'pending_confirmation': 0,
     'pending_vendor': 0,
-    // Confirmed => preparation is already underway (we collect/pack immediately), so light up
-    // "قيد التجهيز" as the active step rather than leaving it dark until a later status.
-    'confirmed': 2,
+    // 'confirmed' resolves to its own step (مؤكد). The order auto-advances to 'processing'
+    // ~30s later, and 'fulfilled' rolls up when collected — both map to قيد التجهيز (step 2).
     'processing': 2,
     'fulfilled': 2,
     'out_for_delivery': 3,

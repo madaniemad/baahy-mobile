@@ -134,9 +134,9 @@ class AppStrings {
       case 'pending_vendor':
       case 'pending_confirmation': return isAr ? 'بانتظار التأكيد' : 'Pending Confirmation';
       case 'pending':              return isAr ? 'قيد الانتظار'    : 'Pending';
-      case 'confirmed':            return isAr ? 'قيد التجهيز'    : 'Processing';
+      case 'confirmed':            return isAr ? 'مؤكد'            : 'Confirmed';
       case 'processing':           return isAr ? 'قيد التجهيز'    : 'Processing';
-      case 'fulfilled':            return isAr ? 'جاهز للشحن'     : 'Fulfilled';
+      case 'fulfilled':            return isAr ? 'قيد التجهيز'    : 'Processing';
       case 'shipped':              return isAr ? 'في الطريق'       : 'Shipped';
       case 'out_for_delivery':     return isAr ? 'قيد التوصيل'    : 'Out for Delivery';
       case 'delivered':            return isAr ? 'تم التسليم'      : 'Delivered';
