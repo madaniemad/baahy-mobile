@@ -384,7 +384,15 @@ class _HeroCard extends StatelessWidget {
         subtitle: context.s.isAr ? 'سيتم مراجعة طلبك قريباً' : 'We\'ll review your order soon',
       );
     }
-    if (s == 'confirmed' || s == 'pending') {
+    if (s == 'confirmed') {
+      return _HeroInfo(
+        icon: Icons.check_circle_outline_rounded,
+        badge: context.s.isAr ? 'مؤكد' : 'Confirmed',
+        title: context.s.isAr ? 'تم تأكيد طلبك' : 'Order Confirmed',
+        subtitle: context.s.isAr ? 'بدأنا بتجهيز طلبك' : 'We\'ve started preparing your order',
+      );
+    }
+    if (s == 'pending') {
       return _HeroInfo(
         icon: Icons.check_circle_outline_rounded,
         badge: context.s.isAr ? 'مؤكد' : 'Confirmed',
@@ -461,6 +469,10 @@ class _Timeline extends StatelessWidget {
   static const _extraMap = {
     'pending_confirmation': 0,
     'pending_vendor': 0,
+    // Confirmed => preparation is already underway (we collect/pack immediately), so light up
+    // "قيد التجهيز" as the active step rather than leaving it dark until a later status.
+    'confirmed': 2,
+    'processing': 2,
     'fulfilled': 2,
     'out_for_delivery': 3,
     'cancelled': 0,
