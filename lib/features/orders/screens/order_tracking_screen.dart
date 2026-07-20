@@ -384,14 +384,6 @@ class _HeroCard extends StatelessWidget {
         subtitle: context.s.isAr ? 'سيتم مراجعة طلبك قريباً' : 'We\'ll review your order soon',
       );
     }
-    if (s == 'confirmed') {
-      return _HeroInfo(
-        icon: Icons.check_circle_outline_rounded,
-        badge: context.s.isAr ? 'مؤكد' : 'Confirmed',
-        title: context.s.isAr ? 'تم تأكيد طلبك' : 'Order Confirmed',
-        subtitle: context.s.isAr ? 'بدأنا بتجهيز طلبك' : 'We\'ve started preparing your order',
-      );
-    }
     if (s == 'pending') {
       return _HeroInfo(
         icon: Icons.check_circle_outline_rounded,
@@ -400,12 +392,13 @@ class _HeroCard extends StatelessWidget {
         subtitle: context.s.isAr ? 'سيبدأ تجهيز طلبك قريباً' : 'Preparing soon',
       );
     }
-    if (s == 'processing' || s == 'fulfilled') {
+    // Confirmed = preparation already underway → same customer-facing state as processing.
+    if (s == 'confirmed' || s == 'processing' || s == 'fulfilled') {
       return _HeroInfo(
         icon: Icons.inventory_2_outlined,
         badge: context.s.isAr ? 'قيد التجهيز' : 'Processing',
         title: context.s.isAr ? 'جارٍ تجهيز طلبك' : 'Preparing Your Order',
-        subtitle: context.s.isAr ? 'طلبك على وشك الشحن' : 'Getting ready to ship',
+        subtitle: context.s.isAr ? 'بدأنا بتجهيز طلبك' : 'We\'ve started preparing your order',
       );
     }
     // shipped / out_for_delivery

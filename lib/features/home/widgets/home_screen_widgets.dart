@@ -120,8 +120,8 @@ final _activeOrderProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
 String _orderStripLabel(BuildContext context, String status) {
   switch (status) {
     case 'pending_confirmation': return context.s.isAr ? 'بانتظار التأكيد' : 'Pending Confirmation';
-    case 'pending':
-    case 'confirmed':            return context.s.isAr ? 'تم تأكيد طلبك'  : 'Order Confirmed';
+    case 'pending':              return context.s.isAr ? 'تم تأكيد طلبك'  : 'Order Confirmed';
+    case 'confirmed':
     case 'processing':
     case 'fulfilled':            return context.s.isAr ? 'قيد التجهيز'    : 'Processing';
     case 'shipped':
