@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/utils/l10n.dart';
-import '../../core/services/push_notification_service.dart';
 import 'onb_theme.dart';
 import 'onb_city_picker.dart';
 
@@ -44,16 +41,15 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     (ar: 'assets/onboarding/full/slide_coupon.webp',   en: 'assets/onboarding/full/slide_coupon_en.webp'),
     (ar: 'assets/onboarding/full/slide_products.webp', en: 'assets/onboarding/full/slide_products_en.webp'),
   ];
-  static const _iCoupon = 3;                 // notifications slide (idx)
   int get _iLast => _slides.length - 1;      // products slide (idx)
   int get _count => _slides.length + 1;      // + city
 
-  // Pages where the user may swipe freely (no button): delivery/payments/rewards
-  // = promo idx 0,1,2 → carousel pages 1,2,3. City, coupon, products are gated.
-  // Keyed off the settled page so physics is stable during an in-flight settle.
-  // While a programmatic slide runs we also allow scrolling, otherwise the
-  // animation is swallowed and the page snaps across instantly.
-  bool get _canScroll => _animating || (_settled >= 1 && _settled <= 3);
+  // Pages where the user may swipe freely (no button): every promo between the
+  // city picker and the final products slide = carousel pages 1..4. Only the city
+  // (page 0) and products (last page) are gated. Keyed off the settled page so
+  // physics is stable during an in-flight settle. While a programmatic slide runs
+  // we also allow scrolling, otherwise the animation is swallowed.
+  bool get _canScroll => _animating || (_settled >= 1 && _settled <= _iLast);
 
   @override
   void dispose() { _pc.dispose(); super.dispose(); }
@@ -80,23 +76,6 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
        .whenComplete(() { if (mounted) setState(() => _animating = false); });
   }
 
-  // The system permission dialog is triggered ONLY by the coupon screen's
-  // "Activate Notifications" button (awaited, so the dialog shows there — not
-  // later on the home screen). "Later" / finishing never requests it.
-  Future<void> _activateNotifications() async {
-    AuthorizationStatus? status;
-    try {
-      status = await PushNotificationService.instance.requestPermissionIfNeeded();
-    } catch (_) {}
-    // If already denied, iOS won't show its dialog again — the tap would look
-    // like it did nothing. Send them to the app's notification settings instead.
-    if (status == AuthorizationStatus.denied) {
-      final uri = Uri.parse('app-settings:');
-      if (await canLaunchUrl(uri)) await launchUrl(uri);
-    }
-    if (mounted) _next();
-  }
-
   Future<void> _finish() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_v2_done', true);
@@ -108,43 +87,52 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     final isAr = ref.watch(localeProvider).languageCode == 'ar';
     return Scaffold(
       backgroundColor: const Color(0xFFEAF9FB),
-      body: NotificationListener<ScrollEndNotification>(
-        // Update the gate only once a swipe fully settles, so the physics never
-        // flips while an animation is still running.
-        onNotification: (_) {
-          final s = _pc.hasClients ? (_pc.page?.round() ?? _settled) : _settled;
-          if (s != _settled) setState(() => _settled = s);
-          return false;
-        },
-        child: PageView.builder(
-          controller: _pc,
-          itemCount: _count,
-          physics: _canScroll ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
-          onPageChanged: (i) => setState(() => _page = i),
-          itemBuilder: (_, i) {
-            if (i == 0) return OnbCityPicker(onContinue: _next);
-            final idx = i - 1;
-            final isCoupon = idx == _iCoupon;
-            final isLast = idx == _iLast;
-            final slide = _slides[idx];
-            return _parallax(i, _ImageSlide(
-              image: isAr ? slide.ar : slide.en,
-              isAr: isAr,
-              cta: isCoupon
-                  ? (isAr ? 'فعّل الإشعارات' : 'Activate Notifications')
-                  : isLast
-                      ? (isAr ? 'ابدأ التسوق' : 'Start Shopping')
-                      : null, // plain promos: no button, swipe instead
-              onCta: isCoupon ? _activateNotifications : _finish,
-              later: isCoupon ? (isAr ? 'لاحقاً' : 'Later') : null,
-              onLater: _next,
-              // Dots only on the freely-swipeable promos (not coupon/products).
-              showDots: !isCoupon && !isLast,
-              dots: _Dots(count: _slides.length, active: idx),
-            ));
+      body: Stack(children: [
+        NotificationListener<ScrollEndNotification>(
+          // Update the gate only once a swipe fully settles, so the physics never
+          // flips while an animation is still running.
+          onNotification: (_) {
+            final s = _pc.hasClients ? (_pc.page?.round() ?? _settled) : _settled;
+            if (s != _settled) setState(() => _settled = s);
+            return false;
           },
+          child: PageView.builder(
+            controller: _pc,
+            itemCount: _count,
+            physics: _canScroll ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
+            onPageChanged: (i) => setState(() => _page = i),
+            itemBuilder: (_, i) {
+              if (i == 0) return OnbCityPicker(onContinue: _next);
+              final idx = i - 1;
+              final isLast = idx == _iLast;
+              final slide = _slides[idx];
+              return _parallax(i, _ImageSlide(
+                image: isAr ? slide.ar : slide.en,
+                isAr: isAr,
+                // Only the last (products) slide has a button — every slide between
+                // the city picker and products is a swipe-through promo. Notification
+                // permission is no longer requested here; it moves to first sign-in.
+                cta: isLast ? (isAr ? 'ابدأ التسوق' : 'Start Shopping') : null,
+                onCta: _finish,
+                later: null,
+                onLater: _next,
+                // Dots on every promo except the last (products has the button).
+                showDots: !isLast,
+                dots: _Dots(count: _slides.length, active: idx),
+              ));
+            },
+          ),
         ),
-      ),
+        // Skip (top-left) — shown on every screen after the city picker so users
+        // can jump straight into the app. Hidden on the city page (must pick a
+        // city) and on the last slide (which already has "Start Shopping").
+        if (_page >= 1 && _page < _count - 1)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 6,
+            left: 12,
+            child: _SkipButton(label: isAr ? 'تخطّي' : 'Skip', onTap: _finish),
+          ),
+      ]),
     );
   }
 
@@ -224,39 +212,38 @@ class _ImageSlide extends StatelessWidget {
   }
 }
 
-class _Cta extends StatefulWidget {
+// Static CTA — no pulse (kept calm to match the still city button).
+class _Cta extends StatelessWidget {
   final String label; final VoidCallback onTap;
   const _Cta({required this.label, required this.onTap});
   @override
-  State<_Cta> createState() => _CtaState();
+  Widget build(BuildContext context) => GestureDetector(onTap: onTap, child: Container(
+    height: 50, width: double.infinity, alignment: Alignment.center,
+    decoration: BoxDecoration(
+      gradient: Onb.ctaGradient, borderRadius: BorderRadius.circular(13),
+      boxShadow: [BoxShadow(color: Onb.teal.withValues(alpha: 0.38), blurRadius: 16, offset: const Offset(0, 6))]),
+    child: Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15.5, fontWeight: FontWeight.w800, color: Colors.white)),
+  ));
 }
 
-class _CtaState extends State<_Cta> with SingleTickerProviderStateMixin {
-  // "breathing" pulse matching the city-screen confirm button
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 620))..repeat(reverse: true);
-
+// Subtle "Skip" pill (top-left) — legible over artwork, calm styling.
+class _SkipButton extends StatelessWidget {
+  final String label; final VoidCallback onTap;
+  const _SkipButton({required this.label, required this.onTap});
   @override
-  void dispose() { _c.dispose(); super.dispose(); }
-
-  @override
-  Widget build(BuildContext context) {
-    final btn = GestureDetector(onTap: widget.onTap, child: Container(
-      height: 50, width: double.infinity, alignment: Alignment.center,
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    behavior: HitTestBehavior.opaque,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
-        gradient: Onb.ctaGradient, borderRadius: BorderRadius.circular(13),
-        boxShadow: [BoxShadow(color: Onb.teal.withValues(alpha: 0.38), blurRadius: 16, offset: const Offset(0, 6))]),
-      child: Text(widget.label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15.5, fontWeight: FontWeight.w800, color: Colors.white)),
-    ));
-    return AnimatedBuilder(
-      animation: _c,
-      child: btn,
-      builder: (context, ch) => Transform.scale(
-        scale: 1 + Curves.easeInOut.transform(_c.value) * 0.06,
-        child: ch,
+        color: Colors.white.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(9999),
+        border: Border.all(color: const Color(0x14000000)),
       ),
-    );
-  }
+      child: Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13.5, fontWeight: FontWeight.w700, color: Onb.inkMuted)),
+    ),
+  );
 }
 
 class _Dots extends StatelessWidget {

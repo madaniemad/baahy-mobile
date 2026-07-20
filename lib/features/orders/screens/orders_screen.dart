@@ -54,7 +54,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   ];
 
   static const _activeStatuses = [
-    'pending_confirmation', 'pending', 'confirmed',
+    'pending_confirmation', 'pending_vendor', 'pending', 'confirmed',
     'processing', 'fulfilled', 'shipped', 'out_for_delivery',
   ];
 

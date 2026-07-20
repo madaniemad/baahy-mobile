@@ -73,6 +73,7 @@ class Order {
   String get statusAr {
     const map = {
       'pending_confirmation': 'في انتظار التأكيد',
+      'pending_vendor': 'في انتظار التأكيد',
       'pending': 'قيد الانتظار',
       'confirmed': 'مؤكد',
       'processing': 'قيد التجهيز',

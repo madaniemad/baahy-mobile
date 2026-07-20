@@ -347,41 +347,23 @@ class _ManualButton extends StatelessWidget {
   );
 }
 
-class _Cta extends StatefulWidget {
+// Static primary button — no pulse/scale animation (kept calm so it doesn't
+// distract first-time users during onboarding).
+class _Cta extends StatelessWidget {
   final String label; final VoidCallback onTap; final bool disabled;
   const _Cta({required this.label, required this.onTap, this.disabled = false});
-  @override
-  State<_Cta> createState() => _CtaState();
-}
-
-class _CtaState extends State<_Cta> with SingleTickerProviderStateMixin {
-  // "breathing" pulse so the primary action clearly draws the eye
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 620))..repeat(reverse: true);
-
-  @override
-  void dispose() { _c.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
-    final btn = GestureDetector(
-      onTap: widget.disabled ? null : widget.onTap,
-      child: Opacity(opacity: widget.disabled ? 0.5 : 1, child: Container(
+    return GestureDetector(
+      onTap: disabled ? null : onTap,
+      child: Opacity(opacity: disabled ? 0.5 : 1, child: Container(
         height: 46, width: double.infinity, alignment: Alignment.center,
         decoration: BoxDecoration(
           color: _teal, borderRadius: BorderRadius.circular(18),
-          boxShadow: widget.disabled ? null : [BoxShadow(color: _teal.withValues(alpha: 0.38), blurRadius: 16, offset: const Offset(0, 6))]),
-        child: Text(widget.label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
+          boxShadow: disabled ? null : [BoxShadow(color: _teal.withValues(alpha: 0.38), blurRadius: 16, offset: const Offset(0, 6))]),
+        child: Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
       )),
-    );
-    if (widget.disabled) return btn;
-    return AnimatedBuilder(
-      animation: _c,
-      child: btn,
-      builder: (context, ch) => Transform.scale(
-        scale: 1 + Curves.easeInOut.transform(_c.value) * 0.06, // breathe 1.0 → 1.06
-        child: ch,
-      ),
     );
   }
 }
@@ -398,7 +380,7 @@ class _CityStr {
   String get locatingSub => ar ? 'يتم ذلك في الخلفية' : 'This happens in the background';
   String get currentCity => ar ? 'مدينتك الحالية' : 'Your current city';
   String get autoDetected => ar ? 'تم تحديدها تلقائياً' : 'Detected automatically';
-  String get confirmCity => ar ? 'تأكيد المدينة' : 'Confirm city';
+  String get confirmCity => ar ? 'أكّد مدينتك' : 'Confirm your city';
   String get or => ar ? 'أو' : 'or';
   String get manual => ar ? 'اختر المدينة يدوياً' : 'Choose city manually';
   String get outTitle => ar ? 'خارج نطاق التوصيل' : 'Outside our service area';

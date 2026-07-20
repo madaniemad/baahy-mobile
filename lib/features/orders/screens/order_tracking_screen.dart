@@ -162,7 +162,7 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
-    final isActive = ['pending_confirmation', 'pending', 'confirmed', 'processing',
+    final isActive = ['pending_confirmation', 'pending_vendor', 'pending', 'confirmed', 'processing',
         'fulfilled', 'shipped', 'out_for_delivery'].contains(order.status);
 
     return SingleChildScrollView(
@@ -376,7 +376,7 @@ class _HeroCard extends StatelessWidget {
 
   _HeroInfo _info(BuildContext context) {
     final s = order.status;
-    if (s == 'pending_confirmation') {
+    if (s == 'pending_confirmation' || s == 'pending_vendor') {
       return _HeroInfo(
         icon: Icons.hourglass_empty_rounded,
         badge: context.s.isAr ? 'بانتظار التأكيد' : 'Pending Confirmation',
@@ -460,6 +460,7 @@ class _Timeline extends StatelessWidget {
 
   static const _extraMap = {
     'pending_confirmation': 0,
+    'pending_vendor': 0,
     'fulfilled': 2,
     'out_for_delivery': 3,
     'cancelled': 0,
@@ -469,7 +470,7 @@ class _Timeline extends StatelessWidget {
 
   // Each step maps to one or more possible to_status values in history
   static const _stepAliases = {
-    'pending':    ['pending', 'pending_confirmation'],
+    'pending':    ['pending', 'pending_confirmation', 'pending_vendor'],
     'confirmed':  ['confirmed'],
     'processing': ['processing', 'fulfilled'],
     'shipped':    ['shipped', 'out_for_delivery'],

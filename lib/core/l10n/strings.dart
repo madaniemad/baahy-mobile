@@ -131,6 +131,7 @@ class AppStrings {
 
   String statusLabel(String s) {
     switch (s) {
+      case 'pending_vendor':
       case 'pending_confirmation': return isAr ? 'بانتظار التأكيد' : 'Pending Confirmation';
       case 'pending':              return isAr ? 'قيد الانتظار'    : 'Pending';
       case 'confirmed':            return isAr ? 'مؤكد'            : 'Confirmed';

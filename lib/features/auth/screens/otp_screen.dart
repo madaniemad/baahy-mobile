@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/deep_link_service.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -75,6 +76,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       await ref.read(authProvider.notifier).verifyOtp(
         widget.phone, _code, referralCode: widget.referralCode);
       await DeepLinkService.consumePendingCode(); // clear after successful signup
+      // Ask for notification permission at first sign-in (moved here from onboarding
+      // so first-time users aren't interrupted mid-onboarding). Awaited so the OS
+      // dialog shows on this screen; never block sign-in if it throws.
+      try { await PushNotificationService.instance.requestPermissionIfNeeded(); } catch (_) {}
       if (mounted) context.go('/home');
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
