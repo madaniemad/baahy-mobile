@@ -243,7 +243,7 @@ class _ActiveOrderStripState extends ConsumerState<_ActiveOrderStrip> {
       if (tier.pendingTotal > 0) {
         strips.add(_StripTile(
           icon: Icons.hourglass_top,
-          label: context.s.nudgePending(tier.pendingTotal.toStringAsFixed(2)),
+          label: context.s.nudgePending(fmtPrice(tier.pendingTotal)),
           sub: null,
           onTap: () => safePush(context, '/rewards-hub'),
           iconColor: const Color(0xFFD4A82E),
@@ -255,7 +255,7 @@ class _ActiveOrderStripState extends ConsumerState<_ActiveOrderStrip> {
       if (walletBal >= 5) {
         strips.add(_StripTile(
           icon: Icons.account_balance_wallet,
-          label: context.s.nudgeWallet(walletBal.toStringAsFixed(2)),
+          label: context.s.nudgeWallet(fmtPrice(walletBal)),
           sub: null,
           onTap: () => safePush(context, '/wallet'),
           iconColor: AppColors.primary,
