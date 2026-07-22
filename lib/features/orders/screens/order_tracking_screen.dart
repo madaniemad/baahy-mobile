@@ -132,7 +132,12 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           .toList();
       final queryParams = ids.map((id) => 'ids[]=$id').join('&');
       final res = await ApiClient.instance.dio.get('/products?$queryParams');
-      final raw = (res.data['data'] as List? ?? []);
+      // The batch endpoint wraps the list as { data: { data: [...] } }.
+      // Tolerate both the nested and flat shapes.
+      final dataNode = res.data['data'];
+      final raw = dataNode is List
+          ? dataNode
+          : (dataNode is Map ? (dataNode['data'] as List? ?? const []) : const []);
       final products = {for (final j in raw) (j['id'] as int): Product.fromJson(j)};
       final cart = ref.read(cartProvider.notifier);
       for (final group in widget.order.vendorGroups) {
