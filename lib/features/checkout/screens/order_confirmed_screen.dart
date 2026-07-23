@@ -103,6 +103,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
     final loyaltyRemaining = tier?.nextMilestoneRemaining;
     final loyaltyReward = tier?.nextMilestoneReward;
     final isAr = context.isAr;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final deliveryLabel = _deliveryLabel(isAr);
 
     return Scaffold(
@@ -437,8 +438,8 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                       Expanded(
                         child: Text(
                           isAr
-                              ? 'سيُخبرك عند تجهيز طلبك والشحن والتوصيل'
-                              : "We'll notify you when your order is prepared, shipped and delivered",
+                              ? 'سنخبرك عند تأكيد طلبك وتجهيزه للتوصيل'
+                              : "We'll notify you when your order is confirmed and prepared for delivery",
                           textAlign: TextAlign.start,
                           style: TextStyle(
                             fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
@@ -485,7 +486,10 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                   child: Container(
                     height: 52,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF111827),
+                      // The near-black fill blends into the dark scaffold, hiding the
+                      // primary CTA. In dark mode use the brand tiffany with dark text
+                      // so "Track Order" stands out; light mode keeps the dark fill.
+                      color: isDark ? AppColors.primary : const Color(0xFF111827),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -493,16 +497,17 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                       children: [
                         Text(
                           isAr ? 'تتبع الطلب' : 'Track Order',
-                          style: const TextStyle(
-                            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                          style: TextStyle(
+                            fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: isDark ? const Color(0xFF004D54) : Colors.white,
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.location_on_outlined,
-                            color: Colors.white, size: 18),
+                        Icon(Icons.location_on_outlined,
+                            color: isDark ? const Color(0xFF004D54) : Colors.white,
+                            size: 18),
                       ],
                     ),
                   ),
@@ -525,7 +530,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          isAr ? 'مواصلة التسوق' : 'Keep Shopping',
+                          isAr ? 'الصفحة الرئيسية' : 'Home',
                           style: TextStyle(
                             fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                             fontSize: 15,
@@ -534,7 +539,7 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(Icons.shopping_bag_outlined,
+                        Icon(Icons.home_outlined,
                             color: context.col.ink0, size: 18),
                       ],
                     ),
