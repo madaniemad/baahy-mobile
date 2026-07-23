@@ -15,6 +15,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../checkout/screens/payment_webview_screen.dart';
 
 final _walletProvider = FutureProvider<List<dynamic>>((ref) async {
   final res = await ApiClient.instance.dio.get('/wallet/transactions');
@@ -822,11 +823,40 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
 
   static const _quickAmounts = [100, 200, 500, 1000];
 
-  static const _methods = [
-    (id: 'mobicash', label: 'موبيكاش', desc: 'ادفع بكارت موبيكاش'),
-    (id: 'tadawel',  label: 'تداول',   desc: 'دفع إلكتروني عبر تداول'),
-    (id: 'moamlat', label: 'بطاقة مصرفية', desc: 'دفع إلكتروني بالبطاقة المصرفية'),
-  ];
+  // Wallet top-up methods are DRIVEN BY THE BACKEND (site_settings.payment_methods, minus
+  // cash-on-delivery and wallet) so admin renames/toggles and new gateways appear here without
+  // an app rebuild. Descriptions fall back to a per-gateway default when the admin left one blank.
+  static const _descById = {
+    'mobicash': 'ادفع بكارت موبيكاش',
+    'tadawel':  'دفع إلكتروني عبر تداول',
+    'moamlat':  'دفع إلكتروني بالبطاقة المصرفية',
+    'paypal':   'ادفع بحساب PayPal',
+    'sadad':    'دفع إلكتروني عبر سداد',
+  };
+
+  List<({String id, String label, String desc})> get _methods {
+    final pm = ref.read(appConfigProvider).paymentMethods
+        .where((m) => m.enabled && m.id != 'cash_on_delivery' && m.id != 'wallet')
+        .toList();
+    if (pm.isEmpty) {
+      return const [(id: 'mobicash', label: 'موبيكاش', desc: 'ادفع بكارت موبيكاش')];
+    }
+    return pm.map((m) => (
+      id: m.id,
+      label: m.labelAr,
+      desc: m.descriptionAr.isNotEmpty ? m.descriptionAr : (_descById[m.id] ?? ''),
+    )).toList();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Default the selection to the first backend-provided method (mobicash may be disabled).
+    final ms = _methods;
+    if (ms.isNotEmpty && !ms.any((m) => m.id == _paymentId)) {
+      _paymentId = ms.first.id;
+    }
+  }
 
   double get _amount {
     final custom = double.tryParse(_customCtrl.text.trim());
@@ -850,6 +880,8 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       }
       if (_paymentId == 'mobicash') {
         setState(() { _step = 1; _error = null; });
+      } else if (_paymentId == 'paypal') {
+        await _initiatePaypal();
       } else {
         await _initiateGateway();
       }
@@ -876,6 +908,47 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       }
     } catch (_) {
       setState(() { _loading = false; _error = 'حدث خطأ، حاول مجدداً'; });
+    }
+  }
+
+  Future<void> _initiatePaypal() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      // 1) create the wallet top-up to get a reference, 2) get the PayPal approval URL,
+      // 3) open it in the in-app webview (returns the deep-link on return), 4) capture → credit.
+      final init = await ApiClient.instance.dio.post('/wallet/topup/initiate', data: {
+        'amount': _amount, 'gateway': 'paypal',
+      });
+      final ref0 = init.data['reference'] as String?;
+      if (ref0 == null || ref0.isEmpty) {
+        setState(() { _loading = false; _error = 'تعذّر بدء عملية الدفع'; });
+        return;
+      }
+      final pp = await ApiClient.instance.dio.post('/payment/paypal/initiate', data: {
+        'topup_ref': ref0, 'platform': 'mobile',
+      });
+      final approvalUrl = pp.data['approval_url'] as String?;
+      if (approvalUrl == null || approvalUrl.isEmpty) {
+        setState(() { _loading = false; _error = 'خدمة PayPal غير متاحة حالياً'; });
+        return;
+      }
+      if (!mounted) return;
+      final Uri? deepLink = await Navigator.of(context).push<Uri?>(
+        MaterialPageRoute(builder: (_) => PaymentWebViewScreen(
+          url: approvalUrl, title: 'الدفع عبر PayPal')),
+      );
+      if (!mounted) return;
+      final token = deepLink?.queryParameters['token'] ?? '';
+      if (token.isEmpty) {
+        setState(() { _loading = false; _error = 'تم إلغاء الدفع'; });
+        return;
+      }
+      await ApiClient.instance.dio.post('/payment/paypal/capture', data: {
+        'topup_ref': ref0, 'paypal_order_id': token,
+      });
+      if (mounted) { Navigator.of(context).pop(); widget.onSuccess(); }
+    } catch (_) {
+      if (mounted) setState(() { _loading = false; _error = 'حدث خطأ، حاول مجدداً'; });
     }
   }
 
