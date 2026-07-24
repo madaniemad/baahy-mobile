@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/strings.dart';
 import '../../shared/theme/app_theme.dart';
+import '../api/api_client.dart';
 
 final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>((ref) {
   return LocaleNotifier();
@@ -17,12 +18,25 @@ class LocaleNotifier extends StateNotifier<Locale> {
     final prefs = await SharedPreferences.getInstance();
     final lang = prefs.getString('lang') ?? 'ar';
     state = Locale(lang);
+    // Reconcile the server on startup so users who set their language before this
+    // sync existed (or on a reinstall) get it recorded for push notifications.
+    _syncLangToBackend(lang);
   }
 
   Future<void> setLocale(Locale locale) async {
     state = locale;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('lang', locale.languageCode);
+    // Keep users.language in sync on the server so PUSH NOTIFICATIONS match the
+    // in-app language. Fire-and-forget: only lands when authenticated (the Dio
+    // instance attaches the token); a 401/offline is harmless and swallowed.
+    _syncLangToBackend(locale.languageCode);
+  }
+
+  Future<void> _syncLangToBackend(String lang) async {
+    try {
+      await ApiClient.instance.dio.put('/auth/profile', data: {'language': lang});
+    } catch (_) {/* not logged in / offline — will sync on next toggle or registration */}
   }
 
   bool get isAr => state.languageCode == 'ar';
