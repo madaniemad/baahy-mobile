@@ -509,21 +509,6 @@ class _TierProgressCard extends StatelessWidget {
                   style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11, color: context.col.ink2)),
             ]),
           ),
-          const SizedBox(width: 8),
-          // Tier dots
-          Row(children: List.generate(4, (i) {
-            final active = i <= currentIndex;
-            return Padding(
-              padding: EdgeInsets.only(right: i > 0 ? 6 : 0),
-              child: Opacity(
-                opacity: active ? 1.0 : 0.30,
-                child: Image.asset(
-                  'assets/images/tier_${_tiers[i]}.png',
-                  width: 30, height: 30, fit: BoxFit.contain,
-                ),
-              ),
-            );
-          })),
         ]),
 
         if (nextIndex != null) ...[
