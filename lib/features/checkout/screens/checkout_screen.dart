@@ -91,7 +91,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!mounted) return;
     if (_paymentMethod == 'cash_on_delivery' && !_codAllowedForAddress) {
       final altMethods = (ref.read(appConfigProvider).paymentMethods as List)
-          .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet' && m.id != 'cash_on_delivery')
+          .where((m) => m.enabled == true && m.id != 'wallet' && m.id != 'cash_on_delivery')
           .toList();
       if (altMethods.isNotEmpty) _setPaymentMethod(altMethods.first.id as String);
     }
@@ -190,7 +190,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
       if (!codAllowed) {
         final altMethods = (ref.read(appConfigProvider).paymentMethods as List)
-            .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet' && m.id != 'cash_on_delivery')
+            .where((m) => m.enabled == true && m.id != 'wallet' && m.id != 'cash_on_delivery')
             .toList();
         if (altMethods.isNotEmpty) _setPaymentMethod(altMethods.first.id);
       }
@@ -355,6 +355,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           await _handleGatewayPayment('moamlat', pendingRef, clearCart: !isReorder);
         } else if (_paymentMethod == 'mobicash') {
           await _handleMobicashPayment(pendingRef, clearCart: !isReorder);
+        } else if (_paymentMethod == 'sadad') {
+          // Sadad = redirect gateway (like Tadawel/Moamlat): backend returns a payment_url.
+          // Gated by the backend `payment_methods` enabled flag — appears only once enabled,
+          // so no app rebuild is needed when the backend Sadad integration goes live.
+          await _handleGatewayPayment('sadad', pendingRef, clearCart: !isReorder);
         } else {
           // Unknown/unsupported gateway id from the backend — never strand the user on an infinite spinner.
           setState(() => _loading = false);
@@ -477,7 +482,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
 
-      final title = gateway == 'tadawel' ? 'الدفع عبر تداول' : 'الدفع بالبطاقة المصرفية';
+      final title = gateway == 'tadawel' ? 'الدفع عبر تداول' : gateway == 'sadad' ? 'الدفع عبر سداد' : 'الدفع بالبطاقة المصرفية';
       final Uri? deepLink = await Navigator.of(context).push<Uri?>(
         MaterialPageRoute(builder: (_) => PaymentWebViewScreen(url: paymentUrl, title: title)),
       );
@@ -755,7 +760,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         : cart.total;
 
     final allMethods = (config.paymentMethods as List)
-        .where((m) => m.enabled == true && m.id != 'sadad' && m.id != 'wallet')
+        .where((m) => m.enabled == true && m.id != 'wallet')
         .toList();
     final codValueExceeded = effectiveTotal > 5000;
     final codItemsExceeded = effectiveItems.length > 20;
