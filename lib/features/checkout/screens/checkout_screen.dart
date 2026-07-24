@@ -29,6 +29,7 @@ String? _paymentIconPath(String id) {
     case 'mobicash': return 'assets/images/payment/mobicash.png';
     case 'tadawul': case 'tadawel': return 'assets/images/payment/tadawul.png';
     case 'lypay': return 'assets/images/payment/lypay.png';
+    case 'sadad': return 'assets/images/payment/sadad.png';
     default: return null;
   }
 }
