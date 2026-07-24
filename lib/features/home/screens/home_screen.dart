@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/home_provider.dart';
@@ -28,6 +27,8 @@ import '../../../core/utils/format.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/models/tier_status.dart';
 import '../../../core/providers/welcome_coupon_provider.dart';
+import '../../../core/services/version_gate.dart';
+import '../../misc/force_update_screen.dart';
 import '../../../core/utils/responsive.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -60,11 +61,30 @@ final _brandsProvider = FutureProvider<List<Brand>>((ref) async {
   }
 });
 
+bool _forceUpdateDialogShown = false;
+
+/// Shows the force-update popup once, OVER the home page, if the splash flagged a
+/// below-min-version install. Guarded so it fires a single time per app session.
+void _maybeShowForceUpdate(BuildContext context, WidgetRef ref) {
+  if (_forceUpdateDialogShown) return;
+  final gate = ref.read(pendingForceUpdateProvider);
+  if (gate?.forceUpdate != true) return;
+  _forceUpdateDialogShown = true;
+  final isAr = ref.read(localeProvider).languageCode == 'ar';
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (context.mounted) {
+      showForceUpdateDialog(context,
+          isAr: isAr, messageAr: gate!.messageAr, messageEn: gate.messageEn, storeUrl: gate.storeUrl);
+    }
+  });
+}
+
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    _maybeShowForceUpdate(context, ref);
     final home = ref.watch(homeProvider);
     final banners = ref.watch(bannersProvider);
     final config = ref.watch(appConfigProvider);

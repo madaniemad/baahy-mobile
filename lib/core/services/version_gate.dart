@@ -1,6 +1,11 @@
 import 'dart:io' show Platform;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../api/api_client.dart';
+
+/// Carries a pending force-update result from the splash to the home screen, so
+/// the update is shown as a popup OVER home (not a full-screen block at splash).
+final pendingForceUpdateProvider = StateProvider<VersionGateResult?>((ref) => null);
 
 /// Result of the backend-driven version check.
 class VersionGateResult {

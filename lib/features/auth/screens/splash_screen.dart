@@ -144,8 +144,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final gate = await VersionGate.check();
     if (!mounted) return;
     if (gate.forceUpdate) {
-      context.go('/force-update', extra: gate);
-      return;
+      // Show the update as a popup OVER home (not a full-screen block), so the
+      // user still sees the familiar app behind it. Home reads this and prompts.
+      ref.read(pendingForceUpdateProvider.notifier).state = gate;
     }
     final prefs = await SharedPreferences.getInstance();
     final v2Done  = prefs.getBool('onboarding_v2_done') ?? false;
