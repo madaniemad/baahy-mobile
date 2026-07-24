@@ -73,9 +73,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     if (_code.length < 6) return;
     setState(() { _loading = true; _hasError = false; });
     try {
-      await ref.read(authProvider.notifier).verifyOtp(
+      final isNewUser = await ref.read(authProvider.notifier).verifyOtp(
         widget.phone, _code, referralCode: widget.referralCode);
       await DeepLinkService.consumePendingCode(); // clear after successful signup
+      // New accounts have no name (phone-OTP signup) — collect it before continuing.
+      if (mounted && isNewUser) await _askFullName();
       // Ask for notification permission at first sign-in (moved here from onboarding
       // so first-time users aren't interrupted mid-onboarding). Awaited so the OS
       // dialog shows on this screen; never block sign-in if it throws.
@@ -88,6 +90,49 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       _ctrl.clear();
       _focus.requestFocus();
     }
+  }
+
+  /// Required full-name prompt for brand-new accounts (phone-OTP signup leaves
+  /// the name as a "User" placeholder). Non-dismissible so every new account
+  /// gets a real name; a failed save still lets the user through.
+  Future<void> _askFullName() async {
+    final nameCtrl = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setLocal) {
+          final canSave = nameCtrl.text.trim().length >= 2;
+          return AlertDialog(
+            backgroundColor: context.col.surface,
+            title: Text(context.tr('ما اسمك الكامل؟', "What's your full name?"),
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                fontWeight: FontWeight.w800, color: context.col.ink0)),
+            content: TextField(
+              controller: nameCtrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              onChanged: (_) => setLocal(() {}),
+              onSubmitted: (_) { if (canSave) _submitName(dialogCtx, nameCtrl.text.trim()); },
+              decoration: InputDecoration(hintText: context.tr('الاسم الكامل', 'Full name')),
+            ),
+            actions: [
+              TextButton(
+                onPressed: canSave ? () => _submitName(dialogCtx, nameCtrl.text.trim()) : null,
+                child: Text(context.tr('متابعة', 'Continue')),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    nameCtrl.dispose();
+  }
+
+  Future<void> _submitName(BuildContext dialogCtx, String name) async {
+    try { await ref.read(authProvider.notifier).updateProfileName(name); } catch (_) {}
+    if (dialogCtx.mounted) Navigator.of(dialogCtx).pop();
   }
 
   /// Width of one OTP box.

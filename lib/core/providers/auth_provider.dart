@@ -88,11 +88,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return (channel == 'sms' || channel == 'whatsapp') ? channel! : 'whatsapp';
   }
 
-  Future<void> verifyOtp(String phone, String code, {String? referralCode}) async {
+  /// Returns true when this verification CREATED a new account, so the UI can
+  /// collect the full name (phone-OTP signup otherwise leaves name = "User").
+  Future<bool> verifyOtp(String phone, String code, {String? referralCode}) async {
     final body = <String, dynamic>{'phone': phone, 'code': code};
     if (referralCode != null && referralCode.isNotEmpty) body['referred_by_code'] = referralCode;
     final res = await _api.dio.post('/auth/otp/verify', data: body);
     await _api.setToken(res.data['token']);
+    final userJson = res.data['user'] as Map<String, dynamic>;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kCachedUser, jsonEncode(userJson));
+    state = AuthState(user: User.fromJson(userJson));
+    return res.data['new_user'] == true;
+  }
+
+  /// Save the user's full name (collected right after a new-account signup).
+  Future<void> updateProfileName(String name) async {
+    final res = await _api.dio.put('/auth/profile', data: {'name': name});
     final userJson = res.data['user'] as Map<String, dynamic>;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kCachedUser, jsonEncode(userJson));
