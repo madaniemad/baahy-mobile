@@ -455,7 +455,9 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF1EB),
+                    // Adaptive warn tint (soft peach on light, dark amber tint on
+                    // dark) so the text stays readable in both themes.
+                    color: AppColors.warn.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.warn.withValues(alpha: 0.3)),
                   ),
@@ -471,11 +473,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                               text: context.s.isAr
                                   ? '$saleCount منتجات انخفضت سعرها  '
                                   : '$saleCount items on sale  ',
-                              // The banner background is a hardcoded light peach
-                              // (0xFFFFF1EB), so the text must be fixed-dark too.
-                              // Using context.col.ink1 made it light-grey in dark
-                              // mode — light grey on light peach, unreadable.
-                              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+                              style: TextStyle(color: context.col.ink1, fontWeight: FontWeight.w600),
                             ),
                             TextSpan(
                               text: context.s.isAr ? '•  وفر حتى $savedStr' : '•  Save up to $savedStr',

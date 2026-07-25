@@ -394,7 +394,10 @@ class _PriceDropBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF1EB),
+        // Translucent warn tint instead of a hardcoded light peach: shows as a
+        // soft peach on light and a dark amber tint on dark, so the adaptive
+        // ink1 text stays readable in BOTH themes (was light-on-light in dark).
+        color: AppColors.warn.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.warn.withValues(alpha: 0.3)),
       ),
