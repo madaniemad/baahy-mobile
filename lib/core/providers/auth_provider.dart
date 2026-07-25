@@ -119,6 +119,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState();
   }
 
+  /// Silently downgrade to guest — NO server call, NO navigation. Used when the
+  /// API returns 401 (token expired/revoked/account changed): we clear the dead
+  /// session and let the user keep browsing as a guest wherever they are. It
+  /// must NEVER yank a returning user to the sign-in screen on launch.
+  Future<void> resetToGuest() async {
+    await _api.clearToken();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kCachedUser);
+    state = const AuthState();
+  }
+
   /// Permanently deletes the account server-side, then clears the local session.
   /// Throws if the server call fails so the UI can surface an error (we do NOT
   /// clear the session on failure — the account still exists).

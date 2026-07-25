@@ -176,8 +176,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 
-  // Redirect to sign-in whenever the API returns 401 (token expired/revoked).
-  ApiClient.setUnauthorizedCallback(() => router.go('/signin'));
+  // On 401 (token expired/revoked/account changed) do NOT navigate to /signin —
+  // that yanks a returning user off /home the instant a background call fails on
+  // launch. The token is already cleared in the API interceptor; just reset auth
+  // to guest so the UI reflects it and the user keeps browsing. Screens/actions
+  // that truly need auth push to /signin themselves when the user taps them.
+  ApiClient.setUnauthorizedCallback(() {
+    try { ref.read(authProvider.notifier).resetToGuest(); } catch (_) {}
+  });
 
   return router;
 });
