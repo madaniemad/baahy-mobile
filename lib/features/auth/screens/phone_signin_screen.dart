@@ -190,6 +190,20 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 ),
               ),
 
+            const SizedBox(height: 28),
+            // Value section (merged in from the removed landing screen) — the reasons to sign in.
+            Text(context.s.authSub,
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                fontSize: 14, color: context.col.ink2, height: 1.5)),
+            const SizedBox(height: 16),
+            Row(children: [
+              _BenefitCard(icon: Icons.card_giftcard_outlined, label: context.s.authBenefit1),
+              const SizedBox(width: 10),
+              _BenefitCard(icon: Icons.inventory_2_outlined,   label: context.s.authBenefit2),
+              const SizedBox(width: 10),
+              _BenefitCard(icon: Icons.favorite_border_rounded, label: context.s.authBenefit3),
+            ]),
+
                 ],
               ),
             ),
@@ -239,6 +253,34 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
             ]),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BenefitCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _BenefitCard({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(children: [
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(height: 10),
+          Text(label,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+              fontSize: 11.5, fontWeight: FontWeight.w600,
+              color: context.col.ink1, height: 1.3)),
+        ]),
       ),
     );
   }

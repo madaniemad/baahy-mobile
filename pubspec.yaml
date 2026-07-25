@@ -1,7 +1,7 @@
 name: baahy_customer
 description: baahy — Libya's marketplace. Customer app.
 publish_to: 'none'
-version: 5.0.2+141
+version: 5.0.2+142
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
