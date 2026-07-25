@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/app_config_provider.dart';
@@ -12,6 +11,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/models/tier_status.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/utils/haptics.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -144,9 +144,18 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _TopUpSheet(onSuccess: () {
+      builder: (_) => _TopUpSheet(onSuccess: (amount) {
         ref.invalidate(_walletProvider);
         ref.read(authProvider.notifier).refreshProfile();
+        if (context.mounted) {
+          final isAr = context.isAr;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(isAr
+              ? 'تمت إضافة ${fmtPrice(amount)} د.ل إلى محفظتك'
+              : '${fmtPrice(amount)} LYD added to your wallet'),
+            backgroundColor: AppColors.success,
+          ));
+        }
       }),
     );
   }
@@ -784,7 +793,7 @@ class _TransactionsSection extends StatelessWidget {
 // ── Top-up sheet ──────────────────────────────────────────────────────────────
 
 class _TopUpSheet extends ConsumerStatefulWidget {
-  final VoidCallback onSuccess;
+  final void Function(double amount) onSuccess;
   const _TopUpSheet({required this.onSuccess});
 
   @override
@@ -877,19 +886,62 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
     }
   }
 
+  // Success is shared across every top-up method: buzz the phone, close the
+  // sheet, and let the parent refresh the wallet + show the credited amount.
+  void _finishSuccess() {
+    Haptics.success();
+    if (mounted) { Navigator.of(context).pop(); widget.onSuccess(_amount); }
+  }
+
+  // Poll the wallet top-up status after the in-app webview returns. The server
+  // re-verifies with the gateway (Moamalat/Tadawel) on each poll, so a payment
+  // still settles even if the browser callback never arrived.
+  Future<bool> _pollTopupApproved(String reference) async {
+    for (int i = 0; i < 15; i++) {
+      try {
+        final st = await ApiClient.instance.dio.get('/wallet/topup/status/$reference');
+        final s = st.data['status'] as String?;
+        if (s == 'approved') return true;
+        if (s == 'rejected') return false;
+      } catch (_) {}
+      await Future.delayed(const Duration(seconds: 2));
+    }
+    return false;
+  }
+
   Future<void> _initiateGateway() async {
     setState(() { _loading = true; _error = null; });
     try {
       final res = await ApiClient.instance.dio.post('/wallet/topup/initiate', data: {
         'amount': _amount,
         'gateway': _paymentId,
+        'platform': 'mobile',
       });
-      final url = res.data['payment_url'] as String?;
-      if (url != null && url.isNotEmpty) {
-        if (mounted) Navigator.of(context).pop();
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      } else {
+      final url  = res.data['payment_url'] as String?;
+      final ref0 = res.data['reference'] as String?;
+      if (url == null || url.isEmpty || ref0 == null || ref0.isEmpty) {
         setState(() { _loading = false; _error = 'لم يتم الحصول على رابط الدفع'; });
+        return;
+      }
+      if (!mounted) return;
+      setState(() => _loading = false);
+      // Open the gateway INSIDE the app (no external browser). The webview pops
+      // itself when the gateway redirects to the baahy:// return deep link.
+      final title = _paymentId == 'tadawel' ? 'الدفع عبر تداول' : 'الدفع بالبطاقة المصرفية';
+      await Navigator.of(context).push<Uri?>(
+        MaterialPageRoute(builder: (_) => PaymentWebViewScreen(url: url, title: title)),
+      );
+      if (!mounted) return;
+      setState(() { _loading = true; _error = null; });
+      final approved = await _pollTopupApproved(ref0);
+      if (!mounted) return;
+      if (approved) {
+        _finishSuccess();
+      } else {
+        setState(() {
+          _loading = false;
+          _error = 'لم يكتمل الدفع بعد. تحقق من محفظتك بعد قليل — لا تُعِد المحاولة لتجنّب الدفع مرتين.';
+        });
       }
     } catch (_) {
       setState(() { _loading = false; _error = 'حدث خطأ، حاول مجدداً'; });
@@ -931,7 +983,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       await ApiClient.instance.dio.post('/payment/paypal/capture', data: {
         'topup_ref': ref0, 'paypal_order_id': token,
       });
-      if (mounted) { Navigator.of(context).pop(); widget.onSuccess(); }
+      _finishSuccess();
     } catch (_) {
       if (mounted) setState(() { _loading = false; _error = 'حدث خطأ، حاول مجدداً'; });
     }
@@ -969,10 +1021,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
         'otp': _otpCtrl.text.trim(),
         'mitf_transaction_id': _mitfTransactionId ?? '',
       });
-      if (mounted) {
-        Navigator.of(context).pop();
-        widget.onSuccess();
-      }
+      _finishSuccess();
     } catch (_) {
       setState(() { _loading = false; _error = 'رمز OTP غير صحيح، حاول مجدداً'; });
     }

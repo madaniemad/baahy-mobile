@@ -7,6 +7,7 @@ import '../../../core/providers/notifications_provider.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/services/push_notification_service.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/utils/haptics.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -63,20 +64,12 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
       if (!mounted) return;
       try { PushNotificationService.instance.requestPermissionIfNeeded(); } catch (_) {}
     });
-    // Haptic success burst so user feels payment went through even without looking.
-    // Wait for the route transition to finish (~350ms) so the vibration
-    // fires exactly when the screen settles — giving the "payment done" feel.
-    // HapticFeedback.vibrate() is a stronger, unmissable system buzz than the
-    // impact taps alone (which are subtle and easy to miss on some devices).
-    Future.delayed(const Duration(milliseconds: 350), () async {
+    // Haptic success burst so the user feels the payment went through even
+    // without looking. Wait for the route transition to finish (~350ms) so the
+    // buzz fires exactly when the screen settles — the "payment done" feel.
+    Future.delayed(const Duration(milliseconds: 350), () {
       if (!mounted) return;
-      await HapticFeedback.vibrate();
-      await Future.delayed(const Duration(milliseconds: 120));
-      if (!mounted) return;
-      await HapticFeedback.heavyImpact();
-      await Future.delayed(const Duration(milliseconds: 100));
-      if (!mounted) return;
-      await HapticFeedback.mediumImpact();
+      Haptics.success();
     });
   }
 

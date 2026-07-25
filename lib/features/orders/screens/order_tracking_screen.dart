@@ -140,19 +140,51 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           : (dataNode is Map ? (dataNode['data'] as List? ?? const []) : const []);
       final products = {for (final j in raw) (j['id'] as int): Product.fromJson(j)};
       final cart = ref.read(cartProvider.notifier);
+      var added = 0;
+      var skipped = 0;
+      var adjusted = false;
       for (final group in widget.order.vendorGroups) {
         for (final item in group.items) {
           final p = products[item.productId];
-          if (p == null) continue;
-          ProductVariation? v;
+          if (p == null) { skipped++; continue; }
           if (item.variationId != null) {
-            try { v = p.variations.firstWhere((vv) => vv.id == item.variationId); }
-            catch (_) {}
+            // Variable product — require the exact same variation, still present + in stock.
+            final matches = p.variations.where((vv) => vv.id == item.variationId);
+            if (matches.isEmpty) { skipped++; continue; } // variation was removed
+            final v = matches.first;
+            if (!v.inStock || v.stockQuantity <= 0) { skipped++; continue; }
+            final qty = v.stockQuantity < item.quantity ? v.stockQuantity : item.quantity;
+            if (qty <= 0) { skipped++; continue; }
+            if (qty < item.quantity) adjusted = true;
+            await cart.add(p, variation: v, qty: qty);
+            added++;
+          } else {
+            // Simple product
+            if (!p.inStock) { skipped++; continue; }
+            final stock = p.stockQuantity ?? item.quantity;
+            final qty = stock < item.quantity ? stock : item.quantity;
+            if (qty <= 0) { skipped++; continue; }
+            if (qty < item.quantity) adjusted = true;
+            await cart.add(p, variation: null, qty: qty);
+            added++;
           }
-          await cart.add(p, variation: v, qty: item.quantity);
         }
       }
-      if (context.mounted) context.go('/cart');
+      if (!context.mounted) return;
+      if (added == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.s.noItemsInStock),
+          backgroundColor: AppColors.warn));
+        return;
+      }
+      if (skipped > 0 || adjusted) {
+        final isAr = context.isAr;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isAr
+            ? 'تمت إضافة المتوفر إلى السلة. بعض المنتجات غير متوفرة أو تغيّرت الكمية.'
+            : 'Available items added — some were unavailable or their quantity changed.')));
+      }
+      context.go('/cart');
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
       if (context.mounted) {

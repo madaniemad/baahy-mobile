@@ -81,16 +81,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-            Container(
-              width: 56, height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.phone_outlined,
-                color: AppColors.primary, size: 26),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 4),
             Text(context.s.enterPhone,
               style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                 fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
@@ -190,12 +181,12 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 ),
               ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 22),
             // Value section (merged in from the removed landing screen) — the reasons to sign in.
             Text(context.s.authSub,
               style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                 fontSize: 14, color: context.col.ink2, height: 1.5)),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(children: [
               _BenefitCard(icon: Icons.card_giftcard_outlined, label: context.s.authBenefit1),
               const SizedBox(width: 10),
