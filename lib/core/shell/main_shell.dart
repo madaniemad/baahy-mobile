@@ -6,7 +6,6 @@ import '../../shared/widgets/nav_icons.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
-import '../providers/notifications_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../providers/app_config_provider.dart';
 import '../api/api_client.dart';
@@ -76,8 +75,6 @@ class MainShell extends ConsumerWidget {
       data: (products) => products.length,
       orElse: () => ref.watch(wishlistProvider.select((s) => s.length)),
     );
-    final unreadCount   = ref.watch(notificationsProvider.select(
-        (list) => list.where((n) => !n.isRead).length));
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(
@@ -129,15 +126,8 @@ class MainShell extends ConsumerWidget {
                   );
                 }
 
-                // Notifications badge on account
-                if (tab.branchIdx == 4 && unreadCount > 0) {
-                  icon = badges.Badge(
-                    badgeContent: Text('$unreadCount',
-                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
-                    badgeStyle: const badges.BadgeStyle(badgeColor: AppColors.danger),
-                    child: icon,
-                  );
-                }
+                // (Notifications badge removed from the account tab — it duplicated the
+                // bell/unread indicator already shown inside the account page.)
 
                 return Expanded(
                   child: GestureDetector(

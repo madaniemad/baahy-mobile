@@ -291,7 +291,7 @@ class HomeScreen extends ConsumerWidget {
                   if (featProds.isNotEmpty) {
                     yield SliverToBoxAdapter(
                       child: _SectionHead(
-                        ar: item.titleAr.isNotEmpty ? item.titleAr : 'مختار لك',
+                        ar: item.titleAr.isNotEmpty ? item.titleAr : 'مختارة لك',
                         en: item.titleEn.isNotEmpty ? item.titleEn : 'Picks for you',
                         onAll: () => safePush(context, '/search/results?q=&sort=featured'),
                       ),

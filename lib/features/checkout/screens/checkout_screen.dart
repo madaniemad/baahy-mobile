@@ -878,7 +878,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   if (_selectedRate != null) ...[
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${fmtPrice(_selectedRate!.rate)} ${context.s.lydUnit} · ${_selectedRate!.deliveryDays} ${context.s.daysLabel}',
+                                      // Show the SAME delivery fee as the order summary — i.e. incl. the
+                                      // per-vendor collection fee (and free-shipping) — not the raw base rate.
+                                      '${effectiveDeliveryFee == 0 ? context.s.freeText : '${fmtPrice(effectiveDeliveryFee)} ${context.s.lydUnit}'} · ${_selectedRate!.deliveryDays} ${context.s.daysLabel}',
                                       style: TextStyle(
                                         fontSize: 11.5, color: context.col.ink2, fontWeight: FontWeight.w600)),
                                   ],
