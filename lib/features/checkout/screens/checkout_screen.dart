@@ -356,6 +356,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           await _handleGatewayPayment('moamlat', pendingRef, clearCart: !isReorder);
         } else if (_paymentMethod == 'mobicash') {
           await _handleMobicashPayment(pendingRef, clearCart: !isReorder);
+        } else if (const ['yousrpay', 'masrafipay', 'saharapay'].contains(_paymentMethod)) {
+          // Masarat / One-Pay wallets (Yussor / Musrafy / Sahara) — card + OTP, same 2-call
+          // contract as Mobicash. Appears only when enabled in the backend payment_methods list.
+          await _handleMasaratPayment(_paymentMethod, pendingRef, clearCart: !isReorder);
         } else if (_paymentMethod == 'sadad') {
           // Sadad = redirect gateway (like Tadawel/Moamlat): backend returns a payment_url.
           // Gated by the backend `payment_methods` enabled flag — appears only once enabled,
@@ -685,6 +689,171 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (!mounted) return;
 
     // Fetch full order data for the confirmation screen
+    Map<String, dynamic> orderData = result;
+    final orderId = result['id'];
+    if (orderId != null) {
+      try {
+        final orderRes = await ApiClient.instance.dio.get('/orders/$orderId');
+        orderData = Map<String, dynamic>.from(orderRes.data['data'] as Map);
+      } catch (_) {}
+    }
+
+    if (clearCart) await ref.read(cartProvider.notifier).clear();
+    ref.read(reorderSessionProvider.notifier).state = null;
+    ref.invalidate(welcomeCouponProvider);
+    if (mounted) context.pushReplacement('/order-confirmed', extra: orderData);
+  }
+
+  // Masarat / One-Pay wallets (Yussor / Musrafy / Sahara). Same 2-step card+OTP sheet as Mobicash,
+  // but keyed by provider (endpoint `/payment/masarat/$provider/...`) with an `identity_card` field.
+  Future<void> _handleMasaratPayment(String provider, String pendingRef, {bool clearCart = true}) async {
+    final label = provider == 'masrafipay'
+        ? 'مصرفي باي'
+        : provider == 'saharapay'
+            ? 'صحارى باي'
+            : 'يسر باي';
+    final cardCtrl = TextEditingController();
+    final otpCtrl  = TextEditingController();
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    bool sheetLoading = false;
+    String? sheetError;
+    bool otpStep = false;
+
+    final Map<String, dynamic>? result = await showModalBottomSheet<Map<String, dynamic>?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => GestureDetector(
+          onTap: () => FocusScope.of(ctx).unfocus(),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+            decoration: BoxDecoration(
+              color: context.col.surface,
+              borderRadius: const BorderRadius.all(Radius.circular(12)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(width: 40, height: 4,
+                  decoration: BoxDecoration(color: context.col.border,
+                      borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 16),
+                Text(otpStep ? 'رمز التحقق' : 'الدفع عبر $label',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+                if (!otpStep)
+                  TextField(
+                    controller: cardCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: 'أدخل رقم بطاقة $label',
+                      border: const OutlineInputBorder(),
+                    ),
+                  )
+                else
+                  TextField(
+                    controller: otpCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      hintText: 'أدخل رمز التحقق المرسل إليك',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                if (otpStep) ...[
+                  const SizedBox(height: 6),
+                  const Text('أدخل الرمز خلال دقيقتين',
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+                if (sheetError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(sheetError!, style: TextStyle(color: AppColors.danger, fontSize: 13)),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: sheetLoading ? null : () async {
+                      if (!otpStep) {
+                        if (cardCtrl.text.trim().isEmpty) {
+                          setS(() => sheetError = 'يرجى إدخال رقم البطاقة');
+                          return;
+                        }
+                        setS(() { sheetLoading = true; sheetError = null; });
+                        try {
+                          await ApiClient.instance.dio.post(
+                            '/payment/masarat/$provider/initiate',
+                            data: {'pending_ref': pendingRef, 'identity_card': cardCtrl.text.trim()},
+                          );
+                          setS(() { sheetLoading = false; otpStep = true; });
+                        } catch (e) {
+                          String msg = 'البطاقة غير صحيحة أو الخدمة غير متاحة';
+                          if (e is DioException) {
+                            final d = e.response?.data;
+                            if (d is Map && d['message'] != null) msg = d['message'].toString();
+                          }
+                          setS(() { sheetLoading = false; sheetError = msg; });
+                        }
+                      } else {
+                        if (otpCtrl.text.trim().isEmpty) {
+                          setS(() => sheetError = 'يرجى إدخال رمز التحقق');
+                          return;
+                        }
+                        setS(() { sheetLoading = true; sheetError = null; });
+                        try {
+                          final r = await ApiClient.instance.dio.post(
+                            '/payment/masarat/$provider/verify-otp',
+                            data: {
+                              'pending_ref': pendingRef,
+                              'identity_card': cardCtrl.text.trim(),
+                              'otp': otpCtrl.text.trim(),
+                            },
+                          );
+                          if (ctx.mounted) {
+                            Navigator.of(ctx).pop<Map<String, dynamic>>({
+                              'id': r.data['order_id'],
+                              'order_number': r.data['order_number'] ?? '',
+                            });
+                          }
+                        } catch (e) {
+                          String msg = 'رمز التحقق غير صحيح، حاول مجدداً';
+                          if (e is DioException) {
+                            final d = e.response?.data;
+                            if (d is Map && d['message'] != null) msg = d['message'].toString();
+                          }
+                          setS(() { sheetLoading = false; sheetError = msg; });
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: sheetLoading
+                        ? const SizedBox(width: 20, height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(otpStep ? 'تأكيد الدفع' : 'إرسال الرمز',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (result == null) return;
+    if (!mounted) return;
+
     Map<String, dynamic> orderData = result;
     final orderId = result['id'];
     if (orderId != null) {
