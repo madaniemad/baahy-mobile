@@ -37,6 +37,7 @@ class Order {
   final String? couponCode;
   final String paymentMethod;
   final String paymentStatus;
+  final String? paymentSlip;
   final String? notes;
   final Map<String, dynamic>? shippingAddress;
   final List<OrderVendorGroup> vendorGroups;
@@ -57,6 +58,7 @@ class Order {
     this.couponCode,
     required this.paymentMethod,
     required this.paymentStatus,
+    this.paymentSlip,
     this.notes,
     this.shippingAddress,
     required this.vendorGroups,
@@ -72,6 +74,7 @@ class Order {
 
   String get statusAr {
     const map = {
+      'pending_payment': 'بانتظار التحويل',
       'pending_confirmation': 'في انتظار التأكيد',
       'pending_vendor': 'في انتظار التأكيد',
       'pending': 'قيد الانتظار',
@@ -99,6 +102,7 @@ class Order {
     couponCode: j['coupon_code'],
     paymentMethod: j['payment_method'] ?? 'cash',
     paymentStatus: j['payment_status'] ?? 'pending',
+    paymentSlip: j['payment_slip']?.toString(),
     notes: j['notes'],
     shippingAddress: j['shipping_address'] is Map
         ? Map<String, dynamic>.from(j['shipping_address'])

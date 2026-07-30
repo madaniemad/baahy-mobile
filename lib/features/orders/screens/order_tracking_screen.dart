@@ -13,6 +13,7 @@ import '../../../core/providers/cart_provider.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
+import '../widgets/bank_transfer_card.dart';
 import '../../../shared/theme/app_theme.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -208,6 +209,16 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
         // Hero ETA card for active orders
         if (isActive) ...[
           _HeroCard(order: order),
+          const SizedBox(height: 14),
+        ],
+
+        // Bank transfer instructions — while the order awaits a manual transfer.
+        if (order.paymentMethod == 'lypay' && order.status == 'pending_payment') ...[
+          BankTransferCard(
+            orderId: order.id,
+            total: order.total,
+            alreadyUploaded: order.paymentSlip != null && order.paymentSlip!.isNotEmpty,
+          ),
           const SizedBox(height: 14),
         ],
 

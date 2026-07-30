@@ -10,6 +10,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../orders/widgets/bank_transfer_card.dart';
 
 class OrderConfirmedScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> data;
@@ -218,6 +219,15 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                 // thin divider
                 Container(height: 1, color: context.col.border),
                 const SizedBox(height: 10),
+
+                // ── bank transfer instructions (LyPay / OnePay) ───────────
+                if ((data['payment_method'] ?? '').toString() == 'lypay' && orderId != null) ...[
+                  BankTransferCard(
+                    orderId: orderId is int ? orderId : int.tryParse(orderId.toString()) ?? 0,
+                    total: total ?? 0,
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 // ── delivery card ─────────────────────────────────────────
                 Container(
