@@ -217,6 +217,7 @@ class _BankTransferCardState extends State<BankTransferCard> {
     final acc  = (a['account_number'] ?? '').toString();
     final iban = (a['iban'] ?? '').toString();
     final note = (a['note'] ?? '').toString();
+    final logoUrl = (a['logo_url'] ?? '').toString();
 
     return Container(
       width: double.infinity,
@@ -227,15 +228,28 @@ class _BankTransferCardState extends State<BankTransferCard> {
         border: Border.all(color: dark ? context.col.border : border),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text.rich(TextSpan(
-          style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: context.col.ink0,
-            fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal']),
-          children: [
-            TextSpan(text: bank),
-            if (name.isNotEmpty) TextSpan(text: '  —  $name',
-              style: TextStyle(fontWeight: FontWeight.w600, color: context.col.ink2, fontSize: 12)),
+        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          if (logoUrl.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.network(logoUrl, width: 34, height: 34, fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) =>
+                    Icon(Icons.account_balance_outlined, size: 20, color: context.col.ink3)),
+            ),
+            const SizedBox(width: 9),
           ],
-        )),
+          Expanded(
+            child: Text.rich(TextSpan(
+              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: context.col.ink0,
+                fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal']),
+              children: [
+                TextSpan(text: bank),
+                if (name.isNotEmpty) TextSpan(text: '  —  $name',
+                  style: TextStyle(fontWeight: FontWeight.w600, color: context.col.ink2, fontSize: 12)),
+              ],
+            )),
+          ),
+        ]),
         _copyRow(context.tr('رقم الحساب', 'Account #'), acc, 'acc-$i', btn),
         if (iban.isNotEmpty) _copyRow('IBAN', iban, 'iban-$i', btn),
         if (note.isNotEmpty) Padding(
