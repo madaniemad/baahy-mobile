@@ -21,6 +21,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
   bool _loading = false;
   String? _error;
   bool _showRefField = false;
+  bool _refLocked = false; // code came from a referral link/clipboard → shown but not editable
 
   bool get _valid => _ctrl.text.replaceAll(RegExp(r'\D'), '').length >= 9;
 
@@ -30,7 +31,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
     DeepLinkService.peekPendingCode().then((code) {
       if (code != null && mounted) {
         _refCtrl.text = code;
-        setState(() => _showRefField = true);
+        setState(() { _showRefField = true; _refLocked = true; });
       }
     });
   }
@@ -162,7 +163,9 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 ),
                 child: TextField(
                   controller: _refCtrl,
-                  autofocus: _refCtrl.text.isEmpty,
+                  readOnly: _refLocked,
+                  enableInteractiveSelection: !_refLocked,
+                  autofocus: !_refLocked && _refCtrl.text.isEmpty,
                   textDirection: TextDirection.ltr,
                   textCapitalization: TextCapitalization.characters,
                   style: const TextStyle(fontFamily: 'PlusJakartaSans',
@@ -174,7 +177,10 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                       color: context.col.ink4, fontWeight: FontWeight.w400,
                       letterSpacing: 0),
                     prefixIcon: Icon(Icons.card_giftcard_outlined,
-                      size: 18, color: context.col.ink3),
+                      size: 18, color: _refLocked ? const Color(0xFF1F8A5B) : context.col.ink3),
+                    suffixIcon: _refLocked
+                      ? const Icon(Icons.check_circle, size: 18, color: Color(0xFF1F8A5B))
+                      : null,
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   ),

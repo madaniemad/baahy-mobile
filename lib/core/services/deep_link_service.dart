@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:app_links/app_links.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -41,11 +42,36 @@ class DeepLinkService {
       Sentry.captureException(e, stackTrace: st);
     }
 
+    // Deferred referral: a fresh store-install carries no opening link, but the invite web page
+    // copied `baahy-invite:CODE` to the clipboard when the user tapped a store button. Read it
+    // ONCE on first launch and stash the code as the pending referral — it then surfaces
+    // pre-filled + locked on the sign-in screen, exactly like a captured deep link.
+    await _maybeCaptureClipboardReferral();
+
     // Warm start: link tapped while app is already running
     _sub = _appLinks.uriLinkStream.listen(
       (uri) => _handleUri(uri),
       onError: (_) {},
     );
+  }
+
+  Future<void> _maybeCaptureClipboardReferral() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('referral_clipboard_checked') ?? false) return; // read at most once per install
+      await prefs.setBool('referral_clipboard_checked', true);
+      if (_isLoggedIn) return;                                      // existing account — not a new invitee
+      if (prefs.getString(_kPendingReferralCode) != null) return;  // already captured from a real link
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text?.trim() ?? '';
+      const marker = 'baahy-invite:';
+      if (!text.startsWith(marker)) return;
+      final code = text.substring(marker.length).trim();
+      if (code.isEmpty || code.length > 16 || !RegExp(r'^[A-Za-z0-9]+$').hasMatch(code)) return;
+      await prefs.setString(_kPendingReferralCode, code.toUpperCase());
+      // Clear the marker so the same code can't later attach to a different account.
+      await Clipboard.setData(const ClipboardData(text: ''));
+    } catch (_) {}
   }
 
   void dispose() {
