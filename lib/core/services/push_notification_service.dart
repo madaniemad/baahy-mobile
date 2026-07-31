@@ -266,6 +266,15 @@ class PushNotificationService {
       case 'delivery_attempt_failed':
         final oid = data['order_id']?.toString();
         return oid != null ? '/orders/$oid' : '/orders';
+      // Deal of the day → open the featured product (backend sends product_id)
+      case 'deal_of_the_day':
+        final pid = data['product_id']?.toString();
+        return pid != null ? '/product/$pid' : '/home';
+      // Generic engagement pushes → home
+      case 'deals_in_your_categories':
+      case 'trending_this_week':
+      case 'order_cross_sell':
+        return '/home';
       default:
         return '/notifications';
     }
