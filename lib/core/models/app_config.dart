@@ -6,6 +6,7 @@ class PaymentMethod {
   final String descriptionAr;
   final String descriptionEn;
   final bool enabled;
+  final String? iconUrl; // backend-uploaded icon; falls back to a bundled asset when null
 
   const PaymentMethod({
     required this.id,
@@ -15,6 +16,7 @@ class PaymentMethod {
     required this.descriptionAr,
     this.descriptionEn = '',
     this.enabled = true,
+    this.iconUrl,
   });
 
   factory PaymentMethod.fromJson(Map<String, dynamic> j) => PaymentMethod(
@@ -25,6 +27,7 @@ class PaymentMethod {
     descriptionAr: j['description_ar'] as String? ?? '',
     descriptionEn: j['description_en'] as String? ?? '',
     enabled: j['enabled'] as bool? ?? true,
+    iconUrl: (j['icon_url'] as String?)?.isNotEmpty == true ? j['icon_url'] as String : null,
   );
 
   static double _d(dynamic v) {

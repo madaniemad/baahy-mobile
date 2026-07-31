@@ -34,6 +34,14 @@ String? _paymentIconPath(String id) {
   }
 }
 
+// Backend-uploaded icon URL for a method id (from app-config); null → use the bundled asset.
+String? _payIconUrl(List methods, String id) {
+  for (final m in methods) {
+    if (m.id == id) return m.iconUrl as String?;
+  }
+  return null;
+}
+
 Color _accent(BuildContext context) => AppColors.adaptive(context);
 
 // Normalizes Libyan phone numbers to display format (0XXXXXXXXX)
@@ -1077,11 +1085,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             final iconPath = _paymentMethod.isNotEmpty && !walletCoversAll
                                 ? _paymentIconPath(_paymentMethod)
                                 : (_paymentMethod == '' ? null : 'assets/images/payment/wallet_pay.png');
+                            final iconUrl = (_paymentMethod.isNotEmpty && !walletCoversAll)
+                                ? _payIconUrl(config.paymentMethods as List, _paymentMethod) : null;
+                            final fallback = iconPath != null
+                                ? Image.asset(iconPath, fit: BoxFit.contain)
+                                : Icon(Icons.payment_outlined, size: 18, color: accent);
                             return SizedBox(
                               width: 26, height: 26,
-                              child: iconPath != null
-                                  ? Image.asset(iconPath, fit: BoxFit.contain)
-                                  : Icon(Icons.payment_outlined, size: 18, color: accent),
+                              child: iconUrl != null
+                                  ? Image.network(iconUrl, fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) => fallback)
+                                  : fallback,
                             );
                           }),
                           const SizedBox(width: 10),
@@ -1687,6 +1701,9 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                   const SizedBox(width: 10),
                   Builder(builder: (_) {
                     final iconPath = _paymentIconPath(m.id);
+                    final fallback = iconPath != null
+                        ? Image.asset(iconPath, fit: BoxFit.contain)
+                        : Icon(Icons.credit_card_outlined, size: 18, color: context.col.ink3);
                     return Container(
                       width: 40, height: 40,
                       padding: const EdgeInsets.all(6),
@@ -1695,9 +1712,9 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                         borderRadius: BorderRadius.circular(12),
                         border: isDark ? Border.all(color: context.col.border) : null,
                       ),
-                      child: iconPath != null
-                          ? Image.asset(iconPath, fit: BoxFit.contain)
-                          : Icon(Icons.credit_card_outlined, size: 18, color: context.col.ink3),
+                      child: m.iconUrl != null
+                          ? Image.network(m.iconUrl!, fit: BoxFit.contain, errorBuilder: (_, __, ___) => fallback)
+                          : fallback,
                     );
                   }),
                 ]),
