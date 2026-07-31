@@ -61,7 +61,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/splash',
     // Handle deep links from baahy:// scheme and https://baahy.ly/
     redirect: (context, state) {
-      final path = state.uri.path;
+      final uri = state.uri;
+      final path = uri.path;
+      // Referral / invite deep links (baahy://invite/CODE or https://baahy.com/invite/CODE).
+      // The code itself is captured by DeepLinkService (saved as the pending referral code for
+      // sign-up pre-fill); GoRouter also receives the raw URI, so without this it 404s to
+      // "Page Not Found". Land it on a real screen instead: signed-out users go to sign-in
+      // (where the code pre-fills), signed-in users just go home (a referral can't apply to
+      // an existing account).
+      final isInvite = uri.host == 'invite'
+          || (uri.pathSegments.isNotEmpty && uri.pathSegments.first == 'invite');
+      if (isInvite) {
+        return ref.read(authProvider).isLoggedIn ? '/home' : '/signin';
+      }
       // '/chat' is here too: baahy AI is signed-in only, and gating it at the
       // router means a deep link can't bypass the hidden entry points.
       const _socialPaths = ['/friends', '/settings/privacy', '/username-setup', '/chat'];
