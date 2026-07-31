@@ -6,6 +6,7 @@ import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/notifications_provider.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/services/push_notification_service.dart';
+import '../../../core/services/analytics_service.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/haptics.dart';
 import '../../../core/utils/l10n.dart';
@@ -47,6 +48,13 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
   @override
   void initState() {
     super.initState();
+    // Purchase event (Firebase Analytics → GA4/Google Ads; Meta/TikTok added once their SDKs wire in).
+    {
+      final t = widget.data['total'];
+      final total = t is num ? t.toDouble() : (double.tryParse('${t ?? ''}') ?? 0);
+      final oid = (widget.data['order_number'] ?? widget.data['id'] ?? '').toString();
+      if (total > 0 && oid.isNotEmpty) Analytics.instance.purchase(orderId: oid, total: total);
+    }
     // Pull the freshly-created "order received" notification so the bell badge
     // reflects it without an app restart. The backend creates it in an
     // afterResponse handler (~1-3s after the order response), so a single

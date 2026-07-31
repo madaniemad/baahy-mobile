@@ -12,6 +12,7 @@ import '../../../core/models/review.dart';
 import '../../../core/providers/address_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/cart_provider.dart';
+import '../../../core/services/analytics_service.dart';
 import '../../../core/providers/shipping_provider.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../core/providers/wishlist_provider.dart';
@@ -144,6 +145,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     }
     await ref.read(cartProvider.notifier).add(
       product, variation: _selectedVariation, qty: _qty);
+    Analytics.instance.addToCart(
+      id: '${product.id}', name: product.name,
+      price: _selectedVariation?.price ?? product.price, quantity: _qty);
     if (!mounted) return;
     if (goToCart) {
       safePush(context, '/cart');

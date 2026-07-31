@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/deep_link_service.dart';
 import '../../../core/services/push_notification_service.dart';
+import '../../../core/services/analytics_service.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -75,6 +76,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     try {
       final isNewUser = await ref.read(authProvider.notifier).verifyOtp(
         widget.phone, _code, referralCode: widget.referralCode);
+      if (isNewUser) Analytics.instance.signUp();
       await DeepLinkService.consumePendingCode(); // clear after successful signup
       // New accounts have no name (phone-OTP signup) — collect it before continuing.
       if (mounted && isNewUser) await _askFullName();
