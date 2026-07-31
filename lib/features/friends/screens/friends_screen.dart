@@ -249,7 +249,7 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
 
   Future<void> _share() async {
     final user = ref.read(currentUserProvider);
-    final firstName = (user?.name ?? '').split(' ').first;
+    final senderName = (user?.name ?? '').trim(); // FULL name, not just the first word
     // The invite landing page (which deep-links into the app) is served by the
     // Next.js site, now live on the canonical baahy.com domain.
     final inviteLink = Uri(
@@ -257,13 +257,20 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
       host: 'baahy.com',
       path: '/invite/${widget.code}',
       queryParameters: {
-        'from': firstName,
+        if (senderName.isNotEmpty) 'from': senderName,
         'reward': '${widget.receiver}',
       },
     ).toString();
+    // Prefix each Arabic line with U+200F (RLM) so the line's base direction is RTL even when
+    // it starts with a Latin name (e.g. "Kabour") — otherwise WhatsApp flips the whole line LTR
+    // and the name reads disconnected from the Arabic.
+    final rlm = String.fromCharCode(0x200F); // U+200F Right-to-Left Mark
+    final greeting = senderName.isNotEmpty
+        ? '$rlm$senderName دعاك للانضمام لباهي!'
+        : '${rlm}دعوة للانضمام لباهي!';
     final text =
-        '$firstName دعاك للانضمام لباهي!\n'
-        'احصل على ${widget.receiver} د.ل هدية ترحيبية فور انضمامك 🎁\n'
+        '$greeting\n'
+        '${rlm}احصل على ${widget.receiver} د.ل هدية ترحيبية فور انضمامك 🎁\n'
         '$inviteLink';
     try {
       await SharePlus.instance.share(ShareParams(text: text));
