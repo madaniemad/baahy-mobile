@@ -178,8 +178,25 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                       letterSpacing: 0),
                     prefixIcon: Icon(Icons.card_giftcard_outlined,
                       size: 18, color: _refLocked ? const Color(0xFF1F8A5B) : context.col.ink3),
+                    // Locked code (from a referral link/clipboard) can't be EDITED, but a
+                    // returning user with a stale code can explicitly REMOVE it via the ×.
                     suffixIcon: _refLocked
-                      ? const Icon(Icons.check_circle, size: 18, color: Color(0xFF1F8A5B))
+                      ? Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.check_circle, size: 18, color: Color(0xFF1F8A5B)),
+                          IconButton(
+                            icon: Icon(Icons.close_rounded, size: 18, color: context.col.ink3),
+                            splashRadius: 18,
+                            tooltip: context.isAr ? 'إزالة' : 'Remove',
+                            onPressed: () async {
+                              await DeepLinkService.consumePendingCode();
+                              if (mounted) setState(() {
+                                _refCtrl.clear();
+                                _refLocked = false;
+                                _showRefField = false;
+                              });
+                            },
+                          ),
+                        ])
                       : null,
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -200,12 +217,19 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
               const SizedBox(width: 10),
               _BenefitCard(icon: Icons.favorite_border_rounded, label: context.s.authBenefit3),
             ]),
+            const SizedBox(height: 8),
 
                 ],
               ),
             ),
           ),
-          Padding(
+          Container(
+            // Pinned action bar with a hairline top divider so it always reads as
+            // a separate bar and never appears to overlap the content above it.
+            decoration: BoxDecoration(
+              color: context.col.surface,
+              border: Border(top: BorderSide(color: context.col.border)),
+            ),
             // Do NOT add viewInsets.bottom here: this block is in the Scaffold
             // body, and Scaffold.resizeToAvoidBottomInset (default true) has
             // already shrunk the body by the keyboard height. Adding it again
@@ -213,7 +237,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
             // keyboard-height and pushed the title/phone field off-screen.
             // (Invisible on the Simulator, whose software keyboard is off by
             // default, so viewInsets.bottom was always 0 there.)
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SizedBox(
                 width: double.infinity,

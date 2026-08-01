@@ -116,7 +116,16 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
 
     return Scaffold(
       backgroundColor: context.col.bg,
-      body: CustomScrollView(
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (n) {
+          // Infinite scroll — auto-load the next page as the user nears the bottom
+          if (n.metrics.pixels >= n.metrics.maxScrollExtent - 600 &&
+              _hasMore && !_loadingMore && !_loading) {
+            _loadProducts(_page + 1);
+          }
+          return false;
+        },
+        child: CustomScrollView(
         slivers: [
           // ── AppBar ──────────────────────────────────────────────
           SliverAppBar(
@@ -216,31 +225,20 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
               ),
             ),
 
-          // ── Load more ────────────────────────────────────────────
-          if (_hasMore || _loadingMore)
-            SliverToBoxAdapter(
+          // ── Auto-load footer (infinite scroll) ───────────────────
+          if (_loadingMore)
+            const SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                child: _loadingMore
-                    ? const Center(child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(color: AppColors.primary)))
-                    : OutlinedButton(
-                        onPressed: () => _loadProducts(_page + 1),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 44),
-                          side: BorderSide(color: context.col.border),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: Text(context.s.viewMore,
-                          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700,
-                            color: context.col.ink0)),
-                      ),
+                padding: EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: Center(child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator(color: AppColors.primary))),
               ),
             )
           else
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
+        ),
       ),
     );
   }
