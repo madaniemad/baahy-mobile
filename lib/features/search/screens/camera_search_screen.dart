@@ -1,13 +1,29 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
+
+/// Downscale a captured photo before visual-search upload. Full-res captures (1080p+)
+/// are multi-MB and time out on slow connections; visual search doesn't need that detail.
+/// Runs on a background isolate via compute(). Returns the original bytes if decode fails
+/// or the image is already small enough.
+Uint8List _downscaleForSearch(Uint8List bytes) {
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null) return bytes;
+  if (decoded.width <= 1280 && decoded.height <= 1280) return bytes;
+  final resized = decoded.width >= decoded.height
+      ? img.copyResize(decoded, width: 1280)
+      : img.copyResize(decoded, height: 1280);
+  return img.encodeJpg(resized, quality: 82);
+}
 
 enum _CamState { loading, live, scanning, error }
 
@@ -113,11 +129,15 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
 
   Future<void> _analyse() async {
     try {
-      final bytes = await _captured!.readAsBytes();
+      final rawBytes = await _captured!.readAsBytes();
+      final bytes = await compute(_downscaleForSearch, rawBytes);
       final res = await ApiClient.instance.dio.post(
         '/search-by-image',
         data: {'image': base64Encode(bytes)},
-        options: Options(receiveTimeout: const Duration(seconds: 30)),
+        options: Options(
+          sendTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 45),
+        ),
       );
 
       final query      = res.data['query']             as String? ?? '';
