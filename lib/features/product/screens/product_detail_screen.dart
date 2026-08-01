@@ -67,6 +67,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   late final PageController _pageController;
   late final ScrollController _scrollController;
   bool _lazyTriggered = false;
+  bool _viewLogged = false;
   ProductVariation? _selectedVariation;
   int _qty = 1;
   final Map<String, String> _selections = {};
@@ -222,6 +223,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ref.read(recentlyViewedProvider.notifier).add(product);
             if (product.variations.isNotEmpty) _trySelectVariation(product);
+            if (!_viewLogged) {
+              _viewLogged = true;
+              Analytics.instance.viewItem(
+                id: '${product.id}',
+                name: product.name,
+                price: product.displayPrice,
+                category: product.category?.nameAr ?? product.category?.name,
+              );
+            }
           });
 
           final name = isAr ? product.nameAr : product.name;

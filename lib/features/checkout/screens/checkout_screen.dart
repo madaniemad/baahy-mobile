@@ -17,6 +17,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../core/utils/navigation.dart';
+import '../../../core/services/analytics_service.dart';
 import '../../../shared/widgets/app_button.dart';
 
 const _kLastPaymentKey = 'baahy_last_payment';
@@ -87,6 +88,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _loadWallet();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startCheckoutSession();
+      // Analytics: begin_checkout (Firebase + Meta) — once when the screen opens
+      final rs = ref.read(reorderSessionProvider);
+      final ckItems = rs?.items ?? ref.read(cartProvider).items;
+      final ckTotal = rs?.subtotal ?? ref.read(cartProvider).subtotal;
+      Analytics.instance.beginCheckout(total: ckTotal, itemCount: ckItems.length);
       // Auto-expand items in reorder mode so user sees what they're ordering
       if (ref.read(reorderSessionProvider) != null) {
         setState(() => _itemsExpanded = true);

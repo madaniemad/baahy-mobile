@@ -10,6 +10,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/home_provider.dart';
 import '../../../core/utils/navigation.dart';
+import '../../../core/services/analytics_service.dart';
 import '../../../shared/theme/app_theme.dart';
 
 // ── Recent searches persistence ───────────────────────────────────────────────
@@ -133,6 +134,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void _search(String q) {
     if (q.trim().isEmpty) return;
     _focus.unfocus();
+    Analytics.instance.search(q.trim());
     _RecentSearches.add(q.trim()).then((_) => _loadRecents());
     safePush(context, '/search/results?q=${Uri.encodeComponent(q.trim())}');
   }

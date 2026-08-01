@@ -269,7 +269,7 @@ class PushNotificationService {
       // Deal of the day → open the featured product (backend sends product_id)
       case 'deal_of_the_day':
         final pid = data['product_id']?.toString();
-        return pid != null ? '/product/$pid' : '/home';
+        return (pid != null && pid.isNotEmpty) ? '/product/$pid' : '/home';
       // Generic engagement pushes → home
       case 'deals_in_your_categories':
       case 'trending_this_week':
