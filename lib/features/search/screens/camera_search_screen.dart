@@ -67,7 +67,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
     if (idx >= _cameras.length) { _setError('لا توجد كاميرا'); return; }
     final ctrl = CameraController(
       _cameras[idx],
-      ResolutionPreset.high,
+      ResolutionPreset.veryHigh, // 1080p — sharper preview + better visual-search recognition
       enableAudio: false,
       imageFormatGroup: ImageFormatGroup.jpeg,
     );
@@ -462,24 +462,19 @@ class _CameraFill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (_, constraints) {
-      final preview = controller.value.previewSize;
-      if (preview == null) return const SizedBox.expand();
-      final aspect = preview.width / preview.height;
-      return ClipRect(
-        child: OverflowBox(
-          maxWidth: double.infinity, maxHeight: double.infinity,
-          child: FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: constraints.maxHeight * aspect,
-              height: constraints.maxHeight,
-              child: CameraPreview(controller),
-            ),
-          ),
-        ),
-      );
-    });
+    final size = MediaQuery.sizeOf(context);
+    // Cover the screen with the MINIMUM zoom needed, without distortion.
+    // controller.value.aspectRatio already accounts for the preview orientation;
+    // multiplying by the screen aspect and forcing scale >= 1 gives true "cover".
+    var scale = controller.value.aspectRatio * (size.width / size.height);
+    if (scale < 1) scale = 1 / scale;
+    return ClipRect(
+      child: Transform.scale(
+        scale: scale,
+        alignment: Alignment.center,
+        child: Center(child: CameraPreview(controller)),
+      ),
+    );
   }
 }
 
