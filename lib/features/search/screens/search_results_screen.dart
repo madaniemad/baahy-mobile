@@ -61,32 +61,23 @@ class _FilterOptions {
     this.vendors = const [], this.hasReviews = true});
 }
 
-// Scope key: category + brand drive dynamic re-fetching of available attributes
+// Scope key: category drives dynamic re-fetching of available filter options.
 class _FilterScope {
   final int? categoryId;
-  final String? brand;
-  final Set<int> attrValueIds;
-  const _FilterScope({this.categoryId, this.brand, this.attrValueIds = const {}});
+  const _FilterScope({this.categoryId});
 
   @override
   bool operator ==(Object other) =>
-    other is _FilterScope &&
-    other.categoryId == categoryId &&
-    other.brand == brand &&
-    _setEquals(other.attrValueIds, attrValueIds);
+    other is _FilterScope && other.categoryId == categoryId;
 
   @override
-  int get hashCode => Object.hash(categoryId, brand, Object.hashAll(attrValueIds.toList()..sort()));
-
-  static bool _setEquals(Set<int> a, Set<int> b) =>
-    a.length == b.length && a.containsAll(b);
+  int get hashCode => categoryId.hashCode;
 }
 
 final _filterOptionsProvider = FutureProvider.family<_FilterOptions, _FilterScope>((_, scope) async {
   try {
     final params = <String, dynamic>{};
     if (scope.categoryId != null) params['category_id'] = scope.categoryId;
-    if (scope.brand != null && scope.brand!.isNotEmpty) params['brand'] = scope.brand;
     final res = await ApiClient.instance.dio.get('/products/filter-options',
       queryParameters: params.isNotEmpty ? params : null);
     final data = res.data['data'];
@@ -1001,9 +992,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                             color: sel ? AppColors.adaptive(context) : context.col.border,
                                             width: 1.5)),
                                         child: Text(valLabel,
-                                          // Force LTR so Latin/numeric sizes ("7-8 Years", 27"-29")
-                                          // aren't visually reversed by the RTL bidi algorithm.
-                                          textDirection: TextDirection.ltr,
+                                          // Force LTR on size labels so Latin/numeric values
+                                          // ("7-8 Years", 27"-29") aren't reversed by RTL bidi.
+                                          textDirection: _isSizeType(attrType) ? TextDirection.ltr : null,
                                           style: TextStyle(
                                             fontSize: 12, fontWeight: FontWeight.w600,
                                             color: sel ? const Color(0xFFF0F0F0) : context.col.ink1)),

@@ -61,6 +61,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
   }
 
   Future<void> _loadProducts(int page, {bool resetFilter = false}) async {
+    final reqCat = _selectedCategoryId; // pin the category for this request
     if (page == 1) {
       if (mounted) setState(() => _loading = true);
     } else {
@@ -73,17 +74,19 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
         'per_page': _perPage,
         'has_image': 1,
         'page': page,
-        if (_selectedCategoryId != null) 'category_id': _selectedCategoryId,
+        if (reqCat != null) 'category_id': reqCat,
       });
       final list = (res.data['data']['data'] as List?)
           ?.map((p) => Product.fromJson(p)).toList() ?? [];
       final total = (res.data['data']['total'] as num?)?.toInt() ?? list.length;
-      if (mounted) {
+      // Drop a late response if the user switched category while it was in flight.
+      if (mounted && _selectedCategoryId == reqCat) {
         setState(() {
           if (page == 1) _products = list;
           else _products = [..._products, ...list];
           _page = page;
-          _hasMore = _products.length < total;
+          // Stop when a short page arrives (no more) or we've reached the total.
+          _hasMore = list.length == _perPage && _products.length < total;
           _loading = false;
           _loadingMore = false;
         });
