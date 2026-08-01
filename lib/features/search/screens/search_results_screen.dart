@@ -54,7 +54,11 @@ class _FilterOptions {
   final List<_AttrType> attrTypes;
   final List<String> brands;
   final List<_Vendor> vendors;
-  const _FilterOptions({this.attrTypes = const [], this.brands = const [], this.vendors = const []});
+  /// Whether any product in the current scope actually has reviews. Absent (null in the
+  /// payload) → default true for backward-compat with stale-cached responses.
+  final bool hasReviews;
+  const _FilterOptions({this.attrTypes = const [], this.brands = const [],
+    this.vendors = const [], this.hasReviews = true});
 }
 
 // Scope key: category + brand drive dynamic re-fetching of available attributes
@@ -100,7 +104,8 @@ final _filterOptionsProvider = FutureProvider.family<_FilterOptions, _FilterScop
       final name = v is Map ? (v['store_name'] ?? v['name'] ?? '').toString() : v.toString();
       return _Vendor(id: id, name: name);
     }).where((v) => v.id != 0 && v.name.isNotEmpty).toList();
-    return _FilterOptions(attrTypes: types, brands: brands, vendors: vendors);
+    return _FilterOptions(attrTypes: types, brands: brands, vendors: vendors,
+      hasReviews: data['has_reviews'] == null ? true : data['has_reviews'] == true);
   } catch (_) {
     return const _FilterOptions();
   }
@@ -118,54 +123,54 @@ class _FilterState {
   final double? maxPrice;
   final int? minRating;
   final bool inStockOnly;
-  final bool featuredOnly;
+  final bool onSaleOnly;
   final int? categoryId;
   final String? categoryName;
   final Set<int> attributeValueIds;
-  final String? brand;
-  final int? vendorId;
+  final Set<String> brands;
+  final Set<int> vendorIds;
 
   const _FilterState({
     this.minPrice,
     this.maxPrice,
     this.minRating,
     this.inStockOnly = false,
-    this.featuredOnly = false,
+    this.onSaleOnly = false,
     this.categoryId,
     this.categoryName,
     this.attributeValueIds = const {},
-    this.brand,
-    this.vendorId,
+    this.brands = const {},
+    this.vendorIds = const {},
   });
 
   bool get isActive =>
       minPrice != null || maxPrice != null || minRating != null ||
-      inStockOnly || featuredOnly || categoryId != null ||
-      attributeValueIds.isNotEmpty || (brand != null && brand!.isNotEmpty) ||
-      vendorId != null;
+      inStockOnly || onSaleOnly || categoryId != null ||
+      attributeValueIds.isNotEmpty || brands.isNotEmpty ||
+      vendorIds.isNotEmpty;
 
   _FilterState copyWith({
     Object? minPrice = _unset,
     Object? maxPrice = _unset,
     Object? minRating = _unset,
     bool? inStockOnly,
-    bool? featuredOnly,
+    bool? onSaleOnly,
     Object? categoryId = _unset,
     Object? categoryName = _unset,
     Set<int>? attributeValueIds,
-    Object? brand = _unset,
-    Object? vendorId = _unset,
+    Set<String>? brands,
+    Set<int>? vendorIds,
   }) => _FilterState(
     minPrice: identical(minPrice, _unset) ? this.minPrice : minPrice as double?,
     maxPrice: identical(maxPrice, _unset) ? this.maxPrice : maxPrice as double?,
     minRating: identical(minRating, _unset) ? this.minRating : minRating as int?,
     inStockOnly: inStockOnly ?? this.inStockOnly,
-    featuredOnly: featuredOnly ?? this.featuredOnly,
+    onSaleOnly: onSaleOnly ?? this.onSaleOnly,
     categoryId: identical(categoryId, _unset) ? this.categoryId : categoryId as int?,
     categoryName: identical(categoryName, _unset) ? this.categoryName : categoryName as String?,
     attributeValueIds: attributeValueIds ?? this.attributeValueIds,
-    brand: identical(brand, _unset) ? this.brand : brand as String?,
-    vendorId: identical(vendorId, _unset) ? this.vendorId : vendorId as int?,
+    brands: brands ?? this.brands,
+    vendorIds: vendorIds ?? this.vendorIds,
   );
 
   static const _unset = Object();
@@ -216,7 +221,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       categoryId: widget.categoryId,
       maxPrice: widget.maxPrice,
       inStockOnly: false,
-      brand: widget.initialBrand,
+      brands: (widget.initialBrand != null && widget.initialBrand!.isNotEmpty)
+          ? {widget.initialBrand!} : const {},
     );
     if (widget.visionProducts != null) {
       // Use pre-searched products from camera — skip API call
@@ -261,10 +267,9 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         if (_filters.maxPrice != null) 'max_price': _filters.maxPrice,
         if (_filters.minRating != null) 'min_rating': _filters.minRating,
         if (_filters.inStockOnly) 'in_stock': 1,
-        if (_filters.featuredOnly) 'featured': 1,
-        if (_filters.brand != null && _filters.brand!.isNotEmpty) 'brand': _filters.brand,
-        if (_filters.vendorId != null) 'vendor_id': _filters.vendorId,
-        if (widget.onSale) 'on_sale': '1',
+        if (widget.onSale || _filters.onSaleOnly) 'on_sale': '1',
+        if (_filters.brands.isNotEmpty) 'brands[]': _filters.brands.toList(),
+        if (_filters.vendorIds.isNotEmpty) 'vendor_ids[]': _filters.vendorIds.toList(),
         ..._filters.attributeValueIds.isNotEmpty
             ? {'attribute_value_ids[]': _filters.attributeValueIds.toList()} : {},
       });
@@ -322,8 +327,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       categoryId: catId,
       categoryName: null,
       attributeValueIds: const {},
-      brand: null,
-      vendorId: null,
+      brands: const {},
+      vendorIds: const {},
     ));
     _fetch(reset: true);
   }
@@ -668,12 +673,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   late final TextEditingController _maxCtrl;
   int? _rating;
   late bool _inStock;
-  late bool _featured;
+  late bool _onSale;
   int? _categoryId;
   String? _categoryName;
   late Set<int> _attrValueIds;
-  String? _brand;
-  int? _vendorId;
+  Set<String> _brands = {};
+  Set<int> _vendorIds = {};
   bool _catExpanded = true;
   bool _priceExpanded = true;
   bool _ratingExpanded = true;
@@ -691,12 +696,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
       text: widget.initial.maxPrice?.toStringAsFixed(0) ?? '');
     _rating = widget.initial.minRating;
     _inStock = widget.initial.inStockOnly;
-    _featured = widget.initial.featuredOnly;
+    _onSale = widget.initial.onSaleOnly;
     _categoryId = widget.initial.categoryId;
     _categoryName = widget.initial.categoryName;
     _attrValueIds = Set.from(widget.initial.attributeValueIds);
-    _brand = widget.initial.brand;
-    _vendorId = widget.initial.vendorId;
+    _brands = Set.from(widget.initial.brands);
+    _vendorIds = Set.from(widget.initial.vendorIds);
   }
 
   @override
@@ -714,12 +719,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
       maxPrice: maxPrice,
       minRating: _rating,
       inStockOnly: _inStock,
-      featuredOnly: _featured,
+      onSaleOnly: _onSale,
       categoryId: _categoryId,
       categoryName: _categoryName,
       attributeValueIds: Set.from(_attrValueIds),
-      brand: _brand?.trim().isEmpty == true ? null : _brand?.trim(),
-      vendorId: _vendorId,
+      brands: Set.from(_brands),
+      vendorIds: Set.from(_vendorIds),
     ));
   }
 
@@ -744,8 +749,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
       _categoryName = catName;
       // Clear selections that are category-specific.
       _attrValueIds = {};
-      _brand = null;
-      _vendorId = null;
+      _brands = {};
+      _vendorIds = {};
     });
   }
 
@@ -755,12 +760,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
       _maxCtrl.clear();
       _rating = null;
       _inStock = false;
-      _featured = false;
+      _onSale = false;
       _categoryId = null;
       _categoryName = null;
       _attrValueIds = {};
-      _brand = null;
-      _vendorId = null;
+      _brands = {};
+      _vendorIds = {};
     });
   }
 
@@ -779,6 +784,37 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
         ]),
       ),
     );
+  }
+
+  // Whether an attribute type is a clothing/shoe size (drives natural ordering + LTR labels).
+  bool _isSizeType(_AttrType t) {
+    final n = '${t.name} ${t.nameAr}'.toLowerCase();
+    return n.contains('size') || n.contains('حجم') || n.contains('مقاس');
+  }
+
+  // Natural size ordering: numeric sizes ascending, then canonical letter run
+  // (XS→…→XXL→2XL→4XL), then age ranges (Months before Years, by number), unknown last.
+  List<_AttrValue> _orderedValues(_AttrType t) {
+    if (!_isSizeType(t)) return t.values;
+    const letters = ['xxs', 'xs', 's', 'm', 'l', 'xl', 'xxl', '2xl', '3xl', '4xl', '5xl'];
+    double keyOf(String raw) {
+      final v = raw.toLowerCase().trim();
+      final li = letters.indexOf(v);
+      if (li >= 0) return 500 + li.toDouble();
+      final numMatch = RegExp(r'\d+').firstMatch(v);
+      final num = numMatch != null ? (double.tryParse(numMatch.group(0)!) ?? 0) : null;
+      if (RegExp(r'month').hasMatch(v) && num != null) return 700 + num;
+      if (RegExp(r'year').hasMatch(v) && num != null) return 800 + num;
+      if (num != null) return num; // pure numeric sizes sort first
+      return 900;
+    }
+    final list = [...t.values];
+    list.sort((a, b) {
+      final ka = keyOf(a.value.isNotEmpty ? a.value : a.valueAr);
+      final kb = keyOf(b.value.isNotEmpty ? b.value : b.valueAr);
+      return ka != kb ? ka.compareTo(kb) : a.value.compareTo(b.value);
+    });
+    return list;
   }
 
   @override
@@ -849,6 +885,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
           Expanded(
             child: ListView(
               controller: scrollCtrl,
+              // Dragging the sheet dismisses the price keyboard (it otherwise stays
+              // stuck open with no Done key on the numeric pad).
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
               children: [
 
@@ -900,7 +939,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 // ── Attributes (Size, Color, etc.) ────────────────────
                 Consumer(builder: (ctx, attrRef, _) {
                   final opts = attrRef.watch(_filterOptionsProvider(_FilterScope(
-                    categoryId: _effectiveCategoryId, brand: _brand)));
+                    categoryId: _effectiveCategoryId)));
                   return opts.maybeWhen(
                     data: (options) {
                       // Filter out brand attribute type — handled by the dedicated brand section
@@ -922,9 +961,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                               if (_attrExpanded[attrType.id] ?? true) ...[
                                 Wrap(
                                   spacing: 8, runSpacing: 8,
-                                  children: attrType.values.map((val) {
+                                  children: _orderedValues(attrType).map((val) {
                                     final sel = _attrValueIds.contains(val.id);
-                                    final valLabel = isAr ? val.valueAr : val.value;
+                                    final valLabel = (isAr && val.valueAr.isNotEmpty) ? val.valueAr : val.value;
                                     if (attrType.displayType == 'color' && val.colorHex != null) {
                                       Color? color;
                                       try {
@@ -962,6 +1001,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                             color: sel ? AppColors.adaptive(context) : context.col.border,
                                             width: 1.5)),
                                         child: Text(valLabel,
+                                          // Force LTR so Latin/numeric sizes ("7-8 Years", 27"-29")
+                                          // aren't visually reversed by the RTL bidi algorithm.
+                                          textDirection: TextDirection.ltr,
                                           style: TextStyle(
                                             fontSize: 12, fontWeight: FontWeight.w600,
                                             color: sel ? const Color(0xFFF0F0F0) : context.col.ink1)),
@@ -997,9 +1039,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                             Wrap(
                               spacing: 8, runSpacing: 8,
                               children: options.brands.map((b) {
-                                final sel = _brand == b;
+                                final sel = _brands.contains(b);
                                 return GestureDetector(
-                                  onTap: () => setState(() => _brand = sel ? null : b),
+                                  onTap: () => setState(() => sel ? _brands.remove(b) : _brands.add(b)),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12, vertical: 7),
@@ -1045,7 +1087,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
 
                 // ── Deals Only ────────────────────────────────────────────
                 GestureDetector(
-                  onTap: () => setState(() => _featured = !_featured),
+                  onTap: () => setState(() => _onSale = !_onSale),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Row(children: [
@@ -1054,8 +1096,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                           color: context.col.ink1)),
                       const Spacer(),
                       Switch(
-                        value: _featured,
-                        onChanged: (v) => setState(() => _featured = v),
+                        value: _onSale,
+                        onChanged: (v) => setState(() => _onSale = v),
                         activeColor: AppColors.primary,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -1085,42 +1127,52 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 ),
                 const Divider(height: 1),
 
-                // ── Rating ────────────────────────────────────────────────
-                _sectionHeader(context.isAr ? 'الحد الأدنى للتقييم' : 'Min. Rating', _ratingExpanded,
-                  () => setState(() => _ratingExpanded = !_ratingExpanded)),
-
-                if (_ratingExpanded) ...[
-                  Wrap(
-                    spacing: 8, runSpacing: 8,
-                    children: [3, 4, 5].map((star) {
-                      final selected = _rating == star;
-                      return GestureDetector(
-                        onTap: () => setState(() => _rating = selected ? null : star),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: selected ? context.col.ink0 : context.col.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: selected ? context.col.ink0 : context.col.border,
-                              width: 1.5),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.star_rounded, size: 14,
-                              color: selected ? Colors.white : AppColors.warn),
-                            const SizedBox(width: 4),
-                            Text('$star+ ${context.isAr ? 'نجوم' : 'stars'}',
-                              style: TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.w700,
-                                color: selected ? Colors.white : context.col.ink1)),
-                          ]),
+                // ── Rating (only shown when products in scope actually have reviews) ──
+                Consumer(builder: (ctx, ratingRef, _) {
+                  final hasReviews = ratingRef.watch(_filterOptionsProvider(_FilterScope(
+                    categoryId: _effectiveCategoryId))).maybeWhen(
+                      data: (o) => o.hasReviews, orElse: () => false);
+                  if (!hasReviews) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _sectionHeader(context.isAr ? 'الحد الأدنى للتقييم' : 'Min. Rating', _ratingExpanded,
+                        () => setState(() => _ratingExpanded = !_ratingExpanded)),
+                      if (_ratingExpanded) ...[
+                        Wrap(
+                          spacing: 8, runSpacing: 8,
+                          children: [3, 4, 5].map((star) {
+                            final selected = _rating == star;
+                            return GestureDetector(
+                              onTap: () => setState(() => _rating = selected ? null : star),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: selected ? context.col.ink0 : context.col.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: selected ? context.col.ink0 : context.col.border,
+                                    width: 1.5),
+                                ),
+                                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                  Icon(Icons.star_rounded, size: 14,
+                                    color: selected ? Colors.white : AppColors.warn),
+                                  const SizedBox(width: 4),
+                                  Text('$star+ ${context.isAr ? 'نجوم' : 'stars'}',
+                                    style: TextStyle(
+                                      fontSize: 12, fontWeight: FontWeight.w700,
+                                      color: selected ? Colors.white : context.col.ink1)),
+                                ]),
+                              ),
+                            );
+                          }).toList(),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(height: 1),
-                ],
+                        const SizedBox(height: 12),
+                        const Divider(height: 1),
+                      ],
+                    ],
+                  );
+                }),
 
                 // ── Vendor / Seller ───────────────────────────────────
                 Consumer(builder: (ctx, vendorRef, _) {
@@ -1137,9 +1189,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                         Wrap(
                           spacing: 8, runSpacing: 8,
                           children: list.map((v) {
-                            final sel = _vendorId == v.id;
+                            final sel = _vendorIds.contains(v.id);
                             return GestureDetector(
-                              onTap: () => setState(() => _vendorId = sel ? null : v.id),
+                              onTap: () => setState(() => sel ? _vendorIds.remove(v.id) : _vendorIds.add(v.id)),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                                 decoration: BoxDecoration(
@@ -1289,6 +1341,8 @@ class _PriceField extends StatelessWidget {
       controller: controller,
       keyboardType: TextInputType.number,
       textAlign: TextAlign.center,
+      // Tapping anywhere outside the field dismisses the numeric keyboard.
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       style: const TextStyle(fontFamily: 'PlusJakartaSans', fontWeight: FontWeight.w700),
       decoration: InputDecoration(
         hintText: hint,

@@ -471,8 +471,12 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                           children: [
                             TextSpan(
                               text: context.s.isAr
-                                  ? '$saleCount منتجات انخفضت سعرها  '
-                                  : '$saleCount items on sale  ',
+                                  ? (saleCount == 1
+                                      ? 'منتج واحد انخفض سعره  '
+                                      : '$saleCount منتجات انخفضت أسعارها  ')
+                                  : (saleCount == 1
+                                      ? '1 item on sale  '
+                                      : '$saleCount items on sale  '),
                               style: TextStyle(color: context.col.ink1, fontWeight: FontWeight.w600),
                             ),
                             TextSpan(
