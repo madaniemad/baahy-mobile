@@ -29,6 +29,10 @@ dependencies:
   firebase_analytics: ^12.0.0
   flutter_local_notifications: ^17.1.2
 
+  # Meta (Facebook) app events + iOS App Tracking Transparency
+  facebook_app_events: ^0.20.1
+  app_tracking_transparency: ^2.0.6
+
   # Image
   cached_network_image: ^3.3.1
   image_picker: ^1.0.7

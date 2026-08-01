@@ -28,6 +28,7 @@ import '../../../core/providers/tier_provider.dart';
 import '../../../core/models/tier_status.dart';
 import '../../../core/providers/welcome_coupon_provider.dart';
 import '../../../core/services/version_gate.dart';
+import '../../../core/services/analytics_service.dart';
 import '../../misc/force_update_screen.dart';
 import '../../../core/utils/responsive.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -79,12 +80,25 @@ void _maybeShowForceUpdate(BuildContext context, WidgetRef ref) {
   });
 }
 
+bool _trackingKickoff = false;
+
+/// Fire the iOS ATT prompt + Meta advertiser-tracking init once, after the user reaches
+/// home (post-onboarding, in-context). Self-guarded inside Analytics too.
+void _maybeInitTracking() {
+  if (_trackingKickoff) return;
+  _trackingKickoff = true;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    Analytics.instance.initTracking();
+  });
+}
+
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     _maybeShowForceUpdate(context, ref);
+    _maybeInitTracking();
     final home = ref.watch(homeProvider);
     final banners = ref.watch(bannersProvider);
     final config = ref.watch(appConfigProvider);

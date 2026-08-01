@@ -3,6 +3,8 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Advertising ID for Meta app-events attribution (Android 13+) -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
     <application
         android:label="باهي"
         android:name="${applicationName}"
@@ -43,6 +45,13 @@
                 <data android:scheme="https" android:host="www.baahy.com" android:pathPrefix="/invite"/>
             </intent-filter>
         </activity>
+        <!-- Meta (Facebook) app-events SDK config -->
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id"/>
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="@string/facebook_client_token"/>
         <!-- FCM notification handling -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
