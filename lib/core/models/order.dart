@@ -34,6 +34,11 @@ class Order {
   final double subtotal;
   final double shippingCost;
   final double discount;
+  /// Coupon value. Lives in its own column server-side and `discount` stays 0, so a breakdown
+  /// that only reads `discount` does not add up to `total`.
+  final double couponDiscount;
+  /// Portion of this order already settled from the customer's wallet balance.
+  final double walletAmount;
   final String? couponCode;
   final String paymentMethod;
   final String paymentStatus;
@@ -55,6 +60,8 @@ class Order {
     required this.subtotal,
     required this.shippingCost,
     required this.discount,
+    this.couponDiscount = 0,
+    this.walletAmount = 0,
     this.couponCode,
     required this.paymentMethod,
     required this.paymentStatus,
@@ -99,6 +106,8 @@ class Order {
     subtotal: _d(j['subtotal'] ?? 0),
     shippingCost: _d(j['shipping_cost'] ?? 0),
     discount: _d(j['discount'] ?? 0),
+    couponDiscount: _d(j['coupon_discount'] ?? 0),
+    walletAmount: _d(j['wallet_amount'] ?? 0),
     couponCode: j['coupon_code'],
     paymentMethod: j['payment_method'] ?? 'cash',
     paymentStatus: j['payment_status'] ?? 'pending',

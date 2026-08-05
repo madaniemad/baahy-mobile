@@ -290,14 +290,41 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
             if (order.discount > 0)
               _SumRow(context.s.discountLabel, '-${fmtPrice(order.discount)} ${context.s.lydUnit}',
                 color: AppColors.success, ctx: context),
+            // The coupon has its own field and `discount` is 0 on coupon orders, so without this
+            // row the breakdown printed 88 + 20 above a 99.20 total.
+            if (order.couponDiscount > 0)
+              _SumRow(
+                order.couponCode != null && order.couponCode!.isNotEmpty
+                    ? '${context.tr('كوبون', 'Coupon')} (${order.couponCode})'
+                    : context.tr('كوبون', 'Coupon'),
+                '-${fmtPrice(order.couponDiscount)} ${context.s.lydUnit}',
+                color: AppColors.success, ctx: context),
             Divider(height: 20, color: context.col.border),
             _SumRow(context.s.totalLabel, '${fmtPrice(order.total)} ${context.s.lydUnit}', bold: true, ctx: context),
+            // Part (or all) of the order already paid from wallet balance — the customer needs to
+            // know what is still owed at the door.
+            if (order.walletAmount > 0) ...[
+              _SumRow(context.tr('مدفوع من المحفظة', 'Paid from wallet'),
+                '-${fmtPrice(order.walletAmount)} ${context.s.lydUnit}',
+                color: AppColors.success, ctx: context),
+              _SumRow(
+                order.paymentStatus == 'paid'
+                    ? context.tr('مدفوع بالكامل', 'Already paid')
+                    : context.tr('المبلغ المستحق', 'Amount due'),
+                '${fmtPrice(order.paymentStatus == 'paid' ? 0 : (order.total - order.walletAmount).clamp(0, double.infinity))} ${context.s.lydUnit}',
+                bold: true, ctx: context),
+            ],
             const SizedBox(height: 10),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Text(context.tr('طريقة الدفع', 'Payment method'),
                 style: TextStyle(fontSize: 13.5, color: context.col.ink2,
                   fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'])),
-              Text(_paymentMethodLabel(context, order.paymentMethod),
+              Text(
+                order.walletAmount > 0
+                    ? (order.walletAmount >= order.total
+                        ? context.tr('المحفظة', 'Wallet')
+                        : '${context.tr('المحفظة', 'Wallet')} + ${_paymentMethodLabel(context, order.paymentMethod)}')
+                    : _paymentMethodLabel(context, order.paymentMethod),
                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: context.col.ink0,
                   fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'])),
             ]),
