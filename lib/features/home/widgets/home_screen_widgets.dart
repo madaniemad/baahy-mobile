@@ -2313,9 +2313,6 @@ class _WelcomeCouponBanner extends ConsumerWidget {
     return couponAsync.when(
       data: (coupon) {
         if (coupon == null) return const SizedBox.shrink();
-        final discountLabel = coupon.type == 'percentage'
-            ? '${coupon.discount.toStringAsFixed(0)}%'
-            : '${coupon.discount.toStringAsFixed(0)} د.ل';
         return Padding(
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
           child: GestureDetector(
@@ -2346,13 +2343,16 @@ class _WelcomeCouponBanner extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'خصم $discountLabel على طلبك الأول',
+                        // Server-driven: which order the offer targets is a business
+                        // decision, not an app string.
+                        context.tr(coupon.headlineAr, coupon.headlineEn),
                         style: const TextStyle(
                           fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                           fontWeight: FontWeight.w700, color: Colors.white),
                       ),
                       Text(
-                        'استخدم كود ${coupon.code} عند الدفع',
+                        context.tr('استخدم كود ${coupon.code} عند الدفع',
+                                   'Use code ${coupon.code} at checkout'),
                         style: const TextStyle(
                           fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5,
                           color: Color(0xFF004D54)),

@@ -927,6 +927,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final cbRate = _cbTierRate > 0 ? _cbTierRate : config.cashbackRate;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = _accent(context);
+    // The auto-applied offer the backend is holding for this customer, if any.
+    final autoOffer = ref.watch(welcomeCouponProvider).valueOrNull;
 
     // Effective items and subtotal: reorder session takes priority over cart
     final effectiveItems = isReorder ? reorderSession.items : cart.items;
@@ -1311,8 +1313,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               color: AppColors.success))),
                         ]),
                       ),
-                    // First-order coupon applied strip
-                    if (!isReorder && cart.couponCode?.toUpperCase() == 'FIRSTORDER')
+                    // Auto-applied offer strip (currently the second-order win-back)
+                    if (!isReorder && autoOffer != null &&
+                        cart.couponCode?.toUpperCase() == autoOffer.code.toUpperCase())
                       Container(
                         margin: const EdgeInsets.only(top: 10),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1326,9 +1329,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.success),
                           const SizedBox(width: 8),
                           Expanded(child: Text(
-                            context.tr(
-                              '✓ خصم الطلب الأول مطبّق — هذا العرض لن يتكرر',
-                              "✓ First-order discount applied — this offer won't repeat"),
+                            '✓ ${context.tr(autoOffer.appliedAr, autoOffer.appliedEn)}',
                             style: const TextStyle(
                               fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12.5,
                               fontWeight: FontWeight.w700,

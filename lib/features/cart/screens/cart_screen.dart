@@ -521,7 +521,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
             const SizedBox(height: 20),
 
             // ── First-order coupon banner ─────────────────────────────────
-            _FirstOrderCouponBanner(),
+            _AutoOfferBanner(),
 
             // ── Order summary ─────────────────────────────────────────────
             _OrderSummary(cart: cart),
@@ -1374,37 +1374,28 @@ class _TrustBadges extends StatelessWidget {
   }
 }
 
-// ── First-order coupon banner ─────────────────────────────────────────────────
+// ── Auto-applied offer banner ─────────────────────────────────────────────────
+// Which order the offer targets (first, second, any repeat) is decided by the
+// backend — all copy here comes from `welcomeCouponProvider`.
 
-class _FirstOrderCouponBanner extends ConsumerWidget {
+class _AutoOfferBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartProvider);
     final couponAsync = ref.watch(welcomeCouponProvider);
 
-    final firstOrderApplied = cart.couponCode?.toUpperCase() == 'FIRSTORDER';
     final coupon = couponAsync.valueOrNull;
+    final applied = coupon != null &&
+        cart.couponCode?.toUpperCase() == coupon.code.toUpperCase();
 
-    // Nothing to show: not applied and no eligible coupon data
-    if (!firstOrderApplied && coupon == null) return const SizedBox.shrink();
+    if (coupon == null) return const SizedBox.shrink();
 
-    // FIRSTORDER is in cart but provider still loading — show minimal strip to prevent flicker
-    if (firstOrderApplied && coupon == null) {
-      return _buildBannerShell(
-        context,
-        headline: 'تم تطبيق خصم الطلب الأول على سلتك',
-        sub: 'هذا الخصم لمرة واحدة فقط، لا تفوّته!',
-      );
-    }
-
-    final discountPct = coupon!.discount.toInt();
-    final maxDiscount = coupon.maxDiscount?.toInt() ?? 39;
     return _buildBannerShell(
       context,
-      headline: firstOrderApplied
-          ? 'تم تطبيق خصم $discountPct% (بحد أقصى $maxDiscount د.ل) على طلبك الأول'
-          : 'خصم $discountPct% على طلبك الأول — يتم التطبيق تلقائياً',
-      sub: 'هذا الخصم لمرة واحدة فقط، لا تفوّته!',
+      headline: applied
+          ? context.tr(coupon.appliedAr, coupon.appliedEn)
+          : context.tr(coupon.headlineAr, coupon.headlineEn),
+      sub: context.tr(coupon.subAr, coupon.subEn),
     );
   }
 
