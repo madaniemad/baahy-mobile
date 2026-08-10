@@ -39,19 +39,24 @@ class CartState {
 
   bool get hasVendorFulfilledItems => items.any((i) => !i.product.fulfilledByBaahy);
 
-  // Sum collection fees across unique vendors. Zero if vendor has no fee set.
+  /// Collection fee across distinct non-FBB vendors, with the FIRST (largest) one waived.
+  ///
+  /// The backend has always waived it — OrderController::collectionFeeWithFirstFree returns 0 for
+  /// a single vendor — and the web mirrors that. This summed every vendor instead, so a one-vendor
+  /// basket (which is most of them) was quoted 5 LYD more than the order was actually created with:
+  /// checkout said 585, the server charged 580, and the driver collected the smaller figure.
   double get totalCollectionFee {
-    final seenIds = <int>{};
-    double total = 0;
+    final perVendor = <int, double>{};
     for (final item in items) {
       if (item.product.fulfilledByBaahy) continue;
       final vendor = item.product.vendor;
       if (vendor == null) continue;
-      if (seenIds.contains(vendor.id)) continue;
-      seenIds.add(vendor.id);
-      total += vendor.collectionFee ?? 0;
+      perVendor[vendor.id] = (vendor.collectionFee ?? 0).toDouble();
     }
-    return total;
+    if (perVendor.length <= 1) return 0;
+    final fees = perVendor.values.toList()..sort();
+    fees.removeLast();                     // the largest single fee is on us
+    return fees.fold<double>(0, (sum, f) => sum + f);
   }
 
   double get deliveryFee {
