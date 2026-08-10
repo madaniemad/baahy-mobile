@@ -4,11 +4,12 @@ import '../api/api_client.dart';
 
 /// The auto-applied offer the backend is currently holding for this customer.
 ///
-/// This used to be the first-order coupon and nothing else. It now returns
-/// whichever offer the customer's order history places them in — today that is
-/// the 10% second-order win-back, since the first order is carried by the 20 LYD
-/// welcome wallet bonus alone. All customer-facing copy comes from the server so
-/// the offer can be re-aimed from admin without shipping an app release.
+/// Returns whichever offer the customer's order history places them in: 15% on the
+/// first order, or the 10% second-order win-back. All customer-facing copy comes
+/// from the server so the offer can be re-aimed from admin without an app release.
+///
+/// [blocksWallet] means this offer IS the discount on this order — the wallet
+/// balance is not spent alongside it and stays for the next one.
 class WelcomeCoupon {
   final String code;
   final double discount;
@@ -23,6 +24,11 @@ class WelcomeCoupon {
   final String appliedEn;
   final String subAr;
   final String subEn;
+  /// Wallet credit cannot be combined with this offer — the balance carries over.
+  final bool blocksWallet;
+  /// Server-written explanation shown on the disabled wallet option.
+  final String? walletNoteAr;
+  final String? walletNoteEn;
 
   const WelcomeCoupon({
     required this.code,
@@ -36,6 +42,9 @@ class WelcomeCoupon {
     required this.appliedEn,
     required this.subAr,
     required this.subEn,
+    this.blocksWallet = false,
+    this.walletNoteAr,
+    this.walletNoteEn,
   });
 }
 
@@ -66,6 +75,9 @@ final welcomeCouponProvider = FutureProvider.autoDispose<WelcomeCoupon?>((ref) a
       appliedEn:   data['applied_en']  as String? ?? '$label discount applied to your cart',
       subAr:       data['sub_ar']      as String? ?? 'عرض لمرة واحدة — لا تفوّته!',
       subEn:       data['sub_en']      as String? ?? "One-time offer — don't miss it!",
+      blocksWallet: data['blocks_wallet'] == true,
+      walletNoteAr: data['wallet_note_ar'] as String?,
+      walletNoteEn: data['wallet_note_en'] as String?,
     );
   } catch (e, st) {
     Sentry.captureException(e, stackTrace: st);

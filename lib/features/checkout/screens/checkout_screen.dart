@@ -220,6 +220,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => _PaymentSheet(
+        walletBlockedNote: ref.read(welcomeCouponProvider).valueOrNull?.blocksWallet == true
+            ? (ref.read(welcomeCouponProvider).valueOrNull!.walletNoteAr ?? '')
+            : null,
         initialUseWallet: _useWallet,
         initialWalletAmount: _walletAmountCtrl.text,
         initialPaymentMethod: _paymentMethod,
@@ -326,7 +329,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final orderTotal = isReorder ? orderSubtotal + orderDeliveryFee : cart.total;
       final couponCode = isReorder ? null : cart.couponCode;
       final addr = _selectedAddress!;
-      final walletActive = _useWallet && _walletBalance > 0;
+      final walletActive = _useWallet && _walletBalance > 0
+          && ref.read(welcomeCouponProvider).valueOrNull?.blocksWallet != true;
       final maxUse = walletActive
           ? (_walletBalance < orderTotal ? _walletBalance : orderTotal)
           : 0.0;
@@ -955,7 +959,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ? allMethods.where((m) => m.id != 'cash_on_delivery').toList()
         : allMethods;
 
-    final walletActive = _useWallet && _walletBalance > 0;
+    // An offer that IS the discount on this order (the first-order 15%) cannot be combined
+    // with wallet credit — the balance stays for the next order. The server refuses the
+    // combination outright, so offering the toggle here only leads to a dead end.
+    final walletBlocked = autoOffer?.blocksWallet == true;
+    final walletActive = _useWallet && _walletBalance > 0 && !walletBlocked;
     final maxWalletUse = walletActive
         ? (_walletBalance < effectiveTotal ? _walletBalance : effectiveTotal)
         : 0.0;
@@ -1455,8 +1463,12 @@ class _PaymentSheet extends StatefulWidget {
   final List methods;
   final VoidCallback onTopUp;
   final void Function(bool useWallet, String walletAmount, String paymentMethod) onConfirm;
+  /// Non-null when an offer on this order can't be combined with wallet credit — the text
+  /// is the server's explanation, shown on the disabled card.
+  final String? walletBlockedNote;
 
   const _PaymentSheet({
+    this.walletBlockedNote,
     required this.initialUseWallet,
     required this.initialWalletAmount,
     required this.initialPaymentMethod,
@@ -1481,7 +1493,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
   @override
   void initState() {
     super.initState();
-    _useWallet = widget.initialUseWallet;
+    _useWallet = widget.initialUseWallet && widget.walletBlockedNote == null;
     _paymentMethod = widget.initialPaymentMethod;
     _walletAmountCtrl = TextEditingController(text: widget.initialWalletAmount);
   }
@@ -1510,7 +1522,8 @@ class _PaymentSheetState extends State<_PaymentSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = _accent(context);
-    final walletActive = _useWallet && widget.walletBalance > 0;
+    final walletBlocked = widget.walletBlockedNote != null;
+    final walletActive = _useWallet && widget.walletBalance > 0 && !walletBlocked;
     final maxWalletUse = walletActive
         ? (widget.walletBalance < widget.cartTotal ? widget.walletBalance : widget.cartTotal)
         : 0.0;
@@ -1555,7 +1568,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
 
           // Wallet card
           GestureDetector(
-            onTap: widget.walletBalance > 0
+            onTap: widget.walletBalance > 0 && !walletBlocked
                 ? () {
                     final enabling = !_useWallet;
                     if (enabling) {
@@ -1575,22 +1588,28 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                 border: Border.all(color: context.col.border),
               ),
               child: Row(children: [
-                _RadioDot(selected: walletActive),
+                Opacity(opacity: walletBlocked ? 0.4 : 1, child: _RadioDot(selected: walletActive)),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(context.s.walletTitle,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 14,
+                      color: walletBlocked ? context.col.ink3 : null)),
                   const SizedBox(height: 2),
-                  widget.walletLoading
-                      ? Text(context.s.loading,
-                          style: TextStyle(fontSize: 11.5, color: context.col.ink3))
-                      : Text(
-                          widget.walletBalance > 0
-                              ? context.s.walletBalanceLabel(fmtPrice(widget.walletBalance))
-                              : context.s.walletEmpty,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: widget.walletBalance > 0 ? AppColors.success : context.col.ink3)),
+                  if (walletBlocked)
+                    Text(widget.walletBlockedNote!,
+                      style: TextStyle(fontSize: 11.5, height: 1.45, color: context.col.ink3))
+                  else if (widget.walletLoading)
+                    Text(context.s.loading,
+                      style: TextStyle(fontSize: 11.5, color: context.col.ink3))
+                  else
+                    Text(
+                      widget.walletBalance > 0
+                          ? context.s.walletBalanceLabel(fmtPrice(widget.walletBalance))
+                          : context.s.walletEmpty,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: widget.walletBalance > 0 ? AppColors.success : context.col.ink3)),
                 ])),
                 const SizedBox(width: 8),
                 GestureDetector(
