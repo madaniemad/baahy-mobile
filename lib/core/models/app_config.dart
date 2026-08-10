@@ -102,8 +102,8 @@ class AppConfig {
     this.tierCashbacks = const [2.0, 3.0, 4.0, 6.0],
     this.tierShippingThresholds = const [150.0, 120.0, 100.0, 80.0],
     this.tierReturnDays = const [1, 3, 7, 14],
-    this.milestoneOrders = const [1, 3, 5, 10, 25, 50],
-    this.milestoneRewards = const [10.0, 15.0, 20.0, 30.0, 50.0, 100.0],
+    this.milestoneOrders = const [2, 5, 10, 20, 30, 50],
+    this.milestoneRewards = const [10.0, 15.0, 20.0, 30.0, 40.0, 50.0],
   });
 
   static const AppConfig defaults = AppConfig(
@@ -148,8 +148,8 @@ class AppConfig {
     tierCashbacks: [2.0, 3.0, 4.0, 6.0],
     tierShippingThresholds: [150.0, 120.0, 100.0, 80.0],
     tierReturnDays: [1, 3, 7, 14],
-    milestoneOrders: [1, 3, 5, 10, 25, 50],
-    milestoneRewards: [10.0, 15.0, 20.0, 30.0, 50.0, 100.0],
+    milestoneOrders: [2, 5, 10, 20, 30, 50],
+    milestoneRewards: [10.0, 15.0, 20.0, 30.0, 40.0, 50.0],
   );
 
   factory AppConfig.fromJson(Map<String, dynamic> j) {
