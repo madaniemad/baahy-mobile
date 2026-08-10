@@ -564,7 +564,7 @@ We retain your data as long as your account is active. You may request account d
 
 We use SSL encryption to protect your data during transmission.
 
-Contact: info@baahy.com''';
+Contact: support@baahy.com''';
 
   String get termsOfServiceEn => '''By using the Baahy app, you agree to the following terms:
 
