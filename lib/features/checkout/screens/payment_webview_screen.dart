@@ -23,6 +23,7 @@ class PaymentWebViewScreen extends StatefulWidget {
 class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
   late final WebViewController _ctrl;
   bool _pageLoading = true;
+  String? _loadError;
 
   @override
   void initState() {
@@ -49,6 +50,17 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
               obs.observe(document.body, { childList: true, subtree: true });
             })();
           """);
+        },
+        // A gateway page that fails to load used to leave a blank white screen with no hint —
+        // the customer just backs out, our record sits `pending` forever and the gateway never
+        // sees a transaction. Moamalat's Lightbox in particular is served from a NON-STANDARD
+        // port (npg.moamalat.net:6006), which carrier networks are known to block.
+        onWebResourceError: (err) {
+          if (!mounted || !err.isForMainFrame!) return;
+          setState(() {
+            _pageLoading = false;
+            _loadError = err.description.isNotEmpty ? err.description : 'تعذّر تحميل صفحة الدفع';
+          });
         },
         onNavigationRequest: (req) {
           final uri = Uri.tryParse(req.url);
@@ -97,10 +109,40 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
               textDirection: TextDirection.ltr,
               child: WebViewWidget(controller: _ctrl),
             ),
-            if (_pageLoading)
+            if (_pageLoading && _loadError == null)
               const Center(
                 child: CircularProgressIndicator(
                   color: AppColors.primary, strokeWidth: 2.5)),
+            if (_loadError != null)
+              Container(
+                color: context.col.bg,
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.wifi_off_rounded, size: 44, color: AppColors.danger),
+                    const SizedBox(height: 14),
+                    Text(context.tr('تعذّر فتح صفحة الدفع',
+                                    'Payment page could not be opened'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Text(context.tr(
+                        'قد تكون شبكتك تمنع الاتصال ببوابة الدفع. جرّب شبكة أخرى (Wi-Fi أو بيانات) أو اختر طريقة دفع مختلفة.',
+                        'Your network may be blocking the payment gateway. Try another network (Wi-Fi or mobile data) or a different payment method.'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 13, height: 1.6, color: context.col.ink3)),
+                    const SizedBox(height: 18),
+                    TextButton(
+                      onPressed: () {
+                        setState(() { _loadError = null; _pageLoading = true; });
+                        _ctrl.loadRequest(Uri.parse(widget.url));
+                      },
+                      child: Text(context.tr('إعادة المحاولة', 'Try again')),
+                    ),
+                  ],
+                ),
+              ),
           ]),
         ),
       ]),
