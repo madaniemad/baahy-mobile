@@ -184,6 +184,12 @@ class Product {
 
   static const _storageBase = 'https://api.baahy.com/storage/';
 
+  /// Public wrapper — order lines carry their own image snapshot and need the same resolution.
+  static String? resolveImageUrl(String? path) {
+    if (path == null || path.trim().isEmpty) return null;
+    return _resolveImageUrl(path);
+  }
+
   static String _resolveImageUrl(String path) {
     final fixed = path.replaceAll('/api/storage/', '/storage/');
     if (fixed.startsWith('http')) return fixed;

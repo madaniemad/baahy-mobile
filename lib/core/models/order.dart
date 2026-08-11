@@ -197,7 +197,10 @@ class OrderItem {
       productId: _i(j['product_id']),
       productName: j['product_name'] ?? product?['name'] ?? '',
       productNameAr: j['product_name_ar'] ?? product?['name_ar'] ?? j['product_name'] ?? '',
-      productImage: productImage,
+      // The snapshot is stored absolute now, but a relative '/storage/…' path is still a valid
+      // thing to receive (older rows, another writer) and is NOT a URL — handed to the image
+      // widget as-is it just renders a placeholder on an order whose product is perfectly fine.
+      productImage: Product.resolveImageUrl(productImage),
       variationId: (j['variation_id'] as num?)?.toInt(),
       variationLabel: j['variation_label'],
       quantity: _i(j['quantity'], 1),
