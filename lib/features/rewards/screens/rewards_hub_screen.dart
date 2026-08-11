@@ -1030,11 +1030,11 @@ class _FaqSection extends StatelessWidget {
      a: isAr ? 'يُضاف الكاش باك إلى محفظتك تلقائياً بمجرد توصيل طلبك وتأكيد الاستلام.'
               : 'Cashback is added to your wallet automatically once your order is delivered and confirmed.'),
     (q: isAr ? 'هل يمكنني استخدام رصيد المكافآت مع العروض؟' : 'Can I use rewards balance with promotions?',
-     a: isAr ? 'نعم، يمكنك استخدام رصيد محفظتك مع أي طلب بصرف النظر عن العروض المطبّقة.'
-              : 'Yes, you can use your wallet balance on any order regardless of active promotions.'),
+     a: isAr ? 'نعم، مع استثناء واحد: طلبك الأول يحصل على خصم 15% تلقائياً، ولا يُستخدم رصيد المحفظة معه — يبقى رصيدك كما هو لطلبك القادم.'
+              : 'Yes, with one exception: your first order gets an automatic 15% discount and your wallet balance is not used with it — it stays untouched for your next order.'),
     (q: isAr ? 'هل يوجد حد أقصى لاستخدام المكافآت؟' : 'Is there a maximum on rewards usage?',
-     a: isAr ? 'لا يوجد حد أقصى. يمكنك تجميع الرصيد واستخدامه متى شئت على أي طلب.'
-              : 'There is no maximum. Accumulate balance and use it whenever you want on any order.'),
+     a: isAr ? 'لا يوجد حد أقصى على المبلغ — تجمع الرصيد وتستخدمه متى شئت. الاستثناء الوحيد هو طلبك الأول، حيث يُطبَّق خصم 15% بدلاً من الرصيد.'
+              : 'No maximum on the amount — accumulate it and use it whenever you like. The only exception is your first order, where the 15% discount applies instead of the balance.'),
     (q: isAr ? 'كيف أرتقي في مستوى الولاء؟' : 'How do I level up my loyalty tier?',
      a: isAr ? 'يجب تحقيق شرطي الطلبات والإنفاق معاً خلال آخر 12 شهراً. تتم المراجعة تلقائياً عند كل توصيل.'
               : 'You must meet both orders and spend conditions within the last 12 months. Your tier is reviewed automatically at each delivery.'),

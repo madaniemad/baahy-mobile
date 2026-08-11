@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
@@ -269,6 +270,52 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
               onTap: () => safePush(context, '/settings'),
             ),
           ]),
+
+          const SizedBox(height: 16),
+
+          // ── Become a seller ───────────────────────────────────────────────
+          // The FAQ has always told customers to press "افتح متجرك" — there was no such
+          // control anywhere in the app. Vendor onboarding is web-only, so this hands off to
+          // the browser (same target banner_link.dart already uses for /vendor/register).
+          GestureDetector(
+            onTap: () => launchUrl(
+              Uri.parse('https://baahy.com/vendor/register'),
+              mode: LaunchMode.externalApplication,
+            ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+              ),
+              child: Row(children: [
+                Container(
+                  width: 38, height: 38,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const Icon(Icons.storefront_rounded, size: 20, color: AppColors.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(context.s.sellerCtaTitle,
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                      const SizedBox(height: 2),
+                      Text(context.s.sellerCtaSub,
+                        style: TextStyle(fontSize: 11.5, height: 1.4, color: context.col.ink3)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_left_rounded, size: 20, color: context.col.ink3),
+              ]),
+            ),
+          ),
 
           const SizedBox(height: 16),
 

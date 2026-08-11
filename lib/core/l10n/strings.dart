@@ -182,6 +182,10 @@ class AppStrings {
   String get notifications  => isAr ? 'الإشعارات'              : 'Notifications';
   String get language       => isAr ? 'اللغة'                  : 'Language';
   String get switchLang     => isAr ? 'English'                : 'العربية';
+  // Seller onboarding is web-only, so this opens baahy.com/vendor/register in the browser.
+  String get sellerCtaTitle => isAr ? 'بائع؟ افتح متجرك الآن'    : 'A seller? Open your store now';
+  String get sellerCtaSub   => isAr ? 'بع منتجاتك على باهي — بدون رسوم تسجيل أو رسوم شهرية'
+                                    : 'Sell on Baahy — no signup fee, no monthly fee';
   String get verified       => isAr ? 'موثّق'                  : 'Verified';
   String get activeOrdersLbl=> isAr ? 'طلبات نشطة'             : 'Active Orders';
   String get totalOrdersLbl => isAr ? 'إجمالي الطلبات'        : 'Total Orders';
