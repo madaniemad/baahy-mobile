@@ -17,6 +17,9 @@ class CartState {
   final List<CartItem> items;
   final String? couponCode;
   final double discountAmount;
+  /// The applied coupon also waives delivery (coupons.free_shipping). Independent of
+  /// [discountAmount] — a delivery-only offer discounts nothing and sets only this.
+  final bool couponFreeShipping;
   // City-specific rate (null = city unknown, fall back to fallbackShippingFee)
   final ShippingRate? cityRate;
   // Fallback estimate shown before city is selected
@@ -29,6 +32,7 @@ class CartState {
     this.items = const [],
     this.couponCode,
     this.discountAmount = 0,
+    this.couponFreeShipping = false,
     this.cityRate,
     this.fallbackShippingFee = 10.0,
     this.collectionFee = 0,
@@ -60,6 +64,9 @@ class CartState {
   }
 
   double get deliveryFee {
+    // A free-delivery coupon zeroes the whole line, collection fee included — the backend
+    // applies it after folding the fee in, so anything less would quote more than we charge.
+    if (couponFreeShipping) return 0;
     final base = cityRate != null
         ? cityRate!.effectiveRate(subtotal)
         : (subtotal >= 150 ? 0 : fallbackShippingFee);
@@ -82,6 +89,7 @@ class CartState {
     List<CartItem>? items,
     String? couponCode,
     double? discountAmount,
+    bool? couponFreeShipping,
     ShippingRate? cityRate,
     bool clearCityRate = false,
     double? fallbackShippingFee,
@@ -92,6 +100,7 @@ class CartState {
     items: items ?? this.items,
     couponCode: clearCoupon ? null : (couponCode ?? this.couponCode),
     discountAmount: clearCoupon ? 0 : (discountAmount ?? this.discountAmount),
+    couponFreeShipping: clearCoupon ? false : (couponFreeShipping ?? this.couponFreeShipping),
     cityRate: clearCityRate ? null : (cityRate ?? this.cityRate),
     fallbackShippingFee: fallbackShippingFee ?? this.fallbackShippingFee,
     collectionFee: collectionFee ?? this.collectionFee,
@@ -259,7 +268,10 @@ class CartNotifier extends StateNotifier<CartState> {
       final raw = res.data['data']?['discount'] ?? res.data['data']?['discount_amount'];
       final discount =
           raw is num ? raw.toDouble() : double.tryParse(raw?.toString() ?? '') ?? 0.0;
-      state = state.copyWith(discountAmount: discount);
+      state = state.copyWith(
+        discountAmount: discount,
+        couponFreeShipping: res.data['data']?['free_shipping'] == true,
+      );
     } catch (e, st) {
       // The coupon no longer applies to this cart (min order no longer met,
       // vendor's items removed, ...). Drop it rather than keep showing a stale
@@ -278,7 +290,11 @@ class CartNotifier extends StateNotifier<CartState> {
       });
       final raw = res.data['data']?['discount'] ?? res.data['data']?['discount_amount'];
       final discount = raw is num ? raw.toDouble() : double.tryParse(raw?.toString() ?? '') ?? 0.0;
-      state = state.copyWith(couponCode: code.trim(), discountAmount: discount);
+      state = state.copyWith(
+        couponCode: code.trim(),
+        discountAmount: discount,
+        couponFreeShipping: res.data['data']?['free_shipping'] == true,
+      );
       return null;
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);

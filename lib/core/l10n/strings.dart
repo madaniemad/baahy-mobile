@@ -547,6 +547,9 @@ class AppStrings {
   String get couponDiscount    => isAr ? 'خصم الكوبون'             : 'Coupon Discount';
   String get orderTotal        => isAr ? 'الإجمالي'                : 'Total';
   String get freeText          => isAr ? 'مجاني'                   : 'Free';
+  /// Shown for a coupon whose benefit IS the delivery — it discounts nothing, so without
+  /// its own line the code would look like it did nothing at all.
+  String get freeDeliveryOffer => isAr ? 'توصيل مجاني'             : 'Free delivery';
 
   // ── Wallet ───────────────────────────────────────────────────────────────────
   String get chargeWallet      => isAr ? 'شحن'                     : 'Charge';

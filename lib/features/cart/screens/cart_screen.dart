@@ -390,7 +390,10 @@ class _CartBodyState extends ConsumerState<_CartBody> {
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
           children: [
             // ── Free shipping banner ──────────────────────────────────────
-            if (cart.freeShippingThreshold != null && cart.freeShippingRemaining > 0)
+            // Don't nag "spend X more for free delivery" at someone whose coupon
+            // already gives it.
+            if (cart.freeShippingThreshold != null && cart.freeShippingRemaining > 0
+                && !cart.couponFreeShipping)
               _FreeShippingProgressBanner(
                 remaining: cart.freeShippingRemaining,
                 subtotal: cart.subtotal,
@@ -769,7 +772,11 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                     style: const TextStyle(fontFamily: 'PlusJakartaSans',
                       fontWeight: FontWeight.w700, color: AppColors.success)),
                   const SizedBox(width: 4),
-                  Text('− ${fmtPrice(widget.cart.discountAmount)} ${context.s.lydUnit}',
+                  // A delivery-only coupon discounts nothing — name what it gives
+                  // rather than showing "− 0 د.ل".
+                  Text(widget.cart.discountAmount > 0
+                      ? '− ${fmtPrice(widget.cart.discountAmount)} ${context.s.lydUnit}'
+                      : context.s.freeDeliveryOffer,
                     style: const TextStyle(fontFamily: 'PlusJakartaSans',
                       fontSize: 12, color: AppColors.success)),
                 ]),
@@ -1455,11 +1462,14 @@ class _OrderSummary extends StatelessWidget {
           _Row(context.s.discount,
             '− ${fmtPrice(cart.discountAmount)} ${context.s.lyd}',
             valueColor: AppColors.success),
+        // A free-delivery coupon settles the line outright — no vendor fee left to wait on,
+        // so it never shows the refreshing placeholder.
         _Row(context.s.shipping,
-          cart.feesRefreshing
+          cart.feesRefreshing && !cart.couponFreeShipping
             ? '...'
             : (cart.deliveryFee == 0 ? context.s.free : '${fmtPrice(cart.deliveryFee)} ${context.s.lyd}'),
-          valueColor: cart.deliveryFee == 0 && !cart.feesRefreshing ? AppColors.success : null),
+          valueColor: cart.deliveryFee == 0 && (!cart.feesRefreshing || cart.couponFreeShipping)
+            ? AppColors.success : null),
         Divider(height: 20, color: context.col.border),
         _Row(context.tr('الإجمالي', 'Total'),
           '${fmtPrice(cart.total)} ${context.s.lyd}',

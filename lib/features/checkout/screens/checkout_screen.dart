@@ -1284,6 +1284,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           _SummaryRow(context.s.couponDiscount,
                             '− ${fmtPrice(cart.discountAmount)} ${context.s.lydUnit}',
                             color: AppColors.success, ctx: context),
+                        // A delivery-only coupon discounts nothing, so it gets its own line
+                        // instead of a "− 0" that reads like the code was ignored.
+                        if (!isReorder && cart.discountAmount == 0 && cart.couponFreeShipping)
+                          _SummaryRow(context.s.couponDiscount,
+                            context.s.freeDeliveryOffer,
+                            color: AppColors.success, ctx: context),
                         _SummaryRow(
                           context.s.shippingCost,
                           effectiveDeliveryFee == 0
