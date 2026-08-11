@@ -8,6 +8,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/order.dart';
+import '../../../core/models/app_config.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../core/models/product.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/utils/format.dart';
@@ -323,8 +325,8 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 order.walletAmount > 0
                     ? (order.walletAmount >= order.total
                         ? context.tr('المحفظة', 'Wallet')
-                        : '${context.tr('المحفظة', 'Wallet')} + ${_paymentMethodLabel(context, order.paymentMethod)}')
-                    : _paymentMethodLabel(context, order.paymentMethod),
+                        : '${context.tr('المحفظة', 'Wallet')} + ${_paymentMethodLabel(context, order.paymentMethod, configured: ref.watch(appConfigProvider).paymentMethods)}')
+                    : _paymentMethodLabel(context, order.paymentMethod, configured: ref.watch(appConfigProvider).paymentMethods),
                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: context.col.ink0,
                   fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'])),
             ]),
@@ -658,8 +660,19 @@ Widget _SummaryRow(String label, String value, {Color? color, bool bold = false,
 Widget _SumRow(String label, String value, {Color? color, bool bold = false, required BuildContext ctx}) =>
   _SummaryRow(label, value, color: color, bold: bold, ctx: ctx);
 
-String _paymentMethodLabel(BuildContext ctx, String m) {
+/// Label for a payment method, preferring what admin actually configured.
+///
+/// The hardcoded list below never learned `lypay` (or sadad / the Masarat wallets), so the order
+/// screen printed the raw gateway id — the customer read "lypay" where the admin panel says
+/// "تحويل مصرفي". Admin owns these names in Payment Methods and ships them in /app-config; use
+/// those first and keep the switch as the offline fallback.
+String _paymentMethodLabel(BuildContext ctx, String m, {List<PaymentMethod> configured = const []}) {
   final ar = ctx.isAr;
+  for (final pm in configured) {
+    if (pm.id != m) continue;
+    final label = ar ? pm.labelAr : pm.labelEn;
+    if (label.trim().isNotEmpty) return label;
+  }
   switch (m) {
     case 'cash_on_delivery':
     case 'cash':     return ar ? 'الدفع عند الاستلام' : 'Cash on Delivery';
@@ -668,6 +681,8 @@ String _paymentMethodLabel(BuildContext ctx, String m) {
     case 'moamlat':  return ar ? 'بطاقة مصرفية'            : 'Bank Card';
     case 'mobicash': return ar ? 'موبي كاش'           : 'Mobicash';
     case 'paypal':   return 'PayPal';
+    case 'lypay':    return ar ? 'تحويل مصرفي'        : 'Bank Transfer';
+    case 'sadad':    return ar ? 'سداد'               : 'Sadad';
     default:         return m.isEmpty ? (ar ? 'غير محدد' : 'Not specified') : m;
   }
 }
