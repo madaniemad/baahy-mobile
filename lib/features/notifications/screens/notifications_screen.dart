@@ -166,7 +166,12 @@ class _NotifCard extends ConsumerWidget {
 
     final brand = val('brand');
     if (brand != null) {
-      return '/search/results?q=&brand=${Uri.encodeComponent(brand)}&on_sale=1';
+      // brand_all marks a spotlight — a brand with a deep catalogue but NO discounts
+      // (Tefal has 210 in-stock items and zero sale prices). Filtering those to
+      // on_sale would land the customer on an empty listing.
+      final onSale = val('brand_all') == null;
+      return '/search/results?q=&brand=${Uri.encodeComponent(brand)}'
+          '${onSale ? '&on_sale=1' : ''}';
     }
 
     final categoryId = val('category_id');
