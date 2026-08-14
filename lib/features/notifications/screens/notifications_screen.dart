@@ -92,21 +92,31 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       style: TextStyle(fontSize: 13, color: context.col.ink3)),
                 ],
               )
-            : ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                children: [
-                  if (today.isNotEmpty) ...[
-                    _SectionLabel(context.s.today),
-                    ...today.map((n) => _NotifCard(n: n)),
-                    const SizedBox(height: 6),
-                  ],
-                  if (earlier.isNotEmpty) ...[
-                    _SectionLabel(context.s.earlier),
-                    ...earlier.map((n) => _NotifCard(n: n)),
-                  ],
-                ],
-              ),
+            : Builder(builder: (context) {
+                // Flatten to [label, ...cards, label, ...cards] and render lazily.
+                // A plain ListView builds EVERY row up front — one vendor account had
+                // 2,829 notifications, which made this screen unusable (2026-08-14).
+                final items = <Object>[];
+                if (today.isNotEmpty) {
+                  items.add(context.s.today);
+                  items.addAll(today);
+                }
+                if (earlier.isNotEmpty) {
+                  items.add(context.s.earlier);
+                  items.addAll(earlier);
+                }
+                return ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  itemCount: items.length,
+                  itemBuilder: (_, i) {
+                    final item = items[i];
+                    return item is String
+                        ? _SectionLabel(item)
+                        : _NotifCard(n: item as AppNotification);
+                  },
+                );
+              }),
       ),
     );
   }
@@ -132,6 +142,72 @@ class _NotifCard extends ConsumerWidget {
   const _NotifCard({required this.n});
 
   static bool _isOrder(String? type) => type == 'order' || type == 'order_update';
+
+  /// Where tapping this notification should go.
+  ///
+  /// Until 2026-08-14 only order notifications navigated anywhere, so ~95% of what
+  /// customers received was a dead tap — "a product in your cart dropped in price"
+  /// went nowhere. Prefer the payload (set by the backend), fall back to a sensible
+  /// destination per type, and return null rather than navigating somewhere wrong.
+  static String? _target(AppNotification n) {
+    final d = n.data ?? const <String, dynamic>{};
+    String? val(String k) {
+      final v = d[k];
+      if (v == null) return null;
+      final s = v.toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
+    final orderId = val('order_id');
+    if (orderId != null) return '/orders/$orderId';
+
+    final productId = val('product_id');
+    if (productId != null) return '/product/$productId';
+
+    final brand = val('brand');
+    if (brand != null) {
+      return '/search/results?q=&brand=${Uri.encodeComponent(brand)}&on_sale=1';
+    }
+
+    final categoryId = val('category_id');
+    if (categoryId != null) return '/search/results?q=&category=$categoryId&on_sale=1';
+
+    switch (n.type) {
+      case 'wallet_unused':
+      case 'welcome_bonus':
+      case 'welcome_incentive_reminder':
+      case 'referral_reward_earned':
+        return '/wallet';
+      case 'referral_reminder':
+      case 'friend_joined':
+        return '/referral';
+      case 'cart_low_stock':
+      case 'cart_price_drop':
+      case 'abandoned_cart':
+        return '/cart';
+      case 'deal_of_the_day':
+      case 'deals_in_your_categories':
+      case 'trending_this_week':
+      case 'new_arrivals_affinity':
+      case 'comeback_offer':
+      case 'lapsed_buyer_30d':
+      case 'lapsed_buyer_60d':
+      case 'lapsed_buyer_90d':
+      case 'reengagement_7d':
+      case 'reengagement_21d':
+      case 'reengagement_45d':
+        return '/search/results?q=&on_sale=1';
+      case 'tier_upgrade_close':
+      case 'milestone':
+        return '/rewards-hub';
+      case 'review_reminder':
+      case 'reorder_suggestion':
+      case 'order_cross_sell':
+        return '/orders';
+      default:
+        return null;
+    }
+  }
 
   static Color _iconBg(String? type, BuildContext context) {
     if (_isOrder(type)) return AppColors.primary.withValues(alpha: 0.08);
@@ -176,9 +252,8 @@ class _NotifCard extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         ref.read(notificationsProvider.notifier).markRead(n.id);
-        if (_isOrder(n.type) && n.data?['order_id'] != null) {
-          safePush(context, '/orders/${n.data!['order_id']}');
-        }
+        final target = _target(n);
+        if (target != null) safePush(context, target);
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
