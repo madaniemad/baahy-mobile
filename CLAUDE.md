@@ -303,7 +303,7 @@ Signed `.aab` built entirely in the cloud — no local JDK/keystore needed.
 
 - **Workflow**: `.github/workflows/android-release.yml` (commit `ab393d5`)
 - **Trigger**: Actions tab → Run workflow (manual dispatch)
-- **Output**: signed `.aab` artifact downloadable from the Actions run; also auto-downloaded to `~/Desktop/baahy-builds/app-release.aab`
+- **Output**: signed `.aab` artifact downloadable from the Actions run; also auto-downloaded to `~/Developer/_builds/baahy-mobile/app-release.aab`
 - **Secrets** (set in GitHub repo settings — never shown in chat):
   - `KEYSTORE_BASE64` — baahy-upload.jks
   - `KEY_ALIAS`, `KEY_PASSWORD`, `STORE_PASSWORD`
