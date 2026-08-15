@@ -270,8 +270,25 @@ class PushNotificationService {
       case 'deal_of_the_day':
         final pid = data['product_id']?.toString();
         return (pid != null && pid.isNotEmpty) ? '/product/$pid' : '/home';
-      // Generic engagement pushes → home
+      // Brand deal / spotlight → the brand's listing. brand_all marks a spotlight,
+      // i.e. a brand with a deep catalogue but NO discounts (Tefal: 210 in-stock
+      // items, zero sale prices), so filtering it to on_sale would open an empty
+      // listing. Without these cases both fell through to `default` and a brand
+      // push landed back on the notifications list (2026-08-14).
+      case 'brand_deals':
+      case 'brand_spotlight':
+        final brand = data['brand']?.toString();
+        if (brand == null || brand.isEmpty) return '/home';
+        final onSale = (data['brand_all']?.toString() ?? '').isEmpty;
+        return '/search/results?q=&brand=${Uri.encodeComponent(brand)}'
+            '${onSale ? '&on_sale=1' : ''}';
+      // Category deals now carry the category the customer actually buys from.
       case 'deals_in_your_categories':
+        final cid = data['category_id']?.toString();
+        return (cid != null && cid.isNotEmpty)
+            ? '/search/results?q=&category=$cid&on_sale=1'
+            : '/home';
+      // Generic engagement pushes → home
       case 'trending_this_week':
       case 'order_cross_sell':
         return '/home';
