@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -191,20 +192,55 @@ class PushNotificationService {
         iOS: const DarwinNotificationDetails(
           presentAlert: true, presentBadge: true, presentSound: true),
       ),
-      payload: _routeFromData(message.data),
+      payload: jsonEncode({
+        'route': _routeFromData(message.data),
+        'log_id': message.data['log_id']?.toString(),
+      }),
     );
   }
 
   void _onMessageOpened(RemoteMessage message) {
+    _reportOpened(message.data['log_id']?.toString());
     final route = _routeFromData(message.data);
     if (route != null && _router != null) {
       _router!.go(route);
     }
   }
 
+  /// Tell the backend this notification was actually opened.
+  ///
+  /// Until 2026-08-16 nothing ever called this, so `notification_logs.opened_at`
+  /// was NULL on every row and there was no way to tell a notification people
+  /// want from one they ignore. Fire-and-forget: a failed report must never
+  /// interrupt the navigation the user is expecting.
+  Future<void> _reportOpened(String? logId) async {
+    if (logId == null || logId.isEmpty) return;
+    try {
+      await ApiClient.instance.dio.patch('/notification-logs/$logId/opened');
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
+  }
+
+  /// Local-notification taps carry a JSON payload so the log id survives
+  /// alongside the route. Older builds wrote a bare route string, so anything
+  /// that is not JSON is still treated as one.
   void _handlePayload(String? payload) {
-    if (payload != null && _router != null) {
-      _router!.go(payload);
+    if (payload == null || payload.isEmpty) return;
+
+    String? route = payload;
+    if (payload.startsWith('{')) {
+      try {
+        final decoded = jsonDecode(payload) as Map<String, dynamic>;
+        _reportOpened(decoded['log_id']?.toString());
+        route = decoded['route'] as String?;
+      } catch (_) {
+        route = null;
+      }
+    }
+
+    if (route != null && route.isNotEmpty && _router != null) {
+      _router!.go(route);
     }
   }
 
