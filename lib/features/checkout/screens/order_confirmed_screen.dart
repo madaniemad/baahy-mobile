@@ -71,7 +71,11 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
       collect(widget.data['items']);
       if (ids.isEmpty) {
         final groups = widget.data['vendor_groups'];
-        if (groups is List) for (final g in groups) if (g is Map) collect(g['items']);
+        if (groups is List) {
+          for (final g in groups) {
+            if (g is Map) collect(g['items']);
+          }
+        }
       }
       if (total > 0 && oid.isNotEmpty) {
         Analytics.instance.purchase(
