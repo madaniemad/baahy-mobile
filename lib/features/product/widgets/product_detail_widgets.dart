@@ -389,6 +389,8 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                   onPressed: selected.length < 2 ? null : () {
                     for (final p in selected.where((p) => p.id != widget.mainProduct.id)) {
                       ref.read(cartProvider.notifier).add(p);
+                      Analytics.instance.addToCart(
+                          id: '${p.id}', name: p.name, price: p.currentPrice ?? p.price);
                     }
                     safePush(context, '/cart');
                   },

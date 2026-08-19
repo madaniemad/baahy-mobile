@@ -53,7 +53,34 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
       final t = widget.data['total'];
       final total = t is num ? t.toDouble() : (double.tryParse('${t ?? ''}') ?? 0);
       final oid = (widget.data['order_number'] ?? widget.data['id'] ?? '').toString();
-      if (total > 0 && oid.isNotEmpty) Analytics.instance.purchase(orderId: oid, total: total);
+      // Product IDs for catalog matching. The order comes back either with a flat
+      // `items` list or grouped under `vendor_groups`, depending on the endpoint
+      // that produced it, so read both shapes rather than assuming one.
+      final ids = <String>[];
+      var count = 0;
+      void collect(dynamic list) {
+        if (list is! List) return;
+        for (final i in list) {
+          if (i is! Map) continue;
+          final pid = i['product_id'] ?? i['id'];
+          if (pid != null) ids.add(pid.toString());
+          final q = i['quantity'];
+          count += q is num ? q.toInt() : 1;
+        }
+      }
+      collect(widget.data['items']);
+      if (ids.isEmpty) {
+        final groups = widget.data['vendor_groups'];
+        if (groups is List) for (final g in groups) if (g is Map) collect(g['items']);
+      }
+      if (total > 0 && oid.isNotEmpty) {
+        Analytics.instance.purchase(
+          orderId: oid,
+          total: total,
+          contentIds: ids,
+          numItems: count,
+        );
+      }
     }
     // Pull the freshly-created "order received" notification so the bell badge
     // reflects it without an app restart. The backend creates it in an
