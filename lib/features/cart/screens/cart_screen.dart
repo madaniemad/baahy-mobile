@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:baahy_customer/core/services/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -1317,6 +1318,10 @@ class _RecommendedCard extends ConsumerWidget {
                   safePush(context, '/product/${product.id}');
                 } else {
                   ref.read(cartProvider.notifier).add(product);
+                  Analytics.instance.addToCart(
+                      id: '${product.id}',
+                      name: product.name,
+                      price: product.currentPrice ?? product.price);
                 }
               },
               child: Container(

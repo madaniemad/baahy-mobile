@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
@@ -68,7 +69,9 @@ class Analytics {
           value: value,
           items: [AnalyticsEventItem(itemId: id, itemName: name, price: price, quantity: quantity)],
         );
-        await _fb.logAddToCart(id: id, type: 'product', currency: 'LYD', price: value);
+        // `price` here is the unit price — Meta's AddToCart takes the item price,
+        // and the line total was being sent instead, inflating basket values.
+        await _fb.logAddToCart(id: id, type: 'product', currency: 'LYD', price: price ?? value);
       });
 
   Future<void> beginCheckout({double? total, int itemCount = 0}) => _safe(() async {
@@ -76,12 +79,37 @@ class Analytics {
         await _fb.logInitiatedCheckout(totalPrice: total, currency: 'LYD', numItems: itemCount);
       });
 
-  Future<void> purchase({required String orderId, required double total}) => _safe(() async {
-        await _fa.logPurchase(currency: 'LYD', value: total, transactionId: orderId);
+  /// Purchase.
+  ///
+  /// [contentIds] must be the live product IDs, and they matter: without them the
+  /// catalog has nothing to match a purchase against, which is why the app event
+  /// source reported 0 matched Purchase content IDs on all 28 days audited.
+  /// `logPurchase` has no id argument, so they travel in `parameters`.
+  /// See Marketing/research/tracking-audit.md §3.
+  Future<void> purchase({
+    required String orderId,
+    required double total,
+    List<String> contentIds = const [],
+    int numItems = 0,
+  }) =>
+      _safe(() async {
+        await _fa.logPurchase(
+          currency: 'LYD',
+          value: total,
+          transactionId: orderId,
+          items: contentIds.map((id) => AnalyticsEventItem(itemId: id)).toList(),
+        );
         await _fb.logPurchase(
           amount: total,
           currency: 'LYD',
-          parameters: {'fb_order_id': orderId},
+          parameters: {
+            'fb_order_id': orderId,
+            if (contentIds.isNotEmpty) ...{
+              'fb_content_type': 'product',
+              'fb_content_id': jsonEncode(contentIds),
+            },
+            if (numItems > 0) 'fb_num_items': numItems,
+          },
         );
       });
 
