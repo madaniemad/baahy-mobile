@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -58,7 +59,15 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
           });
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
-      setState(() => _error = 'تعذر الإرسال، حاول مجدداً');
+      // Show the server's own reason. A rate limit says "wait N minutes"; hiding that
+      // behind a generic "try again" is what drove users to tap resend until they burnt
+      // the hourly budget and locked their own number out for the rest of the hour.
+      String msg = 'تعذر الإرسال، حاول مجدداً';
+      if (e is DioException) {
+        final d = e.response?.data;
+        if (d is Map && d['message'] != null) msg = d['message'].toString();
+      }
+      setState(() => _error = msg);
     } finally {
       if (mounted) setState(() => _loading = false);
     }

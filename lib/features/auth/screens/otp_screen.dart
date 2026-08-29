@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +33,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   bool _hasError = false;
   int _seconds = 45;
   Timer? _timer;
+  bool _resending = false;
+  String? _resendError;
 
   String get _code => _ctrl.text;
 
@@ -50,7 +53,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   void _startTimer() {
-    _seconds = 45;
+    // setState, not a bare assignment: without it the countdown that replaces the resend
+    // link only appeared on the first tick a second later, and every tap in that window
+    // cancelled the timer and restarted it — so tapping fast kept the link on screen
+    // indefinitely and fired one request per tap.
+    if (mounted) { setState(() => _seconds = 45); } else { _seconds = 45; }
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_seconds > 0) {
@@ -59,6 +66,28 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         _timer?.cancel();
       }
     });
+  }
+
+  /// Resend a code. Was fire-and-forget with no in-flight guard: one user put 16
+  /// requests through in 10 seconds this way and spent their whole hourly OTP budget
+  /// on codes they never saw, then met a rate limit for the rest of the hour.
+  Future<void> _resend() async {
+    if (_resending || _seconds > 0) return;
+    setState(() { _resending = true; _resendError = null; });
+    try {
+      await ref.read(authProvider.notifier).requestOtp(widget.phone);
+      _startTimer();
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+      String msg = context.s.errorTryAgain;
+      if (e is DioException) {
+        final d = e.response?.data;
+        if (d is Map && d['message'] != null) msg = d['message'].toString();
+      }
+      if (mounted) setState(() => _resendError = msg);
+    } finally {
+      if (mounted) setState(() => _resending = false);
+    }
   }
 
   @override
@@ -306,14 +335,21 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         color: AppColors.primary, fontWeight: FontWeight.w600)),
                   ])
                 : GestureDetector(
-                    onTap: () {
-                      ref.read(authProvider.notifier).requestOtp(widget.phone);
-                      _startTimer();
-                    },
-                    child: Text(context.s.resendCode,
-                      style: const TextStyle(color: AppColors.primary,
-                        fontSize: 13.5, fontWeight: FontWeight.w700)),
+                    onTap: _resending ? null : _resend,
+                    child: _resending
+                        ? const SizedBox(height: 16, width: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2, color: AppColors.primary))
+                        : Text(context.s.resendCode,
+                            style: const TextStyle(color: AppColors.primary,
+                              fontSize: 13.5, fontWeight: FontWeight.w700)),
                   ),
+            if (_resendError != null) ...[
+              const SizedBox(height: 6),
+              Text(_resendError!, textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.danger,
+                  fontSize: 12.5, fontWeight: FontWeight.w600)),
+            ],
           ]),
 
           const Spacer(),
