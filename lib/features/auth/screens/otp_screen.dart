@@ -78,7 +78,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       await ref.read(authProvider.notifier).requestOtp(widget.phone);
       _startTimer();
     } catch (e, st) {
-      Sentry.captureException(e, stackTrace: st);
+      Sentry.captureException(e, stackTrace: st, withScope: (scope) {
+        scope.setTag('flow', 'otp_resend');
+        scope.setTag('dio_type', e is DioException ? e.type.name : 'other');
+        scope.setTag('http_status', '${e is DioException ? e.response?.statusCode : null}');
+      });
       String msg = context.s.errorTryAgain;
       if (e is DioException) {
         final d = e.response?.data;

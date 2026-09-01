@@ -58,7 +58,14 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
             'channel': channel,
           });
     } catch (e, st) {
-      Sentry.captureException(e, stackTrace: st);
+      // Tagged so Sentry can answer the only question that matters without a customer to
+      // ask: connectionTimeout/connectionError never reached us, receiveTimeout means we
+      // were too slow, badResponse means we refused it.
+      Sentry.captureException(e, stackTrace: st, withScope: (scope) {
+        scope.setTag('flow', 'otp_send');
+        scope.setTag('dio_type', e is DioException ? e.type.name : 'other');
+        scope.setTag('http_status', '${e is DioException ? e.response?.statusCode : null}');
+      });
       // Show the server's own reason. A rate limit says "wait N minutes"; hiding that
       // behind a generic "try again" is what drove users to tap resend until they burnt
       // the hourly budget and locked their own number out for the rest of the hour.
