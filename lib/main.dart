@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:dio/dio.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'core/utils/router.dart';
 import 'core/utils/l10n.dart';
@@ -53,6 +54,16 @@ Future<void> main() async {
       options.environment = kReleaseMode ? 'production' : 'debug';
       options.tracesSampleRate = kReleaseMode ? 0.1 : 0.0;
       options.enableAutoSessionTracking = true;
+      // Drop 401s. They are the ordinary shape of "not signed in yet" — the app calls
+      // authenticated endpoints on cold start and the interceptor already handles the
+      // logout. Reported as errors they were ~3,500 events a month across ~1,800 users,
+      // a large share of what exhausted the org's free quota by the 12th of each month
+      // and blinded us to the failures that mattered.
+      options.beforeSend = (event, hint) {
+        final ex = event.throwable;
+        if (ex is DioException && ex.response?.statusCode == 401) return null;
+        return event;
+      };
     },
     appRunner: () {
       // Deep links — init early so cold-start URIs are captured before runApp.
