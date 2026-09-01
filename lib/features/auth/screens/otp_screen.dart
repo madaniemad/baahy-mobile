@@ -31,7 +31,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   final _focus = FocusNode();
   bool _loading = false;
   bool _hasError = false;
-  int _seconds = 45;
+  // 60s, raised from the 45 the original design used. The server allows a resend after 30s,
+  // but the SMS backstop only fires at 25s when WhatsApp goes quiet — and tapping resend mints
+  // a NEW code, which would invalidate a rescue SMS still in transit. 60 keeps the button
+  // locked until that message has had a fair chance to land.
+  int _seconds = 60;
   Timer? _timer;
   bool _resending = false;
   String? _resendError;
@@ -58,7 +62,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   /// later, and every tap inside that window cancelled the timer and restarted it, so fast
   /// tapping kept the link on screen indefinitely and fired one request per tap.
   void _startTimer({bool notify = true}) {
-    if (notify && mounted) { setState(() => _seconds = 45); } else { _seconds = 45; }
+    if (notify && mounted) { setState(() => _seconds = 60); } else { _seconds = 60; }
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_seconds > 0) {
