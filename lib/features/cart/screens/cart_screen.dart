@@ -567,7 +567,9 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                 if (!_checking)
                   Positioned(
                     left: 16,
-                    child: Text('${fmtPrice(cart.total)} ${context.s.lydUnit}',
+                    // Same rule as the summary: no total until delivery is known.
+                    child: Text(cart.deliveryFeeKnown
+                        ? '${fmtPrice(cart.total)} ${context.s.lydUnit}' : '—',
                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
                         fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFFE8FFFE))),
                   ),
@@ -1469,15 +1471,23 @@ class _OrderSummary extends StatelessWidget {
             valueColor: AppColors.success),
         // A free-delivery coupon settles the line outright — no vendor fee left to wait on,
         // so it never shows the refreshing placeholder.
+        // Until the city's rate has loaded we do not know the delivery fee, so we show
+        // nothing rather than a number. Zero would read as free delivery and a fallback
+        // figure would invent a price for a city we have not looked up — and the total is
+        // unknowable for the same reason, so it stays blank too rather than quietly
+        // omitting delivery from a figure the customer reads as final.
         _Row(context.s.shipping,
-          cart.feesRefreshing && !cart.couponFreeShipping
-            ? '...'
-            : (cart.deliveryFee == 0 ? context.s.free : '${fmtPrice(cart.deliveryFee)} ${context.s.lyd}'),
-          valueColor: cart.deliveryFee == 0 && (!cart.feesRefreshing || cart.couponFreeShipping)
+          !cart.deliveryFeeKnown
+            ? '—'
+            : cart.feesRefreshing && !cart.couponFreeShipping
+              ? '...'
+              : (cart.deliveryFee == 0 ? context.s.free : '${fmtPrice(cart.deliveryFee)} ${context.s.lyd}'),
+          valueColor: cart.deliveryFeeKnown && cart.deliveryFee == 0
+              && (!cart.feesRefreshing || cart.couponFreeShipping)
             ? AppColors.success : null),
         Divider(height: 20, color: context.col.border),
         _Row(context.tr('الإجمالي', 'Total'),
-          '${fmtPrice(cart.total)} ${context.s.lyd}',
+          cart.deliveryFeeKnown ? '${fmtPrice(cart.total)} ${context.s.lyd}' : '—',
           bold: true, fontSize: 18),
         const SizedBox(height: 2),
         Row(children: [

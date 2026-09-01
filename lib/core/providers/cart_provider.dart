@@ -67,16 +67,21 @@ class CartState {
     // A free-delivery coupon zeroes the whole line, collection fee included — the backend
     // applies it after folding the fee in, so anything less would quote more than we charge.
     if (couponFreeShipping) return 0;
-    // No free-shipping shortcut in the fallback. Every city's free_shipping_threshold was
-    // cleared on 2026-09-01, so a hardcoded "free over 150" quoted zero delivery on any
-    // 150+ cart until the customer picked an address — and then the server charged the real
-    // rate. When we have no city rate yet, quote the flat fee and let the rate correct it.
     final base = cityRate != null
         ? cityRate!.effectiveRate(subtotal)
-        : fallbackShippingFee;
+        : 0;
     if (base == 0) return 0; // free shipping — waive collection fee too
     return base + totalCollectionFee;
   }
+
+  /// False until the city's shipping_rates row has actually loaded. The delivery line and
+  /// the total must render as unknown, not as a number: quoting zero reads as free delivery,
+  /// and quoting the flat fallback invents a price for a city we have not looked up. Both
+  /// were wrong the moment free-shipping thresholds were removed from every city
+  /// (2026-09-01) — a 150+ cart showed 0 and checkout then charged the real rate.
+  ///
+  /// A free-delivery coupon settles the line on its own, so that counts as known.
+  bool get deliveryFeeKnown => couponFreeShipping || cityRate != null;
 
   double? get freeShippingThreshold => cityRate?.freeShippingThreshold;
 

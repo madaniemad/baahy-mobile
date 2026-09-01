@@ -955,10 +955,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // Watch shipping rates so delivery fee recalculates when address changes
     ref.watch(shippingRatesProvider);
     final selectedRate = _selectedRate;
+    // A reorder with no rate for its city yet must not fall back to the flat fee — that
+    // invents a price. Treated as unknown, exactly like the cart does.
+    final deliveryKnown = isReorder
+        ? (selectedRate != null || cart.cityRate != null)
+        : cart.deliveryFeeKnown;
     final effectiveDeliveryFee = isReorder
         ? (selectedRate != null
             ? selectedRate.effectiveRate(effectiveSubtotal)
-            : (cart.cityRate?.effectiveRate(effectiveSubtotal) ?? cart.fallbackShippingFee))
+            : (cart.cityRate?.effectiveRate(effectiveSubtotal) ?? 0))
         : cart.deliveryFee;
     final effectiveTotal = isReorder
         ? effectiveSubtotal + effectiveDeliveryFee
@@ -1088,7 +1093,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     Text(
                                       // Show the SAME delivery fee as the order summary — i.e. incl. the
                                       // per-vendor collection fee (and free-shipping) — not the raw base rate.
-                                      '${effectiveDeliveryFee == 0 ? context.s.freeText : '${fmtPrice(effectiveDeliveryFee)} ${context.s.lydUnit}'} · ${_selectedRate!.deliveryDays} ${context.s.daysLabel}',
+                                      '${!deliveryKnown ? '—' : effectiveDeliveryFee == 0 ? context.s.freeText : '${fmtPrice(effectiveDeliveryFee)} ${context.s.lydUnit}'} · ${_selectedRate!.deliveryDays} ${context.s.daysLabel}',
                                       style: TextStyle(
                                         fontSize: 11.5, color: context.col.ink2, fontWeight: FontWeight.w600)),
                                   ],
@@ -1305,16 +1310,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           _SummaryRow(context.s.couponDiscount,
                             context.s.freeDeliveryOffer,
                             color: AppColors.success, ctx: context),
+                        // Blank, not zero, until the city's rate is loaded — zero reads as
+                        // free delivery. The total is unknowable for the same reason.
                         _SummaryRow(
                           context.s.shippingCost,
-                          effectiveDeliveryFee == 0
-                              ? context.s.freeText
-                              : '${fmtPrice(effectiveDeliveryFee)} ${context.s.lydUnit}',
-                          color: effectiveDeliveryFee == 0 ? AppColors.success : null,
+                          !deliveryKnown
+                              ? '—'
+                              : effectiveDeliveryFee == 0
+                                  ? context.s.freeText
+                                  : '${fmtPrice(effectiveDeliveryFee)} ${context.s.lydUnit}',
+                          color: deliveryKnown && effectiveDeliveryFee == 0 ? AppColors.success : null,
                           ctx: context),
                         Divider(height: 20, color: context.col.border),
                         _SummaryRow(context.s.orderTotal,
-                          '${fmtPrice(effectiveTotal)} ${context.s.lydUnit}',
+                          deliveryKnown ? '${fmtPrice(effectiveTotal)} ${context.s.lydUnit}' : '—',
                           bold: true, ctx: context),
                       ]),
                     ),
