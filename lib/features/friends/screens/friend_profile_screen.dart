@@ -235,6 +235,7 @@ class _AddFriendSectionState extends ConsumerState<_AddFriendSection> {
     if (username == null) return;
     setState(() => _loading = true);
     final ok = await ref.read(friendsProvider.notifier).sendRequest(username);
+    if (!mounted) return;
     setState(() { _loading = false; if (ok) _sent = true; });
   }
 }

@@ -956,6 +956,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       final init = await ApiClient.instance.dio.post('/wallet/topup/initiate', data: {
         'amount': _amount, 'gateway': 'paypal',
       });
+      if (!mounted) return;
       final ref0 = init.data['reference'] as String?;
       if (ref0 == null || ref0.isEmpty) {
         setState(() { _loading = false; _error = 'تعذّر بدء عملية الدفع'; });
@@ -964,6 +965,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       final pp = await ApiClient.instance.dio.post('/payment/paypal/initiate', data: {
         'topup_ref': ref0, 'platform': 'mobile',
       });
+      if (!mounted) return;
       final approvalUrl = pp.data['approval_url'] as String?;
       if (approvalUrl == null || approvalUrl.isEmpty) {
         setState(() { _loading = false; _error = 'خدمة PayPal غير متاحة حالياً'; });
@@ -1543,6 +1545,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
     setState(() { _loading = true; _error = null; });
     try {
       final res = await ApiClient.instance.dio.get('/wallet/lookup', queryParameters: {'phone': phone});
+      if (!mounted) return;
       final data = res.data as Map<String, dynamic>;
       if (data['found'] == true) {
         setState(() {

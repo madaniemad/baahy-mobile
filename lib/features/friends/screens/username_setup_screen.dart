@@ -48,6 +48,7 @@ class _UsernameSetupScreenState extends ConsumerState<UsernameSetupScreen> {
     try {
       final res = await ApiClient.instance.dio.get('/users/search', queryParameters: {'q': username, 'exact': '1'});
       final data = res.data['data'] as List? ?? [];
+      if (!mounted) return;
       setState(() {
         _checking  = false;
         _available = data.isEmpty;

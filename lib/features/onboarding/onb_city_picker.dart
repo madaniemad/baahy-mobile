@@ -59,6 +59,7 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
     try {
       var perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
+      if (!mounted) return;
       if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
         setState(() { _detecting = false; _denied = true; });
         return;

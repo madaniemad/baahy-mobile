@@ -303,6 +303,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     if (!isReorder) {
       final validationError = await ref.read(cartProvider.notifier).validate();
+      if (!mounted) return;
       if (validationError != null) {
         setState(() => _loading = false);
         if (mounted) {
@@ -388,6 +389,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           await _handleGatewayPayment('sadad', pendingRef, clearCart: !isReorder);
         } else {
           // Unknown/unsupported gateway id from the backend — never strand the user on an infinite spinner.
+          if (!mounted) return;
           setState(() => _loading = false);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

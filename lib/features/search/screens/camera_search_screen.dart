@@ -202,6 +202,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
     if (_controller == null) return;
     final next = _flash == FlashMode.off ? FlashMode.torch : FlashMode.off;
     await _controller!.setFlashMode(next);
+    if (!mounted) return;
     setState(() { _flash = next; });
   }
 

@@ -308,6 +308,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       b64 = base64Encode(bytes);
     }
 
+    if (!mounted) return;
     setState(() {
       _messages.add(_ChatMessage(role: 'user', content: text, imageBase64: b64));
       _loading = true;

@@ -168,6 +168,7 @@ class _SearchResultTileState extends ConsumerState<_SearchResultTile> {
     if (username == null) return;
     setState(() => _loading = true);
     final ok = await ref.read(friendsProvider.notifier).sendRequest(username);
+    if (!mounted) return;
     setState(() {
       _loading = false;
       if (ok) _status = FriendshipStatus.pendingSent;

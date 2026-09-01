@@ -174,6 +174,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
       if (perm == LocationPermission.denied) {
         perm = await Geolocator.requestPermission();
       }
+      if (!mounted) return;
       if (perm == LocationPermission.denied ||
           perm == LocationPermission.deniedForever) {
         setState(() => _locating = false);
