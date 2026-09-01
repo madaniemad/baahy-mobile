@@ -70,6 +70,30 @@ class ApiClient {
         handler.next(options);
       },
       onError: (error, handler) async {
+        // Retry ONCE, and only for failures where the request provably never arrived:
+        // a DNS lookup that failed, or a connection that never opened. Sentry recorded
+        // 81 `Failed host lookup: api.baahy.com` across 40 users and 146 connect timeouts
+        // across 115 in eight days — transient, and a second attempt clears most of them.
+        //
+        // Deliberately NOT retried: receiveTimeout and badResponse. There the server may
+        // already have acted, and re-sending would mint a second OTP and spend another of
+        // the caller's five hourly slots.
+        const retryable = {
+          DioExceptionType.connectionError,
+          DioExceptionType.connectionTimeout,
+        };
+        final opts = error.requestOptions;
+        if (retryable.contains(error.type) && opts.extra['retried'] != true) {
+          opts.extra['retried'] = true;
+          await Future<void>.delayed(const Duration(milliseconds: 600));
+          try {
+            final res = await d.fetch(opts);
+            return handler.resolve(res);
+          } catch (_) {
+            // fall through to the original error
+          }
+        }
+
         if (error.response?.statusCode == 401) {
           // A 401 on a request that carried no credentials says nothing about the stored token —
           // throwing the session away over one would log the user out for someone else's mistake.
