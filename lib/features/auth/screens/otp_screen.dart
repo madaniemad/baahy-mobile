@@ -82,7 +82,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       String msg = context.s.errorTryAgain;
       if (e is DioException) {
         final d = e.response?.data;
-        if (d is Map && d['message'] != null) msg = d['message'].toString();
+        if (d is Map && d['message'] != null) {
+          msg = d['message'].toString();
+        } else if (e.type == DioExceptionType.connectionTimeout ||
+                   e.type == DioExceptionType.connectionError ||
+                   e.type == DioExceptionType.sendTimeout ||
+                   e.type == DioExceptionType.receiveTimeout) {
+          msg = context.s.checkInternet;
+        }
       }
       if (mounted) setState(() => _resendError = msg);
     } finally {

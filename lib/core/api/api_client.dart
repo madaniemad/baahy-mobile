@@ -47,9 +47,13 @@ class ApiClient {
   Dio _build() {
     final d = Dio(BaseOptions(
       baseUrl: _baseUrl,
-      connectTimeout: const Duration(seconds: 6),
-      receiveTimeout: const Duration(seconds: 8),
-      sendTimeout: const Duration(seconds: 10),
+      // 6s to open a connection was too tight for a Libyan mobile link: a cold TLS
+      // handshake that overran it surfaced as a generic "sending failed" on a request
+      // that never left the phone — invisible in Cloudflare and in the origin log alike,
+      // which is exactly how one user spent an afternoon unable to log in (1 Sep 2026).
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 20),
+      sendTimeout: const Duration(seconds: 20),
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',

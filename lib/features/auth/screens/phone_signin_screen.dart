@@ -62,10 +62,20 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
       // Show the server's own reason. A rate limit says "wait N minutes"; hiding that
       // behind a generic "try again" is what drove users to tap resend until they burnt
       // the hourly budget and locked their own number out for the rest of the hour.
+      // Tell a network failure apart from a refusal. "Sending failed" for both is what
+      // let a user sit for an afternoon retrying a request that never left the phone,
+      // while support hunted for a server fault that did not exist.
       String msg = 'تعذر الإرسال، حاول مجدداً';
       if (e is DioException) {
         final d = e.response?.data;
-        if (d is Map && d['message'] != null) msg = d['message'].toString();
+        if (d is Map && d['message'] != null) {
+          msg = d['message'].toString();
+        } else if (e.type == DioExceptionType.connectionTimeout ||
+                   e.type == DioExceptionType.connectionError ||
+                   e.type == DioExceptionType.sendTimeout ||
+                   e.type == DioExceptionType.receiveTimeout) {
+          msg = context.s.checkInternet;
+        }
       }
       setState(() => _error = msg);
     } finally {
