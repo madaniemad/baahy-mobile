@@ -420,9 +420,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 }
 
-/// "Sent via WhatsApp / SMS" chip. The backend reports which channel it actually
-/// used (it tries WhatsApp first, falls back to SMS), so this reflects reality
-/// rather than an assumption.
+/// Which channel carried the code — stated honestly.
+///
+/// "Sent via WhatsApp" was a promise we could not keep. Meta returns 200 for a number with
+/// no WhatsApp account, so the backend reports channel: whatsapp for people who will never
+/// receive that message — precisely the users already struggling to sign in. The server
+/// texts them the same code about 25 seconds later, so the WhatsApp case now says so
+/// instead of naming one channel as settled fact. `sms` is reported only when WhatsApp
+/// refused outright, and that one IS certain.
 class _ChannelChip extends StatelessWidget {
   final String channel;
   const _ChannelChip({required this.channel});
@@ -444,14 +449,16 @@ class _ChannelChip extends StatelessWidget {
         Icon(isWhatsApp ? Icons.chat_rounded : Icons.sms_outlined,
           size: 14, color: color),
         const SizedBox(width: 6),
-        Text(
+        Flexible(child: Text(
           isWhatsApp
-              ? context.tr('أُرسل عبر واتساب', 'Sent via WhatsApp')
+              ? context.tr('تحقق من واتساب — وإن لم يصلك سنرسله برسالة نصية',
+                           'Check WhatsApp — if it doesn\'t arrive we\'ll text you')
               : context.tr('أُرسل عبر رسالة نصية', 'Sent via SMS'),
+          textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
             fontSize: 12, fontWeight: FontWeight.w700, color: color),
-        ),
+        )),
       ]),
     );
   }
