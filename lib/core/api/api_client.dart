@@ -6,6 +6,18 @@ const _baseUrl = String.fromEnvironment(
   defaultValue: 'https://api.baahy.com/api',
 );
 
+/// Same API, reached the way the website reaches it: baahy.com -> Vercel -> Cloudways.
+///
+/// Some networks cannot resolve or reach `api.baahy.com` at all — Sentry logged 81
+/// `Failed host lookup: 'api.baahy.com'` across 40 users in eight days, and a user on
+/// 1 Sep 2026 could not sign in on the app while the website worked on the same phone,
+/// on the same network, minutes later. The website survives because it never touches
+/// that hostname. When the direct host is unreachable we take the same road.
+const _fallbackBaseUrl = String.fromEnvironment(
+  'API_FALLBACK_BASE_URL',
+  defaultValue: 'https://baahy.com/api/proxy',
+);
+
 const _kToken = 'auth_token';
 
 // Callback registered by auth layer to redirect to login on 401.
@@ -44,6 +56,9 @@ class ApiClient {
     _onUnauthorized = cb;
   }
 
+  /// Set once the direct host proves unreachable and the proxy works.
+  static bool _preferFallback = false;
+
   Dio _build() {
     final d = Dio(BaseOptions(
       baseUrl: _baseUrl,
@@ -62,6 +77,7 @@ class ApiClient {
 
     d.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
+        if (_preferFallback) options.baseUrl = _fallbackBaseUrl;
         // One Keychain read, awaited by whichever request happens to be first.
         await _tokenReady;
         if (_token != null) {
@@ -83,14 +99,27 @@ class ApiClient {
           DioExceptionType.connectionTimeout,
         };
         final opts = error.requestOptions;
-        if (retryable.contains(error.type) && opts.extra['retried'] != true) {
-          opts.extra['retried'] = true;
-          await Future<void>.delayed(const Duration(milliseconds: 600));
-          try {
-            final res = await d.fetch(opts);
-            return handler.resolve(res);
-          } catch (_) {
-            // fall through to the original error
+        if (retryable.contains(error.type)) {
+          // 1. One straight retry — most of these are transient.
+          if (opts.extra['retried'] != true) {
+            opts.extra['retried'] = true;
+            await Future<void>.delayed(const Duration(milliseconds: 600));
+            try {
+              return handler.resolve(await d.fetch(opts));
+            } catch (_) {/* fall through to the proxy */}
+          }
+          // 2. Still unreachable: go the way the website goes. Sticky for the rest of the
+          //    session, so a device that cannot reach the direct host pays this discovery
+          //    once rather than on every request.
+          if (opts.extra['viaFallback'] != true) {
+            opts.extra['viaFallback'] = true;
+            opts.baseUrl = _fallbackBaseUrl;
+            try {
+              final res = await d.fetch(opts);
+              _preferFallback = true;
+              d.options.baseUrl = _fallbackBaseUrl;
+              return handler.resolve(res);
+            } catch (_) {/* genuinely offline — report the original error */}
           }
         }
 
