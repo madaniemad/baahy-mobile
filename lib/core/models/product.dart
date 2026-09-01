@@ -1,3 +1,5 @@
+import '../api/api_client.dart';
+
 class Product {
   final int id;
   final String name;
@@ -182,7 +184,7 @@ class Product {
     }
   }
 
-  static const _storageBase = 'https://api.baahy.com/storage/';
+  static String get _storageBase => ApiClient.storageBase;
 
   /// Public wrapper — order lines carry their own image snapshot and need the same resolution.
   static String? resolveImageUrl(String? path) {
@@ -456,6 +458,6 @@ class Category {
     // Backend bug: sometimes generates /api/storage/ instead of /storage/
     final url = v.replaceAll('/api/storage/', '/storage/');
     if (url.startsWith('http')) return url;
-    return 'https://api.baahy.com/storage/${url.replaceAll(RegExp(r'^/+'), '')}';
+    return ApiClient.storageBase + url.replaceAll(RegExp(r'^/+'), '');
   }
 }

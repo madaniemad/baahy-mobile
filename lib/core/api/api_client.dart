@@ -59,6 +59,16 @@ class ApiClient {
   /// Set once the direct host proves unreachable and the proxy works.
   static bool _preferFallback = false;
 
+  /// Where product images should be fetched from, given what we have learned about this
+  /// network. Image widgets open their own connections and never touch the Dio interceptor,
+  /// so without this a device that cannot resolve api.baahy.com gets a working app with
+  /// 63% of its product photos missing — every image stored as a relative path.
+  ///
+  /// Both hosts serve byte-identical files; the proxy simply arrives via baahy.com -> Vercel.
+  static String get storageBase => _preferFallback
+      ? 'https://baahy.com/api/proxy/storage/'
+      : 'https://api.baahy.com/storage/';
+
   Dio _build() {
     final d = Dio(BaseOptions(
       baseUrl: _baseUrl,

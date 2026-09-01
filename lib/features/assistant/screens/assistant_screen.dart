@@ -223,8 +223,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
     });
   }
 
-  static const _storageBase =
-      'https://api.baahy.com/storage/';
+  static String get _storageBase => ApiClient.storageBase;
 
   String _imageUrl(String? path) {
     if (path == null || path.isEmpty) return '';
