@@ -51,7 +51,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   void _onCodeChange() {
-    if (_hasError) setState(() => _hasError = false);
+    // Only a real edit clears the error — never the programmatic _ctrl.clear() that follows a
+    // rejection. Clearing on any change meant the failure path set _hasError, wiped the boxes,
+    // and the resulting change event erased the error in the same frame: the six boxes emptied
+    // and nothing else happened, so a rejected code looked like a button that did nothing.
+    if (_hasError && _ctrl.text.isNotEmpty) setState(() => _hasError = false);
     setState(() {});
     if (_ctrl.text.length == 6) _verify();
   }
