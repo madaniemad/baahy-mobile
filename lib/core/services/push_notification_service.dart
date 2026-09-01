@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
@@ -158,11 +159,21 @@ class PushNotificationService {
   }
 
   Future<void> _sendTokenToServer(String token) async {
+    // /device-token is authenticated, and this runs on every cold start — including for the
+    // logged-out majority, where it can only ever 401. That was 68 of 87 calls in one day,
+    // each one also minting a Sentry event for an outcome that is entirely expected. The
+    // token is uploaded again right after a successful OTP verify, so nothing is lost by
+    // waiting until there is someone to attach it to.
+    if (!await ApiClient.instance.isLoggedIn) return;
     try {
       await ApiClient.instance.dio.post('/device-token', data: {
         'token': token,
         'platform': Platform.isIOS ? 'ios' : 'android',
       });
+    } on DioException catch (e, st) {
+      // A 401 here means the token expired between the check and the call — ordinary, not
+      // worth an error report. Anything else is a genuine failure to register for push.
+      if (e.response?.statusCode != 401) Sentry.captureException(e, stackTrace: st);
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
     }

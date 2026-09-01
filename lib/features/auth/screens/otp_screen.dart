@@ -41,7 +41,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   @override
   void initState() {
     super.initState();
-    _startTimer();
+    _startTimer(notify: false);
     _ctrl.addListener(_onCodeChange);
     WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
   }
@@ -52,12 +52,13 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     if (_ctrl.text.length == 6) _verify();
   }
 
-  void _startTimer() {
-    // setState, not a bare assignment: without it the countdown that replaces the resend
-    // link only appeared on the first tick a second later, and every tap in that window
-    // cancelled the timer and restarted it — so tapping fast kept the link on screen
-    // indefinitely and fired one request per tap.
-    if (mounted) { setState(() => _seconds = 45); } else { _seconds = 45; }
+  /// [notify] must be false from initState: setState there is at best redundant and can
+  /// throw "setState() called during build". Everywhere else it is required — without it
+  /// the countdown that replaces the resend link only appeared on the next tick a second
+  /// later, and every tap inside that window cancelled the timer and restarted it, so fast
+  /// tapping kept the link on screen indefinitely and fired one request per tap.
+  void _startTimer({bool notify = true}) {
+    if (notify && mounted) { setState(() => _seconds = 45); } else { _seconds = 45; }
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_seconds > 0) {
@@ -111,7 +112,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   Future<void> _verify() async {
-    if (_code.length < 6) return;
+    // The controller listener fires on every change and submits at six characters, so SMS
+    // autofill or a paste can deliver two change events for the same code. Without this
+    // guard the second request spends one of the five verify attempts and then shows the
+    // user an error for a code that had already succeeded.
+    if (_loading || _code.length < 6) return;
     setState(() { _loading = true; _hasError = false; });
     try {
       final isNewUser = await ref.read(authProvider.notifier).verifyOtp(
