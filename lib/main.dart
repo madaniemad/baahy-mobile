@@ -46,7 +46,10 @@ Future<void> main() async {
 
   await SentryFlutter.init(
     (options) {
-      options.dsn = 'https://2cec46307e2718d20887b9719687b2f5@o4511447317807104.ingest.de.sentry.io/4511453087793232';
+      // baahy-mobile. This used to be baahy-web's DSN, copy-pasted, so Flutter crashes and
+      // Next.js errors landed in one bucket — and the app's network exceptions (thousands a
+      // month) exhausted the shared quota by the 12th, blinding both.
+      options.dsn = 'https://c5fb8dc4c0153f53aeaa4c263060ea01@o4511447317807104.ingest.de.sentry.io/4512012175867984';
       options.environment = kReleaseMode ? 'production' : 'debug';
       options.tracesSampleRate = kReleaseMode ? 0.1 : 0.0;
       options.enableAutoSessionTracking = true;
