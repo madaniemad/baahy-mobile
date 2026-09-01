@@ -379,9 +379,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           // contract as Mobicash. Appears only when enabled in the backend payment_methods list.
           await _handleMasaratPayment(_paymentMethod, pendingRef, clearCart: !isReorder);
         } else if (_paymentMethod == 'sadad') {
-          // Sadad = redirect gateway (like Tadawel/Moamlat): backend returns a payment_url.
-          // Gated by the backend `payment_methods` enabled flag — appears only once enabled,
-          // so no app rebuild is needed when the backend Sadad integration goes live.
+          // NOT symmetrical with the other gateways, despite appearances. OrderController only
+          // defers order creation for tadawel/moamlat/mobicash/yousrpay/masrafipay/saharapay/
+          // paypal — sadad is absent, and SadadController::initiate validates `order_number`,
+          // not `pending_ref`. So enabling Sadad needs a backend decision about which model it
+          // follows AND an app change; it is not a flag flip. Kept wired for the day the
+          // backend joins the deferred path, but see the guard below for the other direction.
           await _handleGatewayPayment('sadad', pendingRef, clearCart: !isReorder);
         } else {
           // Unknown/unsupported gateway id from the backend — never strand the user on an infinite spinner.
@@ -391,8 +394,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 SnackBar(content: Text(context.s.orderError), backgroundColor: AppColors.danger));
           }
         }
+      } else if (const ['tadawel','moamlat','mobicash','yousrpay','masrafipay','saharapay',
+                        'paypal','sadad'].contains(_paymentMethod)) {
+        // A redirect/card gateway that came back with NO pending_ref. The order has been created
+        // and NOT paid, so showing the confirmation screen would tell the customer they had paid
+        // when they had not. Refuse instead — this is the shape a half-enabled gateway takes.
+        setState(() => _loading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(context.s.orderError), backgroundColor: AppColors.danger));
+        }
       } else {
-        // COD / wallet — order created immediately
+        // COD / wallet / bank transfer (lypay) — order created immediately
         final orderData = Map<String, dynamic>.from(resData['data'] as Map);
         if (!isReorder) await ref.read(cartProvider.notifier).clear();
         ref.read(reorderSessionProvider.notifier).state = null;
