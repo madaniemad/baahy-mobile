@@ -71,10 +71,11 @@ class MainShell extends ConsumerWidget {
     final currentTabIdx = tabs.indexWhere((t) => t.branchIdx == currentBranch);
 
     final cartCount     = ref.watch(cartProvider.select((s) => s.count));
-    final wishlistCount = ref.watch(wishlistProductsProvider).maybeWhen(
-      data: (products) => products.length,
-      orElse: () => ref.watch(wishlistProvider.select((s) => s.length)),
-    );
+    // Count from the id set, not the product list. The set is the membership record and is
+    // updated optimistically on toggle; the list is a view of it that can be loading, errored
+    // or mid-refetch. Reading the list meant a freshly hearted item did not reach the badge
+    // until something happened to refetch, so the heart lit up and the tab did not.
+    final wishlistCount = ref.watch(wishlistProvider.select((s) => s.length));
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(

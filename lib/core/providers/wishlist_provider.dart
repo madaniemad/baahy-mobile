@@ -6,7 +6,8 @@ import 'auth_provider.dart';
 
 class WishlistNotifier extends StateNotifier<Set<int>> {
   final ApiClient _api;
-  WishlistNotifier(this._api, Ref ref) : super({}) {
+  final Ref _ref;
+  WishlistNotifier(this._api, Ref ref) : _ref = ref, super({}) {
     fetch();
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (!next.isLoggedIn) {
@@ -38,9 +39,21 @@ class WishlistNotifier extends StateNotifier<Set<int>> {
 
   Future<bool> toggle(int productId) async {
     if (!await _api.isLoggedIn) return false;
+    final nowSaved = !state.contains(productId);
     state = Set.from(state)..toggle(productId);
     try {
       await _api.dio.post('/wishlist/toggle', data: {'product_id': productId});
+      // Membership lives here, but the wishlist SCREEN and the tab badge read the product
+      // list, which had no way to learn about an addition — it has fetch() and remove() and
+      // nothing else. So tapping a heart coloured it and left the badge stale until the list
+      // happened to be refetched. Keep the two in step: a removal is local and instant, an
+      // addition needs the product object and so costs one refetch.
+      final products = _ref.read(wishlistProductsProvider.notifier);
+      if (nowSaved) {
+        products.fetch();
+      } else {
+        products.remove(productId);
+      }
       return true;
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);

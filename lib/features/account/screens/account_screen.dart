@@ -114,8 +114,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
       (_, __) => ref.invalidate(_freshWalletBalanceProvider),
     );
 
-    final wishlistCount = ref.watch(wishlistProductsProvider).valueOrNull?.length
-        ?? ref.watch(wishlistProvider).length;
+    // Same rule as the tab badge: the id set is the membership record.
+    final wishlistCount = ref.watch(wishlistProvider).length;
     final counts        = ref.watch(_ordersCountsProvider).value;
     final freshWallet   = ref.watch(_freshWalletBalanceProvider);
     final walletDisplay = freshWallet.valueOrNull ?? user.walletBalance;
