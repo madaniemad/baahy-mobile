@@ -136,6 +136,23 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   /// Tapping "add to cart" with no size chosen used to give NO feedback at all: the
   /// SnackBar never appeared on this screen, so the button read as dead. The success
   /// path uses a modal sheet and that does render here, so use the same mechanism.
+  /// "اختر المقاس أولاً" beats "اختر الخيارات أولاً": name what the product actually
+  /// asks for, using the same label the selector shows.
+  String _chooseOptionsMessage(Product product) {
+    final labels = product.productAttributes
+        .where((a) => a.values.isNotEmpty)
+        .map((a) => attrLabel(context, a))
+        .toList();
+    if (labels.isEmpty) return context.s.selectOptions;
+    final isAr = context.isAr;
+    final joined = labels.length == 1
+        ? labels.first
+        : labels.length == 2
+            ? '${labels[0]} ${isAr ? 'و' : 'and '}${labels[1]}'
+            : labels.join(isAr ? '، ' : ', ');
+    return isAr ? 'اختر $joined أولاً' : 'Select $joined first';
+  }
+
   void _notice(String msg) {
     showModalBottomSheet(
       context: context,
@@ -165,7 +182,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   Future<void> _addToCart(Product product, {bool goToCart = false}) async {
     if ((product.variations.isNotEmpty || product.productType == 'variable') && _selectedVariation == null) {
-      _notice(context.s.selectOptions);
+      _notice(_chooseOptionsMessage(product));
       return;
     }
     if (_selectedVariation != null && !_selectedVariation!.inStock) {

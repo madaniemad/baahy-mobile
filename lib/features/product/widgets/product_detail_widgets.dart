@@ -521,6 +521,16 @@ class _ReviewCard extends StatelessWidget {
 
 // ── Simple-product attribute display (no variations) ─────────────────────────
 
+/// The selector label for a variation attribute — 'المقاس', 'اللون', … The prompt shown
+/// when nothing is selected must name the same thing the selector does, so both go
+/// through here rather than each spelling it out.
+const _arAttrNameMap = {'الحجم': 'المقاس'};
+
+String attrLabel(BuildContext context, ProductAttribute attr) {
+  final raw = (context.isAr ? attr.nameAr : attr.name).trim();
+  return _arAttrNameMap[raw] ?? raw;
+}
+
 class _ProductAttributesDisplay extends StatelessWidget {
   final Product product;
   const _ProductAttributesDisplay({required this.product});
@@ -528,12 +538,10 @@ class _ProductAttributesDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAr = context.isAr;
-    const arNameMap = {'الحجم': 'المقاس'};
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: product.productAttributes.where((a) => a.values.isNotEmpty).map((attr) {
-        final rawLabel = isAr ? attr.nameAr : attr.name;
-        final label = arNameMap[rawLabel.trim()] ?? rawLabel;
+        final label = attrLabel(context, attr);
         final isColor = attr.displayType == 'color' ||
             attr.name.toLowerCase() == 'color' ||
             attr.nameAr.contains('لون');
