@@ -1,3 +1,4 @@
+import '../../../core/utils/delivery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,11 +30,11 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
     final isHubCity = zoneType == 'hub_city' ||
         city.toLowerCase().contains('طرابلس') ||
         city.toLowerCase().contains('tripoli');
-    // Hub city: promise same/next-day honoring the 4pm cutoff + Friday skip,
+    // Hub city: promise same/next-day honoring the dispatch cutoff + Friday skip,
     // consistent with the cart strip and product-detail delivery card.
     if (isHubCity) {
       final now = DateTime.now();
-      final beforeCutoff = now.hour < 16 && now.weekday != DateTime.friday;
+      final beforeCutoff = now.hour < kDispatchCutoffHour && now.weekday != DateTime.friday;
       return isAr
           ? (beforeCutoff ? 'اليوم' : 'غداً')
           : (beforeCutoff ? 'Today' : 'By tomorrow');

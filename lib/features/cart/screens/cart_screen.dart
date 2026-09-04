@@ -1,3 +1,4 @@
+import '../../../core/utils/delivery.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:baahy_customer/core/services/analytics_service.dart';
@@ -209,16 +210,126 @@ class _EmptyCart extends StatelessWidget {
 
 // ── Cart body ─────────────────────────────────────────────────────────────────
 
-/// Time left before the same-day cutoff, short enough to sit in one line.
-String _fmtLeft(Duration d, bool isAr) {
-  if (d.inMinutes >= 60) {
+/// The one line in the cart that changes a decision: how long is left to order and
+/// still get it on the promised day. Amazon/noon keep this running past the cutoff —
+/// once today is gone it counts down to the next dispatch instead of going quiet.
+/// Own widget so the one-second tick rebuilds this row, not the whole cart.
+class _DeliveryCountdown extends StatefulWidget {
+  final bool isHubCity;
+  final int etaMin;
+  final int etaMax;
+  const _DeliveryCountdown({
+    required this.isHubCity, required this.etaMin, required this.etaMax});
+  @override
+  State<_DeliveryCountdown> createState() => _DeliveryCountdownState();
+}
+
+class _DeliveryCountdownState extends State<_DeliveryCountdown> {
+  Timer? _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
+  /// Orders placed before the cutoff go out the same day. We do not deliver on
+  /// Friday, so a dispatch that would land there moves to the next working day.
+  DateTime _nextCutoff(DateTime now) {
+    var c = DateTime(now.year, now.month, now.day, kDispatchCutoffHour);
+    if (!now.isBefore(c)) c = c.add(const Duration(days: 1));
+    while (c.weekday == DateTime.friday) {
+      c = c.add(const Duration(days: 1));
+    }
+    return c;
+  }
+
+  static const _arDays = {
+    DateTime.saturday: 'السبت', DateTime.sunday: 'الأحد', DateTime.monday: 'الاثنين',
+    DateTime.tuesday: 'الثلاثاء', DateTime.wednesday: 'الأربعاء',
+    DateTime.thursday: 'الخميس', DateTime.friday: 'الجمعة',
+  };
+  static const _enDays = {
+    DateTime.saturday: 'Saturday', DateTime.sunday: 'Sunday', DateTime.monday: 'Monday',
+    DateTime.tuesday: 'Tuesday', DateTime.wednesday: 'Wednesday',
+    DateTime.thursday: 'Thursday', DateTime.friday: 'Friday',
+  };
+
+  /// h:mm:ss while there is an hour or more to go, mm:ss inside the last hour —
+  /// the seconds are the point, they are what make it read as a deadline.
+  String _fmtLeft(Duration d) {
+    final two = (int n) => n.toString().padLeft(2, '0');
     final h = d.inHours;
     final m = d.inMinutes % 60;
-    if (isAr) return m == 0 ? '$h ساعة' : '$h:${m.toString().padLeft(2, '0')} ساعة';
-    return m == 0 ? '${h}h' : '${h}h ${m}m';
+    final sec = d.inSeconds % 60;
+    return h > 0 ? '$h:${two(m)}:${two(sec)}' : '${two(m)}:${two(sec)}';
   }
-  final m = d.inMinutes < 1 ? 1 : d.inMinutes;
-  return isAr ? '$m دقيقة' : '${m}m';
+
+  /// Where the order lands: the hub city is delivered off the same dispatch, every
+  /// other city is etaMin–etaMax days behind it. Friday is not a delivery day.
+  String _arrival(DateTime cutoff, DateTime now, bool isAr) {
+    DateTime plus(int days) {
+      var d = DateTime(cutoff.year, cutoff.month, cutoff.day).add(Duration(days: days));
+      while (d.weekday == DateTime.friday) {
+        d = d.add(const Duration(days: 1));
+      }
+      return d;
+    }
+    final today = DateTime(now.year, now.month, now.day);
+    String name(DateTime d) {
+      final gap = d.difference(today).inDays;
+      if (gap == 0) return isAr ? 'اليوم' : 'today';
+      if (gap == 1) return isAr ? 'غداً' : 'tomorrow';
+      return isAr ? _arDays[d.weekday]! : 'on ${_enDays[d.weekday]!}';
+    }
+    if (widget.isHubCity) return name(plus(0));
+    final a = plus(widget.etaMin);
+    final b = plus(widget.etaMax);
+    if (a == b) return name(a);
+    return isAr
+        ? 'بين ${_arDays[a.weekday]!} و${_arDays[b.weekday]!}'
+        : 'between ${_enDays[a.weekday]!} and ${_enDays[b.weekday]!}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = context.s.isAr;
+    final now = DateTime.now();
+    final cutoff = _nextCutoff(now);
+    final left = cutoff.difference(now);
+    final arrival = _arrival(cutoff, now, isAr);
+    final text = isAr
+        ? 'اطلب خلال ${_fmtLeft(left)} ليصلك $arrival'
+        : 'Order within ${_fmtLeft(left)} and get it $arrival';
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 8),
+      child: Row(children: [
+        Container(
+          width: 38, height: 38,
+          decoration: const BoxDecoration(
+            color: AppColors.primary, shape: BoxShape.circle),
+          child: const Icon(Icons.local_shipping_rounded, size: 20, color: Colors.white),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(text,
+            // ink1, not a literal black: it stays near-black in light mode and
+            // legible in dark, where real black would vanish.
+            style: TextStyle(fontSize: 13, color: context.col.ink1,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.4)),
+        ),
+      ]),
+    );
+  }
 }
 
 class _CartBody extends ConsumerStatefulWidget {
@@ -230,21 +341,10 @@ class _CartBody extends ConsumerStatefulWidget {
 
 class _CartBodyState extends ConsumerState<_CartBody> {
   bool _checking = false;
-  Timer? _cutoffTicker;
-
-  @override
-  void dispose() {
-    _cutoffTicker?.cancel();
-    super.dispose();
-  }
 
   @override
   void initState() {
     super.initState();
-    // The same-day cutoff is a countdown, so it has to move on its own.
-    _cutoffTicker = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) setState(() {});
-    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       if (ref.read(cartProvider).couponCode != null) return;
@@ -429,46 +529,10 @@ class _CartBodyState extends ConsumerState<_CartBody> {
             // ── Delivery header ───────────────────────────────────────────
             Builder(builder: (_) {
               final rate = ref.watch(cityShippingRateProvider);
-              final etaMin = rate?.etaMin ?? rate?.deliveryDays ?? 1;
-              final etaMax = rate?.etaMax ?? (etaMin + 1);
-              final isAr = context.s.isAr;
-              // In the hub city we promise same/next-day, matching the product-detail
-              // delivery card: "today" before the 4pm cutoff on a working day, else
-              // "by tomorrow". Every other city keeps its shipping-rate day range.
-              final isHubCity = rate?.zoneType == 'hub_city';
-              final now = DateTime.now();
-              final beforeCutoff = now.hour < 16 && now.weekday != DateTime.friday;
-              // "One shipment" is true of every order we take, and whether COD is
-              // allowed belongs at the payment step — neither helps anyone decide
-              // anything here. What does: how long is left to still get it today.
-              final cutoff = DateTime(now.year, now.month, now.day, 16);
-              final left = cutoff.difference(now);
-              final etaStr = isHubCity
-                  ? (beforeCutoff
-                      ? (isAr
-                          ? 'اطلب خلال ${_fmtLeft(left, true)} واستلم طلبك اليوم'
-                          : 'Order within ${_fmtLeft(left, false)} and get it today')
-                      : (isAr ? 'اطلب الآن ليصلك غداً' : 'Order now to get it tomorrow'))
-                  : (isAr
-                      ? 'توصيل خلال $etaMin-$etaMax يوم'
-                      : 'Delivery in $etaMin-$etaMax days');
-              return Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 8),
-                child: Row(children: [
-                  Container(
-                    width: 38, height: 38,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary, shape: BoxShape.circle),
-                    child: const Icon(Icons.local_shipping_rounded,
-                      size: 20, color: Colors.white),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(etaStr,
-                      style: TextStyle(fontSize: 11, color: context.col.ink2,
-                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.4)),
-                  ),
-                ]),
+              return _DeliveryCountdown(
+                isHubCity: rate?.zoneType == 'hub_city',
+                etaMin: rate?.etaMin ?? rate?.deliveryDays ?? 1,
+                etaMax: rate?.etaMax ?? ((rate?.etaMin ?? rate?.deliveryDays ?? 1) + 1),
               );
             }),
 

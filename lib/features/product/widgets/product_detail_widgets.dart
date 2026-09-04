@@ -105,7 +105,7 @@ DateTime _addWorkingDays(DateTime date, int n) {
 (DateTime, DateTime) _deliveryRange(int etaMin, int etaMax) {
   final now = DateTime.now();
   final DateTime start;
-  if (now.weekday == DateTime.friday || now.hour >= 16) {
+  if (now.weekday == DateTime.friday || now.hour >= kDispatchCutoffHour) {
     start = _nextWorkingDay(now.add(const Duration(days: 1)));
   } else {
     start = now;
@@ -872,7 +872,7 @@ class _DeliveryCard extends ConsumerWidget {
            cityRate.etaMax ?? cityRate.etaMin ?? cityRate.deliveryDays)
         : _daysForCity(city);
     final isAr = context.isAr;
-    // Use the shared range helper so the 4pm cutoff, Friday skip, and "today counts as
+    // Use the shared range helper so the dispatch cutoff, Friday skip, and "today counts as
     // delivery day 1 before cutoff" all apply — instead of blindly adding days to now.
     final (earliest, latest) = _deliveryRange(minDays, maxDays);
     final now = DateTime.now();
@@ -885,7 +885,7 @@ class _DeliveryCard extends ConsumerWidget {
     final isHubCity = cityRate?.zoneType == 'hub_city';
 
     String estimate;
-    // Hub city: punchy today/tomorrow message driven by the cutoff — "today" before 4pm,
+    // Hub city: punchy today/tomorrow message driven by the cutoff — "today" before it,
     // "by tomorrow" once it passes. Every other city follows its own delivery days below.
     if (isHubCity && (isToday || isTomorrow)) {
       estimate = isToday
