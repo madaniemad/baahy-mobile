@@ -1104,10 +1104,35 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
   bool _loading = false;
   bool _hasMore = true;
 
+  ScrollPosition? _pos;
+
   @override
   void initState() {
     super.initState();
     if (widget.lazyLoad) _loadMore();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The grid itself does not scroll (it is shrink-wrapped inside the page), so
+    // ride the page's scroll position to pull the next page in automatically.
+    final pos = Scrollable.maybeOf(context)?.position;
+    if (pos == _pos) return;
+    _pos?.removeListener(_onScroll);
+    _pos = pos?..addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final p = _pos;
+    if (p == null || !p.hasPixels || !p.hasContentDimensions) return;
+    if (p.pixels >= p.maxScrollExtent - 700) _loadMore();
+  }
+
+  @override
+  void dispose() {
+    _pos?.removeListener(_onScroll);
+    super.dispose();
   }
 
   @override
@@ -1177,22 +1202,8 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
             const Center(
               child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
           ],
-          if (_hasMore && !_loading) ...[
-            const SizedBox(height: 12),
-            Center(
-              child: OutlinedButton(
-                onPressed: _loadMore,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
-                  side: const BorderSide(color: Colors.black54, width: 1.2),
-                  shape: const StadiumBorder(),
-                  foregroundColor: Colors.black87,
-                ),
-                child: Text(context.s.viewMore,
-                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600, fontSize: 13)),
-              ),
-            ),
-          ],
+          // No "view more" button: scrolling to the end pulls the next page in.
+          if (_hasMore && !_loading) const SizedBox(height: 24),
         ],
       ),
     );

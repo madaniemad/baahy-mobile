@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:baahy_customer/core/services/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -208,6 +209,18 @@ class _EmptyCart extends StatelessWidget {
 
 // ── Cart body ─────────────────────────────────────────────────────────────────
 
+/// Time left before the same-day cutoff, short enough to sit in one line.
+String _fmtLeft(Duration d, bool isAr) {
+  if (d.inMinutes >= 60) {
+    final h = d.inHours;
+    final m = d.inMinutes % 60;
+    if (isAr) return m == 0 ? '$h ساعة' : '$h:${m.toString().padLeft(2, '0')} ساعة';
+    return m == 0 ? '${h}h' : '${h}h ${m}m';
+  }
+  final m = d.inMinutes < 1 ? 1 : d.inMinutes;
+  return isAr ? '$m دقيقة' : '${m}m';
+}
+
 class _CartBody extends ConsumerStatefulWidget {
   final CartState cart;
   const _CartBody({required this.cart});
@@ -217,10 +230,21 @@ class _CartBody extends ConsumerStatefulWidget {
 
 class _CartBodyState extends ConsumerState<_CartBody> {
   bool _checking = false;
+  Timer? _cutoffTicker;
+
+  @override
+  void dispose() {
+    _cutoffTicker?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
+    // The same-day cutoff is a countdown, so it has to move on its own.
+    _cutoffTicker = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       if (ref.read(cartProvider).couponCode != null) return;
@@ -407,7 +431,6 @@ class _CartBodyState extends ConsumerState<_CartBody> {
               final rate = ref.watch(cityShippingRateProvider);
               final etaMin = rate?.etaMin ?? rate?.deliveryDays ?? 1;
               final etaMax = rate?.etaMax ?? (etaMin + 1);
-              final codOk = rate?.codAllowed ?? false;
               final isAr = context.s.isAr;
               // In the hub city we promise same/next-day, matching the product-detail
               // delivery card: "today" before the 4pm cutoff on a working day, else
@@ -415,16 +438,20 @@ class _CartBodyState extends ConsumerState<_CartBody> {
               final isHubCity = rate?.zoneType == 'hub_city';
               final now = DateTime.now();
               final beforeCutoff = now.hour < 16 && now.weekday != DateTime.friday;
-              final etaPart = isHubCity
-                  ? (isAr
-                      ? (beforeCutoff ? 'توصيل اليوم' : 'توصيل غداً')
-                      : (beforeCutoff ? 'Get it today' : 'Get it by tomorrow'))
+              // "One shipment" is true of every order we take, and whether COD is
+              // allowed belongs at the payment step — neither helps anyone decide
+              // anything here. What does: how long is left to still get it today.
+              final cutoff = DateTime(now.year, now.month, now.day, 16);
+              final left = cutoff.difference(now);
+              final etaStr = isHubCity
+                  ? (beforeCutoff
+                      ? (isAr
+                          ? 'اطلب خلال ${_fmtLeft(left, true)} واستلم طلبك اليوم'
+                          : 'Order within ${_fmtLeft(left, false)} and get it today')
+                      : (isAr ? 'اطلب الآن ليصلك غداً' : 'Order now to get it tomorrow'))
                   : (isAr
                       ? 'توصيل خلال $etaMin-$etaMax يوم'
                       : 'Delivery in $etaMin-$etaMax days');
-              final etaStr = isAr
-                  ? '$etaPart  •  شحنة واحدة${codOk ? '  •  الدفع عند الاستلام متاح' : ''}'
-                  : '$etaPart  •  One shipment${codOk ? '  •  COD available' : ''}';
               return Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 8),
                 child: Row(children: [
