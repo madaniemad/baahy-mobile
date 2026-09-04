@@ -37,7 +37,7 @@ class AppStrings {
   String get seconds        => isAr ? 'ثانية'                     : 's';
   String get resendCode     => isAr ? 'إعادة إرسال الرمز'          : 'Resend code';
   String get wrongCode      => isAr ? 'رمز خاطئ، حاول مجدداً'     : 'Wrong code, please try again';
-  String get notReceivedInfo=> isAr ? 'هذا الرمز صالح لمدة 5 دقائق فقط لأمان حسابك.' : 'This code is valid for 5 minutes only for your account security.';
+  String get notReceivedInfo=> isAr ? 'هذا الرمز صالح لمدة 10 دقائق فقط لأمان حسابك.' : 'This code is valid for 10 minutes only for your account security.';
 
   // ── Home ────────────────────────────────────────────────────────────────────
   String get seeAll         => isAr ? 'عرض الكل'               : 'See all';

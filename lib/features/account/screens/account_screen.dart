@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:dio/dio.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/app_config_provider.dart';
@@ -359,8 +360,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
           ),
 
           const SizedBox(height: 20),
-          Center(child: Text('baahy v1.0 · 2026',
-            style: TextStyle(fontSize: 11, color: context.col.ink4))),
+          // Hardcoded 'v1.0' sat here while the app shipped 5.0.16, so read the real one.
+          Center(child: FutureBuilder<PackageInfo>(
+            future: PackageInfo.fromPlatform(),
+            builder: (_, snap) => Text(
+              snap.hasData ? 'baahy v${snap.data!.version} · 2026' : 'baahy · 2026',
+              style: TextStyle(fontSize: 11, color: context.col.ink4)),
+          )),
         ],
       ),
     );
