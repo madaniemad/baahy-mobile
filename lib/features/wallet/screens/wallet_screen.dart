@@ -1004,8 +1004,11 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       });
       _mobicashReference = res.data['reference'] as String?;
       _mitfTransactionId = res.data['mitf_transaction_id']?.toString();
+      // Leaving the screen mid-request must not setState on a disposed State.
+      if (!mounted) return;
       setState(() { _loading = false; _step = 2; });
     } catch (_) {
+      if (!mounted) return;
       setState(() { _loading = false; _error = 'البطاقة غير صحيحة أو الخدمة غير متاحة'; });
     }
   }

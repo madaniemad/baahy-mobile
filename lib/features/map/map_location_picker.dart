@@ -184,11 +184,14 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 12),
       );
+      // getCurrentPosition waits up to 12s; the user can leave well before it returns.
+      if (!mounted) return;
       final ll = LatLng(pos.latitude, pos.longitude);
       _ctrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, 15.0));
       setState(() { _center = ll; _locating = false; });
       _reverseGeocode(ll);
     } catch (_) {
+      if (!mounted) return;
       setState(() => _locating = false);
       if (showError && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

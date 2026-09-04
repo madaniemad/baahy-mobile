@@ -133,15 +133,43 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       ));
   }
 
+  /// Tapping "add to cart" with no size chosen used to give NO feedback at all: the
+  /// SnackBar never appeared on this screen, so the button read as dead. The success
+  /// path uses a modal sheet and that does render here, so use the same mechanism.
+  void _notice(String msg) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.col.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+      builder: (sheetCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(msg,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(sheetCtx).pop(),
+                child: Text(context.isAr ? 'حسناً' : 'OK'),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   Future<void> _addToCart(Product product, {bool goToCart = false}) async {
     if ((product.variations.isNotEmpty || product.productType == 'variable') && _selectedVariation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.s.selectOptions)));
+      _notice(context.s.selectOptions);
       return;
     }
     if (_selectedVariation != null && !_selectedVariation!.inStock) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.isAr ? 'هذا الخيار غير متوفر' : 'This option is out of stock')));
+      _notice(context.isAr ? 'هذا الخيار غير متوفر' : 'This option is out of stock');
       return;
     }
     await ref.read(cartProvider.notifier).add(
