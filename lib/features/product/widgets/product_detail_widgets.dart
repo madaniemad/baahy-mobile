@@ -87,50 +87,6 @@ class _StockEtaStrip extends StatelessWidget {
 
 // ── Delivery date helpers ─────────────────────────────────────────────────────
 
-DateTime _nextWorkingDay(DateTime date) {
-  while (date.weekday == DateTime.friday) {
-    date = date.add(const Duration(days: 1));
-  }
-  return date;
-}
-
-DateTime _addWorkingDays(DateTime date, int n) {
-  for (int i = 0; i < n; i++) {
-    date = date.add(const Duration(days: 1));
-    date = _nextWorkingDay(date);
-  }
-  return date;
-}
-
-(DateTime, DateTime) _deliveryRange(int etaMin, int etaMax) {
-  final now = DateTime.now();
-  final DateTime start;
-  if (now.weekday == DateTime.friday || now.hour >= kDispatchCutoffHour) {
-    start = _nextWorkingDay(now.add(const Duration(days: 1)));
-  } else {
-    start = now;
-  }
-  final earliest = _addWorkingDays(start, etaMin - 1);
-  final latest   = _addWorkingDays(start, etaMax - 1);
-  return (earliest, latest);
-}
-
-String _formatDeliveryDay(DateTime date, bool isAr) {
-  final now   = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final d     = DateTime(date.year, date.month, date.day);
-  if (isAr) {
-    if (d == today) return 'اليوم';
-    if (d == today.add(const Duration(days: 1))) return 'غداً';
-    const names = ['', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', '', 'السبت', 'الأحد'];
-    return names[date.weekday];
-  } else {
-    if (d == today) return 'Today';
-    if (d == today.add(const Duration(days: 1))) return 'Tomorrow';
-    const names = ['', 'Mon', 'Tue', 'Wed', 'Thu', '', 'Sat', 'Sun'];
-    return names[date.weekday];
-  }
-}
 
 // ── Trust block ───────────────────────────────────────────────────────────────
 
@@ -150,21 +106,11 @@ class _TrustBlock extends ConsumerWidget {
     // Compute actual delivery arrival dates for the user's city
     String deliveryText;
     if (cityRate != null) {
-      final etaMin = cityRate.etaMin ?? cityRate.deliveryDays;
-      final etaMax = cityRate.etaMax ?? (cityRate.etaMin ?? cityRate.deliveryDays);
       final cityName = isAr ? cityRate.cityAr : cityRate.city;
-      final (earliest, latest) = _deliveryRange(etaMin, etaMax);
-      final earliestStr = _formatDeliveryDay(earliest, isAr);
-      final latestStr   = _formatDeliveryDay(latest, isAr);
-      final sameDay = DateTime(earliest.year, earliest.month, earliest.day) ==
-                      DateTime(latest.year, latest.month, latest.day);
-      if (sameDay) {
-        deliveryText = isAr ? 'يصل $earliestStr · $cityName' : 'Arrives $earliestStr · $cityName';
-      } else {
-        deliveryText = isAr
-            ? 'يصل $earliestStr – $latestStr · $cityName'
-            : 'Arrives $earliestStr – $latestStr · $cityName';
-      }
+      final now = DateTime.now();
+      final arrival = deliveryDayLabel(
+        deliveryArrival(now, cityRate.deliveryDays), now, isAr);
+      deliveryText = isAr ? 'يصل $arrival · $cityName' : 'Arrives $arrival · $cityName';
     } else {
       deliveryText = isAr ? 'توصيل سريع في معظم المدن' : 'Fast delivery across most cities';
     }
@@ -847,10 +793,6 @@ class _DeliveryCard extends ConsumerWidget {
   static const _englishMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  static String _fmtDate(DateTime d, bool isAr) => isAr
-      ? '${_arabicDays[d.weekday % 7]} ${d.day} ${_arabicMonths[d.month - 1]}'
-      : '${_englishDays[d.weekday % 7]}, ${_englishMonths[d.month - 1]} ${d.day}';
-
   static (int, int) _daysForCity(String city) {
     if (city.contains('طرابلس') || city.contains('مصراتة') || city.contains('الزاوية') ||
         city.contains('زليتن') || city.contains('الخمس') || city.contains('تاجوراء') ||
@@ -874,8 +816,8 @@ class _DeliveryCard extends ConsumerWidget {
     final isAr = context.isAr;
     // Use the shared range helper so the dispatch cutoff, Friday skip, and "today counts as
     // delivery day 1 before cutoff" all apply — instead of blindly adding days to now.
-    final (earliest, latest) = _deliveryRange(minDays, maxDays);
     final now = DateTime.now();
+    final earliest = deliveryArrival(now, minDays);
     final today = DateTime(now.year, now.month, now.day);
     final earliestDay = DateTime(earliest.year, earliest.month, earliest.day);
     final isToday = earliestDay == today;
@@ -892,13 +834,9 @@ class _DeliveryCard extends ConsumerWidget {
           ? (isAr ? 'احصل عليه اليوم' : 'Get it today')
           : (isAr ? 'احصل عليه غداً' : 'Get it by tomorrow');
     } else {
-      final minDate = _fmtDate(earliest, isAr);
-      final maxDate = _fmtDate(latest, isAr);
-      final sameDay = earliestDay ==
-          DateTime(latest.year, latest.month, latest.day);
-      estimate = isAr
-          ? (sameDay ? 'يصل يوم $minDate' : 'يصل بين $minDate و$maxDate')
-          : (sameDay ? 'Arrives $minDate' : 'Arrives between $minDate and $maxDate');
+      // One date. A two-day window reads as "we are not sure".
+      final arrival = deliveryDayLabel(earliest, now, isAr);
+      estimate = isAr ? 'يصل $arrival' : 'Arrives $arrival';
     }
 
     return Container(
