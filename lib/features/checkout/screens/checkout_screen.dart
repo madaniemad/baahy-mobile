@@ -1,3 +1,4 @@
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -97,7 +98,27 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (ref.read(reorderSessionProvider) != null) {
         setState(() => _itemsExpanded = true);
       }
+      _applyPendingAutoOffer();
     });
+  }
+
+  /// The server applies the first-order offer even when the app sends no code, so a
+  /// checkout reached without the cart having applied it showed a total HIGHER than
+  /// what is actually charged — and, with the wallet block keyed off the same offer,
+  /// no sign of why the wallet was unavailable. Apply it through the normal
+  /// server-validated path so the discount shown is the discount charged, rather than
+  /// recomputing it here where eligible-subtotal rules would be guessed at.
+  Future<void> _applyPendingAutoOffer() async {
+    if (ref.read(reorderSessionProvider) != null) return;
+    if ((ref.read(cartProvider).couponCode ?? '').isNotEmpty) return;
+    try {
+      final offer = await ref.read(welcomeCouponProvider.future);
+      if (!mounted || offer == null) return;
+      if ((ref.read(cartProvider).couponCode ?? '').isNotEmpty) return;
+      await ref.read(cartProvider.notifier).applyCoupon(offer.code);
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
   }
 
   // Load address + saved payment together, then validate COD for the resolved address
@@ -330,8 +351,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final orderTotal = isReorder ? orderSubtotal + orderDeliveryFee : cart.total;
       final couponCode = isReorder ? null : cart.couponCode;
       final addr = _selectedAddress!;
+      // Same fail-closed rule as the build method: an unresolved offer means we
+      // cannot claim the wallet is usable.
+      final offerState = ref.read(welcomeCouponProvider);
       final walletActive = _useWallet && _walletBalance > 0
-          && ref.read(welcomeCouponProvider).valueOrNull?.blocksWallet != true;
+          && offerState.hasValue
+          && offerState.valueOrNull?.blocksWallet != true;
       final maxUse = walletActive
           ? (_walletBalance < orderTotal ? _walletBalance : orderTotal)
           : 0.0;
@@ -947,7 +972,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = _accent(context);
     // The auto-applied offer the backend is holding for this customer, if any.
-    final autoOffer = ref.watch(welcomeCouponProvider).valueOrNull;
+    final autoOfferAsync = ref.watch(welcomeCouponProvider);
+    final autoOffer = autoOfferAsync.valueOrNull;
+    // Until the answer arrives — or if the call failed — we do NOT know whether an
+    // offer blocks the wallet. valueOrNull is null in all three cases, so
+    // `?.blocksWallet == true` read "not blocked" while still loading and the wallet
+    // was offered for an order the server then refused with a bare Server Error.
+    // The server decides this fail-closed; match it.
+    final autoOfferUnknown = !autoOfferAsync.hasValue;
 
     // Effective items and subtotal: reorder session takes priority over cart
     final effectiveItems = isReorder ? reorderSession.items : cart.items;
@@ -982,7 +1014,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // An offer that IS the discount on this order (the first-order 15%) cannot be combined
     // with wallet credit — the balance stays for the next order. The server refuses the
     // combination outright, so offering the toggle here only leads to a dead end.
-    final walletBlocked = autoOffer?.blocksWallet == true;
+    final walletBlocked = autoOfferUnknown || autoOffer?.blocksWallet == true;
     final walletActive = _useWallet && _walletBalance > 0 && !walletBlocked;
     final maxWalletUse = walletActive
         ? (_walletBalance < effectiveTotal ? _walletBalance : effectiveTotal)
