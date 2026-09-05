@@ -1,7 +1,3 @@
-Fixes and improvements:
-- The favourites counter now updates the moment you tap the heart.
-- Verification code: the resend timer is 60 seconds, an incorrect code now says so, and the code stays valid for the full 10 minutes.
-- Adding to the cart without choosing a size now tells you which option to pick.
-- The cart shows how long is left to order for delivery on the stated day.
-- More products load as you scroll on the product page.
-- Fixed two crashes: choosing a location on the map, and topping up the wallet.
+This update brings general improvements and refinements across the app, for a smoother and more reliable shopping experience.
+
+Thank you for shopping with Baahy.
