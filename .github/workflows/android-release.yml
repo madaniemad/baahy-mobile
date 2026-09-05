@@ -15,6 +15,11 @@ on:
         type: choice
         default: aab
         options: [aab, apk, both]
+      publish:
+        description: "Publish the .aab to Play (production, full rollout)"
+        type: choice
+        default: "no"
+        options: ["no", "production"]
 
 jobs:
   build:
@@ -79,7 +84,26 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
 
+      # PLAY_SERVICE_ACCOUNT_JSON_BASE64 has existed since 2026-07-13 but nothing used
+      # it — the .aab was downloaded and uploaded to Play Console by hand. The secret
+      # cannot be read outside CI, so the upload has to happen here. Opt-in only: a
+      # plain build must never publish as a side effect.
+      - name: Restore Play service account
+        if: ${{ inputs.publish == 'production' && (inputs.artifact == 'aab' || inputs.artifact == 'both') }}
+        run: echo "${{ secrets.PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}" | base64 --decode > "$GITHUB_WORKSPACE/play-sa.json"
+
+      - name: Publish to Play (production)
+        if: ${{ inputs.publish == 'production' && (inputs.artifact == 'aab' || inputs.artifact == 'both') }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: play-sa.json
+          packageName: com.baahy.baahyapp
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: production
+          status: completed
+          whatsNewDirectory: distribution/whatsnew
+
       # Cleanup: never leave decoded secrets on the runner FS image cache
       - name: Scrub secrets from workspace
         if: always()
-        run: rm -f "$GITHUB_WORKSPACE/android/app/baahy-upload.jks" "$GITHUB_WORKSPACE/android/key.properties" "$GITHUB_WORKSPACE/android/app/google-services.json"
+        run: rm -f "$GITHUB_WORKSPACE/android/app/baahy-upload.jks" "$GITHUB_WORKSPACE/android/key.properties" "$GITHUB_WORKSPACE/android/app/google-services.json" "$GITHUB_WORKSPACE/play-sa.json"
