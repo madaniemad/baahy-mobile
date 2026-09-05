@@ -261,7 +261,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         initialUseWallet: _useWallet,
         initialWalletAmount: _walletAmountCtrl.text,
         initialPaymentMethod: _paymentMethod,
-        walletBalance: _walletBalance,
+        // The amount the sheet may actually offer. Passing the raw balance made it
+        // propose 71 on an order where only 51 is spendable, and quote a remainder
+        // 20 LYD lower than the customer would be charged.
+        walletBalance: (ref.read(welcomeCouponProvider).valueOrNull?.blocksWallet == true)
+            ? _walletSpendable
+            : _walletBalance,
         walletLoading: _walletLoading,
         cartTotal: cartTotal,
         codAllowed: _codAllowedForAddress,
@@ -1034,7 +1039,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final offerBlocks = autoOffer?.blocksWallet == true;
     final walletCap = offerBlocks ? _walletSpendable : _walletBalance;
     final walletBlocked = autoOfferUnknown || (offerBlocks && _walletSpendable <= 0);
-    final walletActive = _useWallet && _walletBalance > 0 && !walletBlocked;
+    final walletActive = _useWallet && walletCap > 0 && !walletBlocked;
     final maxWalletUse = walletActive
         ? (walletCap < effectiveTotal ? walletCap : effectiveTotal)
         : 0.0;
