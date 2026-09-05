@@ -78,6 +78,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _loading = false;
   List<Map<String, dynamic>> _addresses = [];
   double _walletBalance = 0;
+  /// The part of the balance an offer-blocked order may still use (topped-up money).
+  double _walletSpendable = 0;
   bool _useWallet = false;
   bool _walletLoading = false;
   bool _itemsExpanded = false;
@@ -187,8 +189,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     setState(() => _walletLoading = true);
     try {
       final res = await ApiClient.instance.dio.get('/wallet');
-      final balance = (res.data['data']?['balance'] as num?)?.toDouble() ?? 0.0;
-      if (mounted) setState(() => _walletBalance = balance);
+      final d = res.data['data'];
+      final balance = (d?['balance'] as num?)?.toDouble() ?? 0.0;
+      // A first-order offer holds back reward credit only. Older servers do not send the
+      // split, so fall back to the whole balance being spendable rather than to zero.
+      final spendable = (d?['spendable_balance'] as num?)?.toDouble() ?? balance;
+      if (mounted) {
+        setState(() {
+          _walletBalance = balance;
+          _walletSpendable = spendable;
+        });
+      }
     } catch (_) {}
     if (mounted) setState(() => _walletLoading = false);
   }
@@ -241,7 +252,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => _PaymentSheet(
-        walletBlockedNote: ref.read(welcomeCouponProvider).valueOrNull?.blocksWallet == true
+        // Only call the wallet blocked when NOTHING of it can be used. With topped-up
+        // money present the sheet should offer that portion, not refuse the whole balance.
+        walletBlockedNote: (ref.read(welcomeCouponProvider).valueOrNull?.blocksWallet == true
+                && _walletSpendable <= 0)
             ? (ref.read(welcomeCouponProvider).valueOrNull!.walletNoteAr ?? '')
             : null,
         initialUseWallet: _useWallet,
@@ -354,11 +368,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       // Same fail-closed rule as the build method: an unresolved offer means we
       // cannot claim the wallet is usable.
       final offerState = ref.read(welcomeCouponProvider);
-      final walletActive = _useWallet && _walletBalance > 0
-          && offerState.hasValue
-          && offerState.valueOrNull?.blocksWallet != true;
+      final blocks = offerState.valueOrNull?.blocksWallet == true;
+      final cap = blocks ? _walletSpendable : _walletBalance;
+      final walletActive = _useWallet && cap > 0 && offerState.hasValue;
       final maxUse = walletActive
-          ? (_walletBalance < orderTotal ? _walletBalance : orderTotal)
+          ? (cap < orderTotal ? cap : orderTotal)
           : 0.0;
       final walletDeduct = walletActive
           ? (double.tryParse(_walletAmountCtrl.text) ?? maxUse).clamp(0.0, maxUse)
@@ -1014,10 +1028,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // An offer that IS the discount on this order (the first-order 15%) cannot be combined
     // with wallet credit — the balance stays for the next order. The server refuses the
     // combination outright, so offering the toggle here only leads to a dead end.
-    final walletBlocked = autoOfferUnknown || autoOffer?.blocksWallet == true;
+    // A blocking offer no longer means "no wallet": reward credit waits for the next
+    // order, but money the customer topped up stays spendable, so cap rather than hide.
+    // Unknown still means blocked — we must not offer what the server may refuse.
+    final offerBlocks = autoOffer?.blocksWallet == true;
+    final walletCap = offerBlocks ? _walletSpendable : _walletBalance;
+    final walletBlocked = autoOfferUnknown || (offerBlocks && _walletSpendable <= 0);
     final walletActive = _useWallet && _walletBalance > 0 && !walletBlocked;
     final maxWalletUse = walletActive
-        ? (_walletBalance < effectiveTotal ? _walletBalance : effectiveTotal)
+        ? (walletCap < effectiveTotal ? walletCap : effectiveTotal)
         : 0.0;
     final parsedWalletInput = double.tryParse(_walletAmountCtrl.text) ?? 0.0;
     final walletDeduct = walletActive
