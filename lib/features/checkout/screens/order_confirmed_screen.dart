@@ -23,6 +23,11 @@ class OrderConfirmedScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
+  /// The arrival phrase for the confirmation screen.
+  ///
+  /// This used to do its own date maths and got Thursday wrong: past the cutoff it
+  /// said "tomorrow", which is Friday, a day we do not deliver. It now shares the
+  /// cart's helpers, so the two screens cannot drift apart again.
   String _deliveryLabel(bool isAr) {
     final rate = widget.data['shipping_rate'];
     final city = (widget.data['city'] ?? widget.data['shipping_city'] ?? '').toString();
@@ -30,20 +35,12 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
     final isHubCity = zoneType == 'hub_city' ||
         city.toLowerCase().contains('طرابلس') ||
         city.toLowerCase().contains('tripoli');
-    // Hub city: promise same/next-day honoring the dispatch cutoff + Friday skip,
-    // consistent with the cart strip and product-detail delivery card.
-    if (isHubCity) {
-      final now = DateTime.now();
-      final beforeCutoff = now.hour < kDispatchCutoffHour && now.weekday != DateTime.friday;
-      return isAr
-          ? (beforeCutoff ? 'اليوم' : 'غداً')
-          : (beforeCutoff ? 'Today' : 'By tomorrow');
-    }
-    // Other cities: their shipping-rate day range.
-    if (rate is Map && rate['estimated_days'] != null) {
-      return isAr ? '${rate['estimated_days']} يوم' : '${rate['estimated_days']} days';
-    }
-    return isAr ? '2 - 5 يوم' : '2 - 5 days';
+
+    final days = isHubCity
+        ? 1
+        : ((rate is Map ? (rate['delivery_days'] ?? rate['estimated_days']) as num? : null)?.toInt() ?? 3);
+
+    return deliveryArrivalPhrase(DateTime.now(), days, isAr);
   }
 
   @override

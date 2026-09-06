@@ -238,25 +238,11 @@ class _DeliveryCountdownState extends State<_DeliveryCountdown> {
     super.dispose();
   }
 
-  /// h:mm:ss while there is an hour or more to go, mm:ss inside the last hour —
-  /// the seconds are the point, they are what make it read as a deadline.
-  String _fmtLeft(Duration d) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    final h = d.inHours;
-    return h > 0
-        ? '$h:${two(d.inMinutes % 60)}:${two(d.inSeconds % 60)}'
-        : '${two(d.inMinutes % 60)}:${two(d.inSeconds % 60)}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final isAr = context.s.isAr;
     final now = DateTime.now();
-    final left = deliveryDispatch(now).difference(now);
-    final arrival = deliveryDayLabel(deliveryArrival(now, widget.deliveryDays), now, isAr);
-    final text = isAr
-        ? 'اطلب خلال ${_fmtLeft(left)} ليصلك $arrival'
-        : 'Order within ${_fmtLeft(left)} and get it $arrival';
+    final text = cartDeliveryLine(now, widget.deliveryDays, isAr);
     return Padding(
       padding: const EdgeInsets.only(top: 12, bottom: 8),
       child: Row(children: [

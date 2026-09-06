@@ -1,3 +1,5 @@
+import '../utils/delivery.dart';
+
 class PaymentMethod {
   final String id;
   final String labelAr;
@@ -153,6 +155,29 @@ class AppConfig {
   );
 
   factory AppConfig.fromJson(Map<String, dynamic> j) {
+    // Delivery rules are process-wide — the date helpers are pure functions, not
+    // widgets — so they are applied here, the one place both load paths (stale
+    // cache and fresh network) already pass through. Anything missing or malformed
+    // falls back to the compiled defaults rather than blanking a promise.
+    final del = j['delivery'];
+    if (del is Map) {
+      final hour = (del['cutoff_hour'] as num?)?.toInt();
+      final wd = (del['closed_weekdays'] as List?)
+          ?.map((e) => (e is num) ? e.toInt() : int.tryParse('$e'))
+          .whereType<int>()
+          .where((d) => d >= 1 && d <= 7)
+          .toSet();
+      final cd = (del['closed_dates'] as List?)
+          ?.map((e) => '$e')
+          .where((e) => RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(e))
+          .toSet();
+      deliveryRules = DeliveryRules(
+        cutoffHour: (hour != null && hour >= 0 && hour <= 23) ? hour : kDispatchCutoffHour,
+        closedWeekdays: wd ?? const {DateTime.friday},
+        closedDates: cd ?? const {},
+      );
+    }
+
     final methods = (j['payment_methods'] as List?)
         ?.map((m) => PaymentMethod.fromJson(m as Map<String, dynamic>))
         .toList();
@@ -191,7 +216,7 @@ class AppConfig {
       shippingFee: _d(j['shipping_fee'] ?? defaults.shippingFee),
       collectionFee: _d(j['collection_fee'] ?? defaults.collectionFee),
       freeShippingThreshold: bronzeSh,
-      returnDays: platRd,
+      returnDays: bronzeRd, // the DEFAULT window; tiers extend it via tierReturnDays
       deliveryCitiesCount: (j['delivery_cities_count'] as num?)?.toInt() ?? defaults.deliveryCitiesCount,
       paymentMethods: (methods?.isNotEmpty == true) ? methods! : defaults.paymentMethods,
       trendingSearches: (j['trending_searches'] as List?)?.cast<String>() ?? defaults.trendingSearches,

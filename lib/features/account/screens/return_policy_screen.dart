@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/app_pages_provider.dart';
+import '../../../core/utils/delivery.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -22,6 +24,7 @@ class ReturnPolicyScreen extends ConsumerWidget {
     final isAr = context.isAr;
     final pages = ref.watch(appPagesProvider);
     final sections = pages.returnSections;
+    final returnDays = ref.watch(appConfigProvider).returnDays;
     final hasData = sections.isNotEmpty;
 
     return Scaffold(
@@ -64,9 +67,12 @@ class ReturnPolicyScreen extends ConsumerWidget {
             _PolicyCard(
               icon: Icons.assignment_return_outlined,
               title: isAr ? 'سياسة الإرجاع' : 'Return Policy',
+              // The window comes from app-config, never a literal: this fallback
+              // only renders if /app-pages returns nothing, and a stale number
+              // here would contradict the product page at the worst moment.
               body: isAr
-                  ? 'يمكنك إرجاع المنتجات خلال 7 أيام من تاريخ الاستلام، بشرط أن تكون في حالتها الأصلية وغير مستخدمة.'
-                  : 'You may return products within 7 days of delivery, provided they are in their original unused condition.',
+                  ? 'يمكنك إرجاع المنتجات خلال ${dayCountLabel(returnDays, true)} من تاريخ الاستلام، بشرط أن تكون في حالتها الأصلية وغير مستخدمة.'
+                  : 'You may return products within ${dayCountLabel(returnDays, false)} of delivery, provided they are in their original unused condition.',
             ),
             const SizedBox(height: 12),
             _PolicyCard(

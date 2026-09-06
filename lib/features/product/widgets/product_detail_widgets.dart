@@ -108,18 +108,26 @@ class _TrustBlock extends ConsumerWidget {
     if (cityRate != null) {
       final cityName = isAr ? cityRate.cityAr : cityRate.city;
       final now = DateTime.now();
-      final arrival = deliveryDayLabel(
-        deliveryArrival(now, cityRate.deliveryDays), now, isAr);
+      // A span, not a date: a printed date reads as a commitment to the day, and
+      // one slipped day makes it a broken promise. Same phrasing as the cart.
+      final arrival = deliveryArrivalPhrase(now, cityRate.deliveryDays, isAr);
       deliveryText = isAr ? 'يصل $arrival · $cityName' : 'Arrives $arrival · $cityName';
     } else {
       deliveryText = isAr ? 'توصيل سريع في معظم المدن' : 'Fast delivery across most cities';
     }
 
+    // Each tier carries its own return window. Showing one fixed number told every
+    // customer the platinum window (30 days) when their real one was the base 3.
+    final tier = ref.watch(tierProvider).valueOrNull;
+    final returnDays = (tier != null && tier.tier != null && tier.returnDays > 0)
+        ? tier.returnDays
+        : config.returnDays;
+
     final rows = [
       (Icons.local_shipping_outlined, deliveryText),
       (Icons.refresh_rounded, isAr
-          ? 'إرجاع خلال ${config.returnDays} أيام · من باب منزلك'
-          : 'Returns within ${config.returnDays} days · From your door'),
+          ? 'إرجاع خلال ${dayCountLabel(returnDays, true)} · من باب منزلك'
+          : 'Returns within ${dayCountLabel(returnDays, false)} · From your door'),
       (Icons.credit_card_outlined, paymentLabels.isNotEmpty
           ? paymentLabels : (isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery')),
     ];
