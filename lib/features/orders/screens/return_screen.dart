@@ -39,7 +39,15 @@ final _orderDataProvider = FutureProvider.family<Map<String, dynamic>, int>(
     }
   });
 
-// Reason key definitions — order matters (free reasons first)
+// Reason key definitions.
+//
+// Mirrors ReturnRequest::REASONS on the backend, which validates reason_key against exactly
+// these. The list is hardcoded rather than fetched from /returns/reasons, so a reason added on
+// the server does not reach anyone until this app ships.
+//
+// isFree only decides whether a fee is previewed — it is never rendered next to a reason. The
+// customer says why they are returning something; whether it costs them is the team's call
+// after review, and quoting it here would pre-empt an answer an admin can still change.
 class _ReturnReason {
   final String key;
   final String labelAr;
@@ -49,12 +57,13 @@ class _ReturnReason {
 }
 
 const _kReasons = [
-  _ReturnReason('defective',        'المنتج وصل تالفاً',          'Product arrived damaged',        true),
-  _ReturnReason('wrong_item',       'استلمت منتجاً خاطئاً',        'Received wrong item',            true),
-  _ReturnReason('not_as_described', 'المنتج لا يطابق الوصف',       'Product does not match description', true),
+  _ReturnReason('wrong_item',       'استلمت منتجاً خاطئاً',        'Received the wrong item',        true),
+  _ReturnReason('not_as_described', 'المنتج لا يطابق الوصف',       'Does not match the description', true),
+  _ReturnReason('size_doesnt_fit',  'المقاس غير مناسب',            'Size does not fit',              false),
   _ReturnReason('changed_mind',     'غيّرت رأيي',                  'Changed my mind',                false),
   _ReturnReason('quality_issue',    'مشكلة في الجودة',             'Quality issue',                  false),
-  _ReturnReason('other',            'سبب آخر',                     'Other',                          false),
+  _ReturnReason('exchange',         'أريد استبدال المنتج',         'I want to exchange it',          false),
+  _ReturnReason('other',            'سبب آخر',                     'Other reason',                   false),
 ];
 
 class ReturnScreen extends ConsumerStatefulWidget {
@@ -273,7 +282,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
           onSubmit: _submit,
         );
       default:
-        return _StepDone(isFreeReturn: _isFreeReturn);
+        return const _StepDone();
     }
   }
 }
@@ -767,8 +776,7 @@ class _FeeLine extends StatelessWidget {
 // ── Step 3: Done ──────────────────────────────────────────────────────────────
 
 class _StepDone extends StatelessWidget {
-  final bool isFreeReturn;
-  const _StepDone({required this.isFreeReturn});
+  const _StepDone();
 
   @override
   Widget build(BuildContext context) {
@@ -810,9 +818,10 @@ class _StepDone extends StatelessWidget {
                 Text(isAr ? 'طريقة الاسترداد' : 'Refund method',
                   style: TextStyle(fontSize: 12.5, color: context.col.ink2, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                 Text(
-                  isFreeReturn
-                      ? (isAr ? 'يدوي (يحدده الإدارة)' : 'Manual (admin decides)')
-                      : (isAr ? 'رصيد المحفظة فوراً' : 'Wallet credit instantly'),
+                  // Was a branch on isFreeReturn, which leaked the free/paid classification —
+                  // and is no longer true anyway now that an admin can waive the fee after
+                  // submission, flipping the method.
+                  isAr ? 'تُحدَّد بعد المراجعة' : 'Confirmed after review',
                   style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
               ]),
             ]),
