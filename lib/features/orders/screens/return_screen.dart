@@ -29,8 +29,11 @@ final _orderDataProvider = FutureProvider.family<Map<String, dynamic>, int>(
         items.addAll(((g['items'] as List?) ?? []).map((i) => Map<String, dynamic>.from(i)));
       }
       return {
-        'items':         items,
-        'shipping_cost': _d(order?['shipping_cost']),
+        'items':            items,
+        'shipping_cost':    _d(order?['shipping_cost']),
+        // shipping_rates.exchange_allowed for the delivery city — on for Tripoli and Benghazi.
+        // The server re-checks it, so this only decides what we offer.
+        'exchange_allowed': order?['exchange_allowed'] == true,
       };
     } catch (e, st) {
       debugPrint('[ReturnScreen] _orderDataProvider error for order $orderId: $e');
@@ -62,7 +65,6 @@ const _kReasons = [
   _ReturnReason('size_doesnt_fit',  'المقاس غير مناسب',            'Size does not fit',              false),
   _ReturnReason('changed_mind',     'غيّرت رأيي',                  'Changed my mind',                false),
   _ReturnReason('quality_issue',    'مشكلة في الجودة',             'Quality issue',                  false),
-  _ReturnReason('exchange',         'أريد استبدال المنتج',         'I want to exchange it',          false),
   _ReturnReason('other',            'سبب آخر',                     'Other reason',                   false),
 ];
 
@@ -80,6 +82,10 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
   // item_id → qty (0 = not selected)
   final Map<int, int> _selected = {};
   String? _reasonKey;
+  // What she wants out of this, asked separately from why. Reason and resolution are
+  // orthogonal: 'the size is wrong' and 'I want a bigger one' are both true at once.
+  String _resolution = 'refund';
+  bool _exchangeAllowed = false;
   final _notesCtrl = TextEditingController();
   final List<XFile> _images = [];
   bool _loading = false;
@@ -150,6 +156,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
       final formData = FormData();
       formData.fields.add(MapEntry('order_id', widget.orderId.toString()));
       formData.fields.add(MapEntry('reason_key', _reasonKey!));
+      formData.fields.add(MapEntry('resolution', _exchangeAllowed ? _resolution : 'refund'));
       formData.fields.add(MapEntry('description', _notesCtrl.text.trim()));
       for (var i = 0; i < items.length; i++) {
         formData.fields.add(MapEntry('items[$i][order_item_id]', items[i]['order_item_id'].toString()));
@@ -197,8 +204,8 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
           : const SizedBox.shrink(),
         title: Text(
           context.isAr
-            ? ['اختر المنتجات', 'سبب الإرجاع', 'تم الإرسال'][_step]
-            : ['Select Items', 'Return Reason', 'Done'][_step],
+            ? ['اختر المنتجات', 'التفاصيل', 'تم الإرسال'][_step]
+            : ['Select Items', 'Details', 'Done'][_step],
           style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
       ),
       body: Column(
@@ -254,9 +261,10 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
           orderId: widget.orderId,
           selected: _selected,
           onToggle: (id, qty) => setState(() => _selected[id] = qty),
-          onLoaded: (items, shippingCost) {
-            _items        = items;
-            _shippingCost = shippingCost;
+          onLoaded: (items, shippingCost, exchangeAllowed) {
+            _items           = items;
+            _shippingCost    = shippingCost;
+            _exchangeAllowed = exchangeAllowed;
           },
           onSelectAll: _toggleSelectAll,
           onNext: () {
@@ -274,6 +282,9 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
           netRefund:       _netRefund,
           isFree:          _isFreeReturn,
           isBlocked:       _isBlocked,
+          resolution:      _resolution,
+          exchangeAllowed: _exchangeAllowed,
+          onResolutionChanged: (r) => setState(() => _resolution = r),
           onReasonChanged: (k) => setState(() => _reasonKey = k),
           onImagesChanged: (imgs) => setState(() {
             _images.clear();
@@ -339,7 +350,7 @@ class _StepItems extends ConsumerWidget {
   final int orderId;
   final Map<int, int> selected;
   final void Function(int id, int qty) onToggle;
-  final void Function(List<Map<String, dynamic>> items, double shippingCost) onLoaded;
+  final void Function(List<Map<String, dynamic>> items, double shippingCost, bool exchangeAllowed) onLoaded;
   final VoidCallback onSelectAll;
   final VoidCallback onNext;
   const _StepItems({required this.orderId, required this.selected,
@@ -383,8 +394,9 @@ class _StepItems extends ConsumerWidget {
       data: (data) {
         final items        = (data['items'] as List).cast<Map<String, dynamic>>();
         final shippingCost = data['shipping_cost'] as double;
+        final exchangeAllowed = data['exchange_allowed'] == true;
         // Notify parent once loaded
-        WidgetsBinding.instance.addPostFrameCallback((_) => onLoaded(items, shippingCost));
+        WidgetsBinding.instance.addPostFrameCallback((_) => onLoaded(items, shippingCost, exchangeAllowed));
 
         final returnableCount = items.where((item) {
           final maxQty = math.max(0, (item['quantity'] as int? ?? 1) - (item['returned_qty'] as int? ?? 0));
@@ -558,6 +570,9 @@ class _StepReason extends StatelessWidget {
   final double netRefund;
   final bool isFree;
   final bool isBlocked;
+  final String resolution;
+  final bool exchangeAllowed;
+  final ValueChanged<String> onResolutionChanged;
   final ValueChanged<String> onReasonChanged;
   final ValueChanged<List<XFile>> onImagesChanged;
   final VoidCallback onSubmit;
@@ -566,6 +581,7 @@ class _StepReason extends StatelessWidget {
     required this.reasonKey, required this.notesCtrl, required this.images,
     required this.loading, required this.itemsValue, required this.collectionFee,
     required this.netRefund, required this.isFree, required this.isBlocked,
+    required this.resolution, required this.exchangeAllowed, required this.onResolutionChanged,
     required this.onReasonChanged, required this.onImagesChanged, required this.onSubmit,
   });
 
@@ -579,6 +595,49 @@ class _StepReason extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
+              if (exchangeAllowed) ...[
+                Text(isAr ? 'ماذا تريد؟' : 'What would you like?',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+                Row(children: [
+                  for (final o in const [
+                    ['refund',   'إرجاع واسترداد', 'Return & refund'],
+                    ['exchange', 'استبدال',        'Exchange'],
+                  ])
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => onResolutionChanged(o[0]),
+                        child: Container(
+                          margin: EdgeInsets.only(right: o[0] == 'refund' ? 8 : 0),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: resolution == o[0]
+                                ? AppColors.primary.withValues(alpha: 0.08)
+                                : context.col.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: resolution == o[0] ? AppColors.primary : context.col.border,
+                              width: resolution == o[0] ? 2 : 1),
+                          ),
+                          child: Text(isAr ? o[1] : o[2],
+                            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                              fontWeight: FontWeight.w600, fontSize: 14)),
+                        ),
+                      ),
+                    ),
+                ]),
+                if (resolution == 'exchange') ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    isAr
+                        ? 'سنتواصل معك للاتفاق على البديل بعد استلام المنتج.'
+                        : 'We\'ll contact you to agree the replacement once the item is collected.',
+                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                      fontSize: 12, color: context.col.ink2, height: 1.4)),
+                ],
+                const SizedBox(height: 20),
+              ],
               Text(isAr ? 'سبب الإرجاع' : 'Return Reason',
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
               const SizedBox(height: 12),
