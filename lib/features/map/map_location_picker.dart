@@ -70,7 +70,7 @@ String _arabicDistrict(String raw) =>
 /// backend: Tripoli is ONE city however far out the address is, and a district
 /// must never travel as a city or the shipping-rate lookup misses.
 const _tripoliDistricts = <String>{
-  'جنزور', 'تاجوراء', 'تاجورا', 'قصر بن غشير', 'باب بن غشير',
+  'جنزور', 'باب بن غشير',
   'عين زارة', 'عين زاره', 'سوق الجمعة', 'سوق الجمعه', 'السراج',
   'أبو سليم', 'ابو سليم', 'بن عاشور', 'طريق المطار', 'صلاح الدين',
   'حي الأندلس', 'حي الاندلس', 'الأندلس', 'الاندلس',
@@ -78,7 +78,6 @@ const _tripoliDistricts = <String>{
   'غوط الشعال', 'النوفليين', 'سيدي المصري', 'الظهرة', 'زناتة', 'زناته',
   'الفرناج', 'خلة الفرجان', 'السبعة', 'عرادة', 'الدريبي',
   'الكريمية', 'السياحية', 'زاوية الدهماني', 'حي دمشق',
-  'السواني', 'الصواني', 'التوغار', 'سواني بن آدم',
 };
 
 /// The city we actually price and deliver against.
@@ -89,10 +88,8 @@ String _resolveCity(String name) =>
 /// Tripoli sprawls about 30km, so a single centroid loses its own outskirts to
 /// whatever town happens to be nearer. Every one of these resolves to طرابلس.
 const _tripoliAnchors = <String, LatLng>{
-  'السواني':      LatLng(32.6600, 13.0500),
   'عين زارة':     LatLng(32.8075, 13.2331),
   'جنزور':        LatLng(32.9019, 13.0219),
-  'تاجوراء':      LatLng(32.8859, 13.3549),
   'السبعة':       LatLng(32.7719, 13.1889),
   'قرقارش':       LatLng(32.8636, 13.1064),
 };
@@ -103,6 +100,24 @@ const _tripoliAnchors = <String, LatLng>{
 /// and fell through to whichever centroid happened to be nearest. That drift is
 /// exactly what CityNormalizer's docblock warns about.
 const _libyanCityCoords = <String, LatLng>{
+  // Added 2026-09-18. تاجوراء / السواني / قصر بن غشير were greater-Tripoli
+  // districts until the owner made them cities of their own: Vanex charges 20
+  // for them against 15 for Tripoli, and they now dispatch to Vanex rather
+  // than to our own drivers.
+  'تاجوراء':      LatLng(32.8859, 13.3549),
+  'السواني':      LatLng(32.6600, 13.0500),
+  'قصر بن غشير': LatLng(32.7897, 13.2718),
+  'السبيعة':      LatLng(32.5167, 13.1667),
+  // ورشفانة is an area, not a town — anchored on الزهراء, which is the Vanex
+  // branch the row maps to. Searching the bare name returns a STREET of that
+  // name in downtown Tripoli, which would have pulled Tripoli pins out here.
+  'ورشفانة':      LatLng(32.6781, 12.8681),
+  'مزدة':         LatLng(31.4556, 12.9797),
+  'زلطن':         LatLng(32.9461, 11.8668),
+  'الجفرة':       LatLng(29.1246, 15.9403),
+  'ككلة':         LatLng(32.0629, 12.6953),
+  'الشويرف':      LatLng(29.9925, 14.2656),
+  'القطرون':      LatLng(24.8895, 14.5315),
   'أبو قرين':    LatLng(31.4404, 15.2558),
   'أجدابيا':     LatLng(30.7550, 20.2234),
   'أم الأرانب':  LatLng(26.1350, 14.7421),
