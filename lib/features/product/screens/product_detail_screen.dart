@@ -17,6 +17,7 @@ import '../../../core/providers/cart_provider.dart';
 import '../../../core/services/analytics_service.dart';
 import '../../../core/providers/shipping_provider.dart';
 import '../../../core/utils/navigation.dart';
+import 'image_viewer_screen.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/providers/recently_viewed_provider.dart';
 import '../../../core/utils/format.dart';
@@ -355,9 +356,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 return Container(color: context.col.bg,
                                   child: Icon(Icons.image_outlined, size: 80, color: context.col.border));
                               }
-                              return InteractiveViewer(
-                                minScale: 1.0,
-                                maxScale: 4.0,
+                              // No InteractiveViewer here any more: pinching inside a
+                              // PageView inside a CustomScrollView fought both of them
+                              // and never worked. Zooming belongs on the full-screen
+                              // viewer, which this opens.
+                              return GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => Navigator.of(context).push(
+                                    ProductImageViewer.route(product.images, i)),
                                 child: CachedNetworkImage(
                                   imageUrl: product.images[i], fit: BoxFit.contain,
                                   memCacheWidth: 1200));
@@ -385,18 +391,25 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                   )),
                               ),
                             ),
-                          if (product.images.length > 1)
+                          // Replaces the old "1/7" counter: the dots already say
+                          // where you are, and nothing said the photo could be
+                          // opened. The count moves to the viewer itself.
+                          if (product.images.isNotEmpty)
                             Positioned(
                               right: 12, bottom: 12,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(99),
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => Navigator.of(context).push(
+                                    ProductImageViewer.route(product.images, _imageIndex)),
+                                child: Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.fullscreen_rounded,
+                                    color: Colors.white, size: 20),
                                 ),
-                                child: Text('${_imageIndex + 1}/${product.images.length}',
-                                  style: const TextStyle(color: Colors.white,
-                                    fontFamily: 'PlusJakartaSans', fontSize: 11)),
                               ),
                             ),
                           if (displayPrice < product.price)
