@@ -33,10 +33,14 @@ class _TierPalette {
   final String nameAr;
   final Color gradA;   // card background gradient — the tier's own metal colour
   final Color gradB;
+  /// Brushed-metal photo painted over the gradient; null keeps the plain
+  /// gradient. The gradient stays underneath regardless — it is what shows
+  /// while the image decodes, and what the drop shadow is tinted from.
+  final String? cardAsset;
   final Color fg;      // text / icon colour ON the card (contrasts the metal bg)
   final Color accent;  // saturated colour for white backgrounds (values, borders, inactive header)
   final bool darkBg;   // dark card → icon needs a light halo; light card → a dark drop shadow
-  const _TierPalette({required this.nameAr, required this.gradA, required this.gradB,
+  const _TierPalette({required this.nameAr, required this.gradA, required this.gradB, this.cardAsset,
     required this.fg, required this.accent, required this.darkBg});
 }
 
@@ -53,13 +57,20 @@ String _fmtRate(double r) {
 // Card bg = the tier's own metal colour; fg = readable text on it; accent = for white bg.
 const _palettes = <String, _TierPalette>{
   // gradA/gradB/fg = the metal hero card; accent = the tier's text/number colour (per reference)
-  'bronze':   _TierPalette(nameAr: 'Silver',   gradA: Color(0xFFEAEFF3), gradB: Color(0xFFB6C1CC), fg: Color(0xFF33404D), accent: Color(0xFF7C8894), darkBg: false),  // Silver → grey
-  'silver':   _TierPalette(nameAr: 'Gold',     gradA: Color(0xFFF4D06A), gradB: Color(0xFFCF9714), fg: Color(0xFF4A3608), accent: Color(0xFFC69320), darkBg: false),  // Gold → amber
-  'gold':     _TierPalette(nameAr: 'Platinum', gradA: Color(0xFFEDF3F8), gradB: Color(0xFFA6C0D2), fg: Color(0xFF2B4256), accent: Color(0xFF3B82C4), darkBg: false),  // Platinum → blue
-  'platinum': _TierPalette(nameAr: 'Black',    gradA: Color(0xFF40404C), gradB: Color(0xFF0E0E16), fg: Color(0xFFFFFFFF), accent: Color(0xFF1C1C22), darkBg: true),   // Black → near-black
+  // ⚠ The KEY is one place behind the NAME: 'bronze' is the card the customer
+  // sees as Silver, 'silver' is Gold, and so on. cardAsset is therefore named
+  // for what it LOOKS like, and matched to the key that displays it — pairing
+  // them by name would put gold on the Platinum card.
+  'bronze':   _TierPalette(nameAr: 'Silver',   gradA: Color(0xFFEAEFF3), gradB: Color(0xFFB6C1CC), fg: Color(0xFF33404D), accent: Color(0xFF7C8894), darkBg: false, cardAsset: 'assets/images/card_silver.jpg'),    // Silver → pearl
+  'silver':   _TierPalette(nameAr: 'Gold',     gradA: Color(0xFFF4D06A), gradB: Color(0xFFCF9714), fg: Color(0xFF4A3608), accent: Color(0xFFC69320), darkBg: false, cardAsset: 'assets/images/card_gold.jpg'),      // Gold → gold
+  'gold':     _TierPalette(nameAr: 'Platinum', gradA: Color(0xFFEDF3F8), gradB: Color(0xFFA6C0D2), fg: Color(0xFF2B4256), accent: Color(0xFF3B82C4), darkBg: false, cardAsset: 'assets/images/card_platinum.jpg'),  // Platinum → steel
+  'platinum': _TierPalette(nameAr: 'Black',    gradA: Color(0xFF40404C), gradB: Color(0xFF0E0E16), fg: Color(0xFFFFFFFF), accent: Color(0xFF1C1C22), darkBg: true,  cardAsset: 'assets/images/card_black.jpg'),     // Black → piano black
 };
-const _bronzePalette = _TierPalette(nameAr: 'Silver', gradA: Color(0xFFEAEFF3), gradB: Color(0xFFB6C1CC), fg: Color(0xFF33404D), accent: Color(0xFF7C8894), darkBg: false);
-_TierPalette _pal(String? t) => _palettes[t?.toLowerCase()] ?? _bronzePalette;
+// The fallback is the map's own 'bronze' entry, not a second copy of it. It used
+// to be a separate const, so adding the card texture to the map left every
+// unknown/null tier — which is what a fresh account sends — on the old flat
+// gradient, and the change looked like it had not worked at all.
+_TierPalette _pal(String? t) => _palettes[t?.toLowerCase()] ?? _palettes['bronze']!;
 
 /// Tier badge PNG with a soft drop shadow so it never blends into a same-colour
 /// card: a dark shadow on light metals, a light halo on the dark onyx card.
@@ -217,6 +228,13 @@ class _HeroCard extends StatelessWidget {
             color: palette.gradB.withValues(alpha: 0.40),
             blurRadius: 20, offset: const Offset(0, 8)),
         ],
+        // The texture rides on the same decoration as the gradient, so it is
+        // clipped by the same borderRadius — no separate ClipRRect to fall out
+        // of sync, and the gradient still shows through while it decodes.
+        image: palette.cardAsset == null ? null : DecorationImage(
+          image: AssetImage(palette.cardAsset!),
+          fit: BoxFit.cover,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
@@ -379,7 +397,7 @@ class _ProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAr   = context.isAr;
-    final nextPal = _palettes[tier.nextTier?.toLowerCase()] ?? _bronzePalette;
+    final nextPal = _palettes[tier.nextTier?.toLowerCase()] ?? _palettes['bronze']!;
     final nextName = isAr ? _nextTierAr(tier.nextTier)
         : (tier.nextTier != null
             ? '${tier.nextTier![0].toUpperCase()}${tier.nextTier!.substring(1)}'
@@ -555,7 +573,7 @@ class _BenefitsSection extends StatelessWidget {
                   cashback: '${_fmtRate(config.tierCashbacks[i])}%',
                   shipping: config.tierShippingThresholds[i].toInt().toString(),
                   returns:  config.tierReturnDays[i].toString(),
-                  palette: _palettes[_kTiers[i]] ?? _bronzePalette,
+                  palette: _palettes[_kTiers[i]] ?? _palettes['bronze']!,
                   isActive: i == curIdx,
                   isAr: isAr,
                 ),
