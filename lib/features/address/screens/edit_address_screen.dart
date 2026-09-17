@@ -93,8 +93,14 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       _city = result.city;
       _lat  = result.lat;
       _lng  = result.lng;
-      if (_streetCtrl.text.trim().isEmpty && result.address.isNotEmpty) {
-        _streetCtrl.text = result.address;
+      if (_streetCtrl.text.trim().isEmpty) {
+        // Seed the street line with the district the pin landed in. The backend
+        // stores a greater-Tripoli address as "<district> - <street>"
+        // (CityNormalizer::applyDistrictToAddress), so leaving the separator in
+        // place lets the customer just type the building and flat after it.
+        _streetCtrl.text = result.district.isNotEmpty
+            ? '${result.district} - '
+            : result.address;
       }
     });
   }
@@ -113,8 +119,13 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
     if (picked != null) setState(() => _city = picked);
   }
 
+  /// The street field is pre-seeded as "<district> - "; if the customer never
+  /// typed after it, save the district alone rather than a dangling separator.
+  String get _street =>
+      _streetCtrl.text.trim().replaceAll(RegExp(r'[\s\-،,]+$'), '').trim();
+
   Future<void> _save() async {
-    if (_city == null || _streetCtrl.text.trim().isEmpty) {
+    if (_city == null || _street.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.s.selectCityAndStreet)));
       return;
@@ -124,7 +135,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       'label':      _label,
       'name':       _nameCtrl.text.trim(),
       'city':       _city,
-      'address':    _streetCtrl.text.trim(),
+      'address':    _street,
       'notes':      _notesCtrl.text.trim(),
       'phone':      _phoneCtrl.text.trim(),
       'is_default': _isDefault,
@@ -352,8 +363,9 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               ],
               const SizedBox(height: 14),
 
-              _TextField('الشارع، المبنى، الشقة', _streetCtrl,
-                hint: 'شارع 7 أبريل، مبنى 12، شقة 4'),
+              // The map seeds this with the district, so the label names it first.
+              _TextField('المنطقة، الشارع، المبنى', _streetCtrl,
+                hint: 'قرقارش - شارع 7 أبريل، مبنى 12، شقة 4'),
 
               const _FieldLabel('📍 ملاحظات معلم بارز (مستحسن)'),
               Container(

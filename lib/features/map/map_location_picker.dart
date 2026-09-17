@@ -10,17 +10,61 @@ import '../../shared/theme/app_theme.dart';
 class MapPickResult {
   final String city;
   final String address;
+  /// The حي / منطقة the pin sits in. Kept separate from [address] because the
+  /// backend files it onto the address line itself (CityNormalizer) — a district
+  /// must never travel as a city or the shipping-rate lookup misses.
+  final String district;
   final double lat;
   final double lng;
   const MapPickResult({
     required this.city,
     required this.address,
+    this.district = '',
     required this.lat,
     required this.lng,
   });
 }
 
 const _tripoli = LatLng(32.9, 13.18);
+
+/// Height of the bottom sheet, excluding the device's bottom safe-area inset.
+/// The map is padded by this much AND the pin is drawn at the centre of what is
+/// left over, so the pin tip and the camera target are the same point. Both
+/// derive from this one number — they cannot drift apart.
+const _sheetHeight = 215.0;
+
+/// The pin column's own height: circle 44 + stem 12 + ground shadow 5.
+const _pinHeight = 61.0;
+
+/// Zoom that shows individual buildings — anything looser and the customer
+/// cannot tell which house the pin is on.
+const _addressZoom = 17.0;
+
+/// OSM names many Libyan districts only in Latin script, so `accept-language=ar`
+/// still answers "Gargaresh" — which then lands in an otherwise-Arabic address
+/// form. These are the greater-Tripoli districts the backend already recognises
+/// (CityNormalizer::TRIPOLI_DISTRICTS), keyed lower-case.
+const _districtAr = <String, String>{
+  'gargaresh': 'قرقارش',   'gargarish': 'قرقارش',   'gorji': 'قرجي',
+  'gurji': 'قرجي',         'janzour': 'جنزور',      'janzur': 'جنزور',
+  'ain zara': 'عين زارة',  'ayn zarah': 'عين زارة', 'tajoura': 'تاجوراء',
+  'tajourah': 'تاجوراء',   'tajura': 'تاجوراء',     'abu salim': 'أبو سليم',
+  'abusalim': 'أبو سليم',  'andalus': 'حي الأندلس', 'hay alandalus': 'حي الأندلس',
+  'al andalus': 'حي الأندلس',                       'ben ashour': 'بن عاشور',
+  'bin ashur': 'بن عاشور', 'salah aldeen': 'صلاح الدين',
+  'salah al din': 'صلاح الدين',                     'fashloum': 'فشلوم',
+  'souq al jumaa': 'سوق الجمعة',                    'suq al jum\'ah': 'سوق الجمعة',
+  'sidi al masri': 'سيدي المصري',                   'ghout shaal': 'غوط الشعال',
+  'dahra': 'الظهرة',       'zanata': 'زناتة',       'zanatah': 'زناتة',
+  'furnaj': 'الفرناج',     'hadba': 'الهضبة',       'seraj': 'السراج',
+  'noflieen': 'النوفليين', 'khallat al furjan': 'خلة الفرجان',
+  'qasr bin ghashir': 'قصر بن غشير',                'airport road': 'طريق المطار',
+};
+
+/// The Arabic name for a district OSM answered in Latin, or the raw value when
+/// we have no alias for it — never drop what the geocoder found.
+String _arabicDistrict(String raw) =>
+    _districtAr[raw.trim().toLowerCase()] ?? raw.trim();
 
 const _libyanCityCoords = <String, LatLng>{
   'طرابلس':      LatLng(32.9045, 13.1808),
@@ -87,6 +131,13 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   bool   _geocoding = false;
   String _city     = 'طرابلس';
   String _address  = '';
+  String _district = '';
+
+  // Where the GPS actually put us, and how sure it was. Kept apart from _center
+  // (which the customer drags) so the accuracy ring stays on the real fix.
+  LatLng? _gps;
+  double  _gpsAccuracy = 0;
+  bool    _hasPermission = false;
 
   // Search
   bool   _searching = false;
@@ -108,6 +159,15 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         if (mounted) _goToMyLocation(showError: false);
       });
     }
+    _refreshPermissionFlag();
+  }
+
+  /// `myLocationEnabled` throws on Android if permission was never granted, so
+  /// the blue dot only goes on once we know we are allowed to draw it.
+  Future<void> _refreshPermissionFlag() async {
+    final perm = await Geolocator.checkPermission();
+    final ok = perm == LocationPermission.always || perm == LocationPermission.whileInUse;
+    if (mounted && ok != _hasPermission) setState(() => _hasPermission = ok);
   }
 
   @override
@@ -160,7 +220,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
     setState(() { _searching = false; _searchCtrl.clear(); _suggestions = []; });
     if (lat == null || lng == null) return;
     final ll = LatLng(lat, lng);
-    _ctrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, 15.0));
+    _ctrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, _addressZoom));
     setState(() { _center = ll; _address = name.split(',').first; });
     _reverseGeocode(ll);
   }
@@ -180,15 +240,23 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         setState(() => _locating = false);
         return;
       }
+      // `high` is only ~10 m on iOS and settles for the first fix that clears it;
+      // for a doorstep we want the best the device can do.
       final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        desiredAccuracy: LocationAccuracy.best,
         timeLimit: const Duration(seconds: 12),
       );
       // getCurrentPosition waits up to 12s; the user can leave well before it returns.
       if (!mounted) return;
       final ll = LatLng(pos.latitude, pos.longitude);
-      _ctrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, 15.0));
-      setState(() { _center = ll; _locating = false; });
+      _ctrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, _addressZoom));
+      setState(() {
+        _center        = ll;
+        _locating      = false;
+        _gps           = ll;
+        _gpsAccuracy   = pos.accuracy;
+        _hasPermission = true;
+      });
       _reverseGeocode(ll);
     } catch (_) {
       if (!mounted) return;
@@ -221,33 +289,54 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
     try {
       final url = Uri.parse(
         'https://nominatim.openstreetmap.org/reverse'
+        // zoom=14 answered at district level, so the address line never changed
+        // as the pin moved within a neighbourhood. 18 is building/street level.
         '?format=json&lat=${ll.latitude}&lon=${ll.longitude}'
-        '&accept-language=ar&zoom=14',
+        '&accept-language=ar&zoom=18&addressdetails=1',
       );
       final res = await http
           .get(url, headers: {'User-Agent': 'baahy-app/1.0'})
           .timeout(const Duration(seconds: 8));
+      // Nominatim gets up to 8s, and the picker opens on a permission dialog —
+      // exactly when people back out. Without this the setState below lands on
+      // a disposed State.
+      if (!mounted) return;
       if (res.statusCode == 200) {
         final data    = jsonDecode(res.body) as Map<String, dynamic>;
         final addr    = data['address'] as Map<String, dynamic>? ?? {};
         final display = data['display_name'] as String? ?? '';
-        final parts   = [
-          addr['road'] ?? addr['pedestrian'] ?? addr['residential'],
-          addr['suburb'] ?? addr['neighbourhood'] ?? addr['quarter'],
-          addr['city'] ?? addr['town'] ?? addr['village'] ?? addr['county'],
-        ].whereType<String>().where((s) => s.isNotEmpty).toList();
-        final shortAddr = parts.take(3).join('، ');
+        // The district is what a driver in a Libyan city actually navigates by,
+        // and the backend expects it on the address line — so keep it as its own
+        // field instead of letting it dissolve into a display string.
+        final district = _arabicDistrict(_pick(addr, const [
+          'suburb', 'neighbourhood', 'quarter', 'city_district', 'residential',
+        ]));
+        final road  = _pick(addr, const ['road', 'pedestrian', 'footway']);
+        // The city is already the bold line above; repeating it here only ate the
+        // room the street name needed.
+        final parts = [road, district].where((s) => s.isNotEmpty).toList();
         setState(() {
-          _address   = shortAddr.isNotEmpty ? shortAddr : display.split(',').first;
+          _district  = district;
+          _address   = parts.isNotEmpty ? parts.join('، ') : display.split(',').first;
           _city      = _matchCity(addr, display, ll);
           _geocoding = false;
         });
       } else {
-        setState(() { _geocoding = false; _city = _nearestCity(ll); });
+        setState(() { _geocoding = false; _district = ''; _city = _nearestCity(ll); });
       }
     } catch (_) {
-      setState(() { _geocoding = false; _city = _nearestCity(ll); });
+      if (!mounted) return;
+      setState(() { _geocoding = false; _district = ''; _city = _nearestCity(ll); });
     }
+  }
+
+  /// First non-empty value among [keys] in a Nominatim address object.
+  static String _pick(Map<String, dynamic> addr, List<String> keys) {
+    for (final k in keys) {
+      final v = addr[k];
+      if (v is String && v.trim().isNotEmpty) return v.trim();
+    }
+    return '';
   }
 
   String _matchCity(Map<String, dynamic> addr, String display, LatLng ll) {
@@ -280,18 +369,51 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   void _confirm() {
     if (_city.isEmpty || _geocoding) return;
     Navigator.of(context).pop(MapPickResult(
-      city: _city, address: _address,
+      city: _city, address: _address, district: _district,
       lat: _center.latitude, lng: _center.longitude,
     ));
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────────
 
+  /// The area the GPS is actually claiming, drawn on the fix rather than on the
+  /// pin: once the customer drags, the ring is what tells them how far off the
+  /// device's own guess was.
+  Set<Circle> _accuracyRing() {
+    final g = _gps;
+    if (g == null) return const {};
+    return {
+      Circle(
+        circleId: const CircleId('gps-accuracy'),
+        center: g,
+        // A 3 m ring is invisible and a 2 km one swallows the map; clamped, it
+        // always reads as "you are somewhere in here", which is what GPS means.
+        radius: _gpsAccuracy.clamp(20.0, 800.0),
+        fillColor: AppColors.primary.withValues(alpha: 0.12),
+        strokeColor: AppColors.primary.withValues(alpha: 0.55),
+        strokeWidth: 2,
+      ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
     final top    = MediaQuery.of(context).padding.top;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // The sheet covers the bottom of the map, so the map is padded by exactly
+    // that much: Google Maps then puts the camera TARGET at the centre of what
+    // is left, and the pin is drawn with its tip on that same point. Before
+    // this, the pin was nudged up by a bare padding while the target stayed at
+    // the middle of the full screen — the confirmed coordinate sat ~300 m south
+    // of the pin the customer was aiming.
+    final mapPad  = _sheetHeight + bottom;
+    // Scaffold hands the body `size.height - viewInsets.bottom` when the
+    // keyboard is up, and the map is laid out in that same box.
+    final bodyH   = MediaQuery.of(context).size.height
+        - MediaQuery.of(context).viewInsets.bottom;
+    final pinTipY = (bodyH - mapPad) / 2;
 
     return Scaffold(
       body: Stack(
@@ -300,12 +422,15 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
           GoogleMap(
             initialCameraPosition: CameraPosition(
               target: _center,
-              zoom: widget.initial != null ? 15 : 12,
+              zoom: widget.initial != null ? _addressZoom : 12,
             ),
+            padding: EdgeInsets.only(bottom: mapPad),
+            circles: _accuracyRing(),
             style: isDark ? _darkStyle : null,
             onMapCreated: (ctrl) => _ctrl = ctrl,
             onCameraMove: _onCameraMove,
             onCameraIdle: _onCameraIdle,
+            myLocationEnabled: _hasPermission,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: true,
             compassEnabled: false,
@@ -315,24 +440,26 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
           ),
 
           // ── Center pin ────────────────────────────────────────────────────
-          Center(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: 180 + bottom),
-              child: Column(
+          // `top` puts the column's BOTTOM — the ground shadow, i.e. the tip —
+          // on pinTipY, which is the camera target. Keep _pinHeight equal to the
+          // column's real height (44 + 12 + 5) or the two drift apart again.
+          Positioned(
+            top: pinTipY - _pinHeight,
+            left: 0, right: 0,
+            child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
+                  // A bare pin, not a pin inside a disc. Keep the box 44 high —
+                  // _pinHeight is 44 + stem 12 + shadow 5, and the tip alignment
+                  // is measured off that sum.
+                  SizedBox(
                     width: 44, height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.4),
-                        blurRadius: 12, spreadRadius: 2,
-                      )],
-                    ),
-                    child: const Icon(Icons.location_pin,
-                        color: Colors.white, size: 24),
+                    child: Icon(Icons.location_pin,
+                        color: AppColors.primary, size: 44,
+                        shadows: [BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 6, offset: const Offset(0, 2),
+                        )]),
                   ),
                   CustomPaint(
                     size: const Size(2, 12),
@@ -346,7 +473,6 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                     ),
                   ),
                 ],
-              ),
             ),
           ),
 
@@ -575,6 +701,20 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                                     style: TextStyle(
                                         fontSize: 12,
                                         color: context.col.ink2)),
+                              // GPS in Libya is often tens of metres out indoors.
+                              // Saying so is what makes a customer drag the pin
+                              // instead of trusting a fix that is half a street off.
+                              if (_gps != null && _gpsAccuracy > 0)
+                                Text(
+                                  _gpsAccuracy > 60
+                                      ? 'دقة ±${_gpsAccuracy.round()} م — حرّك الدبوس لضبط الموقع'
+                                      : 'دقة ±${_gpsAccuracy.round()} م',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: 10.5,
+                                      color: _gpsAccuracy > 60
+                                          ? AppColors.danger : context.col.ink3)),
                             ],
                           ),
                   ),
