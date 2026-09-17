@@ -18,6 +18,7 @@ import '../../features/search/screens/search_screen.dart';
 import '../../features/search/screens/search_results_screen.dart';
 import '../../features/search/screens/camera_search_screen.dart';
 import '../../features/search/screens/browse_screen.dart';
+import '../../shared/theme/app_theme.dart';
 import '../../features/product/screens/product_detail_screen.dart';
 import '../../features/cart/screens/cart_screen.dart';
 import '../../features/checkout/screens/checkout_screen.dart';
@@ -76,6 +77,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isInvite) {
         return ref.read(authProvider).isLoggedIn ? '/home' : '/signin';
       }
+      // Product deep links. The share sheet sends https://baahy.com/products/123,
+      // and the manifest advertises baahy://product/123 — both arrive here as raw
+      // URIs and 404'd to "Page Not Found", exactly like invite links used to.
+      // The in-app route is /product/:id (singular), so only the OTHER spellings
+      // are rewritten; matching 'product' too would redirect onto itself.
+      final segs = uri.pathSegments;
+      if ((uri.host == 'product' || uri.host == 'products') && segs.isNotEmpty) {
+        return '/product/${segs.first}';
+      }
+      if (segs.length >= 2 && segs[0] == 'products') {
+        return '/product/${segs[1]}';
+      }
       // '/chat' is here too: baahy AI is signed-in only, and gating it at the
       // router means a deep link can't bypass the hidden entry points.
       const _socialPaths = ['/friends', '/settings/privacy', '/username-setup', '/chat'];
@@ -85,6 +98,27 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       return null;
     },
+    // Without this, go_router's stock error page offers a "Home" button pointing at
+    // '/', which this app has no route for — tapping it 404s again and the only way
+    // out is force-quitting.
+    errorBuilder: (context, state) => Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.link_off_rounded, size: 48, color: AppColors.primary),
+            const SizedBox(height: 12),
+            const Text('تعذّر فتح هذا الرابط',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => context.go('/home'),
+              child: const Text('العودة للرئيسية'),
+            ),
+          ],
+        ),
+      ),
+    ),
     routes: [
       GoRoute(path: '/splash',   builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/force-update', builder: (_, state) {
