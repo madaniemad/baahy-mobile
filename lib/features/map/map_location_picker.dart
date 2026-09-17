@@ -97,30 +97,79 @@ const _tripoliAnchors = <String, LatLng>{
   'قرقارش':       LatLng(32.8636, 13.1064),
 };
 
+/// Every city we actually deliver to — `shipping_rates` where is_active = 1 as of
+/// 2026-09-17 — with coordinates from OpenStreetMap. The app used to carry 25 of
+/// these while the backend served 63, so العجيلات and 37 others were unknown here
+/// and fell through to whichever centroid happened to be nearest. That drift is
+/// exactly what CityNormalizer's docblock warns about.
 const _libyanCityCoords = <String, LatLng>{
-  'طرابلس':      LatLng(32.9045, 13.1808),
-  'بنغازي':      LatLng(32.1218, 20.0665),
-  'مصراتة':      LatLng(32.3754, 15.0925),
-  'الزاوية':     LatLng(32.7530, 12.7278),
-  'الخمس':       LatLng(32.6495, 14.2619),
-  'سرت':         LatLng(31.2089, 16.5887),
-  'زليتن':       LatLng(32.4674, 14.5686),
-  'ترهونة':      LatLng(32.4350, 13.6397),
-  'طبرق':        LatLng(32.0838, 23.9756),
-  'درنة':        LatLng(32.7664, 22.6388),
-  'البيضاء':     LatLng(32.7624, 21.7551),
-  'أجدابيا':     LatLng(30.7554, 20.2255),
-  'سبها':        LatLng(27.0377, 14.4284),
-  'غريان':       LatLng(32.1721, 13.0205),
-  'يفرن':        LatLng(32.0630, 12.5229),
-  'نالوت':       LatLng(31.8741, 10.9839),
-  'الكفرة':      LatLng(24.1877, 23.3099),
-  'مرزق':        LatLng(25.9180, 13.8962),
-  'غدامس':       LatLng(30.1327,  9.5006),
-  'بني وليد':    LatLng(31.7619, 13.9844),
-  'صبراتة':      LatLng(32.7938, 12.4882),
-  'صرمان':       LatLng(32.7554, 13.0057),
+  'أبو قرين':    LatLng(31.4404, 15.2558),
+  'أجدابيا':     LatLng(30.7550, 20.2234),
+  'أم الأرانب':  LatLng(26.1350, 14.7421),
+  'أوباري':      LatLng(26.5909, 12.7696),
+  'أوجلة':       LatLng(29.1403, 21.2975),
+  'الأبرق':      LatLng(32.7865, 21.9978),
+  'الأبيار':     LatLng(32.1896, 20.5945),
+  'الأصابعة':    LatLng(32.0372, 12.8760),
+  'البريقة':     LatLng(30.4073, 19.5788),
+  'البيضاء':     LatLng(32.7610, 21.7577),
+  'الجميل':      LatLng(32.8497, 12.0577),
+  'الخمس':       LatLng(32.6522, 14.2680),
+  'الرجبان':     LatLng(31.9411, 12.0908),
+  'الرحيبات':    LatLng(32.8886, 13.1823),
+  'الزاوية':     LatLng(32.7597, 12.7356),
+  'الزنتان':     LatLng(31.9274, 12.2515),
+  'العجيلات':    LatLng(32.7572, 12.3788),
+  'العزيزية':    LatLng(32.5331, 13.0176),
+  'القبة':       LatLng(30.5803, 18.4217),
+  'القرابللي':   LatLng(32.7427, 13.7128),
+  'القلعة':      LatLng(31.7550, 14.0166),
+  'الكفرة':      LatLng(23.3324, 22.0840),
+  'المرج':       LatLng(32.4853, 20.8327),
+  'المطرد':      LatLng(32.7617, 12.6158),
+  'براك':        LatLng(27.5516, 14.2721),
+  'بن جواد':     LatLng(30.8044, 18.0779),
+  'بنغازي':      LatLng(32.1200, 20.0812),
+  'بني وليد':    LatLng(31.7600, 14.0173),
+  'تازربو':      LatLng(25.6716, 21.0621),
+  'تراغن':       LatLng(25.9371, 14.4309),
+  'ترهونة':      LatLng(32.4346, 13.6351),
+  'تقرة':        LatLng(32.5614, 20.6442),
+  'تيجي':        LatLng(32.0127, 11.3469),
+  'جادو':        LatLng(31.9528, 12.0273),
+  'جالو':        LatLng(29.0331, 21.5482),
+  'درنة':        LatLng(32.7594, 22.6383),
+  'رأس لانوف':   LatLng(30.5869, 18.4178),
+  'رقدالين':     LatLng(31.7422, 14.0251),
+  'زليتن':       LatLng(32.4676, 14.5656),
+  'زوارة':       LatLng(32.9328, 12.0806),
+  'سبها':        LatLng(27.0365, 14.4290),
+  'سرت':         LatLng(31.2060, 16.5836),
+  'سمنو':        LatLng(27.2754, 14.8842),
+  'سوسة':        LatLng(32.8978, 21.9651),
+  'سوكنة':       LatLng(30.5857, 18.4152),
+  'شحات':        LatLng(32.7866, 21.8546),
+  'صبراتة':      LatLng(32.7885, 12.4913),
+  'صرمان':       LatLng(32.7550, 12.5743),
+  'طبرق':        LatLng(32.0774, 23.9600),
+  'طرابلس':      LatLng(32.8967, 13.1778),
+  'غات':         LatLng(26.0198, 10.4340),
+  'غريان':       LatLng(32.1716, 13.0211),
+  'قصر الأخيار': LatLng(32.6113, 14.0198),
+  'كاباو':       LatLng(31.8463, 11.3406),
+  'مرزق':        LatLng(25.9141, 13.9197),
+  'مسلاتة':      LatLng(32.6167, 14.0000),
+  'مصراتة':      LatLng(32.3746, 15.0906),
+  'نالوت':       LatLng(30.6131, 10.6710),
+  'هون':         LatLng(29.1246, 15.9403),
+  'وادي الربيع': LatLng(32.7265, 13.3160),
+  'ودان':        LatLng(29.1614, 16.1413),
+  'يفرن':        LatLng(32.0633, 12.5271),
 };
+
+/// Delivered to, but OpenStreetMap has no entry we could resolve — matchable by
+/// name, never by proximity.
+const _cityNamesWithoutCoords = <String>{'جخرة'};
 
 
 const _darkStyle = '[{"elementType":"geometry","stylers":[{"color":"#212121"}]},'
@@ -367,26 +416,45 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
     return '';
   }
 
+  /// Arabic reaches us in several shapes — alef written أ/إ/آ, ة vs ه, ى vs ي,
+  /// stray tatweel and diacritics. Compare on a flattened form so العجيلات
+  /// matches العجيلات however either side spelled it.
+  static String _norm(String s) => s
+      .trim()
+      .replaceAll(RegExp(r'[\u064B-\u0652\u0640]'), '')
+      .replaceAll(RegExp(r'[أإآ]'), 'ا')
+      .replaceAll('ة', 'ه')
+      .replaceAll('ى', 'ي')
+      .replaceAll(RegExp(r'\s+'), ' ');
+
   String _matchCity(Map<String, dynamic> addr, String display, LatLng ll) {
+    // Most specific first: a suburb tells us more than a region does.
     final candidates = [
       addr['suburb'], addr['neighbourhood'], addr['quarter'],
       addr['city'], addr['town'], addr['village'],
       addr['county'], addr['state_district'], addr['state'],
-    ].whereType<String>().toList();
+    ].whereType<String>().map(_norm).where((s) => s.isNotEmpty).toList();
 
     // A greater-Tripoli district beats everything: the geocoder naming the place
     // is far better evidence than how close a centroid happens to be. The pin
     // that exposed this sat in التوغار, which reverse-geocodes with no city at
     // all, so the old code fell to proximity and answered صرمان — a Vanex city
-    // 60km west, at a higher rate, that would have shipped the parcel away.
-    for (final raw in [...candidates, display]) {
+    // 60km west that would have shipped the parcel away.
+    for (final raw in candidates) {
       for (final d in _tripoliDistricts) {
-        if (raw.contains(d)) return 'طرابلس';
+        if (raw == _norm(d)) return 'طرابلس';
       }
     }
+
+    // EXACT, never substring. A pin in العجيلات returns state النقاط الخمس, and
+    // "الخمس" is a literal substring of it — so `contains` answered الخمس, a city
+    // on the far side of Tripoli. ترهونة contains هون the same way.
     for (final raw in candidates) {
       for (final name in _libyanCityCoords.keys) {
-        if (raw.contains(name) || name.contains(raw)) return _resolveCity(name);
+        if (raw == _norm(name)) return _resolveCity(name);
+      }
+      for (final name in _cityNamesWithoutCoords) {
+        if (raw == _norm(name)) return name;
       }
     }
     return _nearestCity(ll);
