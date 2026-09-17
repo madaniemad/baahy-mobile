@@ -66,6 +66,37 @@ const _districtAr = <String, String>{
 String _arabicDistrict(String raw) =>
     _districtAr[raw.trim().toLowerCase()] ?? raw.trim();
 
+/// Greater-Tripoli districts. Mirrors CityNormalizer::TRIPOLI_DISTRICTS on the
+/// backend: Tripoli is ONE city however far out the address is, and a district
+/// must never travel as a city or the shipping-rate lookup misses.
+const _tripoliDistricts = <String>{
+  'جنزور', 'تاجوراء', 'تاجورا', 'قصر بن غشير', 'باب بن غشير',
+  'عين زارة', 'عين زاره', 'سوق الجمعة', 'سوق الجمعه', 'السراج',
+  'أبو سليم', 'ابو سليم', 'بن عاشور', 'طريق المطار', 'صلاح الدين',
+  'حي الأندلس', 'حي الاندلس', 'الأندلس', 'الاندلس',
+  'مشروع الهضبة', 'الهضبة', 'قرجي', 'قرقارش', 'الخلة',
+  'غوط الشعال', 'النوفليين', 'سيدي المصري', 'الظهرة', 'زناتة', 'زناته',
+  'الفرناج', 'خلة الفرجان', 'السبعة', 'عرادة', 'الدريبي',
+  'الكريمية', 'السياحية', 'زاوية الدهماني', 'حي دمشق',
+  'السواني', 'الصواني', 'التوغار', 'سواني بن آدم',
+};
+
+/// The city we actually price and deliver against.
+String _resolveCity(String name) =>
+    _tripoliDistricts.contains(name.trim()) ? 'طرابلس' : name.trim();
+
+/// Anchors for the nearest-point fallback. Districts are included deliberately:
+/// Tripoli sprawls about 30km, so a single centroid loses its own outskirts to
+/// whatever town happens to be nearer. Every one of these resolves to طرابلس.
+const _tripoliAnchors = <String, LatLng>{
+  'السواني':      LatLng(32.6600, 13.0500),
+  'عين زارة':     LatLng(32.8075, 13.2331),
+  'جنزور':        LatLng(32.9019, 13.0219),
+  'تاجوراء':      LatLng(32.8859, 13.3549),
+  'السبعة':       LatLng(32.7719, 13.1889),
+  'قرقارش':       LatLng(32.8636, 13.1064),
+};
+
 const _libyanCityCoords = <String, LatLng>{
   'طرابلس':      LatLng(32.9045, 13.1808),
   'بنغازي':      LatLng(32.1218, 20.0665),
@@ -89,9 +120,6 @@ const _libyanCityCoords = <String, LatLng>{
   'بني وليد':    LatLng(31.7619, 13.9844),
   'صبراتة':      LatLng(32.7938, 12.4882),
   'صرمان':       LatLng(32.7554, 13.0057),
-  'جنزور':       LatLng(32.9019, 13.0219),
-  'تاجوراء':     LatLng(32.8859, 13.3549),
-  'قصر بن غشير': LatLng(32.7897, 13.2718),
 };
 
 
@@ -341,12 +369,24 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
 
   String _matchCity(Map<String, dynamic> addr, String display, LatLng ll) {
     final candidates = [
+      addr['suburb'], addr['neighbourhood'], addr['quarter'],
       addr['city'], addr['town'], addr['village'],
       addr['county'], addr['state_district'], addr['state'],
-    ].whereType<String>();
+    ].whereType<String>().toList();
+
+    // A greater-Tripoli district beats everything: the geocoder naming the place
+    // is far better evidence than how close a centroid happens to be. The pin
+    // that exposed this sat in التوغار, which reverse-geocodes with no city at
+    // all, so the old code fell to proximity and answered صرمان — a Vanex city
+    // 60km west, at a higher rate, that would have shipped the parcel away.
+    for (final raw in [...candidates, display]) {
+      for (final d in _tripoliDistricts) {
+        if (raw.contains(d)) return 'طرابلس';
+      }
+    }
     for (final raw in candidates) {
       for (final name in _libyanCityCoords.keys) {
-        if (raw.contains(name) || name.contains(raw)) return name;
+        if (raw.contains(name) || name.contains(raw)) return _resolveCity(name);
       }
     }
     return _nearestCity(ll);
@@ -355,13 +395,15 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   String _nearestCity(LatLng ll) {
     double min = double.infinity;
     String best = 'طرابلس';
-    for (final e in _libyanCityCoords.entries) {
+    // Anchors first so Tripoli competes with its own outskirts, not just its
+    // centre — otherwise every edge of a 30km city belongs to someone else.
+    for (final e in [..._tripoliAnchors.entries, ..._libyanCityCoords.entries]) {
       final dLat = ll.latitude  - e.value.latitude;
       final dLng = ll.longitude - e.value.longitude;
       final d    = dLat * dLat + dLng * dLng;
       if (d < min) { min = d; best = e.key; }
     }
-    return best;
+    return _resolveCity(best);
   }
 
   // ── Confirm ───────────────────────────────────────────────────────────────────
