@@ -94,8 +94,22 @@ class WishlistProductsNotifier extends StateNotifier<AsyncValue<List<Product>>> 
     }
     try {
       final res = await _api.dio.get('/wishlist');
-      state = AsyncValue.data((res.data['data'] as List?)
-          ?.map((item) => Product.fromJson(item['product'])).toList() ?? []);
+      // A wishlist row outlives its product: when a product is deleted the server still returns
+      // the row, with "product": null. One of those used to throw out of fromJson and turn the
+      // whole list into "failed to load" (47 of 178 wishlist owners on 2026-10-04). WishlistNotifier
+      // already skips them when counting; do the same here, and let one malformed product drop
+      // out rather than take the other nine with it.
+      final products = <Product>[];
+      for (final item in (res.data['data'] as List? ?? [])) {
+        final raw = item is Map ? item['product'] : null;
+        if (raw is! Map<String, dynamic>) continue;
+        try {
+          products.add(Product.fromJson(raw));
+        } catch (e, st) {
+          Sentry.captureException(e, stackTrace: st);
+        }
+      }
+      state = AsyncValue.data(products);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
