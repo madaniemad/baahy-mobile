@@ -3,184 +3,10 @@ part of '../screens/product_detail_screen.dart';
 
 // ── Stock + ETA strip ─────────────────────────────────────────────────────────
 
-class _StockEtaStrip extends StatelessWidget {
-  final Product product;
-  final String deliveryPromise;
-  const _StockEtaStrip({required this.product, required this.deliveryPromise});
-
-  @override
-  Widget build(BuildContext context) {
-    final lowStock = product.inStock &&
-        product.manageStock &&
-        product.productType != 'variable' &&
-        product.stockQuantity != null &&
-        product.stockQuantity! > 0 &&
-        product.stockQuantity! <= 5;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.col.surfaceSoft,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Row(children: [
-            Icon(
-              product.inStock
-                  ? (lowStock ? Icons.local_fire_department_rounded : Icons.check_circle_rounded)
-                  : Icons.info_rounded,
-              size: 16,
-              color: product.inStock
-                  ? (lowStock ? AppColors.warn : AppColors.success)
-                  : AppColors.danger,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              product.inStock
-                  ? (lowStock
-                      ? context.s.lowStockN(product.stockQuantity!)
-                      : context.s.inStock)
-                  : context.s.outOfStock,
-              style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w700,
-                color: product.inStock
-                    ? (lowStock ? AppColors.warn : AppColors.success)
-                    : AppColors.danger,
-              ),
-            ),
-          ]),
-          if (product.inStock) ...[
-            const SizedBox(height: 10),
-            Divider(height: 1, color: context.col.border),
-            const SizedBox(height: 10),
-            if (product.fulfilledByBaahy)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(children: [
-                  const BaahyPlusBadge(height: 14, tappable: true),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(context.s.deliveredDirect,
-                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
-                        color: context.col.ink2)),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.info_outline_rounded, size: 14, color: context.col.ink3),
-                ]),
-              ),
-            Row(children: [
-              const Icon(Icons.local_shipping_outlined, size: 18, color: AppColors.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(deliveryPromise,
-                  style: TextStyle(fontSize: 12.5,
-                    fontWeight: FontWeight.w600, color: context.col.ink1)),
-              ),
-            ]),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 // ── Delivery date helpers ─────────────────────────────────────────────────────
 
 
 // ── Trust block ───────────────────────────────────────────────────────────────
-
-class _TrustBlock extends ConsumerWidget {
-  final AppConfig config;
-  const _TrustBlock({required this.config});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isAr = context.isAr;
-    final cityRate = ref.watch(cityShippingRateProvider);
-    final paymentLabels = config.paymentMethods
-        .where((m) => m.enabled)
-        .map((m) => isAr ? m.labelAr : (m.labelEn.isNotEmpty ? m.labelEn : m.labelAr))
-        .join(' · ');
-
-    // Compute actual delivery arrival dates for the user's city
-    String deliveryText;
-    if (cityRate != null) {
-      final cityName = isAr ? cityRate.cityAr : cityRate.city;
-      final now = DateTime.now();
-      // A span, not a date: a printed date reads as a commitment to the day, and
-      // one slipped day makes it a broken promise. Same phrasing as the cart.
-      final arrival = deliveryArrivalPhrase(now, cityRate.deliveryDays, isAr);
-      deliveryText = isAr ? 'يصل $arrival · $cityName' : 'Arrives $arrival · $cityName';
-    } else {
-      deliveryText = isAr ? 'توصيل سريع في معظم المدن' : 'Fast delivery across most cities';
-    }
-
-    // Each tier carries its own return window. Showing one fixed number told every
-    // customer the platinum window (30 days) when their real one was the base 3.
-    final tier = ref.watch(tierProvider).valueOrNull;
-    final returnDays = (tier != null && tier.tier != null && tier.returnDays > 0)
-        ? tier.returnDays
-        : config.returnDays;
-
-    final rows = [
-      (Icons.local_shipping_outlined, deliveryText),
-      (Icons.refresh_rounded, isAr
-          ? 'إرجاع خلال ${dayCountLabel(returnDays, true)} · من باب منزلك'
-          : 'Returns within ${dayCountLabel(returnDays, false)} · From your door'),
-      (Icons.credit_card_outlined, paymentLabels.isNotEmpty
-          ? paymentLabels : (isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery')),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: context.col.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.col.border),
-      ),
-      child: Column(
-        children: [
-          // Header row
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(children: [
-              Container(
-                width: 32, height: 32,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary, shape: BoxShape.circle),
-                child: const Icon(Icons.inventory_2_outlined,
-                  size: 18, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(context.s.soldByBaahy,
-                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
-                  Text(context.s.qualityChecked,
-                    style: TextStyle(fontSize: 11.5, color: context.col.ink3)),
-                ],
-              )),
-            ]),
-          ),
-          Divider(height: 1, color: context.col.border),
-          ...rows.map((row) => Column(children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(children: [
-                Icon(row.$1, size: 20, color: context.col.ink2),
-                const SizedBox(width: 12),
-                Expanded(child: Text(row.$2,
-                  style: TextStyle(fontSize: 13, color: context.col.ink1))),
-              ]),
-            ),
-            if (row != rows.last) Divider(height: 1, color: context.col.border),
-          ])),
-        ],
-      ),
-    );
-  }
-}
 
 // ── Frequently bought together ────────────────────────────────────────────────
 
@@ -264,10 +90,11 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                       child: Opacity(
                         opacity: _checked[all[i].id] == true ? 1 : 0.3,
                         child: all[i].firstImage != null
-                            ? CachedNetworkImage(
-                                imageUrl: all[i].firstImage!, fit: BoxFit.cover,
+                            ? OptimizedNetworkImage(
+                                url: all[i].firstImage!, fit: BoxFit.cover,
                                 memCacheWidth: 240,
-                                errorWidget: (_, __, ___) => Container(
+                                variantWidth: 400,
+                                error: Container(
                                   color: context.col.surfaceSoft,
                                   child: Icon(Icons.image_not_supported_outlined,
                                     size: 24, color: context.col.ink4)))
@@ -821,12 +648,6 @@ class _TrustChip extends StatelessWidget {
 class _DeliveryCard extends ConsumerWidget {
   const _DeliveryCard();
 
-  static const _arabicDays = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-  static const _arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-  static const _englishDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  static const _englishMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   static (int, int) _daysForCity(String city) {
     if (city.contains('طرابلس') || city.contains('مصراتة') || city.contains('الزاوية') ||

@@ -63,7 +63,6 @@ dependencies:
   http: ^1.2.2
 
   # Vector graphics (onboarding stylized coast map)
-  flutter_svg: ^2.0.10+1
 
   # Social / QR
   qr_flutter: ^4.1.0
@@ -106,9 +105,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/payment/
-    - assets/icons/
     - assets/onboarding/
-    - assets/onboarding/heroes/
     - assets/onboarding/full/
 
   fonts:
@@ -150,12 +147,4 @@ flutter:
         - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
           weight: 600
         - asset: assets/fonts/PlusJakartaSans-Bold.ttf
-          weight: 700
-    - family: Outfit
-      fonts:
-        - asset: assets/fonts/Outfit-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Outfit-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Outfit-Bold.ttf
           weight: 700

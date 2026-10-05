@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:baahy_customer/core/services/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../../../shared/widgets/optimized_network_image.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/wishlist_provider.dart';
@@ -12,7 +12,6 @@ import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/models/cart.dart';
 import '../../../core/models/product.dart';
-import 'package:dio/dio.dart' show Response;
 import '../../../core/api/api_client.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
@@ -899,10 +898,11 @@ class _CartItemCard extends ConsumerWidget {
             child: SizedBox(
               width: 78, height: 78,
               child: item.image != null
-                  ? CachedNetworkImage(
-                      imageUrl: item.image!, fit: BoxFit.cover,
+                  ? OptimizedNetworkImage(
+                      url: item.image!, fit: BoxFit.cover,
                       memCacheWidth: 156,
-                      errorWidget: (_, __, ___) => Container(
+                      variantWidth: 400,
+                      error: Container(
                         color: context.col.surfaceSoft,
                         child: Icon(Icons.image_not_supported_outlined,
                           color: context.col.ink4)))
@@ -1331,10 +1331,11 @@ class _RecommendedCard extends ConsumerWidget {
               child: SizedBox(
                 width: 100, height: 76,
                 child: product.firstImage != null
-                    ? CachedNetworkImage(
-                        imageUrl: product.firstImage!, fit: BoxFit.cover,
+                    ? OptimizedNetworkImage(
+                        url: product.firstImage!, fit: BoxFit.cover,
                         memCacheWidth: 200,
-                        errorWidget: (_, __, ___) => Container(
+                        variantWidth: 400,
+                        error: Container(
                           color: context.col.surfaceSoft,
                           child: Icon(Icons.image_not_supported_outlined,
                             color: context.col.ink4)))

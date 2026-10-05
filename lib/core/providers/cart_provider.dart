@@ -165,33 +165,42 @@ class CartNotifier extends StateNotifier<CartState> {
     if (items.isEmpty) return;
     state = state.copyWith(feesRefreshing: true);
     final uniqueProductIds = items.map((i) => i.productId).toSet();
-    for (final pid in uniqueProductIds) {
+    // Fetch every product concurrently (a 6-product cart on a slow link used to take 6 serial round
+    // trips, with checkout waiting on feesRefreshing), then apply all results in ONE state update.
+    final fetched = await Future.wait(uniqueProductIds.map((pid) async {
       try {
         final res = await ApiClient.instance.dio.get('/products/$pid');
-        final fresh = Product.fromJson(res.data['data'] as Map<String, dynamic>);
-        state = state.copyWith(
-          items: state.items.map((i) {
-            if (i.productId == pid) {
-              // Re-resolve the variation from the FRESH product too — its price
-              // can move independently of the parent, and keeping the stale one
-              // would leave the cart showing an old variation price.
-              final freshVariation = i.variationId == null
-                  ? null
-                  : fresh.variations
-                      .where((v) => v.id == i.variationId)
-                      .firstOrNull ?? i.variation;
-              return CartItem(
-                productId: i.productId,
-                variationId: i.variationId,
-                quantity: i.quantity,
-                product: fresh,
-                variation: freshVariation,
-              );
-            }
-            return i;
-          }).toList(),
-        );
-      } catch (_) {}
+        return MapEntry(pid, Product.fromJson(res.data['data'] as Map<String, dynamic>));
+      } catch (_) {
+        return MapEntry<int, Product?>(pid, null);
+      }
+    }));
+    final freshById = {
+      for (final e in fetched)
+        if (e.value != null) e.key: e.value!,
+    };
+    if (freshById.isNotEmpty) {
+      state = state.copyWith(
+        items: state.items.map((i) {
+          final fresh = freshById[i.productId];
+          if (fresh == null) return i;
+          // Re-resolve the variation from the FRESH product too — its price
+          // can move independently of the parent, and keeping the stale one
+          // would leave the cart showing an old variation price.
+          final freshVariation = i.variationId == null
+              ? null
+              : fresh.variations
+                  .where((v) => v.id == i.variationId)
+                  .firstOrNull ?? i.variation;
+          return CartItem(
+            productId: i.productId,
+            variationId: i.variationId,
+            quantity: i.quantity,
+            product: fresh,
+            variation: freshVariation,
+          );
+        }).toList(),
+      );
     }
     state = state.copyWith(feesRefreshing: false);
     // Persist the refreshed prices, and re-price the coupon against the new subtotal.

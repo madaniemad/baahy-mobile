@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:baahy_customer/core/services/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../../../shared/widgets/optimized_network_image.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/auth_provider.dart';
@@ -193,11 +193,12 @@ class _WishlistCard extends ConsumerWidget {
                   child: SizedBox(
                     width: 82, height: 82,
                     child: product.firstImage != null
-                        ? CachedNetworkImage(
-                            imageUrl: product.firstImage!,
+                        ? OptimizedNetworkImage(
+                            url: product.firstImage!,
                             fit: BoxFit.cover,
                             memCacheWidth: 240,
-                            errorWidget: (_, __, ___) => Container(
+                            variantWidth: 400,
+                            error: Container(
                                 color: context.col.surfaceSoft,
                                 child: Icon(Icons.image_outlined, color: context.col.ink4, size: 28)),
                           )

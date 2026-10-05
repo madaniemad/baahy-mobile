@@ -121,7 +121,7 @@ class AppConfig {
         labelEn: 'Cash on Delivery',
         fee: 5,
         descriptionAr: 'رسوم خدمة 5 د.ل',
-        descriptionEn: 'Service fee 5 LYD',
+        descriptionEn: 'Service fee 5 LD',
       ),
       PaymentMethod(
         id: 'wallet',
@@ -186,7 +186,6 @@ class AppConfig {
         .toList();
     final referral  = j['referral']  as Map<String, dynamic>?;
     final rewards   = j['rewards']   as Map<String, dynamic>?;
-    final tierBen   = rewards?['tier_benefits'] as Map<String, dynamic>?;
     final milRaw    = rewards?['milestones'] as List?;
 
     // Per-tier cashback rates (keys from backend: cashback_rate, tier_silver_cashback, etc.)

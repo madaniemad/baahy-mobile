@@ -41,6 +41,21 @@ class CacheService {
     }
   }
 
+  /// Stale read that also reports how old the entry is, so a caller needing both the data and the
+  /// freshness decodes the blob once instead of calling [getStale] and [get] (two full jsonDecodes).
+  Future<(Map<String, dynamic>, Duration)?> getStaleWithAge(String key) async {
+    final prefs = await _p;
+    final raw = prefs.getString('cache_$key');
+    if (raw == null) return null;
+    try {
+      final wrapper = jsonDecode(raw) as Map<String, dynamic>;
+      final savedAt = DateTime.fromMillisecondsSinceEpoch(wrapper['_t'] as int);
+      return (wrapper['d'] as Map<String, dynamic>, DateTime.now().difference(savedAt));
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> set(String key, Map<String, dynamic> data) async {
     final prefs = await _p;
     await prefs.setString('cache_$key', jsonEncode({

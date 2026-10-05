@@ -146,6 +146,7 @@ class HomeScreen extends ConsumerWidget {
                     child: Image.asset(
                       'assets/images/onb-pattern.png',
                       fit: BoxFit.cover,
+                      cacheWidth: 600,
                       color: isDark ? Colors.white : null,
                       colorBlendMode: isDark ? BlendMode.srcIn : null,
                     ),

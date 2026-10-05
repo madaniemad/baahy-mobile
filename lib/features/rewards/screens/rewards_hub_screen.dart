@@ -397,7 +397,6 @@ class _ProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAr   = context.isAr;
-    final nextPal = _palettes[tier.nextTier?.toLowerCase()] ?? _palettes['bronze']!;
     final nextName = isAr ? _nextTierAr(tier.nextTier)
         : (tier.nextTier != null
             ? '${tier.nextTier![0].toUpperCase()}${tier.nextTier!.substring(1)}'

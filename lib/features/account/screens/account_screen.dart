@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/utils/format.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:dio/dio.dart';
 import '../../../core/api/api_client.dart';
@@ -15,8 +16,6 @@ import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_button.dart';
-import '../../auth/screens/auth_landing_screen.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 const _kActiveStatuses = ['out_for_delivery'];
@@ -699,7 +698,7 @@ class _WalletCard extends StatelessWidget {
             Text(context.s.myWallet,
               style: TextStyle(fontSize: 12, color: context.col.ink3, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             const SizedBox(height: 2),
-            Text('${balance.toStringAsFixed(0)} ${context.s.lyd}',
+            Text('${fmtPrice(balance)} ${context.s.lyd}',
               style: TextStyle(fontFamily: 'PlusJakartaSans',
                 fontSize: 24, fontWeight: FontWeight.w800,
                 color: context.col.ink0, height: 1.1)),
@@ -906,7 +905,6 @@ class _ReferralCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final count = ref.watch(_referralCountProvider).valueOrNull ?? 0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () => safePush(context, '/friends'),
@@ -1285,7 +1283,6 @@ class _GuestAccountView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final config = ref.watch(appConfigProvider);
 
     return Scaffold(
       backgroundColor: context.col.bg,

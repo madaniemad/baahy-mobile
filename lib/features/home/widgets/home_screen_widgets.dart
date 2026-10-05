@@ -102,6 +102,7 @@ class _SearchHintText extends StatelessWidget {
 // ── Active order strip + rewards nudge carousel ───────────────────────────────
 
 final _activeOrderProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
+  if (!await ApiClient.instance.isLoggedIn) return null; // guests have no orders: skip the 401
   try {
     final res = await ApiClient.instance.dio.get('/orders',
       queryParameters: {
@@ -689,41 +690,6 @@ class _SubHeroBannerState extends State<_SubHeroBanner> {
 }
 
 // ── Generic banner stack (N banners, vertically stacked) ─────────────────────
-
-class _BannerStack extends StatelessWidget {
-  final List<AppBanner> banners;
-  final double aspectRatio;
-  const _BannerStack({required this.banners, this.aspectRatio = 1920 / 700});
-
-  static const _gradients = [
-    [Color(0xFF1F2E2E), Color(0xFF0A1A1A)],
-    [Color(0xFF1A1A3E), Color(0xFF0A0A1A)],
-    [Color(0xFF2E1A1A), Color(0xFF1A0A0A)],
-    [Color(0xFF1A2E1A), Color(0xFF0A1A0A)],
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    if (banners.isEmpty) return const SizedBox.shrink();
-    return Column(
-      children: [
-        for (int i = 0; i < banners.length; i++) ...[
-          if (i > 0) const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: AspectRatio(
-              aspectRatio: aspectRatio,
-              child: _BannerSlide(
-                banner: banners[i],
-                gradient: _gradients[i % _gradients.length],
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
 
 // ── Duo banner row (2 square banners side by side) ───────────────────────────
 
@@ -1476,7 +1442,6 @@ class _BrandCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -1710,35 +1675,6 @@ class _DynTileCarouselState extends State<_DynTileCarousel> {
 
 // ── responsive product grid ───────────────────────────────────────────────────
 
-class _TwoColGrid extends StatelessWidget {
-  final List<Product> products;
-  const _TwoColGrid({required this.products});
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: LayoutBuilder(builder: (_, box) {
-        final cols = productGridColumns(box.maxWidth);
-        final colW = productColumnWidth(
-          maxWidth: box.maxWidth, columns: cols, spacing: 12);
-        return GridView.builder(
-          shrinkWrap: true,
-          padding: EdgeInsets.zero,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: cols,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            mainAxisExtent: productCellHeight(colW).ceilToDouble(),
-          ),
-          itemCount: products.length,
-          itemBuilder: (_, i) => ProductCard(product: products[i]),
-        );
-      }),
-    );
-  }
-}
-
 // ── Category carousel section ─────────────────────────────────────────────────
 
 class _CategoryCarouselSection extends StatelessWidget {
@@ -1781,57 +1717,7 @@ class _CategoryCarouselSection extends StatelessWidget {
 
 // ── Bestsellers 2×2 with rank badges ─────────────────────────────────────────
 
-class _BestsellerGrid extends StatelessWidget {
-  final List<Product> products;
-  const _BestsellerGrid({required this.products});
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: LayoutBuilder(builder: (_, box) {
-        final cols = productGridColumns(box.maxWidth);
-        final colW = productColumnWidth(
-          maxWidth: box.maxWidth, columns: cols, spacing: 12);
-        return GridView.builder(
-          shrinkWrap: true,
-          padding: EdgeInsets.zero,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: cols,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            mainAxisExtent: productCellHeight(colW).ceilToDouble(),
-          ),
-          itemCount: products.length,
-          itemBuilder: (_, i) => ProductCard(product: products[i]),
-        );
-      }),
-    );
-  }
-}
-
 // ── New arrivals row with NEW badge ───────────────────────────────────────────
-
-class _NewArrivalsRow extends StatelessWidget {
-  final List<Product> products;
-  const _NewArrivalsRow({required this.products});
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: kCardDesignH,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: products.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (_, i) => Align(
-          alignment: Alignment.topCenter,
-          child: ProductCard(product: products[i], width: 165),
-        ),
-      ),
-    );
-  }
-}
 
 // ── Under 100 LYD — horizontal 2-row carousel with partial 4th column peek ───
 
@@ -1865,9 +1751,18 @@ class _BudgetCarousel extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: Stack(fit: StackFit.expand, children: [
                 p.firstImage != null
-                    ? CachedNetworkImage(imageUrl: p.firstImage!, fit: BoxFit.cover,
-                        memCacheWidth: 400,
-                        errorWidget: (_, __, ___) => Container(color: context.col.surfaceSoft))
+                    ? CachedNetworkImage(
+                        // 108pt tile -> 216px decode; pre-generated 400px WebP,
+                        // falling back to the original if the variant 404s.
+                        imageUrl: optimizeImg(p.firstImage!, width: 400),
+                        fit: BoxFit.cover,
+                        memCacheWidth: 216,
+                        errorWidget: (_, __, ___) => CachedNetworkImage(
+                          imageUrl: p.firstImage!,
+                          fit: BoxFit.cover,
+                          memCacheWidth: 216,
+                          errorWidget: (_, __, ___) => Container(color: context.col.surfaceSoft),
+                        ))
                     : Container(color: context.col.surfaceSoft),
                 PositionedDirectional(
                   end: 6, bottom: 6,
@@ -1892,57 +1787,6 @@ class _BudgetCarousel extends StatelessWidget {
 }
 
 // ── baahy promise block ───────────────────────────────────────────────────────
-
-class _BaahyPromiseCard extends ConsumerWidget {
-  const _BaahyPromiseCard();
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final config = ref.watch(appConfigProvider);
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: [context.col.ink0, Color(0xFF1A3838)],
-        ),
-      ),
-      child: Stack(children: [
-        Positioned(
-          right: -20, top: -20,
-          child: Container(
-            width: 140, height: 140,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.35),
-                  blurRadius: 40, spreadRadius: 10),
-              ],
-              color: AppColors.primary.withValues(alpha: 0.2),
-            ),
-          ),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(context.s.baahyPromise,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                letterSpacing: 1, color: AppColors.primary)),
-            const SizedBox(height: 6),
-            Text(context.s.baahyPromiseSub,
-              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800,
-                color: Colors.white, height: 1.25)),
-            const SizedBox(height: 8),
-            Text(
-              context.s.baahyPromiseDetail(config.deliveryCitiesCount),
-              style: const TextStyle(fontSize: 12.5, color: Colors.white60, height: 1.5)),
-          ],
-        ),
-      ]),
-    );
-  }
-}
 
 // ── Recently viewed ───────────────────────────────────────────────────────────
 
@@ -1981,95 +1825,6 @@ class _RecentlyViewedSection extends ConsumerWidget {
 }
 
 // ── Contextual rewards nudge card ────────────────────────────────────────────
-
-class _RewardsNudgeCard extends ConsumerWidget {
-  const _RewardsNudgeCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isLoggedIn = ref.watch(authProvider).isLoggedIn;
-    if (!isLoggedIn) return const SizedBox.shrink();
-
-    final tierAsync = ref.watch(tierProvider);
-    return tierAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (tier) {
-        if (identical(tier, TierStatus.empty)) return const SizedBox.shrink();
-
-        final String message;
-        final IconData icon;
-        final Color color;
-
-        final remaining = tier.nextMilestoneRemaining;
-        final reward    = tier.nextMilestoneReward;
-
-        if (remaining != null && remaining <= 2 && reward != null) {
-          message = remaining == 1
-              ? context.s.nudgeMilestone1(reward.toStringAsFixed(0))
-              : context.s.nudgeMilestone2(reward.toStringAsFixed(0));
-          icon  = Icons.card_giftcard_rounded;
-          color = AppColors.success;
-        } else if (tier.tier == null) {
-          message = context.s.nudgeNoTier(tier.ordersRemaining, tier.spendRemaining.toStringAsFixed(0));
-          icon  = Icons.workspace_premium_outlined;
-          color = AppColors.primary;
-        } else if (tier.tier == 'silver') {
-          message = context.s.nudgeSilver(tier.ordersRemaining, tier.spendRemaining.toStringAsFixed(0));
-          icon  = Icons.workspace_premium_outlined;
-          color = const Color(0xFF9E9E9E);
-        } else if (tier.tier == 'gold') {
-          message = context.s.nudgeGold(tier.ordersRemaining, tier.spendRemaining.toStringAsFixed(0));
-          icon  = Icons.workspace_premium_rounded;
-          color = AppColors.gold;
-        } else {
-          message = context.s.nudgePlatinum(tier.cashbackRate.toStringAsFixed(0));
-          icon  = Icons.diamond_outlined;
-          color = AppColors.primary;
-        }
-
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: GestureDetector(
-            onTap: () => safePush(context, '/rewards-hub'),
-            child: Builder(builder: (ctx) {
-              final isDk = Theme.of(ctx).brightness == Brightness.dark;
-              return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: isDk ? Colors.transparent : color.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withValues(alpha: isDk ? 0.45 : 0.25)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(icon, size: 18, color: color),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      message,
-                      style: TextStyle(
-                        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_ios, size: 11, color: color.withValues(alpha: 0.6)),
-                ],
-              ),
-            );
-            }),
-          ),
-        );
-      },
-    );
-  }
-}
 
 // ── Seasonal cashback banner ──────────────────────────────────────────────────
 

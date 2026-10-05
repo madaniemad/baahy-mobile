@@ -35,6 +35,7 @@ class LocaleNotifier extends StateNotifier<Locale> {
 
   Future<void> _syncLangToBackend(String lang) async {
     try {
+      if (!await ApiClient.instance.isLoggedIn) return; // guests: nothing to sync, skip the 401
       await ApiClient.instance.dio.put('/auth/profile', data: {'language': lang});
     } catch (_) {/* not logged in / offline — will sync on next toggle or registration */}
   }

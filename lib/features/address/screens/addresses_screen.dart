@@ -145,43 +145,6 @@ class AddressesScreen extends ConsumerWidget {
 
 // ── Info banner ───────────────────────────────────────────────────────────────
 
-class _InfoBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.col.surfaceSoft,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-      ),
-      child: Row(children: [
-        // Text (first child = RIGHT in RTL)
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(
-              context.tr('اختر عنواناً سريعاً عند الطلب', 'Choose an address at checkout'),
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
-                color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              context.tr(
-                'سيتم استخدام العنوان المحدد عند إتمام الطلب',
-                'The selected address will be used when placing your order'),
-              textAlign: TextAlign.start,
-              style: TextStyle(fontSize: 12, color: context.col.ink2,
-                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.5),
-            ),
-          ]),
-        ),
-        const SizedBox(width: 14),
-        // Pin icon only (second child = LEFT in RTL)
-        Icon(Icons.location_on_outlined, size: 44, color: AppColors.primary),
-      ]),
-    );
-  }
-}
-
 // ── Address card ──────────────────────────────────────────────────────────────
 
 class _AddressCard extends StatelessWidget {
@@ -437,48 +400,3 @@ class _AddressCard extends StatelessWidget {
 
 // ── Delivery tip card ─────────────────────────────────────────────────────────
 
-class _DeliveryTipCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.col.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: context.col.border),
-      ),
-      child: Row(children: [
-        // Text (first child = RIGHT in RTL)
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(
-              context.tr('توصيل أسرع لليبيا', 'Faster delivery in Libya'),
-              textAlign: TextAlign.start,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
-                color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              context.tr(
-                'أضف عناوين متعددة للوصول إليك بسرعة، أقرب، وأكثر دقة.',
-                'Add multiple addresses to reach you faster, closer, and more accurately.'),
-              textAlign: TextAlign.start,
-              style: TextStyle(fontSize: 12, color: context.col.ink2,
-                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.5),
-            ),
-          ]),
-        ),
-        const SizedBox(width: 12),
-        // Truck illustration (second child = LEFT in RTL)
-        Container(
-          width: 56, height: 56,
-          decoration: BoxDecoration(
-            color: context.col.surfaceSoft,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(Icons.local_shipping_outlined, size: 30, color: context.col.ink2),
-        ),
-      ]),
-    );
-  }
-}

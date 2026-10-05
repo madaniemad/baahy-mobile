@@ -263,18 +263,18 @@ class HomeNotifier extends StateNotifier<HomeData> {
 
   Future<void> _loadAndFetch() async {
     // Serve stale cache immediately so user sees content on cold start.
-    final stale = await CacheService.instance.getStale(_cacheKey);
-    if (stale != null) {
+    // One read: the blob is ~0.7MB of JSON, so decoding it twice (stale, then fresh) cost real time.
+    final cached = await CacheService.instance.getStaleWithAge(_cacheKey);
+    if (cached != null) {
       try {
-        state = _fromCache(stale);
+        state = _fromCache(cached.$1);
       } catch (e, st) {
         Sentry.captureException(e, stackTrace: st);
       }
     }
 
     // Skip network if cache is fresh.
-    final fresh = await CacheService.instance.get(_cacheKey, maxAge: _cacheTtl);
-    if (fresh != null) return;
+    if (cached != null && cached.$2 <= _cacheTtl) return;
 
     await fetch();
   }
@@ -324,6 +324,8 @@ class HomeNotifier extends StateNotifier<HomeData> {
   }
 
   Future<List<int>> _fetchOrderProductIds() async {
+    // Guests have no orders: skip the guaranteed 401.
+    if (!await _api.isLoggedIn) return [];
     try {
       final res = await _api.dio.get('/orders',
           queryParameters: {'per_page': '5'},
@@ -462,7 +464,7 @@ class HomeNotifier extends StateNotifier<HomeData> {
 
     final results = await Future.wait([
       _safeGet('/products', params: {'sort': 'popular', 'per_page': 20, 'has_image': '1', 'featured': '1'}),     // 0 featured (منتجات مميزة)
-      _safeGet('/products', params: {'sort': 'latest',  'per_page': 16, 'has_image': '1'}),                      // 1 (reserved — was newArrivals)
+      Future<dynamic>.value(null),                                                                               // 1 (reserved — was newArrivals; no request is made)
       _safeGet('/products', params: {'category_id': 25,  'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 2 bestsellers men
       _safeGet('/products', params: {'category_id': 1,   'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 3 bestsellers women
       _safeGet('/products', params: {'category_id': 90,  'sort': 'popular', 'per_page': 20, 'has_image': '1'}), // 4 bestsellers electronics

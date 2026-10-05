@@ -619,6 +619,7 @@ class _BannerSliderState extends State<_BannerSlider> {
                         child: CachedNetworkImage(
                           imageUrl: banner.imageUrl,
                           fit: BoxFit.cover,
+                          memCacheWidth: 1000,
                           placeholder: (_, __) => Container(color: context.col.cardImageBg),
                           errorWidget: (_, __, ___) => Container(color: context.col.cardImageBg),
                         ),
@@ -678,7 +679,6 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   Map<int, bool> _attrExpanded = {};
   bool _brandExpanded = true;
   bool _vendorExpanded = true;
-  final Set<int> _expandedCats = {};
 
   @override
   void initState() {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'sell_banner.dart';
 import '../../../shared/widgets/store_logo_placeholder.dart';
+import '../../../shared/widgets/optimized_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -499,12 +500,13 @@ class _StoreVisual extends ConsumerWidget {
           for (int i = 0; i < imgs.length; i++) ...[
             if (i > 0) const SizedBox(width: 2),
             Expanded(
-              child: CachedNetworkImage(
-                imageUrl: imgs[i],
+              child: OptimizedNetworkImage(
+                url: imgs[i],
                 fit: BoxFit.cover,
                 height: double.infinity,
                 memCacheWidth: 400,
-                errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                variantWidth: 400,
+                error: const SizedBox.shrink(),
               ),
             ),
           ],

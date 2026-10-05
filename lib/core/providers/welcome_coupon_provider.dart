@@ -64,7 +64,7 @@ final welcomeCouponProvider = FutureProvider.autoDispose<WelcomeCoupon?>((ref) a
     // the Arabic currency unit into English mode.
     final labelEn = type == 'percentage'
         ? '${discount.toStringAsFixed(0)}%'
-        : '${discount.toStringAsFixed(0)} LYD';
+        : '${discount.toStringAsFixed(0)} LD';
 
     return WelcomeCoupon(
       code:        code,

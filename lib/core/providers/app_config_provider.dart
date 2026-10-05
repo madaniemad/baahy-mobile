@@ -14,7 +14,6 @@ final appConfigProvider = StateNotifierProvider<AppConfigNotifier, AppConfig>((r
 
 class AppConfigNotifier extends StateNotifier<AppConfig> {
   static const _cacheKey = 'app_config';
-  static const _cacheTtl = Duration(minutes: 30);
 
   AppConfigNotifier() : super(AppConfig.defaults) {
     _load();

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../../../shared/widgets/optimized_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/friendship_status.dart';
 import '../../../core/models/public_profile.dart';
@@ -272,10 +272,11 @@ class _WishlistSection extends StatelessWidget {
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                     child: images.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: images.first, width: 120, height: 100, fit: BoxFit.cover,
+                        ? OptimizedNetworkImage(
+                            url: images.first, width: 120, height: 100, fit: BoxFit.cover,
                             memCacheWidth: 240,
-                            errorWidget: (_, __, ___) => Container(
+                            variantWidth: 400,
+                            error: Container(
                               width: 120, height: 100, color: context.col.surfaceSoft,
                               child: Icon(Icons.person_outline_rounded, size: 28, color: context.col.ink3)))
                         : Container(width: 120, height: 100, color: context.col.surfaceSoft),

@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../../../shared/widgets/optimized_network_image.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/api/api_client.dart';
@@ -712,13 +712,14 @@ class _OrderItemRow extends StatelessWidget {
             child: SizedBox(
               width: 44, height: 44,
               child: item.productImage != null && item.productImage!.startsWith('http')
-                  ? CachedNetworkImage(
-                      imageUrl: item.productImage!,
+                  ? OptimizedNetworkImage(
+                      url: item.productImage!,
                       fit: BoxFit.cover,
                       memCacheWidth: 140,
-                      errorWidget: (_, __, ___) => Container(color: context.col.bg,
+                      variantWidth: 400,
+                      error: Container(color: context.col.bg,
                           child: Icon(Icons.image_outlined, color: context.col.ink4)),
-                      placeholder: (_, __) => Container(color: context.col.bg))
+                      placeholder: Container(color: context.col.bg))
                   : Container(color: context.col.bg,
                       child: Icon(Icons.image_outlined, color: context.col.ink4)),
             ),

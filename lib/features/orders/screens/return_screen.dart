@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../../../shared/widgets/optimized_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -513,9 +513,10 @@ class _StepItems extends ConsumerWidget {
                         child: SizedBox(
                           width: 48, height: 48,
                           child: imageUrl != null
-                            ? CachedNetworkImage(imageUrl: imageUrl, fit: BoxFit.cover,
+                            ? OptimizedNetworkImage(url: imageUrl, fit: BoxFit.cover,
                                 memCacheWidth: 96,
-                                errorWidget: (_, __, ___) => Container(
+                                variantWidth: 400,
+                                error: Container(
                                   color: context.col.surfaceSoft,
                                   child: Icon(Icons.shopping_bag_outlined, size: 20, color: context.col.ink4)))
                             : Container(color: context.col.surfaceSoft,
@@ -921,28 +922,6 @@ class _StepReason extends StatelessWidget {
       ],
     );
   }
-}
-
-class _FeeLine extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool bold;
-  final Color? valueColor;
-  const _FeeLine({required this.label, required this.value, this.bold = false, this.valueColor});
-
-  @override
-  Widget build(BuildContext context) => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Text(label, style: TextStyle(
-        fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
-        color: context.col.ink2, fontWeight: bold ? FontWeight.w700 : FontWeight.w400)),
-      Text(value, style: TextStyle(
-        fontFamily: 'PlusJakartaSans', fontSize: 13,
-        color: valueColor ?? context.col.ink0,
-        fontWeight: bold ? FontWeight.w800 : FontWeight.w600)),
-    ],
-  );
 }
 
 // ── Step 3: Done ──────────────────────────────────────────────────────────────

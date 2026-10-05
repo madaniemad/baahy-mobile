@@ -56,10 +56,10 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
         // sees a transaction. Moamalat's Lightbox in particular is served from a NON-STANDARD
         // port (npg.moamalat.net:6006), which carrier networks are known to block.
         onWebResourceError: (err) {
-          if (!mounted || !err.isForMainFrame!) return;
+          if (!mounted || err.isForMainFrame != true) return;
           setState(() {
             _pageLoading = false;
-            _loadError = err.description.isNotEmpty ? err.description : 'تعذّر تحميل صفحة الدفع';
+            _loadError = context.tr('تعذّر تحميل صفحة الدفع', 'Could not load the payment page');
           });
         },
         onNavigationRequest: (req) {

@@ -2,7 +2,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../../../shared/widgets/optimized_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import '../../../core/api/api_client.dart';
@@ -19,7 +19,6 @@ import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../core/services/analytics_service.dart';
-import '../../../shared/widgets/app_button.dart';
 
 const _kLastPaymentKey = 'baahy_last_payment';
 
@@ -1309,10 +1308,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
                                   child: item.image != null
-                                      ? CachedNetworkImage(
-                                          imageUrl: item.image!, width: 52, height: 52,
+                                      ? OptimizedNetworkImage(
+                                          url: item.image!, width: 52, height: 52,
                                           fit: BoxFit.cover,
-                                          errorWidget: (_, __, ___) => _ImagePlaceholder(size: 52),
+                                          memCacheWidth: 104,
+                                          variantWidth: 400,
+                                          error: _ImagePlaceholder(size: 52),
                                         )
                                       : _ImagePlaceholder(size: 52),
                                 ),
@@ -1891,7 +1892,6 @@ class _AddressSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SafeArea(
       child: ConstrainedBox(
        // Cap at 80% of the screen; the address list scrolls inside it.
@@ -1972,7 +1972,6 @@ class _TrustRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final greyIcon = context.col.ink0;
     final greyBorder = context.col.ink2;
     final items = [
@@ -2100,52 +2099,3 @@ class _QtyBtn extends StatelessWidget {
   }
 }
 
-class _CollapsibleHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final bool expanded;
-  final VoidCallback onTap;
-
-  const _CollapsibleHeader({
-    required this.title,
-    required this.subtitle,
-    required this.expanded,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: _cardFill(context),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: context.col.border),
-        ),
-        child: Row(children: [
-          Expanded(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 2),
-              Text(subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
-            ],
-          )),
-          AnimatedRotation(
-            turns: expanded ? 0.5 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: Icon(Icons.keyboard_arrow_down_rounded,
-              size: 22, color: context.col.ink2),
-          ),
-        ]),
-      ),
-    );
-  }
-}

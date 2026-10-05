@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/app_config_provider.dart';
+import '../../../core/providers/home_provider.dart';
 import '../../../core/services/version_gate.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -132,6 +133,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Future<void> _runSequence() async {
     _driftCtrl.repeat(reverse: true);
 
+    // Use the 2s of logo animation: start the version check and the home data load NOW, in parallel
+    // with it, instead of after it (home only began loading once Home first built).
+    ref.read(homeProvider);
+    final gateFuture = VersionGate.check()
+        .timeout(const Duration(seconds: 4), onTimeout: () => const VersionGateResult());
+
     // Start breathing after logo settles (~700ms into the 2s animation)
     await Future.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
@@ -140,10 +147,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // Navigate as the entry animation finishes (2 000 ms total from start)
     await Future.delayed(const Duration(milliseconds: 1300));
     if (!mounted) return;
-    // Force-update gate (fail-open): block below the backend min_version.
-    // Fail open after 4s: a dead network must not keep the splash up for the full Dio timeouts.
-    final gate = await VersionGate.check()
-        .timeout(const Duration(seconds: 4), onTimeout: () => const VersionGateResult());
+    // Force-update gate (fail-open, started above): block below the backend min_version.
+    final gate = await gateFuture;
     if (!mounted) return;
     if (gate.forceUpdate) {
       // Show the update as a popup OVER home (not a full-screen block), so the
@@ -170,7 +175,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   static const _teal      = AppColors.primary;
   static const _tealLight = Color(0xFF53E2E9);
   static const _tealDark  = Color(0xFF2FCED5);
-  static const _navy      = Color(0xFF0E3C46);
 
   @override
   Widget build(BuildContext context) {

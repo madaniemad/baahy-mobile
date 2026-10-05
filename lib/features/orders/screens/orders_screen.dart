@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../../../shared/widgets/optimized_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/cart.dart';
 import '../../../core/models/order.dart';
 import '../../../core/models/product.dart';
 import '../../../core/providers/reorder_provider.dart';
+import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -397,14 +398,15 @@ class _OrderCard extends StatelessWidget {
               child: SizedBox(
                 width: 56, height: 56,
                 child: firstImage != null && firstImage.startsWith('http')
-                    ? CachedNetworkImage(
-                        imageUrl: firstImage,
+                    ? OptimizedNetworkImage(
+                        url: firstImage,
                         fit: BoxFit.cover,
                         memCacheWidth: 160,
-                        errorWidget: (_, __, ___) => Container(
+                        variantWidth: 400,
+                        error: Container(
                           color: context.col.surfaceSoft,
                           child: Icon(Icons.shopping_bag_outlined, color: context.col.ink3, size: 24)),
-                        placeholder: (_, __) => Container(color: context.col.surfaceSoft))
+                        placeholder: Container(color: context.col.surfaceSoft))
                     : Container(color: context.col.surfaceSoft,
                         child: Icon(Icons.shopping_bag_outlined,
                           color: context.col.ink3, size: 24)),
@@ -441,7 +443,7 @@ class _OrderCard extends StatelessWidget {
                     style: TextStyle(fontSize: 11.5, color: context.col.ink3)),
                 ]),
                 const SizedBox(height: 6),
-                Text('${order.total.toStringAsFixed(0)} ${context.s.lyd}',
+                Text('${fmtPrice(order.total)} ${context.s.lyd}',
                   style: TextStyle(fontFamily: 'PlusJakartaSans',
                     fontSize: 14, fontWeight: FontWeight.w700, color: context.col.ink0)),
               ]),
@@ -519,8 +521,8 @@ class _NoticeRow extends StatelessWidget {
           (notice.currentPrice ?? 0) > (notice.originalPrice ?? 0)
               ? AppColors.danger : AppColors.success,
           isAr
-            ? 'السعر تغير: ${notice.originalPrice?.toStringAsFixed(0)} ← ${notice.currentPrice?.toStringAsFixed(0)} د.ل'
-            : 'Price changed: ${notice.originalPrice?.toStringAsFixed(0)} → ${notice.currentPrice?.toStringAsFixed(0)} LYD'),
+            ? 'السعر تغير: ${fmtPrice(notice.originalPrice ?? 0)} ← ${fmtPrice(notice.currentPrice ?? 0)} د.ل'
+            : 'Price changed: ${fmtPrice(notice.originalPrice ?? 0)} → ${fmtPrice(notice.currentPrice ?? 0)} LD'),
     };
 
     return Padding(

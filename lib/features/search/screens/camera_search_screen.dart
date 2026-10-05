@@ -76,8 +76,16 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
       }
       await _startCamera(0);
     } catch (e) {
-      _setError(e.toString());
+      if (mounted) _setError(_camError(e));
     }
+  }
+
+  /// A user-facing message instead of the raw plugin exception text ("CameraException(...)").
+  String _camError(Object e) {
+    final denied = e is CameraException && e.code.toLowerCase().contains('access');
+    return denied
+        ? context.tr('اسمح بالوصول إلى الكاميرا من الإعدادات', 'Allow camera access in Settings')
+        : context.tr('تعذّر تشغيل الكاميرا', 'Could not start the camera');
   }
 
   Future<void> _startCamera(int idx) async {
@@ -95,7 +103,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
       setState(() { _controller = ctrl; _camIdx = idx; _state = _CamState.live; });
     } catch (e) {
       await ctrl.dispose();
-      _setError(e.toString());
+      if (mounted) _setError(_camError(e));
     }
   }
 
@@ -109,7 +117,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
       _scanAnim.repeat(reverse: true);
       await _analyse();
     } catch (e) {
-      _setError(e.toString());
+      if (mounted) _setError(_camError(e));
     }
   }
 

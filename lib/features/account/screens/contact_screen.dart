@@ -19,11 +19,6 @@ class ContactScreen extends ConsumerWidget {
     await launchUrl(uri);
   }
 
-  Future<void> _openPhone(String phone) async {
-    final uri = Uri.parse('tel:$phone');
-    await launchUrl(uri);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pages = ref.watch(appPagesProvider);

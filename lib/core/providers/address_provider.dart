@@ -27,6 +27,8 @@ class CityNotifier extends StateNotifier<String> {
   }
 
   Future<void> _refreshFromAddress() async {
+    // Guests have no saved addresses: skip the guaranteed 401.
+    if (!await ApiClient.instance.isLoggedIn) return;
     try {
       final res = await ApiClient.instance.dio.get('/addresses');
       final list = res.data['data'] as List? ?? [];

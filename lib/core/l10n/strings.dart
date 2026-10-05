@@ -466,7 +466,7 @@ class AppStrings {
   String get bronzeTier         => 'Silver';
   String get noTier             => isAr ? 'بدون مستوى'             : 'No Tier';
   String get ordersToNextTier   => isAr ? 'طلب للمستوى التالي'     : 'orders to next tier';
-  String get spendToNextTier    => isAr ? 'د.ل للمستوى التالي'     : 'LYD to next tier';
+  String get spendToNextTier    => isAr ? 'د.ل للمستوى التالي'     : 'LD to next tier';
   String get nextMilestone      => isAr ? 'المكافأة القادمة'        : 'Next Milestone';
   String get keepShopping       => isAr ? 'واصل التسوق'             : 'Keep Shopping';
   String get topTier            => isAr ? 'أعلى مستوى 💎'          : 'Top Tier 💎';
@@ -483,7 +483,7 @@ class AppStrings {
   String get onbTiersTitle       => 'Silver · Gold · Platinum · Black';
   String get onbTiersSub         => isAr ? 'كلما تسوّقت أكثر — مزايا أكبر وكاش باك أعلى' : 'The more you shop — bigger perks and higher cashback';
   String get onbReferralTitle    => isAr ? 'ادعُ صديقاً واكسبا معاً'      : 'Invite a friend, both earn';
-  String onbReferralSub(String amount) => isAr ? 'كل منكما يحصل على $amount د.ل عند أول توصيل' : 'You each get $amount LYD on first delivery';
+  String onbReferralSub(String amount) => isAr ? 'كل منكما يحصل على $amount د.ل عند أول توصيل' : 'You each get $amount LD on first delivery';
   String get nextBtn             => isAr ? 'التالي'                       : 'Next';
   String get rewardsArrived      => isAr ? 'برنامج الولاء وصل!'           : 'Loyalty program is here!';
   String get discoverBenefits    => isAr ? 'اكتشف مزاياك'                 : 'Discover your perks';
@@ -498,7 +498,7 @@ class AppStrings {
   String get hubMilestonesTitle  => isAr ? 'مكافآت الطلبات'                : 'Order rewards';
   String get hubInviteTitle      => isAr ? 'ادعُ أصدقاءك واكسب'            : 'Invite friends, earn together';
   String get hubCashbackHowTitle => isAr ? 'كيف يعمل الاسترداد النقدي؟'   : 'How does cashback work?';
-  String get hubCashbackStep1    => isAr ? 'اطلب أي منتج بقيمة 80 د.ل فأكثر' : 'Place any order of 80 LYD or more';
+  String get hubCashbackStep1    => isAr ? 'اطلب أي منتج بقيمة 80 د.ل فأكثر' : 'Place any order of 80 LD or more';
   String get hubCashbackStep2    => isAr ? 'استلم طلبك — يُحسب الاسترداد تلقائياً' : 'Receive your order — cashback is calculated automatically';
   String get hubCashbackStep3    => isAr ? 'يُضاف المبلغ لمحفظتك مباشرة'  : 'Amount is added to your wallet instantly';
   String get hubCashbackNote     => isAr ? '* النسبة تزداد مع ارتقائك في المستويات' : '* Rate increases as you level up';

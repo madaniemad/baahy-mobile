@@ -514,6 +514,7 @@ class _StoreHero extends StatelessWidget {
                     child: CachedNetworkImage(
                       imageUrl: logo,
                       fit: BoxFit.cover,
+                      memCacheWidth: 200,
                       errorWidget: (_, __, ___) => Icon(
                           Icons.storefront_outlined,
                           size: 54,
