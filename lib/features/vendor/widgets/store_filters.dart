@@ -71,7 +71,7 @@ Color? _parseHex(String raw) {
 /// Parses a price typed with Western or Arabic-Indic digits; null when empty or invalid.
 double? _parsePrice(String raw) {
   const ar = '٠١٢٣٤٥٦٧٨٩';
-  var t = raw.trim().replaceAll('٫', '.').replaceAll(',', '.');
+  var t = raw.trim().replaceAll('٫', '.').replaceAll(',', '').replaceAll('٬', '');
   for (var i = 0; i < ar.length; i++) {
     t = t.replaceAll(ar[i], '$i');
   }

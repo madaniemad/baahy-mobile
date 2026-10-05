@@ -102,8 +102,8 @@ class _SearchHintText extends StatelessWidget {
 // ── Active order strip + rewards nudge carousel ───────────────────────────────
 
 final _activeOrderProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
-  if (!await ApiClient.instance.isLoggedIn) return null; // guests have no orders: skip the 401
   try {
+    if (!await ApiClient.instance.isLoggedIn) return null; // guests have no orders: skip the 401
     final res = await ApiClient.instance.dio.get('/orders',
       queryParameters: {
         'status': 'out_for_delivery',

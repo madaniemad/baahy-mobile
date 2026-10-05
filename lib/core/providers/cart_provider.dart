@@ -299,7 +299,7 @@ class CartNotifier extends StateNotifier<CartState> {
       // Only a server refusal (4xx) means the coupon no longer applies; a timeout or dropped
       // connection must not silently strip a valid coupon from the cart.
       final code = e is DioException ? e.response?.statusCode : null;
-      if (code != null && code >= 400 && code < 500) {
+      if (code == 400 || code == 404 || code == 422) {  // the server refused the coupon
         state = state.copyWith(clearCoupon: true);
       }
     }

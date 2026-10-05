@@ -207,7 +207,8 @@ class _StoresTabState extends ConsumerState<StoresTab> {
               }
               // The "open your store" invite sits in the middle of the list (after the 2nd store when
               // the list is short), so it is seen without scrolling to the end.
-              final bannerAt = shown.length >= 3 ? (shown.length / 2).ceil() : shown.length;
+              final bannerAt =
+                  shown.length >= 3 ? (shown.length / 2).ceil() : shown.length;
               return [
                 for (int i = 0; i < shown.length; i++) ...[
                   if (i == bannerAt)
@@ -350,23 +351,26 @@ class _StoreCard extends ConsumerWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                      // cap only when departments share the line, so a lone name never truncates early
-                      maxWidth: deps.isEmpty
-                          ? double.infinity
-                          : (MediaQuery.sizeOf(context).width - 24) * 0.42),
-                  child: Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16,
-                      height: 1.25,
-                      fontWeight: FontWeight.w800,
-                      color: context.col.ink0,
-                      fontFamily: 'Manrope',
-                      fontFamilyFallback: const ['Tajawal'],
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                        // cap only when departments share the line, so a lone name never truncates early
+                        maxWidth: deps.isEmpty
+                            ? double.infinity
+                            : (MediaQuery.sizeOf(context).width - 24) * 0.42),
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16,
+                        height: 1.25,
+                        fontWeight: FontWeight.w800,
+                        color: context.col.ink0,
+                        fontFamily: 'Manrope',
+                        fontFamilyFallback: const ['Tajawal'],
+                      ),
                     ),
                   ),
                 ),
