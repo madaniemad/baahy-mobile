@@ -71,7 +71,8 @@ Color? _parseHex(String raw) {
 /// Parses a price typed with Western or Arabic-Indic digits; null when empty or invalid.
 double? _parsePrice(String raw) {
   const ar = '٠١٢٣٤٥٦٧٨٩';
-  var t = raw.trim().replaceAll('٫', '.').replaceAll(',', '').replaceAll('٬', '');
+  var t =
+      raw.trim().replaceAll('٫', '.').replaceAll(',', '').replaceAll('٬', '');
   for (var i = 0; i < ar.length; i++) {
     t = t.replaceAll(ar[i], '$i');
   }
@@ -309,119 +310,129 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
       child: Padding(
         padding: EdgeInsets.fromLTRB(
             20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Expanded(
-                  child: Text(s.filters,
-                      style: _font.copyWith(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: context.col.ink0)),
-                ),
-                TextButton(
-                  onPressed: () =>
-                      Navigator.of(context).pop(const StoreFilters()),
-                  child: Text(s.resetFilters),
-                ),
-              ]),
-              _title(s.sortBy),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final o in sorts)
-                    ChoiceChip(
-                      label: Text(o.$2,
-                          style: _font.copyWith(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: _sort == o.$1
-                                  ? AppColors.teal600
-                                  : context.col.ink0)),
-                      selected: _sort == o.$1,
-                      selectedColor: AppColors.teal.withValues(alpha: 0.15),
-                      onSelected: (_) => setState(() => _sort = o.$1),
-                    ),
-                ],
-              ),
-              _title(s.priceRange),
-              Row(children: [
-                _priceField(_min, s.priceFrom),
-                const SizedBox(width: 10),
-                _priceField(_max, s.priceTo),
-              ]),
-              const SizedBox(height: 6),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                activeThumbColor: AppColors.teal,
-                title: Text(s.dealsOnly,
-                    style: _font.copyWith(fontWeight: FontWeight.w700)),
-                value: _onSale,
-                onChanged: (v) => setState(() => _onSale = v),
-              ),
-              FutureBuilder<_StoreOptions?>(
-                future: _options,
-                builder: (_, snap) {
-                  if (snap.connectionState != ConnectionState.done) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 18),
-                      child: Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // The options scroll; Apply stays pinned below so it is never lost at the end of a long brand list.
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Expanded(
+                        child: Text(s.filters,
+                            style: _font.copyWith(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: context.col.ink0)),
                       ),
-                    );
-                  }
-                  final o = snap.data;
-                  if (o == null) return const SizedBox.shrink();
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: _optionSections(o),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () {
-                    var lo = _parsePrice(_min.text);
-                    var hi = _parsePrice(_max.text);
-                    if (lo != null && hi != null && lo > hi) {
-                      final t = lo;
-                      lo = hi;
-                      hi = t;
-                    }
-                    Navigator.of(context).pop(StoreFilters(
-                      sort: _sort,
-                      minPrice: lo,
-                      maxPrice: hi,
-                      onSaleOnly: _onSale,
-                      minRating: _rating,
-                      brands: {..._brands},
-                      attributeValueIds: {..._attrIds},
-                    ));
-                  },
-                  child: Text(s.applyFilters,
-                      style: _font.copyWith(
-                          fontWeight: FontWeight.w800, fontSize: 15)),
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.of(context).pop(const StoreFilters()),
+                        child: Text(s.resetFilters),
+                      ),
+                    ]),
+                    _title(s.sortBy),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final o in sorts)
+                          ChoiceChip(
+                            label: Text(o.$2,
+                                style: _font.copyWith(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: _sort == o.$1
+                                        ? AppColors.teal600
+                                        : context.col.ink0)),
+                            selected: _sort == o.$1,
+                            selectedColor:
+                                AppColors.teal.withValues(alpha: 0.15),
+                            onSelected: (_) => setState(() => _sort = o.$1),
+                          ),
+                      ],
+                    ),
+                    _title(s.priceRange),
+                    Row(children: [
+                      _priceField(_min, s.priceFrom),
+                      const SizedBox(width: 10),
+                      _priceField(_max, s.priceTo),
+                    ]),
+                    const SizedBox(height: 6),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      activeThumbColor: AppColors.teal,
+                      title: Text(s.dealsOnly,
+                          style: _font.copyWith(fontWeight: FontWeight.w700)),
+                      value: _onSale,
+                      onChanged: (v) => setState(() => _onSale = v),
+                    ),
+                    FutureBuilder<_StoreOptions?>(
+                      future: _options,
+                      builder: (_, snap) {
+                        if (snap.connectionState != ConnectionState.done) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 18),
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          );
+                        }
+                        final o = snap.data;
+                        if (o == null) return const SizedBox.shrink();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _optionSections(o),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  var lo = _parsePrice(_min.text);
+                  var hi = _parsePrice(_max.text);
+                  if (lo != null && hi != null && lo > hi) {
+                    final t = lo;
+                    lo = hi;
+                    hi = t;
+                  }
+                  Navigator.of(context).pop(StoreFilters(
+                    sort: _sort,
+                    minPrice: lo,
+                    maxPrice: hi,
+                    onSaleOnly: _onSale,
+                    minRating: _rating,
+                    brands: {..._brands},
+                    attributeValueIds: {..._attrIds},
+                  ));
+                },
+                child: Text(s.applyFilters,
+                    style: _font.copyWith(
+                        fontWeight: FontWeight.w800, fontSize: 15)),
+              ),
+            ),
+          ],
         ),
       ),
     );
