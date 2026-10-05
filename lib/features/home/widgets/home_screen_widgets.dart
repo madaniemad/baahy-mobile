@@ -896,24 +896,27 @@ class _PromiseStrip extends StatelessWidget {
   const _PromiseStrip({required this.config});
   @override
   Widget build(BuildContext context) {
+    final divider = Container(width: 1, height: 30, color: context.col.border);
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
       decoration: BoxDecoration(
         color: context.col.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: context.col.border),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          const _PromiseChip(icon: Icons.local_shipping_outlined,
-            ar: 'توصيل سريع', en: 'Fast delivery'),
-          Container(width: 1, height: 24, color: context.col.border),
-          const _PromiseChip(icon: Icons.refresh_rounded,
-            ar: 'ارجاع واستبدال', en: 'Returns & exchanges'),
-          Container(width: 1, height: 24, color: context.col.border),
-          const _PromiseChip(icon: Icons.verified_outlined,
-            ar: 'ضمان المنتج', en: 'Product warranty'),
+          const Expanded(child: _PromiseChip(icon: Icons.local_shipping_outlined,
+            ar: 'توصيل سريع', en: 'Fast delivery')),
+          divider,
+          const Expanded(child: _PromiseChip(icon: Icons.verified_user_outlined,
+            ar: 'ضمان المنتج', en: 'Product guarantee')),
+          divider,
+          const Expanded(child: _PromiseChip(icon: Icons.sync_rounded,
+            ar: 'إرجاع واستبدال', en: 'Returns & exchanges')),
+          divider,
+          const Expanded(child: _PromiseChip(icon: Icons.headset_mic_outlined,
+            ar: 'دعم 24/7', en: '24/7 support')),
         ],
       ),
     );
@@ -928,11 +931,12 @@ class _PromiseChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
-    return Column(children: [
-      Icon(icon, size: 18, color: context.col.ink0),
-      const SizedBox(height: 3),
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 26, color: AppColors.primary),
+      const SizedBox(height: 6),
       Text(isAr ? ar : en,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.col.ink1),
+        maxLines: 2,
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, height: 1.25, color: context.col.ink0),
         textAlign: TextAlign.center),
     ]);
   }

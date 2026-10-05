@@ -262,7 +262,8 @@ class HomeScreen extends ConsumerWidget {
                       child: _DuoBannerRow(section: item.section),
                     ),
                   );
-                } else if (item is DynStripBanner) {
+                } else if (item is DynStripBanner &&
+                    !_isDuplicateStrip(home.orderedDynamicSections, item)) {
                   yield SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
@@ -382,4 +383,15 @@ HomeDynamicItem? _storesAnchor(List<HomeDynamicItem> items) {
     if (i is DynGrid && (i.titleEn.contains('100') || i.titleAr.contains('100'))) return i;
   }
   return null;
+}
+
+/// Admin can end up with two strip banners pointing at the same page (e.g. two /rewards strips);
+/// only the first is shown so the home page never repeats itself.
+bool _isDuplicateStrip(List<HomeDynamicItem> items, DynStripBanner strip) {
+  final link = strip.linkUrl;
+  if (link == null || link.isEmpty) return false;
+  for (final i in items) {
+    if (i is DynStripBanner && i.linkUrl == link) return !identical(i, strip);
+  }
+  return false;
 }

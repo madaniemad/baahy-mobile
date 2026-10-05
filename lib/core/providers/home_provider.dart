@@ -602,7 +602,10 @@ class HomeNotifier extends StateNotifier<HomeData> {
         }
       } else if (type == 'strip_banner') {
         final imageUrl = fullUrl(s['image_url'] as String?);
-        if (imageUrl != null) {
+        // The delivery / guarantee / returns / support strip is native now (home's _PromiseStrip),
+        // so the admin's image version of it is not rendered a second time.
+        final isTrustStrip = (s['title_en'] ?? '').toString().startsWith('Fast Delivery');
+        if (imageUrl != null && !isTrustStrip) {
           orderedSections.add(DynStripBanner(
             imageUrl: imageUrl,
             linkUrl: s['link_url'] as String?,
