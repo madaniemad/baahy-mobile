@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/address_provider.dart';
 import '../../../core/providers/app_pages_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
+import '../../../core/utils/arabic_text.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -60,10 +61,9 @@ class _CityScreenState extends ConsumerState<CityScreen>
   }
 
   List<CityEntry> _filterCities(List<CityEntry> all) {
-    final q = _query.trim().toLowerCase();
-    if (q.isEmpty) return all;
+    if (normalizeArabic(_query).isEmpty) return all;
     return all.where((c) =>
-      c.ar.contains(q) || c.en.toLowerCase().contains(q)).toList();
+      matchesArabic(c.ar, _query) || matchesArabic(c.en, _query)).toList();
   }
 
   Future<void> _proceed() async {

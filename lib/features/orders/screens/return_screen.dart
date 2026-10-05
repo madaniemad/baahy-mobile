@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import '../../../shared/widgets/optimized_network_image.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/utils/delivery.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
@@ -348,8 +349,8 @@ class _ReturnPolicyBanner extends StatelessWidget {
       label = context.isAr ? 'آخر يوم للإرجاع — ينتهي $dateStr' : 'Last day to return — expires $dateStr';
     } else {
       label = context.isAr
-        ? 'متبقٍ $daysLeft يوم للإرجاع — ينتهي $dateStr'
-        : '$daysLeft day${daysLeft == 1 ? '' : 's'} left to return — deadline $dateStr';
+        ? 'متبقٍ ${dayCountLabel(daysLeft, true)} للإرجاع — ينتهي $dateStr'
+        : '${dayCountLabel(daysLeft, false)} left to return — deadline $dateStr';
     }
 
     return Container(
@@ -525,7 +526,10 @@ class _StepItems extends ConsumerWidget {
                       ),
                       const SizedBox(width: 10),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(item['product_name'] ?? item['name'] ?? '',
+                        Text(
+                          (context.isAr && (item['product_name_ar']?.toString().isNotEmpty ?? false))
+                              ? item['product_name_ar'].toString()
+                              : (item['product_name'] ?? item['name'] ?? ''),
                           style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600)),
                         Text(
                           maxQty == 0

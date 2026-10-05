@@ -129,7 +129,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Icon(Icons.shield_outlined, size: 13, color: context.col.ink3),
                 const SizedBox(width: 6),
-                Text(context.tr('رصيدك آمن 100٪ ويمكنك استخدامه في أي وقت', 'Your balance is 100% secure — use it anytime'),
+                Text(context.tr('رصيدك آمن 100% ويمكنك استخدامه في أي وقت', 'Your balance is 100% secure — use it anytime'),
                   style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5, color: context.col.ink2)),
               ]),
             ),
@@ -654,7 +654,7 @@ class _EarnMoreSection extends StatelessWidget {
             iconColor: AppColors.info,
             cardBg: const Color(0xFFEFF6FF),
             title: context.tr('دعوة الأصدقاء', 'Invite Friends'),
-            subtitle: context.tr('ادع أصدقائك واكسب مكافآت عند كل دعوة', 'Invite friends and earn rewards'),
+            subtitle: context.tr('ادعُ أصدقاءك واكسب مكافآت عند كل دعوة', 'Invite friends and earn rewards'),
             actionLabel: context.tr('دعوة الآن', 'Invite Now'),
           )),
           const SizedBox(width: 8),

@@ -67,6 +67,14 @@ final _productReviewsProvider = FutureProvider.autoDispose
   return Review.parseList(res.data['data']);
 });
 
+/// The description to show: the current language's text when present, else the other one.
+String _descText(Product p, bool isAr) {
+  final en = (p.description ?? '').trim();
+  final ar = (p.descriptionAr ?? '').trim();
+  if (isAr) return ar.isNotEmpty ? ar : en;
+  return en.isNotEmpty ? en : ar;
+}
+
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final int id;
   const ProductDetailScreen({required this.id, super.key});
@@ -899,8 +907,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         ),
 
                         // ── Card 4: Description + SKU ────────────────
-                        if ((product.description != null &&
-                                product.description!.isNotEmpty) ||
+                        if (_descText(product, isAr).isNotEmpty ||
                             product.sku != null) ...[
                           const SizedBox(height: 10),
                           Container(
@@ -915,19 +922,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                if (product.description != null &&
-                                    product.description!.isNotEmpty) ...[
+                                if (_descText(product, isAr).isNotEmpty) ...[
                                   Text(context.s.description,
                                       textAlign: TextAlign.start,
                                       style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w800)),
                                   const SizedBox(height: 8),
-                                  Text(
-                                      isAr
-                                          ? (product.descriptionAr ??
-                                              product.description!)
-                                          : product.description!,
+                                  Text(_descText(product, isAr),
                                       textAlign: TextAlign.start,
                                       style: TextStyle(
                                           fontSize: 14,

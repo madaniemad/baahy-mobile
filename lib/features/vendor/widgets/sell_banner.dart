@@ -30,7 +30,7 @@ class SellOnBaahyBanner extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          context.tr('تاجر أو عندك متجر؟', 'A merchant or have a store?'),
+          context.tr('بائع أو عندك متجر؟', 'A merchant or have a store?'),
           style: font.copyWith(
               fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white),
         ),

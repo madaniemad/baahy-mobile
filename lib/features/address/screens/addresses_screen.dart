@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/l10n/city_names.dart';
 import '../../../core/providers/address_provider.dart';
+import '../../../core/providers/shipping_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -147,7 +149,7 @@ class AddressesScreen extends ConsumerWidget {
 
 // ── Address card ──────────────────────────────────────────────────────────────
 
-class _AddressCard extends StatelessWidget {
+class _AddressCard extends ConsumerWidget {
   final Map<String, dynamic> addr;
   final VoidCallback onEdit;
   final VoidCallback? onSetDefault;
@@ -164,7 +166,7 @@ class _AddressCard extends StatelessWidget {
     return Icons.location_on_rounded;
   }
 
-  void _share(BuildContext context) {
+  void _share(BuildContext context, WidgetRef ref) {
     final label = context.s.translateAddrLabel(
       (addr['label'] as String?)?.isNotEmpty == true
         ? addr['label'] as String : context.s.addrLabel);
@@ -172,7 +174,10 @@ class _AddressCard extends StatelessWidget {
       label,
       if (addr['name'] != null) addr['name'] as String,
       if (addr['phone'] != null) addr['phone'] as String,
-      if (addr['city'] != null) addr['city'] as String,
+      if (addr['city'] != null)
+        displayCity(addr['city'] as String,
+            ref.read(shippingRatesProvider).valueOrNull ?? const [],
+            isAr: context.isAr),
       if (addr['district'] != null) addr['district'] as String,
       if (addr['street'] != null) addr['street'] as String,
       if (addr['notes'] != null && addr['notes'].toString().isNotEmpty)
@@ -182,12 +187,14 @@ class _AddressCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDefault = addr['is_default'] == true;
     final rawLabel = (addr['label'] as String?) ?? '';
     final label = context.s.translateAddrLabel(
         rawLabel.isNotEmpty ? rawLabel : context.s.addrLabel);
-    final city = (addr['city'] as String?) ?? '';
+    final city = displayCity((addr['city'] as String?) ?? '',
+        ref.watch(shippingRatesProvider).valueOrNull ?? const [],
+        isAr: context.isAr);
     final district = (addr['district'] as String?) ?? '';
     final street = (addr['street'] as String?) ?? '';
     final cityLine = [city, district].where((s) => s.isNotEmpty).join(context.tr('، ', ', '));
@@ -344,7 +351,7 @@ class _AddressCard extends StatelessWidget {
 
                     // Share
                     GestureDetector(
-                      onTap: () => _share(context),
+                      onTap: () => _share(context, ref),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(

@@ -9,6 +9,7 @@ import '../../../core/models/tier_status.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/tier_provider.dart';
+import '../../../core/utils/delivery.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -655,7 +656,10 @@ class _TierCard extends StatelessWidget {
           // Benefit rows — big colored value + grey label
           _cardBenefit(cashback, isAr ? 'كاش باك' : 'Cash', tierColor, context),
           Divider(height: 1, color: context.col.border, indent: 14, endIndent: 14),
-          _cardBenefit('$returns ${isAr ? 'أيام' : 'd'}',
+          _cardBenefit(
+            int.tryParse(returns) != null
+                ? dayCountLabel(int.parse(returns), isAr)
+                : '$returns ${isAr ? 'أيام' : 'd'}',
             isAr ? 'إرجاع' : 'Return', tierColor, context),
         ]),
       ),

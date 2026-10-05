@@ -114,7 +114,7 @@ class AppStrings {
 
   // ── Order confirmed ─────────────────────────────────────────────────────────
   String get orderConfirmed => isAr ? 'تم تأكيد طلبك! 🎉'     : 'Order Confirmed! 🎉';
-  String get orderConfirmSub=> isAr ? 'سنبدأ بتجهيز طلبك قريباً وسنُعلمك عند الشحن.' : 'We\'ll prepare your order soon and notify you when it ships.';
+  String get orderConfirmSub=> isAr ? 'سنبدأ بتجهيز طلبك قريباً وسنُعلمك عند التوصيل.' : 'We\'ll prepare your order soon and notify you when it ships.';
   String get trackOrders    => isAr ? 'تتبع طلباتي'            : 'Track My Orders';
   String get backHome       => isAr ? 'العودة للرئيسية'        : 'Back to Home';
   String get orderNum       => isAr ? 'رقم الطلب'              : 'Order Number';
@@ -143,6 +143,10 @@ class AppStrings {
       case 'cancelled':            return isAr ? 'ملغي'            : 'Cancelled';
       case 'returned':             return isAr ? 'مُرجَع'          : 'Returned';
       case 'refunded':             return isAr ? 'مُسترد'          : 'Refunded';
+      case 'pending_payment':      return isAr ? 'بانتظار التحويل' : 'Awaiting transfer';
+      case 'returned_to_vendor':   return isAr ? 'أُعيد إلى المتجر' : 'Returned to store';
+      case 'failed':               return isAr ? 'فشل التوصيل'     : 'Delivery failed';
+      case 'partial_return':       return isAr ? 'مرتجع جزئي'      : 'Partial return';
       default: return s;
     }
   }
@@ -195,7 +199,7 @@ class AppStrings {
   // ── Wishlist ─────────────────────────────────────────────────────────────────
   String get wishlistTitle  => isAr ? 'المفضلة'                : 'Wishlist';
   String get wishlistEmpty  => isAr ? 'مفضلتك فارغة'           : 'Your wishlist is empty';
-  String get wishlistSub    => isAr ? 'اضغط على القلب لحفظ المنتج للوقت لاحق.' : 'Tap the heart to save products for later.';
+  String get wishlistSub    => isAr ? 'اضغط على القلب لحفظ المنتج لوقت لاحق.' : 'Tap the heart to save products for later.';
   String get priceDrops     => isAr ? 'تخفيضات الأسعار'        : 'Price Drops';
   String get priceDropBanner=> isAr ? 'انخفض سعره — أضفه قبل نفاد الكمية' : 'dropped in price — add before it sells out';
   String priceDropSavings(int count, String saved) => isAr
@@ -275,7 +279,7 @@ class AppStrings {
   String get notesHint         => isAr ? 'أي تعليمات خاصة بطلبك...' : 'Any special instructions for your order...';
   String get reviewOrderTitle  => isAr ? 'مراجعة الطلب'          : 'Review Order';
   String get deliverTo         => isAr ? 'التسليم إلى'            : 'Deliver to';
-  String get topUpShort        => isAr ? 'شحن'                   : 'Top Up';
+  String get topUpShort        => isAr ? 'شحن الرصيد'            : 'Top Up';
   String get addrLabel         => isAr ? 'عنوان'                  : 'Address';
   String productsCountN(int n) => isAr ? 'المنتجات ($n)'          : 'Products ($n)';
 
@@ -363,7 +367,7 @@ class AppStrings {
   String get downloadInvoice   => isAr ? 'تنزيل الفاتورة'         : 'Download Invoice';
   String get pleaseSelectPayment => isAr ? 'يرجى اختيار طريقة الدفع' : 'Please select a payment method';
   String get skipBtn           => isAr ? 'تخطي'                   : 'Skip';
-  String get saveForLater      => isAr ? 'احفظ للاحقاً'           : 'Save for Later';
+  String get saveForLater      => isAr ? 'احفظ لاحقاً'           : 'Save for Later';
   String get savedToWishlist   => isAr ? 'تمت الإضافة للمفضلة'   : 'Saved to Wishlist';
   String get viewAllProducts   => isAr ? 'عرض الكل'               : 'View All';
   String get daysLabel         => isAr ? 'يوم'                    : 'day(s)';
@@ -429,7 +433,7 @@ class AppStrings {
   String get baahyWallet       => isAr ? 'محفظة باهي'             : 'Baahy Wallet';
   String get walletHistory     => isAr ? 'السجل'                  : 'History';
   String get availableBalance  => isAr ? 'الرصيد المتاح'          : 'Available Balance';
-  String get topUpWallet       => isAr ? 'شحن'                    : 'Top Up';
+  String get topUpWallet       => isAr ? 'شحن الرصيد'             : 'Top Up';
   String get sendMoney         => isAr ? 'إرسال'                  : 'Send';
   String get returnReason      => isAr ? 'ما سبب الإرجاع؟'        : 'Reason for return?';
   String get additionalNotes   => isAr ? 'ملاحظات إضافية (اختياري)' : 'Additional notes (optional)';
@@ -566,7 +570,7 @@ class AppStrings {
   String get freeDeliveryOffer => isAr ? 'توصيل مجاني'             : 'Free delivery';
 
   // ── Wallet ───────────────────────────────────────────────────────────────────
-  String get chargeWallet      => isAr ? 'شحن'                     : 'Charge';
+  String get chargeWallet      => isAr ? 'شحن الرصيد'              : 'Charge';
 
   // ── Contact screen ────────────────────────────────────────────────────────────
   String get whatsappLabel     => isAr ? 'واتساب'                  : 'WhatsApp';

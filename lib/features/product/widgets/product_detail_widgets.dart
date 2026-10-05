@@ -330,12 +330,52 @@ class _ReviewsSnippet extends ConsumerWidget {
   }
 }
 
+const _reviewMonthsAr = [
+  'يناير',
+  'فبراير',
+  'مارس',
+  'أبريل',
+  'مايو',
+  'يونيو',
+  'يوليو',
+  'أغسطس',
+  'سبتمبر',
+  'أكتوبر',
+  'نوفمبر',
+  'ديسمبر',
+];
+const _reviewMonthsEn = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/// Short localised review date ("5 Oct 2026" / "5 أكتوبر 2026"). Empty when the server string
+/// cannot be parsed, so the raw text is never shown.
+String _shortReviewDate(String? raw, bool isAr) {
+  final d = DateTime.tryParse((raw ?? '').trim());
+  if (d == null) return '';
+  final l = d.isUtc ? d.toLocal() : d;
+  final months = isAr ? _reviewMonthsAr : _reviewMonthsEn;
+  return '${l.day} ${months[l.month - 1]} ${l.year}';
+}
+
 class _ReviewCard extends StatelessWidget {
   final Review review;
   const _ReviewCard({required this.review});
 
   @override
   Widget build(BuildContext context) {
+    final date = _shortReviewDate(review.createdAt, context.isAr);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -366,8 +406,9 @@ class _ReviewCard extends StatelessWidget {
                         : context.tr('مجهول', 'Anonymous'),
                     style: const TextStyle(
                         fontWeight: FontWeight.w700, fontSize: 13)),
-                Text(review.createdAt ?? '',
-                    style: TextStyle(fontSize: 11, color: context.col.ink3)),
+                if (date.isNotEmpty)
+                  Text(date,
+                      style: TextStyle(fontSize: 11, color: context.col.ink3)),
               ],
             )),
             Row(
@@ -395,12 +436,15 @@ class _ReviewCard extends StatelessWidget {
 /// The selector label for a variation attribute — 'المقاس', 'اللون', … The prompt shown
 /// when nothing is selected must name the same thing the selector does, so both go
 /// through here rather than each spelling it out.
-const _arAttrNameMap = {'الحجم': 'المقاس'};
+String attrLabel(BuildContext context, ProductAttribute attr) =>
+    attrTypeLabel(context.isAr, attr.name, attr.nameAr);
 
-String attrLabel(BuildContext context, ProductAttribute attr) {
-  final raw = (context.isAr ? attr.nameAr : attr.name).trim();
-  return _arAttrNameMap[raw] ?? raw;
-}
+/// Latin size labels ("3-4 Years", "L/XL") keep left-to-right order inside an RTL line; Arabic ones
+/// follow the surrounding direction.
+TextDirection? _sizeTextDir(bool isSize, String label) =>
+    isSize && !RegExp(r'[\u0600-\u06FF]').hasMatch(label)
+        ? TextDirection.ltr
+        : null;
 
 class _ProductAttributesDisplay extends StatelessWidget {
   final Product product;
@@ -418,6 +462,11 @@ class _ProductAttributesDisplay extends StatelessWidget {
         final isColor = attr.displayType == 'color' ||
             attr.name.toLowerCase() == 'color' ||
             attr.nameAr.contains('لون');
+        final isSize = isSizeAttribute(attr.name, attr.nameAr);
+        final values = isSize
+            ? sortSizeValues(
+                attr.values, (o) => o.value.isNotEmpty ? o.value : o.valueAr)
+            : attr.values;
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Row(
@@ -431,7 +480,7 @@ class _ProductAttributesDisplay extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 4,
                 crossAxisAlignment: WrapCrossAlignment.center,
-                children: attr.values.map((v) {
+                children: values.map((v) {
                   final val = isAr ? v.valueAr : v.value;
                   if (isColor && v.colorHex != null) {
                     return _ColorSwatch(
@@ -441,6 +490,7 @@ class _ProductAttributesDisplay extends StatelessWidget {
                         size: 22);
                   }
                   return Text(val,
+                      textDirection: _sizeTextDir(isSize, val),
                       style: TextStyle(fontSize: 13, color: context.col.ink2));
                 }).toList(),
               )),
@@ -466,7 +516,6 @@ class _VariationPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAr = context.isAr;
-    const arNameMap = {'الحجم': 'المقاس'};
 
     // Group options by typeName from variation_attributes
     final grouped = <String, List<VariationAttribute>>{};
@@ -477,15 +526,6 @@ class _VariationPicker extends StatelessWidget {
           grouped[a.typeName]!.add(a);
         }
       }
-    }
-
-    bool _isSize(String typeName, String rawAr) {
-      final t = typeName.toLowerCase();
-      return t == 'size' ||
-          t == 'مقاس' ||
-          rawAr.contains('مقاس') ||
-          rawAr.contains('حجم') ||
-          rawAr.contains('قياس');
     }
 
     return Column(
@@ -499,10 +539,8 @@ class _VariationPicker extends StatelessWidget {
         final isColor = options.any((o) => o.colorHex != null) ||
             typeName.toLowerCase() == 'color' ||
             rawAr.contains('لون');
-        final isSize = _isSize(typeName, rawAr);
-        final label = isAr
-            ? (isSize ? 'المقاس' : (arNameMap[rawAr.trim()] ?? rawAr))
-            : (isSize ? 'Size' : typeName);
+        final isSize = isSizeAttribute(typeName, rawAr);
+        final label = attrTypeLabel(isAr, typeName, rawAr);
 
         // Single value → display label (not interactive)
         if (options.length == 1) {
@@ -524,6 +562,7 @@ class _VariationPicker extends StatelessWidget {
                   const SizedBox(width: 6),
                 ],
                 Text(val,
+                    textDirection: _sizeTextDir(isSize, val),
                     style: TextStyle(fontSize: 13, color: context.col.ink2)),
               ],
             ),
@@ -531,6 +570,14 @@ class _VariationPicker extends StatelessWidget {
         }
 
         // Multiple values → interactive picker
+        final selLabel = () {
+          final sel = selections[typeName];
+          if (sel == null || !isAr) return sel ?? '';
+          for (final o in options) {
+            if (o.value == sel && o.valueAr.isNotEmpty) return o.valueAr;
+          }
+          return sel;
+        }();
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Column(
@@ -542,21 +589,19 @@ class _VariationPicker extends StatelessWidget {
                         fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(width: 8),
                 if (selections[typeName] != null)
-                  Text(() {
-                    final sel = selections[typeName]!;
-                    if (!isAr) return sel;
-                    for (final o in options) {
-                      if (o.value == sel && o.valueAr.isNotEmpty)
-                        return o.valueAr;
-                    }
-                    return sel;
-                  }(), style: TextStyle(fontSize: 13, color: context.col.ink2)),
+                  Text(selLabel,
+                      textDirection: _sizeTextDir(isSize, selLabel),
+                      style: TextStyle(fontSize: 13, color: context.col.ink2)),
               ]),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: options.map((opt) {
+                children: (isSize
+                        ? sortSizeValues(options,
+                            (o) => o.value.isNotEmpty ? o.value : o.valueAr)
+                        : options)
+                    .map((opt) {
                   final isSelected = selections[typeName] == opt.value;
                   final isOutOfStock = !product.variations.any((v) =>
                       v.attributes.any((a) =>
@@ -606,6 +651,11 @@ class _VariationPicker extends StatelessWidget {
                               isAr && opt.valueAr.isNotEmpty
                                   ? opt.valueAr
                                   : opt.value,
+                              textDirection: _sizeTextDir(
+                                  isSize,
+                                  isAr && opt.valueAr.isNotEmpty
+                                      ? opt.valueAr
+                                      : opt.value),
                               style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,

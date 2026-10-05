@@ -112,13 +112,23 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final u = profile.user;
+    // Same tier names and colours as the account screen (its API keys are shifted from the
+    // display names: bronze = Silver, silver = Gold, gold = Platinum, platinum = Black).
     final tierColor = switch (u.currentTier) {
-      'silver'   => const Color(0xFF9E9E9E),
-      'gold'     => const Color(0xFFD4A82E),
-      'platinum' => const Color(0xFF4FC3F7),
-      String()   => const Color(0xFFCD7F32),
+      'silver'   => const Color(0xFFE0B44A), // Gold
+      'gold'     => const Color(0xFF5AA8CC), // Platinum
+      'platinum' => const Color(0xFFA99FD6), // Black
+      String()   => const Color(0xFF8AA0B4), // Silver
       null       => null,
     };
+    String tierName(String tier) {
+      switch (tier) {
+        case 'silver':   return context.s.silverTier;
+        case 'gold':     return context.s.goldTier;
+        case 'platinum': return context.s.platinumTier;
+        default:         return context.s.bronzeTier;
+      }
+    }
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -145,7 +155,7 @@ class _ProfileHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: tierColor.withValues(alpha: 0.4)),
               ),
-              child: Text(u.currentTier!,
+              child: Text(tierName(u.currentTier!),
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: tierColor, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
             ),
           ],

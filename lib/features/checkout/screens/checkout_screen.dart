@@ -14,6 +14,7 @@ import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
 import '../../../core/providers/welcome_coupon_provider.dart';
+import '../../../core/utils/delivery.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -294,7 +295,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ?.blocksWallet ==
                     true &&
                 _walletSpendable <= 0)
-            ? (ref.read(welcomeCouponProvider).valueOrNull!.walletNoteAr ?? '')
+            ? _walletBlockedNoteText(ref.read(welcomeCouponProvider).valueOrNull!, context.isAr)
             : null,
         initialUseWallet: _useWallet,
         initialWalletAmount: _walletAmountCtrl.text,
@@ -1297,13 +1298,37 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
+  /// The server-written wallet note in the app language; falls back to the other language only
+  /// when this one is empty. Always non-null so the wallet row still reads as blocked.
+  String _walletBlockedNoteText(WelcomeCoupon c, bool isAr) {
+    final ar = c.walletNoteAr ?? '';
+    final en = c.walletNoteEn ?? '';
+    if (isAr) return ar.isNotEmpty ? ar : en;
+    return en.isNotEmpty ? en : ar;
+  }
+
   String _paymentMethodLabel(BuildContext context, List methods) {
     final isAr = context.isAr;
     try {
       final m = methods.firstWhere((m) => m.id == _paymentMethod);
       return isAr ? m.labelAr : (m.labelEn.isNotEmpty ? m.labelEn : m.labelAr);
     } catch (_) {
-      return _paymentMethod;
+      switch (_paymentMethod) {
+        case 'cash_on_delivery':
+        case 'cash':       return isAr ? 'الدفع عند الاستلام' : 'Cash on Delivery';
+        case 'wallet':     return isAr ? 'المحفظة'            : 'Wallet';
+        case 'tadawel':    return isAr ? 'تداول'              : 'Tadawel';
+        case 'moamlat':    return isAr ? 'بطاقة مصرفية'       : 'Bank Card';
+        case 'mobicash':   return isAr ? 'موبي كاش'           : 'Mobicash';
+        case 'paypal':     return 'PayPal';
+        case 'lypay':      return isAr ? 'تحويل مصرفي'        : 'Bank Transfer';
+        case 'sadad':      return isAr ? 'سداد'               : 'Sadad';
+        case 'yousrpay':   return isAr ? 'يسر باي'            : 'Yousr Pay';
+        case 'masrafipay': return isAr ? 'مصرفي باي'          : 'Masrafi Pay';
+        case 'saharapay':  return isAr ? 'صحارى باي'          : 'Sahara Pay';
+        case 'crypto':     return isAr ? 'عملات رقمية'        : 'Crypto';
+        default:           return _paymentMethod;
+      }
     }
   }
 
@@ -1542,7 +1567,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           Text(
                                               // Show the SAME delivery fee as the order summary — i.e. incl. the
                                               // per-vendor collection fee (and free-shipping) — not the raw base rate.
-                                              '${!deliveryKnown ? '—' : effectiveDeliveryFee == 0 ? context.s.freeText : '${fmtPrice(effectiveDeliveryFee)} ${context.s.lydUnit}'} · ${_selectedRate!.deliveryDays} ${context.s.daysLabel}',
+                                              '${!deliveryKnown ? '—' : effectiveDeliveryFee == 0 ? context.s.freeText : '${fmtPrice(effectiveDeliveryFee)} ${context.s.lydUnit}'} · ${dayCountLabel(_selectedRate!.deliveryDays, context.isAr)}',
                                               style: TextStyle(
                                                   fontSize: 11.5,
                                                   color: context.col.ink2,

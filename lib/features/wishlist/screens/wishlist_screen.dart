@@ -423,8 +423,12 @@ class _PriceDropBanner extends StatelessWidget {
               children: [
                 TextSpan(
                   text: context.s.isAr
-                      ? '$count منتجات انخفضت سعرها  '
-                      : '$count items on sale  ',
+                      ? (count == 1
+                          ? 'منتج واحد انخفض سعره  '
+                          : '$count منتجات انخفضت أسعارها  ')
+                      : (count == 1
+                          ? '1 item on sale  '
+                          : '$count items on sale  '),
                   style: TextStyle(color: context.col.ink1, fontWeight: FontWeight.w600),
                 ),
                 TextSpan(

@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/l10n/city_names.dart';
 import '../../../core/models/shipping_rate.dart';
 import '../../../core/providers/address_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
+import '../../../core/utils/arabic_text.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../features/map/map_location_picker.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -181,14 +183,11 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
     return context.tr('حدث خطأ، حاول مجدداً', 'Something went wrong, please try again');
   }
 
-  /// Display name for a stored (Arabic) city: the rate's English name in EN mode.
-  String _cityLabel(String ar) {
-    if (context.isAr) return ar;
+  /// Display name for a stored city, in the current language (display only;
+  /// the stored value sent to the server is unchanged).
+  String _cityLabel(String stored) {
     final rates = ref.watch(shippingRatesProvider).valueOrNull ?? [];
-    for (final r in rates) {
-      if (r.cityAr == ar && r.city.isNotEmpty) return r.city;
-    }
-    return ar;
+    return displayCity(stored, rates, isAr: context.isAr);
   }
 
   @override
@@ -440,8 +439,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
   List<ShippingRate> get _filtered => _query.isEmpty
       ? widget.rates
       : widget.rates.where((r) =>
-          r.cityAr.contains(_query) ||
-          r.city.toLowerCase().contains(_query.toLowerCase())).toList();
+          matchesArabic(r.cityAr, _query) || matchesArabic(r.city, _query)).toList();
 
   @override
   void dispose() { _ctrl.dispose(); super.dispose(); }

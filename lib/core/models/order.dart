@@ -79,25 +79,6 @@ class Order {
   List<OrderItem> get allItems =>
       vendorGroups.expand((g) => g.items).toList();
 
-  String get statusAr {
-    const map = {
-      'pending_payment': 'بانتظار التحويل',
-      'pending_confirmation': 'في انتظار التأكيد',
-      'pending_vendor': 'في انتظار التأكيد',
-      'pending': 'قيد الانتظار',
-      'confirmed': 'مؤكد',
-      'processing': 'قيد التجهيز',
-      'fulfilled': 'تم التجهيز',
-      'shipped': 'تم الشحن',
-      'out_for_delivery': 'خارج للتوصيل',
-      'delivered': 'تم التوصيل',
-      'cancelled': 'ملغي',
-      'returned': 'مُرجَع',
-      'refunded': 'مُسترد',
-    };
-    return map[status] ?? status;
-  }
-
   factory Order.fromJson(Map<String, dynamic> j) => Order(
     id: _i(j['id']),
     orderNumber: j['order_number'] ?? '#${j['id']}',

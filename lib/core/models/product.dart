@@ -1,4 +1,6 @@
 import '../api/api_client.dart';
+// Re-exported so the product-detail `part` files (which cannot import) can use the shared size/label helpers.
+export '../utils/size_order.dart';
 
 class Product {
   final int id;
@@ -327,13 +329,23 @@ class VariationAttribute {
     'attribute_value': {'value': value, 'value_ar': valueAr, 'color_hex': colorHex},
   };
 
-  factory VariationAttribute.fromJson(Map<String, dynamic> j) => VariationAttribute(
-    typeName: j['attribute_type']?['name'] ?? '',
-    typeNameAr: j['attribute_type']?['name_ar'] ?? '',
-    value: j['attribute_value']?['value'] ?? '',
-    valueAr: j['attribute_value']?['value_ar'] ?? '',
-    colorHex: j['attribute_value']?['color_hex'],
-  );
+  factory VariationAttribute.fromJson(Map<String, dynamic> j) {
+    final typeName = j['attribute_type']?['name'] ?? '';
+    final value = j['attribute_value']?['value'] ?? '';
+    return VariationAttribute(
+      typeName: typeName,
+      // A null OR blank Arabic text counts as missing: show the English one rather than nothing.
+      typeNameAr: _arOrEn(j['attribute_type']?['name_ar'], typeName),
+      value: value,
+      valueAr: _arOrEn(j['attribute_value']?['value_ar'], value),
+      colorHex: j['attribute_value']?['color_hex'],
+    );
+  }
+
+  static String _arOrEn(dynamic ar, String en) {
+    final s = ar is String ? ar : (ar?.toString() ?? '');
+    return s.trim().isEmpty ? en : s;
+  }
 }
 
 class Vendor {

@@ -232,12 +232,32 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   }
 }
 
+const _reviewMonthsAr = [
+  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+];
+const _reviewMonthsEn = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/// Short localised review date ("5 Oct 2026" / "5 أكتوبر 2026"). Empty when the server string
+/// cannot be parsed, so the raw text is never shown.
+String _shortReviewDate(String? raw, bool isAr) {
+  final d = DateTime.tryParse((raw ?? '').trim());
+  if (d == null) return '';
+  final l = d.isUtc ? d.toLocal() : d;
+  final months = isAr ? _reviewMonthsAr : _reviewMonthsEn;
+  return '${l.day} ${months[l.month - 1]} ${l.year}';
+}
+
 class _ReviewCard extends StatelessWidget {
   final Review review;
   const _ReviewCard({required this.review});
 
   @override
   Widget build(BuildContext context) {
+    final date = _shortReviewDate(review.createdAt, context.isAr);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
@@ -264,8 +284,8 @@ class _ReviewCard extends StatelessWidget {
               children: [
                 Text(review.reviewerName.isNotEmpty ? review.reviewerName : context.tr('مجهول', 'Anonymous'),
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                if (review.createdAt != null)
-                  Text(review.createdAt!,
+                if (date.isNotEmpty)
+                  Text(date,
                     style: TextStyle(fontSize: 11, color: context.col.ink3)),
               ],
             )),

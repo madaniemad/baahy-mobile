@@ -7,7 +7,6 @@ import '../../../core/models/product.dart';
 import '../../../core/providers/home_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
-import '../../../core/utils/size_order.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 import '../../../core/utils/responsive.dart';
@@ -1058,8 +1057,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: attrTypes.map((attrType) {
-                          final typeLabel =
-                              isAr ? attrType.nameAr : attrType.name;
+                          final typeLabel = attrTypeLabel(
+                              isAr, attrType.name, attrType.nameAr);
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [

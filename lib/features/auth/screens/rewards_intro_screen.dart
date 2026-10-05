@@ -7,6 +7,7 @@ import '../../../core/providers/address_provider.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/app_pages_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
+import '../../../core/utils/arabic_text.dart';
 import '../../../core/services/push_notification_service.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -150,9 +151,8 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
     final loading    = ratesAsync.isLoading;
     final rates      = ratesAsync.valueOrNull ?? const [];
     final all        = rates.map((r) => CityEntry(ar: r.cityAr, en: r.city)).toList();
-    final q          = _query.trim().toLowerCase();
-    final filtered   = q.isEmpty ? all
-        : all.where((c) => c.ar.contains(q) || c.en.toLowerCase().contains(q)).toList();
+    final filtered   = normalizeArabic(_query).isEmpty ? all
+        : all.where((c) => matchesArabic(c.ar, _query) || matchesArabic(c.en, _query)).toList();
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),

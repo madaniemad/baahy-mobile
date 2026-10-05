@@ -233,7 +233,7 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
     final isAr = context.isAr;
     return [
       for (final t in o.attrTypes) ...[
-        _title(isAr && t.nameAr.isNotEmpty ? t.nameAr : t.name),
+        _title(attrTypeLabel(isAr, t.name, t.nameAr)),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final v in isSizeAttribute(t.name, t.nameAr)
               ? sortSizeValues(

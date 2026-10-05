@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/models/product.dart';
+import '../../../core/utils/arabic_text.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -21,6 +22,20 @@ class StoreEntry {
   final List<(String, String)> departments;
   const StoreEntry(this.vendor, this.productsCount,
       {this.reviewsCount = 0, this.departments = const []});
+}
+
+/// Biggest shelves first; ties broken deterministically (Dart's sort is not stable):
+/// store name in the current language (normalised Arabic key, or lower-case English),
+/// then vendor id.
+int compareStoreEntries(StoreEntry a, StoreEntry b, {required bool isAr}) {
+  final byCount = b.productsCount.compareTo(a.productsCount);
+  if (byCount != 0) return byCount;
+  String key(Vendor v) => isAr
+      ? normalizeArabic(v.storeNameAr.isNotEmpty ? v.storeNameAr : v.storeName)
+      : (v.storeName.isNotEmpty ? v.storeName : v.storeNameAr).toLowerCase();
+  final byName = key(a.vendor).compareTo(key(b.vendor));
+  if (byName != 0) return byName;
+  return a.vendor.id.compareTo(b.vendor.id);
 }
 
 /// Active stores, optionally narrowed to those selling in a root category.
@@ -62,7 +77,7 @@ final storesProvider =
       }
     }
     // Biggest shelves first — the stores a shopper is most likely to want.
-    out.sort((a, b) => b.productsCount.compareTo(a.productsCount));
+    out.sort((a, b) => compareStoreEntries(a, b, isAr: true));
     return out;
   } catch (e, st) {
     Sentry.captureException(e, stackTrace: st);
@@ -115,7 +130,7 @@ class _StoresTabState extends ConsumerState<StoresTab> {
   Widget build(BuildContext context) {
     final isAr = context.isAr;
     final stores = ref.watch(storesProvider(_categoryId));
-    final q = widget.query.trim().toLowerCase();
+    final q = widget.query;
 
     return RefreshIndicator(
       color: AppColors.teal,
@@ -187,12 +202,15 @@ class _StoresTabState extends ConsumerState<StoresTab> {
               ),
             ],
             data: (all) {
-              final shown = q.isEmpty
-                  ? all
-                  : all
+              // Re-sort in the current language so ties follow the visible names.
+              final sorted = [...all]
+                ..sort((a, b) => compareStoreEntries(a, b, isAr: isAr));
+              final shown = normalizeArabic(q).isEmpty
+                  ? sorted
+                  : sorted
                       .where((e) =>
-                          e.vendor.storeNameAr.toLowerCase().contains(q) ||
-                          e.vendor.storeName.toLowerCase().contains(q))
+                          matchesArabic(e.vendor.storeNameAr, q) ||
+                          matchesArabic(e.vendor.storeName, q))
                       .toList();
               if (shown.isEmpty) {
                 return [

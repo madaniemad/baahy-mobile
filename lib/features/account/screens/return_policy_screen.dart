@@ -95,7 +95,7 @@ class ReturnPolicyScreen extends ConsumerWidget {
               icon: Icons.support_agent_outlined,
               title: isAr ? 'كيفية طلب الإرجاع' : 'How to Request',
               body: isAr
-                  ? 'افتح الطلب من صفحة "طلباتي" ثم اضغط على "طلب إرجاع". سيتواصل معك فريقنا لتنسيق الاستلام.'
+                  ? 'افتح الطلب من صفحة "طلباتي" ثم اضغط على "إرجاع منتجات". سيتواصل معك فريقنا لتنسيق الاستلام.'
                   : 'Open the order from "My Orders" and tap "Request Return". Our team will contact you to arrange pickup.',
             ),
           ],

@@ -23,7 +23,7 @@ class PaymentMethod {
 
   factory PaymentMethod.fromJson(Map<String, dynamic> j) => PaymentMethod(
     id: j['id'] as String,
-    labelAr: j['label_ar'] as String? ?? j['id'],
+    labelAr: _firstNonEmpty([j['label_ar'], j['label_en'], j['id']]),
     labelEn: j['label_en'] as String? ?? '',
     fee: _d(j['fee'] ?? 0),
     descriptionAr: j['description_ar'] as String? ?? '',
@@ -31,6 +31,15 @@ class PaymentMethod {
     enabled: j['enabled'] as bool? ?? true,
     iconUrl: (j['icon_url'] as String?)?.isNotEmpty == true ? j['icon_url'] as String : null,
   );
+
+  /// First non-blank string among [candidates] — a method with no Arabic label shows its
+  /// English label, and only as a last resort the raw gateway id.
+  static String _firstNonEmpty(List<dynamic> candidates) {
+    for (final c in candidates) {
+      if (c is String && c.trim().isNotEmpty) return c;
+    }
+    return '';
+  }
 
   static double _d(dynamic v) {
     if (v is num) return v.toDouble();

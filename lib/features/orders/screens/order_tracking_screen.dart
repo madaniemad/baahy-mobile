@@ -12,6 +12,7 @@ import '../../../core/models/app_config.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/models/product.dart';
 import '../../../core/providers/cart_provider.dart';
+import '../../../core/utils/delivery.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
@@ -202,7 +203,7 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
-    final isActive = ['pending_confirmation', 'pending_vendor', 'pending', 'confirmed', 'processing',
+    final isActive = ['pending_payment', 'pending_confirmation', 'pending_vendor', 'pending', 'confirmed', 'processing',
         'fulfilled', 'shipped', 'out_for_delivery'].contains(order.status);
 
     return SingleChildScrollView(
@@ -351,8 +352,8 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 final label       = daysLeft <= 0
                   ? (ctx.isAr ? 'آخر يوم للإرجاع — ينتهي $dateStr' : 'Last day to return — expires $dateStr')
                   : ctx.isAr
-                    ? 'متبقٍ $daysLeft يوم للإرجاع — ينتهي $dateStr'
-                    : '$daysLeft day${daysLeft == 1 ? '' : 's'} left to return — deadline $dateStr';
+                    ? 'متبقٍ ${dayCountLabel(daysLeft, true)} للإرجاع — ينتهي $dateStr'
+                    : '${dayCountLabel(daysLeft, false)} left to return — deadline $dateStr';
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Container(
@@ -687,6 +688,10 @@ String _paymentMethodLabel(BuildContext ctx, String m, {List<PaymentMethod> conf
     case 'paypal':   return 'PayPal';
     case 'lypay':    return ar ? 'تحويل مصرفي'        : 'Bank Transfer';
     case 'sadad':    return ar ? 'سداد'               : 'Sadad';
+    case 'yousrpay':   return ar ? 'يسر باي'   : 'Yousr Pay';
+    case 'masrafipay': return ar ? 'مصرفي باي' : 'Masrafi Pay';
+    case 'saharapay':  return ar ? 'صحارى باي' : 'Sahara Pay';
+    case 'crypto':     return ar ? 'عملات رقمية' : 'Crypto';
     default:         return m.isEmpty ? (ar ? 'غير محدد' : 'Not specified') : m;
   }
 }

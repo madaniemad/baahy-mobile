@@ -476,6 +476,15 @@ class _HeroBannerSliderState extends State<_HeroBannerSlider> {
   }
 }
 
+/// Banner copy follows the app language: the English field when not Arabic, falling back to the
+/// other language only when this one was left empty (the admin often fills just one).
+String? _bannerTitle(AppBanner b, bool isAr) => isAr ? (b.titleAr ?? b.titleEn) : (b.titleEn ?? b.titleAr);
+String? _bannerSubtitle(AppBanner b, bool isAr) => isAr ? (b.subtitleAr ?? b.subtitleEn) : (b.subtitleEn ?? b.subtitleAr);
+
+/// Banner image for the language; callers guarantee [AppBanner.hasImage].
+String _bannerImage(AppBanner b, bool isAr) =>
+    (!isAr && b.imageUrlEn != null && b.imageUrlEn!.isNotEmpty) ? b.imageUrlEn! : b.imageUrl!;
+
 class _BannerSlide extends StatelessWidget {
   final AppBanner banner;
   final List<Color> gradient;
@@ -486,13 +495,16 @@ class _BannerSlide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isAr = context.isAr;
+    final title = _bannerTitle(banner, isAr);
+    final subtitle = _bannerSubtitle(banner, isAr);
     return GestureDetector(
       onTap: () => _handleTap(context),
       child: Stack(fit: StackFit.expand, children: [
         // Background: real image or gradient
         if (banner.hasImage)
           CachedNetworkImage(
-            imageUrl: optimizeImg(banner.imageUrl!, width: 1080),
+            imageUrl: optimizeImg(_bannerImage(banner, isAr), width: 1080),
             fit: BoxFit.cover,
             memCacheWidth: 1080,
             placeholder: (_, __) => const _BannerSkeleton(),
@@ -501,7 +513,7 @@ class _BannerSlide extends StatelessWidget {
         else
           _gradientBg(gradient),
 
-        if (banner.showOverlay && (banner.titleAr?.isNotEmpty == true || banner.subtitleAr?.isNotEmpty == true || banner.buttonText?.isNotEmpty == true)) ...[
+        if (banner.showOverlay && (title?.isNotEmpty == true || subtitle?.isNotEmpty == true || banner.buttonText?.isNotEmpty == true)) ...[
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -531,13 +543,13 @@ class _BannerSlide extends StatelessWidget {
                       style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
                         color: Colors.white, letterSpacing: 0.5)),
                   ),
-                if (banner.titleAr != null)
-                  Text(banner.titleAr!,
+                if (title != null)
+                  Text(title,
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
                       color: Colors.white, height: 1.2)),
-                if (banner.subtitleAr != null) ...[
+                if (subtitle != null) ...[
                   const SizedBox(height: 4),
-                  Text(banner.subtitleAr!,
+                  Text(subtitle,
                     style: TextStyle(fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.8))),
                 ],
@@ -674,8 +686,8 @@ class _SubHeroBannerState extends State<_SubHeroBanner> {
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 700),
             child: CachedNetworkImage(
-              key: ValueKey(banner.imageUrl),
-              imageUrl: optimizeImg(banner.imageUrl!, width: 1080),
+              key: ValueKey(_bannerImage(banner, context.isAr)),
+              imageUrl: optimizeImg(_bannerImage(banner, context.isAr), width: 1080),
               fit: BoxFit.cover,
               width: double.infinity,
               memCacheWidth: 1080,
@@ -1370,7 +1382,7 @@ class _FashionTile extends StatelessWidget {
                 errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1A3E)))
             else
               Container(color: const Color(0xFF1A1A3E)),
-            if (banner.showOverlay && (banner.titleAr?.isNotEmpty == true || banner.buttonText?.isNotEmpty == true)) ...[
+            if (banner.showOverlay && (_bannerTitle(banner, isAr)?.isNotEmpty == true || banner.buttonText?.isNotEmpty == true)) ...[
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -1395,8 +1407,8 @@ class _FashionTile extends StatelessWidget {
                           style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
                             color: Colors.white)),
                       ),
-                    if (banner.titleAr != null)
-                      Text(banner.titleAr!,
+                    if (_bannerTitle(banner, isAr) != null)
+                      Text(_bannerTitle(banner, isAr)!,
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
                           color: Colors.white, height: 1.2)),
                     if (banner.buttonText != null) ...[
@@ -1828,6 +1840,16 @@ class _RecentlyViewedSection extends ConsumerWidget {
 
 // ── Seasonal cashback banner ──────────────────────────────────────────────────
 
+/// Day count with correct grammatical number. Same rule as `dayCountLabel` in core/utils/delivery.dart
+/// (home_screen.dart does not import it, and this is a `part` file).
+String _dayCountText(int n, bool isAr) {
+  if (!isAr) return n == 1 ? '1 day' : '$n days';
+  if (n == 1) return 'يوم واحد';
+  if (n == 2) return 'يومين';
+  if (n <= 10) return '$n أيام';
+  return '$n يوماً';
+}
+
 class _SeasonalBanner extends StatelessWidget {
   final AppConfig config;
   const _SeasonalBanner({required this.config});
@@ -1874,7 +1896,7 @@ class _SeasonalBanner extends StatelessWidget {
             if (days != null) ...[
               const SizedBox(width: 8),
               Text(
-                context.isAr ? 'ينتهي خلال $days يوم' : 'Ends in $days days',
+                context.isAr ? 'ينتهي خلال ${_dayCountText(days, true)}' : 'Ends in ${_dayCountText(days, false)}',
                 style: const TextStyle(
                   fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                   fontSize: 11,

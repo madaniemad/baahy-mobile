@@ -635,7 +635,7 @@ class _FreeShippingProgressBanner extends StatelessWidget {
                 text: '${fmtPrice(remaining)} ${context.s.lydUnit}',
                 style: TextStyle(fontWeight: FontWeight.w800, color: context.col.ink0,
                   fontFamily: 'PlusJakartaSans')),
-              TextSpan(text: ' ${context.tr('حتى الشحن المجاني', 'for free shipping')}',
+              TextSpan(text: ' ${context.tr('حتى التوصيل المجاني', 'for free shipping')}',
                 style: TextStyle(color: context.col.ink1)),
             ],
           ))),
@@ -682,13 +682,13 @@ class _FreeShippingAchievedBanner extends StatelessWidget {
       // Text (middle)
       Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(context.tr('مبروك! حصلت على شحن مجاني', 'Congrats! You got free shipping'),
+          Text(context.tr('مبروك! حصلت على توصيل مجاني', 'Congrats! You got free shipping'),
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800,
               color: _green, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
           if (saved > 0) ...[
             const SizedBox(height: 1),
             Text(
-              context.tr('وفرت ${fmtPrice(saved)} ${context.s.lydUnit} من رسوم الشحن',
+              context.tr('وفرت ${fmtPrice(saved)} ${context.s.lydUnit} من رسوم التوصيل',
                 'You saved ${fmtPrice(saved)} ${context.s.lydUnit} in shipping'),
               style: TextStyle(fontSize: 11, color: _green.withValues(alpha: 0.75),
                 fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
@@ -758,7 +758,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                         color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                   ]),
                   if (!hasCoupon)
-                    Text(context.tr('أدخل كود الخصم للحصول على خصم إضافي',
+                    Text(context.tr('أدخل كود الكوبون للحصول على خصم إضافي',
                       'Enter coupon code for extra discount'),
                       style: TextStyle(fontSize: 11, color: context.col.ink3,
                         fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
@@ -1023,7 +1023,7 @@ class _CartItemCard extends ConsumerWidget {
                       const Icon(Icons.local_fire_department_rounded, size: 14, color: AppColors.danger),
                       const SizedBox(width: 3),
                       Text(
-                        context.isAr ? 'بقي $stock قطع فقط' : 'Only $stock left',
+                        context.s.lowStockN(stock),
                         style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5,
                           fontWeight: FontWeight.w700, color: AppColors.danger)),
                     ]),
