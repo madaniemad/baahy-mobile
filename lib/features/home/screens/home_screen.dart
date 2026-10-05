@@ -209,9 +209,6 @@ class HomeScreen extends ConsumerWidget {
                 !banners.initialized)
               const SliverFillRemaining(child: _HomeSkeleton())
             else ...[
-              // One-time rewards modal (invisible trigger)
-              const SliverToBoxAdapter(child: _RewardsModalTrigger()),
-
               // Active order strip + rewards nudge carousel
               const SliverToBoxAdapter(child: _ActiveOrderStrip()),
 
