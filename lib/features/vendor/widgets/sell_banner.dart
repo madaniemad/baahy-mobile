@@ -47,7 +47,7 @@ class SellOnBaahyBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  context.tr('عرض وإدارة وبيع منتجاتك توا أسهل مع باهي',
+                  context.tr('عرض وإدارة وبيع منتجاتك أصبح أسهل مع باهي',
                       'Showing, managing and selling your products is now easier with Baahy'),
                   style: font.copyWith(
                       fontSize: 12,
