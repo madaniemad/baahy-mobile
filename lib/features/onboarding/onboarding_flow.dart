@@ -10,9 +10,8 @@ import 'onb_city_picker.dart';
 /// Onboarding: mandatory city picker, then promo slides (content-only images +
 /// Flutter chrome). Rules:
 ///  - City (page 0): no swipe — must confirm/pick to proceed.
-///  - Plain promos (payments/delivery/rewards): swipe to advance, dots, no button.
-///  - Coupon: no swipe — must tap "Enable notifications" or "Later".
-///  - Products (last): no swipe — must tap "Start shopping" to finish.
+///  - Plain promos (delivery/payments/rewards): swipe to advance, dots, no button.
+///  - Coupon (last): no swipe — must tap "Start shopping" to finish.
 class OnboardingFlow extends ConsumerStatefulWidget {
   const OnboardingFlow({super.key});
   @override
@@ -31,24 +30,24 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   // we relax to a scrollable physics for the duration of the programmatic slide.
   bool _animating = false;
 
-  // Exact sequence (per design numbering): 2 delivery, 3 payments, 4 rewards,
-  // 5 coupon/notifications, 6 products. Each has an Arabic + English artwork —
-  // the language toggle swaps the whole slide, not just the chrome.
+  // Exact sequence: delivery, payments, rewards, coupon. Each has an Arabic +
+  // English artwork — the language toggle swaps the whole slide, not just the
+  // chrome. (The "thousands of products" slide that used to close the flow was
+  // removed 2026-10-05.)
   static const _slides = <({String ar, String en})>[
     (ar: 'assets/onboarding/full/slide_delivery.webp', en: 'assets/onboarding/full/slide_delivery_en.webp'),
     (ar: 'assets/onboarding/full/slide_payments.webp', en: 'assets/onboarding/full/slide_payments_en.webp'),
     (ar: 'assets/onboarding/full/slide_rewards.webp',  en: 'assets/onboarding/full/slide_rewards_en.webp'),
     (ar: 'assets/onboarding/full/slide_coupon.webp',   en: 'assets/onboarding/full/slide_coupon_en.webp'),
-    (ar: 'assets/onboarding/full/slide_products.webp', en: 'assets/onboarding/full/slide_products_en.webp'),
   ];
-  int get _iLast => _slides.length - 1;      // products slide (idx)
+  int get _iLast => _slides.length - 1;      // last slide (idx)
   int get _count => _slides.length + 1;      // + city
 
   // Pages where the user may swipe freely (no button): every promo between the
-  // city picker and the final products slide = carousel pages 1..4. Only the city
-  // (page 0) and products (last page) are gated. Keyed off the settled page so
-  // physics is stable during an in-flight settle. While a programmatic slide runs
-  // we also allow scrolling, otherwise the animation is swallowed.
+  // city picker and the final slide. Only the city (page 0) and the last page are
+  // gated. Keyed off the settled page so physics is stable during an in-flight
+  // settle. While a programmatic slide runs we also allow scrolling, otherwise
+  // the animation is swallowed.
   bool get _canScroll => _animating || (_settled >= 1 && _settled <= _iLast);
 
   @override
@@ -109,14 +108,14 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
               return _parallax(i, _ImageSlide(
                 image: isAr ? slide.ar : slide.en,
                 isAr: isAr,
-                // Only the last (products) slide has a button — every slide between
-                // the city picker and products is a swipe-through promo. Notification
+                // Only the last slide has a button — every slide between the city
+                // picker and the last is a swipe-through promo. Notification
                 // permission is no longer requested here; it moves to first sign-in.
                 cta: isLast ? (isAr ? 'ابدأ التسوق' : 'Start Shopping') : null,
                 onCta: _finish,
                 later: null,
                 onLater: _next,
-                // Dots on every promo except the last (products has the button).
+                // Dots on every promo except the last (it has the button).
                 showDots: !isLast,
                 dots: _Dots(count: _slides.length, active: idx),
               ));
@@ -184,7 +183,9 @@ class _ImageSlide extends StatelessWidget {
           // Tall soft scrim so the bottom of the artwork fades cleanly into the
           // footer instead of being sliced mid-text by the button.
           Positioned(left: 0, right: 0, bottom: 0,
-            height: MediaQuery.of(context).size.height * (cta != null ? 0.34 : 0.22),
+            // 22% either way: the coupon artwork ends in a row of three benefits that a
+            // taller fade would wash out, and the button fits inside the same band.
+            height: MediaQuery.of(context).size.height * 0.22,
             child: const IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
               begin: Alignment.topCenter, end: Alignment.bottomCenter,
               colors: [Color(0x00EAF9FB), Color(0xE6EAF9FB), Color(0xFFEAF9FB)], stops: [0.0, 0.6, 0.9])))),
