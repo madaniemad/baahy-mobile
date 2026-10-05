@@ -416,9 +416,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ? _selectedRate!.effectiveRate(orderSubtotal)
               : (cart.cityRate?.effectiveRate(orderSubtotal) ??
                   cart.fallbackShippingFee))
-          : cart.deliveryFee;
-      final orderTotal =
-          isReorder ? orderSubtotal + orderDeliveryFee : cart.total;
+          : _cartDelivery(cart).fee;
+      final orderTotal = isReorder
+          ? orderSubtotal + orderDeliveryFee
+          : cart.subtotal - cart.discountAmount + orderDeliveryFee;
       final couponCode = isReorder ? null : cart.couponCode;
       final addr = _selectedAddress!;
       // Same fail-closed rule as the build method: an unresolved offer means we
@@ -1271,6 +1272,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (mounted) context.pushReplacement('/order-confirmed', extra: orderData);
   }
 
+  /// Delivery fee for a NORMAL (cart) checkout. It follows the address chosen on this page — the server
+  /// prices by shipping_city — and only falls back to the cart's header-city rate while the chosen
+  /// address has no matching rate. (Quoting the header city made the total wrong whenever the customer
+  /// picked an address in another city.) Collection fee handling is unchanged.
+  ({double fee, bool known}) _cartDelivery(CartState cart) {
+    if (cart.couponFreeShipping) return (fee: 0.0, known: true);
+    final rate = _selectedRate ?? cart.cityRate;
+    if (rate == null) return (fee: 0.0, known: false);
+    final base = rate.effectiveRate(cart.subtotal);
+    if (base == 0) return (fee: 0.0, known: true); // free shipping — waive collection fee too
+    return (fee: base + cart.totalCollectionFee, known: true);
+  }
+
   ShippingRate? get _selectedRate {
     final city = (_selectedAddress?['city'] ?? '').toString();
     if (city.isEmpty) return null;
@@ -1350,16 +1364,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final selectedRate = _selectedRate;
     // A reorder with no rate for its city yet must not fall back to the flat fee — that
     // invents a price. Treated as unknown, exactly like the cart does.
+    final cartDelivery = _cartDelivery(cart);
     final deliveryKnown = isReorder
         ? (selectedRate != null || cart.cityRate != null)
-        : cart.deliveryFeeKnown;
+        : cartDelivery.known;
     final effectiveDeliveryFee = isReorder
         ? (selectedRate != null
             ? selectedRate.effectiveRate(effectiveSubtotal)
             : (cart.cityRate?.effectiveRate(effectiveSubtotal) ?? 0))
-        : cart.deliveryFee;
-    final effectiveTotal =
-        isReorder ? effectiveSubtotal + effectiveDeliveryFee : cart.total;
+        : cartDelivery.fee;
+    final effectiveTotal = isReorder
+        ? effectiveSubtotal + effectiveDeliveryFee
+        : cart.subtotal - cart.discountAmount + effectiveDeliveryFee;
 
     final allMethods = (config.paymentMethods as List)
         .where((m) => m.enabled == true && m.id != 'wallet')

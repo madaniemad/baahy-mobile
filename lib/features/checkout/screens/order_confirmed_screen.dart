@@ -261,7 +261,8 @@ class _OrderConfirmedScreenState extends ConsumerState<OrderConfirmedScreen> {
                 if ((data['payment_method'] ?? '').toString() == 'lypay' && orderId != null) ...[
                   BankTransferCard(
                     orderId: orderId is int ? orderId : int.tryParse(orderId.toString()) ?? 0,
-                    total: total ?? 0,
+                    // Amount to transfer = total minus what the wallet already covered.
+                    total: _amountDue(total ?? 0, data['wallet_amount']),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -665,4 +666,13 @@ class _GoldDot extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// What the customer still has to pay: the order total minus the wallet portion (never negative).
+double _amountDue(double total, dynamic walletAmount) {
+  final w = walletAmount is num
+      ? walletAmount.toDouble()
+      : (double.tryParse('${walletAmount ?? ''}') ?? 0.0);
+  final due = total - w;
+  return due < 0 ? 0 : due;
 }

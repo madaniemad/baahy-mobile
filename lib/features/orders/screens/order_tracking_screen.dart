@@ -218,7 +218,8 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
         if (order.paymentMethod == 'lypay' && order.status == 'pending_payment') ...[
           BankTransferCard(
             orderId: order.id,
-            total: order.total,
+            // Amount to transfer = total minus what the wallet already covered.
+            total: (order.total - order.walletAmount).clamp(0.0, double.infinity),
             alreadyUploaded: order.paymentSlip != null && order.paymentSlip!.isNotEmpty,
           ),
           const SizedBox(height: 14),
