@@ -205,16 +205,28 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
         child: CustomScrollView(
           slivers: [
             // ── Banner: the top of the screen, back button floats over it ──
+            // The logo straddles the banner's bottom edge (opposite the back button) and is
+            // painted over the info block, so the name stays right under the banner.
             SliverToBoxAdapter(
-              child: _StoreHero(vendor: _vendor, loading: _loadingVendor),
-            ),
-
-            // ── Name, description, rating ──
-            SliverToBoxAdapter(
-              child: _StoreInfo(
-                vendor: _vendor,
-                name: vendorName,
-                reviewsCount: _reviewsCount,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Column(children: [
+                    _StoreHero(vendor: _vendor, loading: _loadingVendor),
+                    // ── Name, description, rating ──
+                    _StoreInfo(
+                      vendor: _vendor,
+                      name: vendorName,
+                      reviewsCount: _reviewsCount,
+                    ),
+                  ]),
+                  if (_vendor != null && _StoreHero.showsBadge(_vendor, _loadingVendor))
+                    PositionedDirectional(
+                      end: 16,
+                      top: _StoreHero.heightOf(context) - _StoreHero.badgeSize / 2,
+                      child: _StoreLogoBadge(logo: _vendor!.logo!),
+                    ),
+                ],
               ),
             ),
 
@@ -435,11 +447,22 @@ class _StoreHero extends StatelessWidget {
   final bool loading;
   const _StoreHero({required this.vendor, required this.loading});
 
+  static const badgeSize = 60.0;
+
+  static double heightOf(BuildContext context) =>
+      MediaQuery.paddingOf(context).top + MediaQuery.sizeOf(context).width / 3.4;
+
+  /// A store with no banner already shows its logo centred; otherwise the logo is a badge.
+  static bool showsBadge(Vendor? v, bool loading) =>
+      !loading &&
+      v != null &&
+      (v.banner ?? '').isNotEmpty &&
+      (v.logo ?? '').isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
-    final width = MediaQuery.sizeOf(context).width;
-    final height = top + width / 3.4;
+    final height = heightOf(context);
     final banner = vendor?.banner;
     final logo = vendor?.logo;
 
@@ -475,58 +498,12 @@ class _StoreHero extends StatelessWidget {
       );
     }
 
-    // A store with no banner already shows its logo centred; otherwise the logo straddles the
-    // banner's bottom edge on the side opposite the back button (half over, half below).
-    final showBadge = !loading &&
-        banner != null &&
-        banner.isNotEmpty &&
-        logo != null &&
-        logo.isNotEmpty;
-    const badge = 60.0;
-    final extra = showBadge ? badge / 2 : 0.0;
-
     return SizedBox(
-      height: height + extra,
+      height: height,
       child: Stack(
-        clipBehavior: Clip.none,
+        fit: StackFit.expand,
         children: [
-          Positioned(top: 0, left: 0, right: 0, height: height, child: bg),
-          if (showBadge) ...[
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: extra,
-              child: ColoredBox(color: context.col.surface),
-            ),
-            PositionedDirectional(
-              end: 16,
-              bottom: 0,
-              child: Container(
-                width: badge,
-                height: badge,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.22),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: logo,
-                    fit: BoxFit.cover,
-                    memCacheWidth: 200,
-                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          bg,
           PositionedDirectional(
             top: top + 8,
             start: 12,
@@ -640,4 +617,34 @@ class _StoreInfo extends StatelessWidget {
       ),
     );
   }
+}
+
+class _StoreLogoBadge extends StatelessWidget {
+  final String logo;
+  const _StoreLogoBadge({required this.logo});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: _StoreHero.badgeSize,
+        height: _StoreHero.badgeSize,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.22),
+              blurRadius: 8,
+            ),
+          ],
+        ),
+        child: ClipOval(
+          child: CachedNetworkImage(
+            imageUrl: logo,
+            fit: BoxFit.cover,
+            memCacheWidth: 200,
+            errorWidget: (_, __, ___) => const SizedBox.shrink(),
+          ),
+        ),
+      );
 }
