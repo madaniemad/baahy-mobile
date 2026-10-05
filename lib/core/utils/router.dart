@@ -152,7 +152,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(navigatorKey: _homeNavKey,     routes: [GoRoute(path: '/home',     builder: (_, __) => const HomeScreen())]),
           StatefulShellBranch(navigatorKey: _wishlistNavKey, routes: [GoRoute(path: '/wishlist', builder: (_, __) => const WishlistScreen())]),
-          StatefulShellBranch(navigatorKey: _browseNavKey,   routes: [GoRoute(path: '/browse',   builder: (_, state) => BrowseScreen(deepCategoryId: int.tryParse(state.uri.queryParameters['categoryId'] ?? '')))]),
+          StatefulShellBranch(navigatorKey: _browseNavKey,   routes: [GoRoute(path: '/browse',   builder: (_, state) => BrowseScreen(deepCategoryId: int.tryParse(state.uri.queryParameters['categoryId'] ?? ''), initialTab: state.uri.queryParameters['tab']))]),
           StatefulShellBranch(navigatorKey: _cartNavKey,     routes: [GoRoute(path: '/cart',     builder: (_, __) => const CartScreen())]),
           StatefulShellBranch(navigatorKey: _accountNavKey,  routes: [GoRoute(path: '/account',  builder: (_, __) => const AccountScreen())]),
         ],

@@ -23,6 +23,7 @@ import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
+import '../widgets/shop_by_store_section.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/models/tier_status.dart';
@@ -227,6 +228,9 @@ class HomeScreen extends ConsumerWidget {
                   child: _PromiseStrip(config: config),
                 ),
               ),
+
+              // Shop by store (hides itself until stores load)
+              const SliverToBoxAdapter(child: ShopByStoreSection()),
 
 
               // ── Admin-controlled sections in exact admin order ──

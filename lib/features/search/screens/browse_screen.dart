@@ -8,15 +8,20 @@ import '../../../core/providers/home_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../vendor/widgets/stores_tab.dart';
 
 const _kCols = 3;
 const _kGap = 10.0;
+/// Both tabs' search bars use this exact height so the page below does not jump when switching tabs.
+const _kSearchBarH = 44.0;
 
 final _browseCategoriesProvider = FutureProvider<List<Category>>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/categories');
     final list = (res.data?['data'] as List?)
-        ?.map((c) => Category.fromJson(c as Map<String, dynamic>)).toList() ?? [];
+            ?.map((c) => Category.fromJson(c as Map<String, dynamic>))
+            .toList() ??
+        [];
     return list;
   } catch (_) {
     return [];
@@ -25,7 +30,9 @@ final _browseCategoriesProvider = FutureProvider<List<Category>>((ref) async {
 
 class BrowseScreen extends ConsumerStatefulWidget {
   final int? deepCategoryId;
-  const BrowseScreen({super.key, this.deepCategoryId});
+  /// 'stores' opens the Stores tab (used by the home "Shop by store" See all link).
+  final String? initialTab;
+  const BrowseScreen({super.key, this.deepCategoryId, this.initialTab});
 
   @override
   ConsumerState<BrowseScreen> createState() => _BrowseScreenState();
@@ -36,16 +43,22 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   bool _deepLinked = false;
   final _scrollCtrl = ScrollController();
   final _subcatKey = GlobalKey();
+  final _storeSearchCtrl = TextEditingController();
+  late int _tab = widget.initialTab == 'stores' ? 1 : 0; // 0 = categories, 1 = stores
 
   @override
   void dispose() {
     _scrollCtrl.dispose();
+    _storeSearchCtrl.dispose();
     super.dispose();
   }
 
   @override
   void didUpdateWidget(BrowseScreen old) {
     super.didUpdateWidget(old);
+    if (widget.initialTab != old.initialTab && widget.initialTab == 'stores') {
+      setState(() => _tab = 1);
+    }
     if (widget.deepCategoryId != old.deepCategoryId &&
         widget.deepCategoryId != null) {
       _deepLinked = false;
@@ -67,7 +80,9 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
         ? categoriesAsync.valueOrNull!
         : home.categories;
 
-    if (categories.isNotEmpty && !_deepLinked && widget.deepCategoryId != null) {
+    if (categories.isNotEmpty &&
+        !_deepLinked &&
+        widget.deepCategoryId != null) {
       _deepLinked = true;
       final targetId = widget.deepCategoryId!;
       final isRoot = categories.any((c) => c.id == targetId);
@@ -98,140 +113,270 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     return Scaffold(
       backgroundColor: context.col.bg,
       body: SafeArea(
-        child: CustomScrollView(
-          controller: _scrollCtrl,
-          slivers: [
+        child: Column(
+          children: [
             // ── Search bar ─────────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: GestureDetector(
+            // Categories tab: tap-through to the full search. Stores tab: filters the list.
+            if (_tab == 0)
+              GestureDetector(
                 onTap: () => safePush(context, '/search'),
                 child: Container(
+                  height: _kSearchBarH,
+                  alignment: Alignment.center,
                   margin: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: isDark ? context.col.surfaceSoft : context.col.surface,
+                    color:
+                        isDark ? context.col.surfaceSoft : context.col.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.col.borderStrong, width: 1.0),
+                    border:
+                        Border.all(color: context.col.borderStrong, width: 1.0),
                   ),
                   child: Row(children: [
                     Icon(Icons.search, size: 17, color: context.col.ink1),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(context.s.searchHint,
-                          style: TextStyle(
-                              color: context.col.ink1, fontSize: 13)),
+                          style:
+                              TextStyle(color: context.col.ink1, fontSize: 13)),
                     ),
                     GestureDetector(
                       onTap: () => safePush(context, '/search/camera'),
                       child: Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
                         child: Icon(Icons.camera_alt_outlined,
                             size: 17, color: context.col.ink1),
                       ),
                     ),
                   ]),
                 ),
-              ),
-            ),
-
-            // ── "التصنيفات" header ─────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                child: Text(
-                  isAr ? 'التصنيفات' : 'Categories',
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: context.col.ink0,
-                    fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                  ),
-                ),
-              ),
-            ),
-
-            if (categories.isEmpty)
-              const SliverFillRemaining(
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.teal),
-                ),
               )
             else
-              // ── Category rows with inline subcategory panel ─────────────
-              SliverPadding(
+              Container(
+                height: _kSearchBarH,
+                alignment: Alignment.center,
+                margin: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (ctx, rowIdx) {
-                      final start = rowIdx * _kCols;
-                      final end =
-                          min(start + _kCols, categories.length);
-                      final rowCats = categories.sublist(start, end);
-                      final isActiveRow = rowIdx == activeRow;
+                decoration: BoxDecoration(
+                  color: isDark ? context.col.surfaceSoft : context.col.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border:
+                      Border.all(color: context.col.borderStrong, width: 1.0),
+                ),
+                child: Row(children: [
+                  Icon(Icons.search, size: 17, color: context.col.ink1),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _storeSearchCtrl,
+                      onChanged: (_) => setState(() {}),
+                      textInputAction: TextInputAction.search,
+                      style: TextStyle(color: context.col.ink0, fontSize: 13),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        filled: false,
+                        hintText: context.s.searchStoreHint,
+                        hintStyle:
+                            TextStyle(color: context.col.ink1, fontSize: 13),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                  if (_storeSearchCtrl.text.isNotEmpty)
+                    GestureDetector(
+                      onTap: () => setState(_storeSearchCtrl.clear),
+                      child:
+                          Icon(Icons.close, size: 17, color: context.col.ink1),
+                    ),
+                ]),
+              ),
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // ── Row of category cards ──────────────────────
-                          // Selected card gets flex:2 (2× wider → 2× taller via AspectRatio)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              for (int j = 0; j < _kCols; j++) ...[
-                                if (j > 0) const SizedBox(width: _kGap),
-                                Expanded(
-                                  flex: (j < rowCats.length &&
-                                          rowCats[j].id == _activeCategoryId)
-                                      ? 4
-                                      : 3,
-                                  child: j < rowCats.length
-                                      ? _CategoryCard(
-                                          category: rowCats[j],
-                                          label: isAr
-                                              ? rowCats[j].nameAr
-                                              : rowCats[j].name,
+            // ── Tabs: التصنيفات | المتاجر ───────────────────────────────────
+            _BrowseTabs(
+              index: _tab,
+              labels: [context.s.categoriesTab, context.s.storesTab],
+              onChanged: (i) {
+                FocusScope.of(context).unfocus();
+                setState(() => _tab = i);
+              },
+            ),
+
+            Expanded(
+              child: _tab == 1
+                  ? StoresTab(
+                      categories: categories,
+                      query: _storeSearchCtrl.text,
+                    )
+                  : CustomScrollView(
+                      controller: _scrollCtrl,
+                      slivers: [
+                        // ── "التصنيفات" header ─────────────────────────────────────────
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                            child: Text(
+                              isAr ? 'التصنيفات' : 'Categories',
+                              textAlign: TextAlign.start,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: context.col.ink0,
+                                fontFamily: 'Manrope',
+                                fontFamilyFallback: ['Tajawal'],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        if (categories.isEmpty)
+                          const SliverFillRemaining(
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                  color: AppColors.teal),
+                            ),
+                          )
+                        else
+                          // ── Category rows with inline subcategory panel ─────────────
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            sliver: SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (ctx, rowIdx) {
+                                  final start = rowIdx * _kCols;
+                                  final end =
+                                      min(start + _kCols, categories.length);
+                                  final rowCats =
+                                      categories.sublist(start, end);
+                                  final isActiveRow = rowIdx == activeRow;
+
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      // ── Row of category cards ──────────────────────
+                                      // Selected card gets flex:2 (2× wider → 2× taller via AspectRatio)
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          for (int j = 0; j < _kCols; j++) ...[
+                                            if (j > 0)
+                                              const SizedBox(width: _kGap),
+                                            Expanded(
+                                              flex: (j < rowCats.length &&
+                                                      rowCats[j].id ==
+                                                          _activeCategoryId)
+                                                  ? 4
+                                                  : 3,
+                                              child: j < rowCats.length
+                                                  ? _CategoryCard(
+                                                      category: rowCats[j],
+                                                      label: isAr
+                                                          ? rowCats[j].nameAr
+                                                          : rowCats[j].name,
+                                                      isDark: isDark,
+                                                      onTap: () =>
+                                                          _selectCategory(
+                                                        rowCats[j].id,
+                                                        rowCats[j].id ==
+                                                            _activeCategoryId,
+                                                      ),
+                                                    )
+                                                  : const SizedBox(),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+
+                                      // ── Subcategory panel (injected after active row) ──
+                                      if (isActiveRow &&
+                                          activeCategory != null &&
+                                          activeCategory
+                                              .children.isNotEmpty) ...[
+                                        const SizedBox(height: 12),
+                                        _SubcategoryList(
+                                          key: _subcatKey,
+                                          category: activeCategory,
+                                          isAr: isAr,
                                           isDark: isDark,
-                                          onTap: () => _selectCategory(
-                                            rowCats[j].id,
-                                            rowCats[j].id ==
-                                                _activeCategoryId,
-                                          ),
-                                        )
-                                      : const SizedBox(),
-                                ),
-                              ],
-                            ],
+                                        ),
+                                      ],
+
+                                      // Row gap (space before next row)
+                                      const SizedBox(height: 10),
+                                    ],
+                                  );
+                                },
+                                childCount: rowCount,
+                              ),
+                            ),
                           ),
 
-                          // ── Subcategory panel (injected after active row) ──
-                          if (isActiveRow &&
-                              activeCategory != null &&
-                              activeCategory.children.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            _SubcategoryList(
-                              key: _subcatKey,
-                              category: activeCategory,
-                              isAr: isAr,
-                              isDark: isDark,
-                            ),
-                          ],
+                        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-                          // Row gap (space before next row)
-                          const SizedBox(height: 10),
-                        ],
-                      );
-                    },
-                    childCount: rowCount,
+// ── Tabs (categories | stores) ────────────────────────────────────────────────
+
+class _BrowseTabs extends StatelessWidget {
+  final int index;
+  final List<String> labels;
+  final ValueChanged<int> onChanged;
+  const _BrowseTabs({
+    required this.index,
+    required this.labels,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.col.border, width: 1)),
+      ),
+      child: Row(
+        children: [
+          for (int i = 0; i < labels.length; i++)
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onChanged(i),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color:
+                            i == index ? AppColors.primary : Colors.transparent,
+                        width: 2.5,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    labels[i],
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: i == index ? AppColors.primary : context.col.ink3,
+                      fontFamily: 'Manrope',
+                      fontFamilyFallback: const ['Tajawal'],
+                    ),
                   ),
                 ),
               ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -266,9 +411,8 @@ class _CategoryCard extends StatelessWidget {
             aspectRatio: 1.0,
             child: Container(
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF1A1A1A)
-                    : const Color(0xFFF5F5F5),
+                color:
+                    isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5),
                 borderRadius: radius,
               ),
               child: ClipRRect(
@@ -304,7 +448,8 @@ class _CategoryCard extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: context.col.ink0,
-                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                fontFamily: 'Manrope',
+                fontFamilyFallback: ['Tajawal'],
                 height: 1.3,
               ),
             ),
@@ -371,16 +516,16 @@ class _SubcategoryList extends StatelessWidget {
                           Expanded(
                             child: Text(
                               name,
-                              textAlign: isAr
-                                  ? TextAlign.right
-                                  : TextAlign.left,
+                              textAlign:
+                                  isAr ? TextAlign.right : TextAlign.left,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: context.col.ink0,
-                                fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                                fontFamily: 'Manrope',
+                                fontFamilyFallback: ['Tajawal'],
                               ),
                             ),
                           ),
