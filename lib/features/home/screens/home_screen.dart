@@ -233,6 +233,10 @@ class HomeScreen extends ConsumerWidget {
               // ── Admin-controlled sections in exact admin order ──
               ...home.orderedDynamicSections.expand((item) sync* {
                 if (item is DynGrid) {
+                  // Stores and the "sell on Baahy" invite sit right above the Under-100 grid
+                  if (identical(item, _storesAnchor(home.orderedDynamicSections))) {
+                    yield* _storesAndSellSlivers();
+                  }
                   yield SliverToBoxAdapter(
                     child: _SectionHead(
                       ar: item.titleAr.isNotEmpty ? item.titleAr : 'منتجات',
@@ -247,10 +251,6 @@ class HomeScreen extends ConsumerWidget {
                   );
                   yield SliverToBoxAdapter(child: _BudgetCarousel(products: item.products));
                   yield const SliverToBoxAdapter(child: SizedBox(height: 20));
-                  // Stores and the "sell on Baahy" invite sit right below the Under-100 grid
-                  if (identical(item, _storesAnchor(home.orderedDynamicSections))) {
-                    yield* _storesAndSellSlivers();
-                  }
                 } else if (item is DynCarousel) {
                   yield SliverToBoxAdapter(
                     child: _CategoryCarouselSection(section: item.section),
@@ -377,7 +377,7 @@ List<Widget> _storesAndSellSlivers() => const [
       ),
     ];
 
-/// The admin's "Under 100 LYD" grid: the shop-by-store block is placed right below it.
+/// The admin's "Under 100 LYD" grid: the shop-by-store block is placed right above it.
 HomeDynamicItem? _storesAnchor(List<HomeDynamicItem> items) {
   for (final i in items) {
     if (i is DynGrid && (i.titleEn.contains('100') || i.titleAr.contains('100'))) return i;
