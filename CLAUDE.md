@@ -291,7 +291,7 @@ Required keys already present:
 - **alternative_brand panel**: when backend returns `alternative_brand != null` (brand exists but not in scanned category) — shows bottom sheet: "لا يوجد {brand} في باهي" + "شاهد {type} مشابهة" button + "ابحث بصورة أخرى"; button navigates then resets to live camera
 - **Backend logic** (`ProductController::searchByImage`): Claude Haiku Vision picks category from 3-level tree; brand alias expansion (HUGO→Hugo Boss, ARMANI→Giorgio Armani, etc.); short-circuit returns all brand+category products when both known; fallback cascade; `alternative_brand` triggered when brand not found in scanned category
 
-## Backend Search Notes (Laravel — server only, no local git)
+## Backend Search Notes (Laravel — the `baahy-backend` git repo on the Cloudways server, branch `master`; not cloned on this Mac)
 All search logic is in `app/Http/Controllers/API/ProductController.php`:
 - **`suggestions()`**: Arabic termMap (EN→AR), brand phonetics map (AR phonetic→EN brand), `$wordGroups` AND logic, starts-with brand completion, word-boundary LIKE (`CONCAT(' ',col,' ') LIKE '% term%'`), SKU code returns `product` type with image
 - **`index()` (product listing)**: FULLTEXT AGAINST + LIKE OR fallback for Arabic; Arabic plural stem map; SKU/code queries (contains `-` + digits) bypass FULLTEXT and use exact `sku LIKE`
@@ -336,6 +336,6 @@ Migration state: 46,471 orders · 8,887 products · 47,238 users. Order numbers 
 - Map picker in address flow needs real Google Maps API key
 
 ## What This App Does NOT Own
-- Backend PHP code → lives only on Cloudways server (no local git); SSH via Cloudways dashboard
+- Backend PHP code → the `baahy-backend` git repo (branch `master`) ON the Cloudways server; not cloned on this Mac. Edit, commit and push FROM the server via `baahy-web/scripts/backend.sh`. Full map and rules: `~/Developer/CLAUDE.md`; live state: `bash ~/Developer/repo-status.sh`
 - Admin panel → at `https://api.baahy.com/admin`
 - Web frontend → edit in `baahy-web` project
