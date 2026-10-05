@@ -247,6 +247,10 @@ class HomeScreen extends ConsumerWidget {
                   );
                   yield SliverToBoxAdapter(child: _BudgetCarousel(products: item.products));
                   yield const SliverToBoxAdapter(child: SizedBox(height: 20));
+                  // Stores and the "sell on Baahy" invite sit right below the Under-100 grid
+                  if (identical(item, _storesAnchor(home.orderedDynamicSections))) {
+                    yield* _storesAndSellSlivers();
+                  }
                 } else if (item is DynCarousel) {
                   yield SliverToBoxAdapter(
                     child: _CategoryCarouselSection(section: item.section),
@@ -312,8 +316,6 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     );
                     yield SliverToBoxAdapter(child: _HorizontalProductList(products: featProds));
-                    // Stores and the "sell on Baahy" invite sit right below "Picks for you"
-                    yield* _storesAndSellSlivers();
                   }
                 } else if (item is DynDeals) {
                   final dealProds = home.deals.isNotEmpty ? home.deals : item.fallbackProducts;
@@ -346,9 +348,8 @@ class HomeScreen extends ConsumerWidget {
                 }
               }),
 
-              // No "Picks for you" section to anchor to: keep the stores block before Recently viewed
-              if (!home.orderedDynamicSections.any((i) => i is DynFeatured) ||
-                  home.featured.isEmpty)
+              // No Under-100 grid to anchor to: keep the stores block before Recently viewed
+              if (_storesAnchor(home.orderedDynamicSections) == null)
                 ..._storesAndSellSlivers(),
 
               // Recently viewed
@@ -374,3 +375,11 @@ List<Widget> _storesAndSellSlivers() => const [
         ),
       ),
     ];
+
+/// The admin's "Under 100 LYD" grid: the shop-by-store block is placed right below it.
+HomeDynamicItem? _storesAnchor(List<HomeDynamicItem> items) {
+  for (final i in items) {
+    if (i is DynGrid && (i.titleEn.contains('100') || i.titleAr.contains('100'))) return i;
+  }
+  return null;
+}
