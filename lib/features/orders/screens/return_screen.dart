@@ -647,7 +647,7 @@ class _StepReason extends StatelessWidget {
                       child: GestureDetector(
                         onTap: () => onResolutionChanged(o[0]),
                         child: Container(
-                          margin: EdgeInsets.only(right: o[0] == 'refund' ? 8 : 0),
+                          margin: EdgeInsetsDirectional.only(start: o[0] == 'refund' ? 8 : 0),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
@@ -752,7 +752,7 @@ class _StepReason extends StatelessWidget {
                       child: GestureDetector(
                         onTap: () => onRefundMethodChanged(o[0]),
                         child: Container(
-                          margin: EdgeInsets.only(right: o[0] == 'wallet' ? 8 : 0),
+                          margin: EdgeInsetsDirectional.only(start: o[0] == 'wallet' ? 8 : 0),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
@@ -857,7 +857,7 @@ class _StepReason extends StatelessWidget {
                       },
                       child: Container(
                         width: 80, height: 80,
-                        margin: const EdgeInsets.only(left: 8),
+                        margin: const EdgeInsetsDirectional.only(end: 8),
                         decoration: BoxDecoration(
                           color: context.col.bg,
                           borderRadius: BorderRadius.circular(12),
@@ -879,15 +879,15 @@ class _StepReason extends StatelessWidget {
                       children: [
                         Container(
                           width: 80, height: 80,
-                          margin: const EdgeInsets.only(left: 8),
+                          margin: const EdgeInsetsDirectional.only(end: 8),
                           decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: Image.file(File(e.value.path), fit: BoxFit.cover),
                           ),
                         ),
-                        Positioned(
-                          top: 2, right: 10,
+                        PositionedDirectional(
+                          top: 2, start: 10,
                           child: GestureDetector(
                             onTap: () {
                               final updated = List<XFile>.from(images)..removeAt(e.key);

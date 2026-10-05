@@ -138,7 +138,7 @@ class CartScreen extends ConsumerWidget {
         leading: GoRouterState.of(context).matchedLocation != '/cart' && context.canPop()
             ? IconButton(
                 onPressed: () => context.pop(),
-                icon: Icon(Icons.arrow_forward_ios_rounded, size: 18, color: context.col.ink0))
+                icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: context.col.ink0))
             : null,
         title: Text(
           context.tr('السلة (${cart.count})', 'Cart (${cart.count})'),
@@ -310,7 +310,9 @@ class _CartBodyState extends ConsumerState<_CartBody> {
         .toList();
     if (unresolved.isNotEmpty) {
       if (mounted) {
-        final names = unresolved.map((i) => i.product.nameAr).join('، ');
+        final names = unresolved
+            .map((i) => context.isAr ? i.product.nameAr : i.product.name)
+            .join(context.isAr ? '، ' : ', ');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(context.isAr ? 'اختر المقاس/اللون لـ: $names' : 'Choose size/colour for: $names'),
           backgroundColor: AppColors.danger,
@@ -320,7 +322,7 @@ class _CartBodyState extends ConsumerState<_CartBody> {
     }
 
     setState(() => _checking = true);
-    final issues = await ref.read(cartProvider.notifier).validateAndGetIssues();
+    final issues = await ref.read(cartProvider.notifier).validateAndGetIssues(isAr: context.isAr);
     if (!mounted) return;
     setState(() => _checking = false);
 
@@ -586,8 +588,8 @@ class _CartBodyState extends ConsumerState<_CartBody> {
                         color: Color(0xFFE8FFFE), fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                   ]),
                 if (!_checking)
-                  Positioned(
-                    left: 16,
+                  PositionedDirectional(
+                    end: 16,
                     // Same rule as the summary: no total until delivery is known.
                     child: Text(cart.deliveryFeeKnown
                         ? '${fmtPrice(cart.total)} ${context.s.lydUnit}' : '—',
@@ -724,7 +726,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
 
   Future<void> _apply() async {
     setState(() { _loading = true; _error = null; });
-    final err = await ref.read(cartProvider.notifier).applyCoupon(_ctrl.text);
+    final err = await ref.read(cartProvider.notifier).applyCoupon(_ctrl.text, isAr: context.isAr);
     if (mounted) setState(() { _loading = false; _error = err; });
   }
 
@@ -836,7 +838,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                 child: TextField(
                   controller: _ctrl,
                   textCapitalization: TextCapitalization.characters,
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.start,
                   decoration: InputDecoration(
                     hintText: context.s.couponHint,
                     hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
@@ -1023,7 +1025,7 @@ class _CartItemCard extends ConsumerWidget {
                       border: Border.all(color: context.col.border),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    child: Row(mainAxisSize: MainAxisSize.min, children: _stepperOrder(context, [
                       _QtyBtn(
                         icon: Icons.add,
                         onTap: (() {
@@ -1054,7 +1056,7 @@ class _CartItemCard extends ConsumerWidget {
                                 .updateQty(item.key, item.quantity - 1)
                             : null,
                       ),
-                    ]),
+                    ])),
                   ),
                   const Spacer(),
                   // Save for later (RIGHT of trash in RTL)
@@ -1315,7 +1317,7 @@ class _RecommendedCard extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.start,
                   style: TextStyle(fontSize: 11, color: context.col.ink1,
                     fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                 const SizedBox(height: 2),
@@ -1333,8 +1335,8 @@ class _RecommendedCard extends ConsumerWidget {
           ]),
 
           // Add to cart button
-          Positioned(
-            bottom: 6, left: 6,
+          PositionedDirectional(
+            bottom: 6, end: 6,
             child: GestureDetector(
               onTap: inCart ? null : () {
                 if (product.productType == 'variable' || product.variations.isNotEmpty) {
@@ -1548,3 +1550,8 @@ class _Row extends StatelessWidget {
     ]),
   );
 }
+
+/// The stepper is written [+, qty, -] for right-to-left, which reads "- 1 +" in Arabic. In English
+/// it must be reversed to read "- 1 +" as well.
+List<Widget> _stepperOrder(BuildContext context, List<Widget> rtlOrder) =>
+    context.isAr ? rtlOrder : rtlOrder.reversed.toList();

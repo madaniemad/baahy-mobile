@@ -328,10 +328,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           .toList();
       if (unresolved.isNotEmpty) {
         if (mounted) {
-          final names = unresolved.map((i) => i.product.nameAr).join('، ');
+          final names = unresolved
+              .map((i) => context.isAr ? i.product.nameAr : i.product.name)
+              .join(context.isAr ? '، ' : ', ');
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('اختر المقاس/اللون لـ: $names'),
-            action: SnackBarAction(label: 'مراجعة السلة', onPressed: () => context.pop()),
+            content: Text(context.tr('اختر المقاس/اللون لـ: $names', 'Choose size/colour for: $names')),
+            action: SnackBarAction(label: context.tr('مراجعة السلة', 'Review cart'), onPressed: () => context.pop()),
             backgroundColor: AppColors.danger,
           ));
         }
@@ -342,7 +344,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     setState(() => _loading = true);
 
     if (!isReorder) {
-      final validationError = await ref.read(cartProvider.notifier).validate();
+      final validationError = await ref.read(cartProvider.notifier).validate(isAr: context.isAr);
       if (!mounted) return;
       if (validationError != null) {
         setState(() => _loading = false);
@@ -493,7 +495,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final Uri? deepLink = await Navigator.of(context).push<Uri?>(
         MaterialPageRoute(builder: (_) => PaymentWebViewScreen(
           url: approvalUrl,
-          title: 'الدفع عبر PayPal',
+          title: context.tr('الدفع عبر PayPal', 'Pay with PayPal'),
         )),
       );
 
@@ -530,7 +532,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       } catch (e) {
         if (mounted) {
           setState(() => _loading = false);
-          String msg = 'فشل تأكيد الدفع — تواصل مع الدعم';
+          String msg = context.tr('فشل تأكيد الدفع — تواصل مع الدعم', 'Payment confirmation failed — please contact support');
           if (e is DioException) {
             final d = e.response?.data;
             if (d is Map && d['message'] != null) msg = d['message'].toString();
@@ -542,7 +544,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        String msg = 'فشل بدء الدفع عبر PayPal';
+        String msg = context.tr('فشل بدء الدفع عبر PayPal', 'Could not start PayPal payment');
         if (e is DioException) {
           final data = e.response?.data;
           if (data is Map && data['message'] != null) msg = data['message'].toString();
@@ -564,7 +566,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
 
-      final title = gateway == 'tadawel' ? 'الدفع عبر تداول' : gateway == 'sadad' ? 'الدفع عبر سداد' : 'الدفع بالبطاقة المصرفية';
+      final title = gateway == 'tadawel'
+          ? context.tr('الدفع عبر تداول', 'Pay with Tadawel')
+          : gateway == 'sadad'
+              ? context.tr('الدفع عبر سداد', 'Pay with Sadad')
+              : context.tr('الدفع بالبطاقة المصرفية', 'Pay by bank card');
       final Uri? deepLink = await Navigator.of(context).push<Uri?>(
         MaterialPageRoute(builder: (_) => PaymentWebViewScreen(url: paymentUrl, title: title)),
       );
@@ -586,10 +592,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (!mounted) return;
       if (result == null) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('قد يستغرق تأكيد الدفع بضع دقائق. تحقق من طلباتك بعد قليل — لا تُعِد المحاولة لتجنّب الدفع مرتين.'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.tr(
+              'قد يستغرق تأكيد الدفع بضع دقائق. تحقق من طلباتك بعد قليل — لا تُعِد المحاولة لتجنّب الدفع مرتين.',
+              'Payment confirmation may take a few minutes. Check your orders shortly — do not retry, to avoid paying twice.')),
           backgroundColor: AppColors.ink1,
-          duration: Duration(seconds: 6),
+          duration: const Duration(seconds: 6),
         ));
         return;
       }
@@ -611,7 +619,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        String msg = 'فشل بدء عملية الدفع';
+        String msg = context.tr('فشل بدء عملية الدفع', 'Could not start the payment');
         if (e is DioException) {
           final data = e.response?.data;
           if (data is Map && data['message'] != null) msg = data['message'].toString();
@@ -659,25 +667,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   decoration: BoxDecoration(color: context.col.border,
                       borderRadius: BorderRadius.circular(2)))),
                 const SizedBox(height: 16),
-                Text(otpStep ? 'رمز التحقق OTP' : 'رقم بطاقة موبيكاش',
+                Text(otpStep ? context.tr('رمز التحقق OTP', 'OTP verification code') : context.tr('رقم بطاقة موبيكاش', 'Mobicash card number'),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 12),
                 if (!otpStep)
                   TextField(
                     controller: cardCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      hintText: 'أدخل رقم بطاقة موبيكاش',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: context.tr('أدخل رقم بطاقة موبيكاش', 'Enter your Mobicash card number'),
+                      border: const OutlineInputBorder(),
                     ),
                   )
                 else
                   TextField(
                     controller: otpCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      hintText: 'أدخل رمز OTP المرسل إليك',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: context.tr('أدخل رمز OTP المرسل إليك', 'Enter the OTP sent to you'),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 if (sheetError != null) ...[
@@ -691,7 +699,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     onPressed: sheetLoading ? null : () async {
                       if (!otpStep) {
                         if (cardCtrl.text.trim().isEmpty) {
-                          setS(() => sheetError = 'يرجى إدخال رقم البطاقة');
+                          setS(() => sheetError = context.tr('يرجى إدخال رقم البطاقة', 'Please enter the card number'));
                           return;
                         }
                         setS(() { sheetLoading = true; sheetError = null; });
@@ -703,7 +711,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           mitfTxId = r.data['mitf_transaction_id']?.toString();
                           setS(() { sheetLoading = false; otpStep = true; });
                         } catch (e) {
-                          String msg = 'البطاقة غير صحيحة أو الخدمة غير متاحة';
+                          String msg = context.tr('البطاقة غير صحيحة أو الخدمة غير متاحة', 'Invalid card or service unavailable');
                           if (e is DioException) {
                             final d = e.response?.data;
                             if (d is Map && d['message'] != null) msg = d['message'].toString();
@@ -712,7 +720,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         }
                       } else {
                         if (otpCtrl.text.trim().isEmpty) {
-                          setS(() => sheetError = 'يرجى إدخال رمز OTP');
+                          setS(() => sheetError = context.tr('يرجى إدخال رمز OTP', 'Please enter the OTP'));
                           return;
                         }
                         setS(() { sheetLoading = true; sheetError = null; });
@@ -733,7 +741,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             });
                           }
                         } catch (e) {
-                          String msg = 'رمز OTP غير صحيح، حاول مجدداً';
+                          String msg = context.tr('رمز OTP غير صحيح، حاول مجدداً', 'Incorrect OTP, please try again');
                           if (e is DioException) {
                             final d = e.response?.data;
                             if (d is Map && d['message'] != null) msg = d['message'].toString();
@@ -751,7 +759,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: sheetLoading
                         ? const SizedBox(width: 20, height: 20,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text(otpStep ? 'تأكيد الدفع' : 'إرسال OTP',
+                        : Text(otpStep ? context.tr('تأكيد الدفع', 'Confirm payment') : context.tr('إرسال OTP', 'Send OTP'),
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                 ),
@@ -785,10 +793,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // but keyed by provider (endpoint `/payment/masarat/$provider/...`) with an `identity_card` field.
   Future<void> _handleMasaratPayment(String provider, String pendingRef, {bool clearCart = true}) async {
     final label = provider == 'masrafipay'
-        ? 'مصرفي باي'
+        ? context.tr('مصرفي باي', 'Masrafi Pay')
         : provider == 'saharapay'
-            ? 'صحارى باي'
-            : 'يسر باي';
+            ? context.tr('صحارى باي', 'Sahara Pay')
+            : context.tr('يسر باي', 'Yousr Pay');
     final cardCtrl = TextEditingController();
     final otpCtrl  = TextEditingController();
 
@@ -822,7 +830,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   decoration: BoxDecoration(color: context.col.border,
                       borderRadius: BorderRadius.circular(2)))),
                 const SizedBox(height: 16),
-                Text(otpStep ? 'رمز التحقق' : 'الدفع عبر $label',
+                Text(otpStep ? context.tr('رمز التحقق', 'Verification code') : context.tr('الدفع عبر $label', 'Pay with $label'),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 12),
                 if (!otpStep)
@@ -830,7 +838,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     controller: cardCtrl,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      hintText: 'أدخل رقم بطاقة $label',
+                      hintText: context.tr('أدخل رقم بطاقة $label', 'Enter your $label card number'),
                       border: const OutlineInputBorder(),
                     ),
                   )
@@ -838,15 +846,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   TextField(
                     controller: otpCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      hintText: 'أدخل رمز التحقق المرسل إليك',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: context.tr('أدخل رمز التحقق المرسل إليك', 'Enter the verification code sent to you'),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 if (otpStep) ...[
                   const SizedBox(height: 6),
-                  const Text('أدخل الرمز خلال دقيقتين',
-                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text(context.tr('أدخل الرمز خلال دقيقتين', 'Enter the code within two minutes'),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
                 if (sheetError != null) ...[
                   const SizedBox(height: 8),
@@ -859,7 +867,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     onPressed: sheetLoading ? null : () async {
                       if (!otpStep) {
                         if (cardCtrl.text.trim().isEmpty) {
-                          setS(() => sheetError = 'يرجى إدخال رقم البطاقة');
+                          setS(() => sheetError = context.tr('يرجى إدخال رقم البطاقة', 'Please enter the card number'));
                           return;
                         }
                         setS(() { sheetLoading = true; sheetError = null; });
@@ -870,7 +878,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           );
                           setS(() { sheetLoading = false; otpStep = true; });
                         } catch (e) {
-                          String msg = 'البطاقة غير صحيحة أو الخدمة غير متاحة';
+                          String msg = context.tr('البطاقة غير صحيحة أو الخدمة غير متاحة', 'Invalid card or service unavailable');
                           if (e is DioException) {
                             final d = e.response?.data;
                             if (d is Map && d['message'] != null) msg = d['message'].toString();
@@ -879,7 +887,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         }
                       } else {
                         if (otpCtrl.text.trim().isEmpty) {
-                          setS(() => sheetError = 'يرجى إدخال رمز التحقق');
+                          setS(() => sheetError = context.tr('يرجى إدخال رمز التحقق', 'Please enter the verification code'));
                           return;
                         }
                         setS(() { sheetLoading = true; sheetError = null; });
@@ -899,7 +907,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             });
                           }
                         } catch (e) {
-                          String msg = 'رمز التحقق غير صحيح، حاول مجدداً';
+                          String msg = context.tr('رمز التحقق غير صحيح، حاول مجدداً', 'Incorrect verification code, please try again');
                           if (e is DioException) {
                             final d = e.response?.data;
                             if (d is Map && d['message'] != null) msg = d['message'].toString();
@@ -917,7 +925,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: sheetLoading
                         ? const SizedBox(width: 20, height: 20,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text(otpStep ? 'تأكيد الدفع' : 'إرسال الرمز',
+                        : Text(otpStep ? context.tr('تأكيد الدفع', 'Confirm payment') : context.tr('إرسال الرمز', 'Send code'),
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                 ),
@@ -1227,8 +1235,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             Expanded(
                               child: Text(
                                 codValueExceeded
-                                    ? 'الدفع عند الاستلام غير متاح — المجموع يتجاوز 5,000 د.ل'
-                                    : 'الدفع عند الاستلام غير متاح — الطلب يتجاوز 20 منتج',
+                                    ? context.tr('الدفع عند الاستلام غير متاح — المجموع يتجاوز 5,000 د.ل',
+                                        'Cash on delivery is unavailable — total exceeds 5,000 ${context.s.lydUnit}')
+                                    : context.tr('الدفع عند الاستلام غير متاح — الطلب يتجاوز 20 منتج',
+                                        'Cash on delivery is unavailable — order exceeds 20 items'),
                                 style: const TextStyle(fontSize: 11.5, color: AppColors.danger),
                               ),
                             ),
@@ -1489,7 +1499,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       border: Border.all(color: context.col.border),
                     ),
                     child: Center(
-                      child: Text('اختر طريقة الدفع',
+                      child: Text(context.tr('اختر طريقة الدفع', 'Select payment method'),
                         style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 15,
                           fontWeight: FontWeight.w700, color: context.col.ink3)),
                     ),
@@ -1517,8 +1527,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
                             ]),
                           if (!_loading)
-                            Positioned(
-                              left: 16,
+                            PositionedDirectional(
+                              end: 16,
                               child: Text('${fmtPrice(effectiveTotal)} ${context.s.lydUnit}',
                                 style: const TextStyle(fontFamily: 'PlusJakartaSans',
                                   fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white)),
@@ -1742,7 +1752,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  Text('استخدم',
+                  Text(context.tr('استخدم', 'Use'),
                     style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                       color: context.col.ink2, fontWeight: FontWeight.w600)),
                   const SizedBox(width: 8),
@@ -1763,7 +1773,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                       ),
                     ),
                   ),
-                  Text('/ ${fmtPrice(maxWalletUse)} د.ل',
+                  Text('/ ${fmtPrice(maxWalletUse)} ${context.s.lydUnit}',
                     style: TextStyle(fontFamily: 'PlusJakartaSans',
                       fontSize: 11.5, color: context.col.ink3, fontWeight: FontWeight.w500)),
                 ]),
@@ -1778,7 +1788,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                       color: walletCoversAll ? AppColors.success : accent)),
                 ] else ...[
                   const SizedBox(height: 4),
-                  Text('أدخل مبلغاً للخصم من محفظتك',
+                  Text(context.tr('أدخل مبلغاً للخصم من محفظتك', 'Enter an amount to deduct from your wallet'),
                     style: TextStyle(fontSize: 11.5, color: context.col.ink4)),
                 ],
               ]),
@@ -1845,8 +1855,8 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('تأكيد',
-                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+              child: Text(context.tr('تأكيد', 'Confirm'),
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                   fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
             ),
           ),

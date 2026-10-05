@@ -445,7 +445,7 @@ class _ManualSheet extends StatelessWidget {
               )),
             ]),
           ),
-          Align(alignment: isAr ? Alignment.centerRight : Alignment.centerLeft, child: Padding(
+          Align(alignment: AlignmentDirectional.centerStart, child: Padding(
             padding: const EdgeInsets.fromLTRB(2, 14, 2, 4),
             child: Text(t.mainCities, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF9AA39F))))),
           Flexible(child: filtered.isEmpty

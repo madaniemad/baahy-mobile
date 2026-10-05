@@ -129,8 +129,8 @@ class RewardsHubScreen extends ConsumerWidget {
               onPressed: () => Navigator.of(context).pop(),
             ),
             title: Text(
-              'برنامج الولاء',
-              textDirection: TextDirection.rtl,
+              context.tr('برنامج الولاء', 'Rewards Program'),
+              textDirection: context.isAr ? TextDirection.rtl : TextDirection.ltr,
               style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                 fontWeight: FontWeight.w800, color: context.col.ink0),
             ),
@@ -323,7 +323,7 @@ class _HeroCard extends StatelessWidget {
                 _HeroStat(fg: palette.fg,
                   value: walletBalance.round().toString(),
                   label: isAr ? 'رصيد المكافآت' : 'Rewards',
-                  suffix: isAr ? ' د.ل' : ' LYD',
+                  suffix: ' ${context.s.lydUnit}',
                   icon: Icons.lock_outline_rounded,
                 ),
                 Container(width: 1,
@@ -469,7 +469,7 @@ class _ProgressCard extends StatelessWidget {
           current: spendDone.toInt(),
           total: tier.spendNeeded.toInt(),
           suffixAr: 'د.ل',
-          suffixEn: 'LYD',
+          suffixEn: context.s.lydUnit,
           pct: spendPct,
           color: AppColors.teal,
           isAr: isAr,
@@ -726,7 +726,7 @@ class _ReferralCardState extends ConsumerState<_ReferralCard> {
           'ستُضاف ${widget.receiverAmount} د.ل لمحفظتك فور التسجيل 🎁\n'
           '$inviteLink'
         : 'Join Baahy with my invite!\n'
-          'Get ${widget.receiverAmount} LYD added to your wallet on signup 🎁\n'
+          'Get ${widget.receiverAmount} ${context.s.lydUnit} added to your wallet on signup 🎁\n'
           '$inviteLink';
     try {
       await SharePlus.instance.share(ShareParams(text: text));
@@ -734,8 +734,8 @@ class _ReferralCardState extends ConsumerState<_ReferralCard> {
       await Clipboard.setData(ClipboardData(text: text));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم نسخ رابط الدعوة',
-            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))));
+          SnackBar(content: Text(context.tr('تم نسخ رابط الدعوة', 'Invite link copied'),
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))));
       }
     }
   }
@@ -773,7 +773,7 @@ class _ReferralCardState extends ConsumerState<_ReferralCard> {
               Text(
                 isAr
                     ? 'احصل على ${widget.giverAmount} د.ل لكل صديق\nبمجرد إتمام أول طلب له'
-                    : 'Get ${widget.giverAmount} LYD per friend\nafter their first order',
+                    : 'Get ${widget.giverAmount} ${context.s.lydUnit} per friend\nafter their first order',
                 style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                   color: context.col.ink2, height: 1.65),
               ),
@@ -855,7 +855,7 @@ class _ReferralCardState extends ConsumerState<_ReferralCard> {
             _RefStat('$invited', isAr ? 'تمت دعوتهم' : 'Invited'),
             _RefStat('$joined',  isAr ? 'انضموا' : 'Joined'),
             _RefStat(earned.toStringAsFixed(0),
-              isAr ? 'د.ل ربحت' : 'LYD earned', isMoney: true),
+              isAr ? 'د.ل ربحت' : '${context.s.lydUnit} earned', isMoney: true),
           ]),
         ],
       ]),
@@ -1030,7 +1030,7 @@ class _StepNode extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '+${amount.toStringAsFixed(0)} ${isAr ? 'د.ل' : 'LYD'}',
+            '+${amount.toStringAsFixed(0)} ${context.s.lydUnit}',
             style: TextStyle(fontFamily: 'PlusJakartaSans',
               fontSize: 11, fontWeight: FontWeight.w800,
               color: amountColor),
@@ -1142,15 +1142,15 @@ class _FaqSection extends StatelessWidget {
               Expanded(child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('تحتاج مساعدة؟',
+                  Text(context.tr('تحتاج مساعدة؟', 'Need help?'),
                     style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14,
                       fontWeight: FontWeight.w800, color: context.col.ink0)),
-                  Text('تواصل معنا وسنساعدك بكل سرور',
+                  Text(context.tr('تواصل معنا وسنساعدك بكل سرور', "Contact us and we'll be happy to help"),
                     style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                       color: context.col.ink3)),
                 ],
               )),
-              Icon(Icons.arrow_back_ios_new_rounded,
+              Icon(Icons.arrow_forward_ios_rounded,
                 size: 14, color: context.col.ink3),
             ]),
           ),
@@ -1171,13 +1171,14 @@ class _PendingRewardsBanner extends StatelessWidget {
     for (final m in tier.pendingMilestones) {
       final n = m['order_number'];
       final a = (m['amount'] as num).toStringAsFixed(0);
-      lines.add('مكافأة الطلب رقم $n: $a د.ل');
+      lines.add(context.tr('مكافأة الطلب رقم $n: $a د.ل', 'Order #$n reward: $a ${context.s.lydUnit}'));
     }
     if (tier.pendingReferralCount > 0) {
-      lines.add('${tier.pendingReferralCount} دعوة بانتظار التسليم');
+      lines.add(context.tr('${tier.pendingReferralCount} دعوة بانتظار التسليم',
+          '${tier.pendingReferralCount} ${tier.pendingReferralCount == 1 ? 'invite' : 'invites'} awaiting delivery'));
     }
     if (tier.pendingReceiverReward) {
-      lines.add('مكافأة ترحيب بانتظار تسليم طلبك');
+      lines.add(context.tr('مكافأة ترحيب بانتظار تسليم طلبك', 'Welcome reward pending your order delivery'));
     }
 
     return Container(
@@ -1204,7 +1205,8 @@ class _PendingRewardsBanner extends StatelessWidget {
           children: [
             Row(children: [
               Text(
-                '${tier.pendingTotal.toStringAsFixed(0)} د.ل بانتظار التسليم',
+                context.tr('${tier.pendingTotal.toStringAsFixed(0)} د.ل بانتظار التسليم',
+                  '${tier.pendingTotal.toStringAsFixed(0)} ${context.s.lydUnit} pending delivery'),
                 style: const TextStyle(
                   fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14,
                   fontWeight: FontWeight.w800, color: Color(0xFFF57F17)),
@@ -1215,7 +1217,7 @@ class _PendingRewardsBanner extends StatelessWidget {
               style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                 color: context.col.ink2))),
             const SizedBox(height: 4),
-            Text('ستُضاف تلقائياً لمحفظتك عند استلام طلبك',
+            Text(context.tr('ستُضاف تلقائياً لمحفظتك عند استلام طلبك', 'Added to your wallet automatically when your order is delivered'),
               style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11,
                 color: context.col.ink3)),
           ],

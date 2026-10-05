@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/utils/navigation.dart';
@@ -264,8 +265,13 @@ class _AppVersionBadge extends StatelessWidget {
           fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary)),
       ),
       const SizedBox(height: 6),
-      Text(context.s.versionN('1.0.0'),
-        style: TextStyle(fontSize: 11, color: context.col.ink4)),
+      // Was hard-coded '1.0.0' while the app shipped 5.0.x; read the real one.
+      FutureBuilder<PackageInfo>(
+        future: PackageInfo.fromPlatform(),
+        builder: (_, snap) => Text(
+          snap.hasData ? context.s.versionN(snap.data!.version) : '',
+          style: TextStyle(fontSize: 11, color: context.col.ink4)),
+      ),
       const SizedBox(height: 2),
       Text('© 2026 Baahy. All rights reserved.',
         style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 10, color: context.col.ink4)),

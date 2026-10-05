@@ -191,11 +191,12 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
   void _restoreConversation(_SavedConversation convo) {
     if (convo.messages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('المحادثات القديمة لا يمكن استعادتها',
-              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
-              textDirection: TextDirection.rtl),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(
+              context.tr('المحادثات القديمة لا يمكن استعادتها',
+                  'Older conversations can\'t be restored'),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -270,8 +271,8 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('الكاميرا',
-                  style: TextStyle(
+              title: Text(context.tr('الكاميرا', 'Camera'),
+                  style: const TextStyle(
                       fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(context);
@@ -280,8 +281,8 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('معرض الصور',
-                  style: TextStyle(
+              title: Text(context.tr('معرض الصور', 'Photo library'),
+                  style: const TextStyle(
                       fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(context);
@@ -325,6 +326,8 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
       final body = <String, dynamic>{
         'message': text,
         'history': historyToSend,
+        // The server ignores this until its prompt reads it; then replies follow the app language.
+        'language': context.isAr ? 'ar' : 'en',
         if (b64 != null) 'image': b64,
       };
 
@@ -431,12 +434,12 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen>
             if (_savedConvos.isNotEmpty)
               IconButton(
                 icon: Icon(Icons.history_rounded, color: context.col.ink2, size: 22),
-                tooltip: 'المحادثات السابقة',
+                tooltip: context.tr('المحادثات السابقة', 'Previous conversations'),
                 onPressed: _clearConversation,
               ),
             IconButton(
               icon: Icon(Icons.edit_note_rounded, color: context.col.ink2, size: 22),
-              tooltip: 'محادثة جديدة',
+              tooltip: context.tr('محادثة جديدة', 'New chat'),
               onPressed: _clearConversation,
             ),
           ],
@@ -508,49 +511,49 @@ class _EmptyState extends ConsumerStatefulWidget {
 class _EmptyStateState extends ConsumerState<_EmptyState> {
   bool _showAll = false;
 
-  static final _suggestions = [
+  List<_SuggestionData> _buildSuggestions(BuildContext context) => [
     _SuggestionData(
         Icons.local_shipping_outlined,
-        'وين طلبي؟',
-        'تتبع حالة طلبك',
+        context.tr('وين طلبي؟', 'Where is my order?'),
+        context.tr('تتبع حالة طلبك', 'Track your order status'),
         AppColors.primary.withValues(alpha: 0.08),
         AppColors.primary,
-        'وين طلبي؟'),
+        context.tr('وين طلبي؟', 'Where is my order?')),
     _SuggestionData(
         Icons.assignment_return_outlined,
-        'سياسة الإرجاع',
-        'شروط وخطوات الإرجاع',
-        Color(0xFFFFE5EC),
-        Color(0xFFE91E63),
-        'ما هي سياسة الإرجاع؟'),
+        context.tr('سياسة الإرجاع', 'Return policy'),
+        context.tr('شروط وخطوات الإرجاع', 'Return terms and steps'),
+        const Color(0xFFFFE5EC),
+        const Color(0xFFE91E63),
+        context.tr('ما هي سياسة الإرجاع؟', 'What is the return policy?')),
     _SuggestionData(
         Icons.payments_outlined,
-        'طرق الدفع',
-        'الطرق المتاحة والرسوم',
-        Color(0xFFFFF3E0),
-        Color(0xFFF57C00),
-        'ما هي طرق الدفع المتاحة؟'),
+        context.tr('طرق الدفع', 'Payment methods'),
+        context.tr('الطرق المتاحة والرسوم', 'Available methods and fees'),
+        const Color(0xFFFFF3E0),
+        const Color(0xFFF57C00),
+        context.tr('ما هي طرق الدفع المتاحة؟', 'What payment methods are available?')),
     _SuggestionData(
         Icons.workspace_premium_outlined,
-        'المكافآت والولاء',
-        'نقاطك ومزايا عضويتك',
-        Color(0xFFFFF8E1),
-        Color(0xFFD4A82E),
-        'كيف يعمل نظام المكافآت والولاء؟'),
+        context.tr('المكافآت والولاء', 'Rewards & loyalty'),
+        context.tr('نقاطك ومزايا عضويتك', 'Your points and membership perks'),
+        const Color(0xFFFFF8E1),
+        const Color(0xFFD4A82E),
+        context.tr('كيف يعمل نظام المكافآت والولاء؟', 'How do rewards and loyalty work?')),
     _SuggestionData(
         Icons.support_agent_outlined,
-        'تواصل معنا',
-        'دعم سريع عبر واتساب',
+        context.tr('تواصل معنا', 'Contact us'),
+        context.tr('دعم سريع عبر واتساب', 'Fast support on WhatsApp'),
         AppColors.primary.withValues(alpha: 0.08),
         AppColors.primary,
-        'كيف أتواصل مع خدمة العملاء؟'),
+        context.tr('كيف أتواصل مع خدمة العملاء؟', 'How can I contact customer service?')),
     _SuggestionData(
         Icons.card_giftcard_outlined,
-        'اقتراح هدية',
-        'أخبرني لمن وما المناسبة',
-        Color(0xFFEDE7F6),
-        Color(0xFF7B1FA2),
-        'ساعدني أختار هدية مناسبة'),
+        context.tr('اقتراح هدية', 'Gift ideas'),
+        context.tr('أخبرني لمن وما المناسبة', 'Tell me who it\'s for and the occasion'),
+        const Color(0xFFEDE7F6),
+        const Color(0xFF7B1FA2),
+        context.tr('ساعدني أختار هدية مناسبة', 'Help me choose a suitable gift')),
   ];
 
   @override
@@ -566,8 +569,9 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
         // ── Greeting ──
         Text(
           firstName.isNotEmpty
-              ? 'أهلين $firstName، كيف أقدر أساعدك؟'
-              : 'كيف أقدر أساعدك؟',
+              ? context.tr('أهلين $firstName، كيف أقدر أساعدك؟',
+                  'Hi $firstName, how can I help you?')
+              : context.tr('كيف أقدر أساعدك؟', 'How can I help you?'),
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -579,7 +583,8 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
         ),
         const SizedBox(height: 6),
         Text(
-          'اسألني عن طلباتك، الشحن، الإرجاع، المكافآت، أو أي مساعدة تحتاجها',
+          context.tr('اسألني عن طلباتك، الشحن، الإرجاع، المكافآت، أو أي مساعدة تحتاجها',
+              'Ask me about your orders, shipping, returns, rewards, or anything else you need help with'),
           textAlign: TextAlign.center,
           style: TextStyle(
               fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
@@ -603,16 +608,15 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
         // ── Quick suggestions header ──
         Row(
           children: [
-            const Spacer(),
-            Text('يمكنني مساعدتك في',
+            const Icon(Icons.auto_awesome_rounded,
+                size: 14, color: AppColors.primary),
+            const SizedBox(width: 6),
+            Text(context.tr('يمكنني مساعدتك في', 'I can help you with'),
                 style: TextStyle(
                     fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: context.col.ink0)),
-            const SizedBox(width: 6),
-            const Icon(Icons.auto_awesome_rounded,
-                size: 14, color: AppColors.primary),
           ],
         ),
         const SizedBox(height: 12),
@@ -625,7 +629,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           childAspectRatio: 2.4,
-          children: _suggestions
+          children: _buildSuggestions(context)
               .map((s) => _SuggestionCard(
                     data: s,
                     onTap: () => widget.onChipTap(overrideText: s.prompt),
@@ -638,15 +642,14 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
           const SizedBox(height: 28),
           Row(
             children: [
-              const Spacer(),
-              Text('المحادثات السابقة',
+              Icon(Icons.history_rounded, size: 16, color: context.col.ink3),
+              const SizedBox(width: 6),
+              Text(context.tr('المحادثات السابقة', 'Previous conversations'),
                   style: TextStyle(
                       fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                       color: context.col.ink0)),
-              const SizedBox(width: 6),
-              Icon(Icons.history_rounded, size: 16, color: context.col.ink3),
             ],
           ),
           const SizedBox(height: 6),
@@ -673,8 +676,8 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
             Center(
               child: TextButton(
                 onPressed: () => setState(() => _showAll = true),
-                child: const Text('عرض المزيد',
-                    style: TextStyle(
+                child: Text(context.tr('عرض المزيد', 'Show more'),
+                    style: const TextStyle(
                         fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
@@ -724,9 +727,9 @@ class _InlineInput extends StatelessWidget {
                   fit: BoxFit.cover,
                 ),
               ),
-              Positioned(
+              PositionedDirectional(
                 top: -4,
-                right: -4,
+                start: -4,
                 child: GestureDetector(
                   onTap: onClearImage,
                   child: Container(
@@ -788,15 +791,15 @@ class _InlineInput extends StatelessWidget {
                   child: TextField(
                     controller: textCtrl,
                     enabled: !loading,
-                    textDirection: TextDirection.rtl,
-                    textAlign: TextAlign.right,
+                    textAlign: TextAlign.start,
                     maxLines: 1,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => onSend(),
                     style: TextStyle(
                         fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14, color: context.col.ink0),
                     decoration: InputDecoration(
-                      hintText: 'اسأل عن منتج، هدية، مقاس، طلب...',
+                      hintText: context.tr('اسأل عن منتج، هدية، مقاس، طلب...',
+                          'Ask about a product, gift, size, order...'),
                       hintStyle: TextStyle(
                           fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                           fontSize: 13,
@@ -900,7 +903,7 @@ class _HistoryRow extends StatelessWidget {
   final VoidCallback onTap;
   const _HistoryRow({required this.convo, required this.onTap});
 
-  static String _formatTime(DateTime dt) {
+  static String _formatTime(DateTime dt, bool isAr) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
@@ -909,16 +912,21 @@ class _HistoryRow extends StatelessWidget {
     if (d == today) {
       final h = dt.hour;
       final m = dt.minute.toString().padLeft(2, '0');
-      final ampm = h < 12 ? 'ص' : 'م';
+      final ampm = isAr ? (h < 12 ? 'ص' : 'م') : (h < 12 ? 'AM' : 'PM');
       final h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
       return '$h12:$m $ampm';
     } else if (d == yesterday) {
-      return 'أمس';
+      return isAr ? 'أمس' : 'Yesterday';
     } else {
-      const months = [
+      const monthsAr = [
         'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
         'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
       ];
+      const monthsEn = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      final months = isAr ? monthsAr : monthsEn;
       return '${dt.day} ${months[dt.month - 1]}';
     }
   }
@@ -932,14 +940,14 @@ class _HistoryRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
-            Icon(Icons.chevron_left_rounded, size: 18, color: context.col.ink3),
+            Icon(Icons.chevron_right_rounded, size: 18, color: context.col.ink3),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 convo.firstMessage,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.right,
+                textAlign: TextAlign.start,
                 style: TextStyle(
                     fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                     fontSize: 13,
@@ -948,7 +956,7 @@ class _HistoryRow extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Text(
-              _formatTime(convo.time),
+              _formatTime(convo.time, context.isAr),
               style: TextStyle(
                   fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                   fontSize: 11,
@@ -1035,7 +1043,9 @@ class _UserBubble extends StatelessWidget {
                   color: const Color(0xFFF0F0F0),
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: Text(msg.content,
+                child: Text(_chatPlain(msg.content),
+                    textDirection: _chatDirection(msg.content, context),
+                    textAlign: TextAlign.start,
                     style: const TextStyle(
                         fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontSize: 14,
@@ -1075,7 +1085,9 @@ class _AssistantBubble extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.col.border),
               ),
-              child: Text(msg.content,
+              child: Text(_chatPlain(msg.content),
+                  textDirection: _chatDirection(msg.content, context),
+                  textAlign: TextAlign.start,
                   style: TextStyle(
                       fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                       fontSize: 14,
@@ -1120,7 +1132,8 @@ class _AssistantBubble extends StatelessWidget {
                                 size: 14, color: AppColors.primary),
                             const SizedBox(width: 6),
                             Text(
-                              'تصفح ${cat['name_ar']}',
+                              context.tr('تصفح ${cat['name_ar']}',
+                                  'Browse ${cat['name_ar']}'),
                               style: const TextStyle(
                                 fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                 fontSize: 12,
@@ -1129,7 +1142,7 @@ class _AssistantBubble extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            const Icon(Icons.arrow_back_ios_rounded,
+                            const Icon(Icons.arrow_forward_ios_rounded,
                                 size: 10, color: AppColors.primary),
                           ],
                         ),
@@ -1239,7 +1252,7 @@ class _AssistantProductCard extends StatelessWidget {
       onTap: () => safePush(context, '/product/$id'),
       child: Container(
         width: 120,
-        margin: const EdgeInsets.only(left: 8),
+        margin: const EdgeInsetsDirectional.only(end: 8),
         decoration: BoxDecoration(
           color: context.col.surface,
           borderRadius: BorderRadius.circular(12),
@@ -1369,7 +1382,7 @@ class _TypingIndicator extends AnimatedWidget {
                         : 0.0);
             final scale = 0.7 + 0.3 * normalized;
             return Padding(
-              padding: EdgeInsets.only(left: i > 0 ? 4 : 0),
+              padding: EdgeInsetsDirectional.only(end: i > 0 ? 4 : 0),
               child: Transform.scale(
                 scale: scale,
                 child: Container(
@@ -1434,9 +1447,9 @@ class _InputBar extends StatelessWidget {
                     fit: BoxFit.cover,
                   ),
                 ),
-                Positioned(
+                PositionedDirectional(
                   top: -4,
-                  right: -4,
+                  start: -4,
                   child: GestureDetector(
                     onTap: onClearImage,
                     child: Container(
@@ -1466,7 +1479,7 @@ class _InputBar extends StatelessWidget {
                     child: Container(
                       width: 40,
                       height: 40,
-                      margin: const EdgeInsets.only(left: 4),
+                      margin: const EdgeInsetsDirectional.only(end: 4),
                       decoration: BoxDecoration(
                         color: canSend
                             ? AppColors.primary
@@ -1487,8 +1500,7 @@ class _InputBar extends StatelessWidget {
                 child: TextField(
                   controller: textCtrl,
                   enabled: !loading,
-                  textDirection: TextDirection.rtl,
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.start,
                   maxLines: 3,
                   minLines: 1,
                   textInputAction: TextInputAction.newline,
@@ -1536,3 +1548,22 @@ class _InputBar extends StatelessWidget {
     );
   }
 }
+
+// Chat text can be Arabic or English whatever the app language is (the assistant answers in the
+// language the user writes in), so each bubble takes its direction from its own text, otherwise an
+// English sentence in the Arabic app gets its punctuation on the wrong end.
+TextDirection _chatDirection(String text, BuildContext context) {
+  for (final r in text.runes) {
+    if ((r >= 0x0600 && r <= 0x06FF) || (r >= 0x0750 && r <= 0x077F) ||
+        (r >= 0xFB50 && r <= 0xFDFF) || (r >= 0xFE70 && r <= 0xFEFF)) {
+      return TextDirection.rtl;
+    }
+    if ((r >= 0x41 && r <= 0x5A) || (r >= 0x61 && r <= 0x7A)) return TextDirection.ltr;
+  }
+  return Directionality.of(context);
+}
+
+/// The prompt forbids markdown, but a stray "**bold**" or "## title" must never reach the screen.
+String _chatPlain(String text) => text
+    .replaceAll('**', '')
+    .replaceAll(RegExp(r'^\s{0,3}#{1,6}\s+', multiLine: true), '');

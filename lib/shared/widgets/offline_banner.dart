@@ -28,9 +28,9 @@ class OfflineBanner extends ConsumerWidget {
               child: Row(children: [
                 const Icon(Icons.wifi_off_rounded, size: 16, color: Colors.white70),
                 const SizedBox(width: 10),
-                const Expanded(
-                  child: Text('لا يوجد اتصال بالإنترنت',
-                    style: TextStyle(
+                Expanded(
+                  child: Text(context.tr('لا يوجد اتصال بالإنترنت', 'No internet connection'),
+                    style: const TextStyle(
                       fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                       fontWeight: FontWeight.w600, color: Colors.white)),
                 ),

@@ -261,7 +261,7 @@ class _WishlistSection extends StatelessWidget {
               onTap: () => safePush(context, '/product/${product['id']}'),
               child: Container(
                 width: 120,
-                margin: const EdgeInsets.only(right: 10),
+                margin: const EdgeInsetsDirectional.only(start: 10),
                 decoration: BoxDecoration(
                   color: context.col.surface,
                   borderRadius: BorderRadius.circular(12),
@@ -317,7 +317,7 @@ class _PurchasesSection extends StatelessWidget {
             style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 13)),
           subtitle: Text('${items.length} ${context.tr('منتج', 'items')}',
             style: TextStyle(fontSize: 12, color: context.col.ink3)),
-          trailing: Text('${order['total']} ${context.tr('د.ل', 'LYD')}',
+          trailing: Text('${order['total']} ${context.s.lydUnit}',
             style: const TextStyle(fontFamily: 'PlusJakartaSans', fontWeight: FontWeight.w700, fontSize: 13)),
         );
       }),

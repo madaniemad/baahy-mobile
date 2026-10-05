@@ -19,7 +19,7 @@ class AuthLandingScreen extends StatelessWidget {
             children: [
               // Skip arrow
               Align(
-                alignment: Alignment.centerLeft,
+                alignment: AlignmentDirectional.centerEnd,
                 child: GestureDetector(
                   onTap: () => context.go('/home'),
                   child: Padding(

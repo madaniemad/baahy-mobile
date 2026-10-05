@@ -213,7 +213,7 @@ class _ContactCard extends StatelessWidget {
                   color: color, fontWeight: FontWeight.w600)),
             ],
           )),
-          Icon(Icons.arrow_back_ios_new_rounded, size: 14, color: context.col.ink4),
+          Icon(Icons.arrow_forward_ios_rounded, size: 14, color: context.col.ink4),
         ]),
       ),
     );

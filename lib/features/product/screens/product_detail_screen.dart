@@ -395,8 +395,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           // where you are, and nothing said the photo could be
                           // opened. The count moves to the viewer itself.
                           if (product.images.isNotEmpty)
-                            Positioned(
-                              right: 12, bottom: 12,
+                            PositionedDirectional(
+                              start: 12, bottom: 12,
                               child: GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () => Navigator.of(context).push(
@@ -413,9 +413,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               ),
                             ),
                           if (displayPrice < product.price)
-                            Positioned(
+                            PositionedDirectional(
                               bottom: 20,
-                              left: 12,
+                              end: 12,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                                 decoration: BoxDecoration(
@@ -456,7 +456,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                   curve: Curves.easeInOut),
                                 child: Container(
                                   width: 46, height: 46,
-                                  margin: const EdgeInsets.only(right: 6),
+                                  margin: const EdgeInsetsDirectional.only(start: 6),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(

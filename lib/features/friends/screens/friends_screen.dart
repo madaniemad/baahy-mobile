@@ -264,13 +264,15 @@ class _InviteCardState extends ConsumerState<_InviteCard> {
     // Prefix each Arabic line with U+200F (RLM) so the line's base direction is RTL even when
     // it starts with a Latin name (e.g. "Kabour") — otherwise WhatsApp flips the whole line LTR
     // and the name reads disconnected from the Arabic.
-    final rlm = String.fromCharCode(0x200F); // U+200F Right-to-Left Mark
+    // The share text follows the sender's app language; the RLM is only needed for the Arabic version.
+    final isAr = context.isAr;
+    final rlm = isAr ? String.fromCharCode(0x200F) : ''; // U+200F Right-to-Left Mark
     final greeting = senderName.isNotEmpty
-        ? '$rlm$senderName دعاك للانضمام لباهي!'
-        : '${rlm}دعوة للانضمام لباهي!';
+        ? context.tr('$rlm$senderName دعاك للانضمام لباهي!', '$senderName invited you to join Baahy!')
+        : context.tr('${rlm}دعوة للانضمام لباهي!', "You're invited to join Baahy!");
     final text =
         '$greeting\n'
-        '${rlm}احصل على ${widget.receiver} د.ل هدية ترحيبية فور انضمامك 🎁\n'
+        '${context.tr('${rlm}احصل على ${widget.receiver} د.ل هدية ترحيبية فور انضمامك 🎁', 'Get ${widget.receiver} ${context.s.lydUnit} as a welcome gift as soon as you join 🎁')}\n'
         '$inviteLink';
     try {
       await SharePlus.instance.share(ShareParams(text: text));
@@ -393,7 +395,7 @@ class _EarningsRow extends StatelessWidget {
     return Row(children: [
       _EarnStat(
         icon: Icons.account_balance_wallet_outlined,
-        value: '${earned.toInt()} د.ل',
+        value: '${earned.toInt()} ${context.s.lydUnit}',
         label: context.tr('إجمالي الأرباح', 'Total Earned'),
       ),
       const SizedBox(width: 8),
@@ -405,7 +407,7 @@ class _EarningsRow extends StatelessWidget {
       const SizedBox(width: 8),
       _EarnStat(
         icon: Icons.calendar_today_outlined,
-        value: '${pending.toInt()} د.ل',
+        value: '${pending.toInt()} ${context.s.lydUnit}',
         label: context.tr('بانتظار التأكيد', 'Pending'),
       ),
     ]);
@@ -458,19 +460,23 @@ class _ReferralRow extends StatelessWidget {
     'يناير','فبراير','مارس','أبريل','مايو','يونيو',
     'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر',
   ];
+  static const _enMonths = [
+    'Jan','Feb','Mar','Apr','May','Jun',
+    'Jul','Aug','Sep','Oct','Nov','Dec',
+  ];
 
-  String _fmt(String? dateStr) {
+  String _fmt(String? dateStr, bool isAr) {
     if (dateStr == null) return '';
     final dt = DateTime.tryParse(dateStr);
     if (dt == null) return '';
-    return '${dt.day} ${_arMonths[dt.month - 1]} ${dt.year}';
+    return '${dt.day} ${(isAr ? _arMonths : _enMonths)[dt.month - 1]} ${dt.year}';
   }
 
   @override
   Widget build(BuildContext context) {
     final name = data['referred_name'] as String?
         ?? data['name'] as String?
-        ?? 'مستخدم';
+        ?? context.tr('مستخدم', 'User');
     final dateStr = data['created_at'] as String?;
     final status = (data['status'] as String? ?? '').toLowerCase();
     final isCompleted = status == 'completed' || status == 'مكتمل';
@@ -501,11 +507,11 @@ class _ReferralRow extends StatelessWidget {
         ])),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           if (dateStr != null)
-            Text(_fmt(dateStr),
+            Text(_fmt(dateStr, context.isAr),
               style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 10.5, color: context.col.ink3)),
           const SizedBox(height: 3),
           isCompleted
-            ? Text('+$giverAmount د.ل',
+            ? Text('+$giverAmount ${context.s.lydUnit}',
                 style: const TextStyle(fontFamily: 'PlusJakartaSans',
                   fontSize: 13, fontWeight: FontWeight.w800, color: _tiffanyDeep))
             : Text('—  —',

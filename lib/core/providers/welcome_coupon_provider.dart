@@ -60,6 +60,11 @@ final welcomeCouponProvider = FutureProvider.autoDispose<WelcomeCoupon?>((ref) a
     final label = type == 'percentage'
         ? '${discount.toStringAsFixed(0)}%'
         : '${discount.toStringAsFixed(0)} د.ل';
+    // English wording of the same label — the fallback copy below must not leak
+    // the Arabic currency unit into English mode.
+    final labelEn = type == 'percentage'
+        ? '${discount.toStringAsFixed(0)}%'
+        : '${discount.toStringAsFixed(0)} LYD';
 
     return WelcomeCoupon(
       code:        code,
@@ -70,9 +75,9 @@ final welcomeCouponProvider = FutureProvider.autoDispose<WelcomeCoupon?>((ref) a
       // Fallbacks stay deliberately vague about WHICH order the offer targets —
       // an older server that doesn't send these must not claim "first order".
       headlineAr:  data['headline_ar'] as String? ?? 'خصم $label — يُطبَّق تلقائياً',
-      headlineEn:  data['headline_en'] as String? ?? '$label off — applied automatically',
+      headlineEn:  data['headline_en'] as String? ?? '$labelEn off — applied automatically',
       appliedAr:   data['applied_ar']  as String? ?? 'تم تطبيق خصم $label على سلتك',
-      appliedEn:   data['applied_en']  as String? ?? '$label discount applied to your cart',
+      appliedEn:   data['applied_en']  as String? ?? '$labelEn discount applied to your cart',
       subAr:       data['sub_ar']      as String? ?? 'عرض لمرة واحدة — لا تفوّته!',
       subEn:       data['sub_en']      as String? ?? "One-time offer — don't miss it!",
       blocksWallet: data['blocks_wallet'] == true,

@@ -542,7 +542,7 @@ class _BannerSlide extends StatelessWidget {
                 ],
                 if (banner.buttonText != null) ...[
                   const SizedBox(height: 10),
-                  Text('${banner.buttonText} ←',
+                  Text('${banner.buttonText} ${context.isAr ? '←' : '→'}',
                     style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700,
                       color: AppColors.primary)),
                 ],
@@ -1422,7 +1422,7 @@ class _FashionTile extends StatelessWidget {
                           color: Colors.white, height: 1.2)),
                     if (banner.buttonText != null) ...[
                       const SizedBox(height: 8),
-                      Text('${banner.buttonText} ←',
+                      Text('${banner.buttonText} ${context.isAr ? '←' : '→'}',
                         style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                           color: AppColors.primary)),
                     ],
@@ -1836,7 +1836,7 @@ class _BudgetCarousel extends StatelessWidget {
       height: _tileH * 2 + _gap,
       child: GridView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 16, right: 6),
+        padding: const EdgeInsetsDirectional.only(end: 16, start: 6),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           mainAxisSpacing: _gap,
@@ -1856,8 +1856,8 @@ class _BudgetCarousel extends StatelessWidget {
                         memCacheWidth: 400,
                         errorWidget: (_, __, ___) => Container(color: context.col.surfaceSoft))
                     : Container(color: context.col.surfaceSoft),
-                Positioned(
-                  left: 6, bottom: 6,
+                PositionedDirectional(
+                  end: 6, bottom: 6,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
@@ -2095,7 +2095,7 @@ class _SeasonalBanner extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '${config.seasonalLabelAr} 🎉',
+              '${context.tr(config.seasonalLabelAr, config.seasonalLabelEn)} 🎉',
               style: const TextStyle(
                 fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                 fontSize: 14,
@@ -2319,9 +2319,9 @@ class _WelcomeCouponBanner extends ConsumerWidget {
             onTap: () {
               Clipboard.setData(ClipboardData(text: coupon.code));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('تم نسخ الكود', style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: Text(context.tr('تم نسخ الكود', 'Code copied'), style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             },

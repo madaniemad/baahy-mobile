@@ -206,8 +206,8 @@ class _WishlistCard extends ConsumerWidget {
                   ),
                 ),
                 if (hasDiscount)
-                  Positioned(
-                    top: 4, left: 4,
+                  PositionedDirectional(
+                    top: 4, end: 4,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                       decoration: BoxDecoration(
@@ -295,9 +295,9 @@ class _WishlistCard extends ConsumerWidget {
               ),
             ]),
           ),
-          // X — physical top-left
-          Positioned(
-            top: 6, left: 6,
+          // X — top corner at the end side (physical top-left in Arabic)
+          PositionedDirectional(
+            top: 6, end: 6,
             child: GestureDetector(
               onTap: () {
                 ref.read(wishlistProvider.notifier).toggle(product.id);

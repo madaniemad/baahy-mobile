@@ -18,15 +18,19 @@ class QrProfileScreen extends ConsumerStatefulWidget {
 
 class _QrProfileScreenState extends ConsumerState<QrProfileScreen> {
   Future<void> _share(String username, int reward) async {
+    final tr = context.tr;
+    final unit = context.s.lydUnit;
     final link = 'https://baahy.com/u/$username?reward=$reward';
-    final text = 'أضفني على تطبيق باهي 👋\nستحصل على $reward د.ل عند إتمام أول طلب 🎁\n$link';
+    final text = tr(
+      'أضفني على تطبيق باهي 👋\nستحصل على $reward د.ل عند إتمام أول طلب 🎁\n$link',
+      "Add me on the Baahy app 👋\nYou'll get $reward $unit when you complete your first order 🎁\n$link");
     try {
       await SharePlus.instance.share(ShareParams(text: text));
     } catch (_) {
       await Clipboard.setData(ClipboardData(text: text));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم نسخ الرابط', style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
+          SnackBar(content: Text(tr('تم نسخ الرابط', 'Link copied'), style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
         );
       }
     }

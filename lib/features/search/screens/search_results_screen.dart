@@ -103,10 +103,10 @@ final _filterOptionsProvider = FutureProvider.family<_FilterOptions, _FilterScop
 });
 
 final _sortOptions = [
-  ('latest', 'الأحدث'),
-  ('popular', 'الأكثر مبيعاً'),
-  ('price_asc', 'الأرخص'),
-  ('price_desc', 'الأغلى'),
+  ('latest', 'الأحدث', 'Newest'),
+  ('popular', 'الأكثر مبيعاً', 'Best selling'),
+  ('price_asc', 'الأرخص', 'Price: low to high'),
+  ('price_desc', 'الأغلى', 'Price: high to low'),
 ];
 
 class _FilterState {
@@ -373,7 +373,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             icon: Icon(Icons.sort, color: context.col.ink0),
             onSelected: (v) { _sort = v; _fetch(reset: true); },
             itemBuilder: (_) => _sortOptions.map((opt) =>
-              PopupMenuItem(value: opt.$1, child: Text(opt.$2,
+              PopupMenuItem(value: opt.$1, child: Text(context.tr(opt.$2, opt.$3),
                 style: TextStyle(fontWeight: _sort == opt.$1 ? FontWeight.w700 : FontWeight.normal))
             )).toList(),
           ),
@@ -503,7 +503,7 @@ class _SubcatTabs extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 ...categories.map((cat) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsetsDirectional.only(start: 8),
                   child: _Tab(
                     label: isAr ? cat.nameAr : cat.name,
                     selected: selectedId == cat.id,

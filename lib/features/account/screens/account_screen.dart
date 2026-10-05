@@ -313,7 +313,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_left_rounded, size: 20, color: context.col.ink3),
+                Icon(Icons.chevron_right_rounded, size: 20, color: context.col.ink3),
               ]),
             ),
           ),
@@ -331,7 +331,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
                   border: Border.all(color: context.col.border),
                   boxShadow: AppShadows.shadowCard,
                 ),
-                child: Image.asset('assets/images/ai_banner.png',
+                child: Image.asset(
+                  context.isAr ? 'assets/images/ai_banner.png' : 'assets/images/ai_banner_en.png',
                   width: double.infinity, fit: BoxFit.cover),
               ),
             ),
@@ -530,8 +531,8 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
                               color: AppColors.primary, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
                 ),
               ),
-              Positioned(
-                bottom: 0, left: 0,
+              PositionedDirectional(
+                bottom: 0, end: 0,
                 child: Container(
                   width: 22, height: 22,
                   decoration: BoxDecoration(

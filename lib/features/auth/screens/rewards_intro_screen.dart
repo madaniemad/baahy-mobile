@@ -162,7 +162,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
         child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
           // Language toggle
           Align(
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerStart,
             child: GestureDetector(
               onTap: () => ref.read(localeProvider.notifier).toggle(),
               child: Container(
@@ -217,7 +217,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
                 Expanded(
                   child: TextField(
                     controller: _searchCtrl,
-                    textAlign: isAr ? TextAlign.right : TextAlign.left,
+                    textAlign: TextAlign.start,
                     textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
                     onChanged: (v) => setState(() => _query = v),
                     style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
@@ -301,16 +301,17 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
       child: Column(children: [
         RichText(
           textAlign: TextAlign.center,
-          text: const TextSpan(
-            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 36,
+          text: TextSpan(
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 36,
               fontWeight: FontWeight.w900, height: 1.12),
             children: [
-              TextSpan(text: 'آلاف المنتجات',
-                style: TextStyle(color: Colors.white,
+              TextSpan(text: context.tr('آلاف المنتجات', 'Thousands of products'),
+                style: const TextStyle(color: Colors.white,
                   shadows: [Shadow(color: Color(0x2E0E3C46),
                     blurRadius: 14, offset: Offset(0, 3))])),
-              TextSpan(text: '\n'),
-              TextSpan(text: 'بانتظارك', style: TextStyle(color: _navy)),
+              const TextSpan(text: '\n'),
+              TextSpan(text: context.tr('بانتظارك', 'waiting for you'),
+                style: const TextStyle(color: _navy)),
             ],
           ),
         ),
@@ -410,7 +411,7 @@ class _CityRow extends StatelessWidget {
           child: Row(children: [
             Expanded(
               child: Text(label,
-                textAlign: isAr ? TextAlign.right : TextAlign.left,
+                textAlign: TextAlign.start,
                 style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14.5,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   color: selected ? _navy : const Color(0xFF33565C))),
@@ -524,8 +525,8 @@ class _ActionBar extends StatelessWidget {
               color: Color(0x330E3C46), blurRadius: 30, offset: Offset(0, 14))],
           ),
           child: Stack(alignment: Alignment.center, children: [
-            Positioned(
-              right: 0,
+            PositionedDirectional(
+              start: 0,
               child: Opacity(opacity: 0.5,
                 child: Icon(Icons.arrow_forward_ios, size: 18, color: _teal)),
             ),

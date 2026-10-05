@@ -176,7 +176,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 GestureDetector(
                   onTap: () => context.pop(),
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 4, right: 10),
+                    padding: const EdgeInsetsDirectional.only(end: 4, start: 10),
                     child: Icon(Icons.arrow_back_ios_new_rounded,
                         size: 20, color: context.col.ink1),
                   ),
@@ -229,7 +229,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             });
                           },
                           child: Padding(
-                            padding: const EdgeInsets.only(left: 4),
+                            padding: const EdgeInsetsDirectional.only(end: 4),
                             child: Icon(Icons.close_rounded,
                                 size: 16, color: context.col.ink3),
                           ),
@@ -551,7 +551,7 @@ class _EmptyState extends StatelessWidget {
                       GestureDetector(
                         onTap: () => onRemoveRecent(q),
                         child: Padding(
-                          padding: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsetsDirectional.only(end: 8),
                           child: Icon(Icons.close_rounded,
                               size: 15, color: context.col.ink4),
                         ),
@@ -655,7 +655,8 @@ class _EmptyState extends StatelessWidget {
                   border: Border.all(color: context.col.border),
                   boxShadow: AppShadows.shadowCard,
                 ),
-                child: Image.asset('assets/images/ai_banner.png',
+                child: Image.asset(
+                  context.isAr ? 'assets/images/ai_banner.png' : 'assets/images/ai_banner_en.png',
                   width: double.infinity, fit: BoxFit.cover),
               ),
             ),

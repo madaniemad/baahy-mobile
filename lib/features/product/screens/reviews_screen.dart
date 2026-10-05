@@ -180,7 +180,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                     ...List.generate(5, (i) {
                       final star = 5 - i;
                       return Padding(
-                        padding: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsetsDirectional.only(end: 8),
                         child: _filterChip('$star ★', star),
                       );
                     }),
@@ -254,7 +254,7 @@ class _ReviewCard extends StatelessWidget {
               radius: 18,
               backgroundColor: AppColors.primary.withValues(alpha: 0.2),
               child: Text(
-                review.reviewerName.isNotEmpty ? review.reviewerName[0] : '؟',
+                review.reviewerName.isNotEmpty ? review.reviewerName[0] : context.tr('؟', '?'),
                 style: const TextStyle(
                   fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 15)),
             ),
@@ -262,7 +262,7 @@ class _ReviewCard extends StatelessWidget {
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(review.reviewerName,
+                Text(review.reviewerName.isNotEmpty ? review.reviewerName : context.tr('مجهول', 'Anonymous'),
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 if (review.createdAt != null)
                   Text(review.createdAt!,

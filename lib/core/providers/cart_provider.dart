@@ -290,8 +290,8 @@ class CartNotifier extends StateNotifier<CartState> {
     }
   }
 
-  Future<String?> applyCoupon(String code) async {
-    if (code.trim().isEmpty) return 'أدخل رمز الكوبون';
+  Future<String?> applyCoupon(String code, {bool isAr = true}) async {
+    if (code.trim().isEmpty) return isAr ? 'أدخل رمز الكوبون' : 'Enter a coupon code';
     try {
       final res = await ApiClient.instance.dio.post('/coupons/apply', data: {
         'code': code.trim(),
@@ -307,7 +307,7 @@ class CartNotifier extends StateNotifier<CartState> {
       return null;
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
-      return 'الكوبون غير صالح أو منتهي الصلاحية';
+      return isAr ? 'الكوبون غير صالح أو منتهي الصلاحية' : 'Invalid or expired coupon';
     }
   }
 
@@ -315,8 +315,8 @@ class CartNotifier extends StateNotifier<CartState> {
     state = state.copyWith(clearCoupon: true);
   }
 
-  Future<String?> validate() async {
-    if (state.items.isEmpty) return 'السلة فارغة';
+  Future<String?> validate({bool isAr = true}) async {
+    if (state.items.isEmpty) return isAr ? 'السلة فارغة' : 'Your cart is empty';
     try {
       final res = await ApiClient.instance.dio.post('/cart/validate', data: {
         'items': state.items
@@ -331,10 +331,11 @@ class CartNotifier extends StateNotifier<CartState> {
       if (res.data['valid'] == true) return null;
       for (final item in (res.data['items'] as List? ?? [])) {
         if (item['ok'] == false) {
-          return item['message'] as String? ?? 'بعض المنتجات غير متاحة';
+          return item['message'] as String? ??
+              (isAr ? 'بعض المنتجات غير متاحة' : 'Some items are unavailable');
         }
       }
-      return 'بعض المنتجات غير متاحة';
+      return isAr ? 'بعض المنتجات غير متاحة' : 'Some items are unavailable';
     } catch (e) {
       try {
         final resp = (e as dynamic).response;
@@ -353,7 +354,7 @@ class CartNotifier extends StateNotifier<CartState> {
   // can prompt the user before entering checkout.
   // type: 'unavailable' | 'price_changed'
   Future<List<({CartItem item, String message, String type, double? newPrice, double? oldPrice})>>
-      validateAndGetIssues() async {
+      validateAndGetIssues({bool isAr = true}) async {
     if (state.items.isEmpty) return [];
     try {
       final res = await ApiClient.instance.dio.post('/cart/validate', data: {
@@ -372,7 +373,7 @@ class CartNotifier extends StateNotifier<CartState> {
         if (apiItem['ok'] != false) continue;
         final pid = apiItem['product_id'] as int?;
         final vid = apiItem['variation_id'] as int?;
-        final msg = (apiItem['message'] as String?) ?? 'مشكلة في المنتج';
+        final msg = (apiItem['message'] as String?) ?? (isAr ? 'مشكلة في المنتج' : 'There is a problem with this item');
         final issueType = (apiItem['type'] as String?) ?? 'unavailable';
         final newPrice = (apiItem['current_price'] as num?)?.toDouble();
         final oldPrice = (apiItem['old_price'] as num?)?.toDouble();
@@ -387,7 +388,7 @@ class CartNotifier extends StateNotifier<CartState> {
       }
       if (issues.isEmpty) {
         return state.items
-            .map((i) => (item: i, message: 'بعض المنتجات غير متاحة',
+            .map((i) => (item: i, message: isAr ? 'بعض المنتجات غير متاحة' : 'Some items are unavailable',
                 type: 'unavailable', newPrice: null, oldPrice: null))
             .take(1)
             .toList();

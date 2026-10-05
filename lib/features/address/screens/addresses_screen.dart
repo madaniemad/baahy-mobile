@@ -168,7 +168,7 @@ class _InfoBanner extends StatelessWidget {
               context.tr(
                 'سيتم استخدام العنوان المحدد عند إتمام الطلب',
                 'The selected address will be used when placing your order'),
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.start,
               style: TextStyle(fontSize: 12, color: context.col.ink2,
                 fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.5),
             ),
@@ -227,7 +227,7 @@ class _AddressCard extends StatelessWidget {
     final city = (addr['city'] as String?) ?? '';
     final district = (addr['district'] as String?) ?? '';
     final street = (addr['street'] as String?) ?? '';
-    final cityLine = [city, district].where((s) => s.isNotEmpty).join('، ');
+    final cityLine = [city, district].where((s) => s.isNotEmpty).join(context.tr('، ', ', '));
     final name = (addr['name'] as String?) ?? '';
     final phone = (addr['phone'] as String?) ?? '';
 
@@ -443,7 +443,7 @@ class _DeliveryTipCard extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(
               context.tr('توصيل أسرع لليبيا', 'Faster delivery in Libya'),
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.start,
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
                 color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
             ),
@@ -452,7 +452,7 @@ class _DeliveryTipCard extends StatelessWidget {
               context.tr(
                 'أضف عناوين متعددة للوصول إليك بسرعة، أقرب، وأكثر دقة.',
                 'Add multiple addresses to reach you faster, closer, and more accurately.'),
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.start,
               style: TextStyle(fontSize: 12, color: context.col.ink2,
                 fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], height: 1.5),
             ),

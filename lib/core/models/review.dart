@@ -17,7 +17,7 @@ class Review {
 
   factory Review.fromJson(Map<String, dynamic> j) => Review(
     id: j['id'] ?? 0,
-    reviewerName: j['reviewer_name'] ?? j['user']?['name'] ?? 'مجهول',
+    reviewerName: j['reviewer_name'] ?? j['user']?['name'] ?? '',
     rating: j['rating'] != null ? (j['rating'] is num ? (j['rating'] as num).toInt() : int.tryParse(j['rating'].toString()) ?? 5) : 5,
     body: j['body'] ?? j['comment'] ?? '',
     createdAt: j['created_at'],

@@ -267,7 +267,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     return GestureDetector(
                       onTap: () => setState(() => _tab = t.$1),
                       child: Container(
-                        margin: const EdgeInsets.only(right: 6, bottom: 8),
+                        margin: const EdgeInsetsDirectional.only(start: 6, bottom: 8),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                         decoration: BoxDecoration(
                           color: isActive ? AppColors.primary : context.col.surfaceSoft,

@@ -455,7 +455,7 @@ class _ReviewCard extends StatelessWidget {
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(review.reviewerName,
+                Text(review.reviewerName.isNotEmpty ? review.reviewerName : context.tr('مجهول', 'Anonymous'),
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                 Text(review.createdAt ?? '',
                   style: TextStyle(fontSize: 11, color: context.col.ink3)),
@@ -875,7 +875,7 @@ class _DeliveryCard extends ConsumerWidget {
             child: Text(estimate,
               style: TextStyle(fontSize: 12.5,
                 fontWeight: FontWeight.w600, color: context.col.ink1),
-              textAlign: TextAlign.right),
+              textAlign: TextAlign.start),
           ),
         ],
       ),
@@ -996,8 +996,8 @@ class _CouponSectionState extends State<_CouponSection> {
                     style: const TextStyle(fontFamily: 'PlusJakartaSans',
                       fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.5),
                     decoration: InputDecoration(
-                      hintText: 'أدخل كود الخصم',
-                      hintTextDirection: TextDirection.rtl,
+                      hintText: context.tr('أدخل كود الخصم', 'Enter coupon code'),
+                      hintTextDirection: context.isAr ? TextDirection.rtl : TextDirection.ltr,
                       hintStyle: TextStyle(
                         color: context.col.ink3,
                         fontWeight: FontWeight.w400,

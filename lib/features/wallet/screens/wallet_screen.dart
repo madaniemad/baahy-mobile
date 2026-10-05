@@ -148,11 +148,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
         ref.invalidate(_walletProvider);
         ref.read(authProvider.notifier).refreshProfile();
         if (context.mounted) {
-          final isAr = context.isAr;
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(isAr
-              ? 'تمت إضافة ${fmtPrice(amount)} د.ل إلى محفظتك'
-              : '${fmtPrice(amount)} LYD added to your wallet'),
+            content: Text(context.tr(
+              'تمت إضافة ${fmtPrice(amount)} د.ل إلى محفظتك',
+              '${fmtPrice(amount)} ${context.s.lydUnit} added to your wallet')),
             backgroundColor: AppColors.success,
           ));
         }
@@ -237,18 +236,18 @@ class _HeroBalanceCard extends StatelessWidget {
               ),
             ),
           ),
-          // Wallet icon — top left
-          Positioned(
-            top: 12, left: 12,
+          // Wallet icon — top end (left in Arabic)
+          PositionedDirectional(
+            top: 12, end: 12,
             child: ColorFiltered(
               colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
               child: Image.asset('assets/images/wallet_icon.png',
                 width: 28, height: 28, fit: BoxFit.contain),
             ),
           ),
-          // QR code button
-          Positioned(
-            top: 12, right: 12,
+          // QR code button — top start (right in Arabic)
+          PositionedDirectional(
+            top: 12, start: 12,
             child: GestureDetector(
               onTap: onQr,
               child: Container(
@@ -278,8 +277,8 @@ class _HeroBalanceCard extends StatelessWidget {
                     fontSize: 40, fontWeight: FontWeight.w800, color: Colors.white,
                     letterSpacing: -1, height: 1)),
                 const SizedBox(width: 7),
-                const Text('د.ل',
-                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w600,
+                Text(context.s.lydUnit,
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w600,
                     color: Colors.white)),
               ]),
               const SizedBox(height: 5),
@@ -448,7 +447,7 @@ class _StatItem extends StatelessWidget {
           style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
             fontSize: 9.5, color: context.col.ink2, height: 1.3)),
         const SizedBox(height: 3),
-        Text('${fmtPrice(amount)} د.ل',
+        Text('${fmtPrice(amount)} ${context.s.lydUnit}',
           style: TextStyle(fontFamily: 'PlusJakartaSans',
             fontSize: 12.5, fontWeight: FontWeight.w800, color: context.col.ink0)),
       ]),
@@ -554,10 +553,10 @@ class _TierProgressCard extends StatelessWidget {
         GestureDetector(
           onTap: () => safePush(context, '/rewards-hub'),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.chevron_left_rounded, size: 16, color: AppColors.primary),
             Text(context.tr('عرض جميع المزايا', 'View all benefits'),
               style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, color: AppColors.primary,
                 fontWeight: FontWeight.w600)),
+            const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.primary),
           ]),
         ),
       ]),
@@ -720,10 +719,10 @@ class _EarnCard extends StatelessWidget {
               height: 1.35)),
           const SizedBox(height: 8),
           Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.chevron_left_rounded, size: 13, color: iconColor),
             Text(actionLabel,
               style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 10.5,
                 fontWeight: FontWeight.w700, color: iconColor)),
+            Icon(Icons.chevron_right_rounded, size: 13, color: iconColor),
           ]),
         ]),
       ),
@@ -749,10 +748,10 @@ class _TransactionsSection extends StatelessWidget {
           const Spacer(),
           if (txns.isNotEmpty)
             Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.chevron_left_rounded, size: 15, color: AppColors.primary),
               Text(context.s.seeAll,
                 style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, color: AppColors.primary,
                   fontWeight: FontWeight.w600)),
+              const Icon(Icons.chevron_right_rounded, size: 15, color: AppColors.primary),
             ]),
         ]),
         const SizedBox(height: 12),
@@ -821,32 +820,46 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
   // cash-on-delivery and wallet) so admin renames/toggles and new gateways appear here without
   // an app rebuild. Descriptions fall back to a per-gateway default when the admin left one blank.
   static const _descById = {
-    'mobicash': 'ادفع بكارت موبيكاش',
-    'tadawel':  'دفع إلكتروني عبر تداول',
-    'moamlat':  'دفع إلكتروني بالبطاقة المصرفية',
-    'paypal':   'ادفع بحساب PayPal',
-    'sadad':    'دفع إلكتروني عبر سداد',
+    'mobicash': ('ادفع بكارت موبيكاش', 'Pay with a Mobicash card'),
+    'tadawel':  ('دفع إلكتروني عبر تداول', 'Online payment via Tadawul'),
+    'moamlat':  ('دفع إلكتروني بالبطاقة المصرفية', 'Online payment by bank card'),
+    'paypal':   ('ادفع بحساب PayPal', 'Pay with your PayPal account'),
+    'sadad':    ('دفع إلكتروني عبر سداد', 'Online payment via Sadad'),
   };
 
-  List<({String id, String label, String desc})> get _methods {
+  // Labels/descriptions come from the backend (labelAr/labelEn, descriptionAr/descriptionEn);
+  // only the client-side fallbacks are translated here.
+  List<({String id, String label, String desc})> _methodsFor(bool isAr) {
     final pm = ref.read(appConfigProvider).paymentMethods
         .where((m) => m.enabled && m.id != 'cash_on_delivery' && m.id != 'wallet')
         .toList();
     if (pm.isEmpty) {
-      return const [(id: 'mobicash', label: 'موبيكاش', desc: 'ادفع بكارت موبيكاش')];
+      return [(
+        id: 'mobicash',
+        label: isAr ? 'موبيكاش' : 'Mobicash',
+        desc: isAr ? 'ادفع بكارت موبيكاش' : 'Pay with a Mobicash card',
+      )];
     }
-    return pm.map((m) => (
-      id: m.id,
-      label: m.labelAr,
-      desc: m.descriptionAr.isNotEmpty ? m.descriptionAr : (_descById[m.id] ?? ''),
-    )).toList();
+    return pm.map((m) {
+      final fb = _descById[m.id];
+      return (
+        id: m.id,
+        label: isAr ? m.labelAr : (m.labelEn.isNotEmpty ? m.labelEn : m.labelAr),
+        desc: isAr
+            ? (m.descriptionAr.isNotEmpty ? m.descriptionAr : (fb?.$1 ?? ''))
+            : (m.descriptionEn.isNotEmpty
+                ? m.descriptionEn
+                : (fb?.$2 ?? m.descriptionAr)),
+      );
+    }).toList();
   }
 
   @override
   void initState() {
     super.initState();
     // Default the selection to the first backend-provided method (mobicash may be disabled).
-    final ms = _methods;
+    // Only ids are needed here (initState has no Localizations yet), so the language is irrelevant.
+    final ms = _methodsFor(true);
     if (ms.isNotEmpty && !ms.any((m) => m.id == _paymentId)) {
       _paymentId = ms.first.id;
     }
@@ -869,7 +882,9 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
   Future<void> _proceed(double minTopup) async {
     if (_step == 0) {
       if (_amount < minTopup) {
-        setState(() => _error = 'أقل مبلغ للشحن هو ${fmtPrice(minTopup)} د.ل');
+        setState(() => _error = context.tr(
+          'أقل مبلغ للشحن هو ${fmtPrice(minTopup)} د.ل',
+          'Minimum top-up is ${fmtPrice(minTopup)} ${context.s.lydUnit}'));
         return;
       }
       if (_paymentId == 'mobicash') {
@@ -910,6 +925,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
   }
 
   Future<void> _initiateGateway() async {
+    final tr = context.tr;
     setState(() { _loading = true; _error = null; });
     try {
       final res = await ApiClient.instance.dio.post('/wallet/topup/initiate', data: {
@@ -920,14 +936,16 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       final url  = res.data['payment_url'] as String?;
       final ref0 = res.data['reference'] as String?;
       if (url == null || url.isEmpty || ref0 == null || ref0.isEmpty) {
-        setState(() { _loading = false; _error = 'لم يتم الحصول على رابط الدفع'; });
+        setState(() { _loading = false; _error = tr('لم يتم الحصول على رابط الدفع', "Couldn't get the payment link"); });
         return;
       }
       if (!mounted) return;
       setState(() => _loading = false);
       // Open the gateway INSIDE the app (no external browser). The webview pops
       // itself when the gateway redirects to the baahy:// return deep link.
-      final title = _paymentId == 'tadawel' ? 'الدفع عبر تداول' : 'الدفع بالبطاقة المصرفية';
+      final title = _paymentId == 'tadawel'
+          ? tr('الدفع عبر تداول', 'Pay with Tadawul')
+          : tr('الدفع بالبطاقة المصرفية', 'Pay by bank card');
       await Navigator.of(context).push<Uri?>(
         MaterialPageRoute(builder: (_) => PaymentWebViewScreen(url: url, title: title)),
       );
@@ -940,15 +958,18 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       } else {
         setState(() {
           _loading = false;
-          _error = 'لم يكتمل الدفع بعد. تحقق من محفظتك بعد قليل — لا تُعِد المحاولة لتجنّب الدفع مرتين.';
+          _error = tr(
+            'لم يكتمل الدفع بعد. تحقق من محفظتك بعد قليل — لا تُعِد المحاولة لتجنّب الدفع مرتين.',
+            "Payment hasn't completed yet. Check your wallet in a moment — please don't retry, to avoid paying twice.");
         });
       }
     } catch (_) {
-      setState(() { _loading = false; _error = 'حدث خطأ، حاول مجدداً'; });
+      setState(() { _loading = false; _error = tr('حدث خطأ، حاول مجدداً', 'Something went wrong, please try again'); });
     }
   }
 
   Future<void> _initiatePaypal() async {
+    final tr = context.tr;
     setState(() { _loading = true; _error = null; });
     try {
       // 1) create the wallet top-up to get a reference, 2) get the PayPal approval URL,
@@ -959,7 +980,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       if (!mounted) return;
       final ref0 = init.data['reference'] as String?;
       if (ref0 == null || ref0.isEmpty) {
-        setState(() { _loading = false; _error = 'تعذّر بدء عملية الدفع'; });
+        setState(() { _loading = false; _error = tr('تعذّر بدء عملية الدفع', "Couldn't start the payment"); });
         return;
       }
       final pp = await ApiClient.instance.dio.post('/payment/paypal/initiate', data: {
@@ -968,18 +989,18 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       if (!mounted) return;
       final approvalUrl = pp.data['approval_url'] as String?;
       if (approvalUrl == null || approvalUrl.isEmpty) {
-        setState(() { _loading = false; _error = 'خدمة PayPal غير متاحة حالياً'; });
+        setState(() { _loading = false; _error = tr('خدمة PayPal غير متاحة حالياً', 'PayPal is currently unavailable'); });
         return;
       }
       if (!mounted) return;
       final Uri? deepLink = await Navigator.of(context).push<Uri?>(
         MaterialPageRoute(builder: (_) => PaymentWebViewScreen(
-          url: approvalUrl, title: 'الدفع عبر PayPal')),
+          url: approvalUrl, title: tr('الدفع عبر PayPal', 'Pay with PayPal'))),
       );
       if (!mounted) return;
       final token = deepLink?.queryParameters['token'] ?? '';
       if (token.isEmpty) {
-        setState(() { _loading = false; _error = 'تم إلغاء الدفع'; });
+        setState(() { _loading = false; _error = tr('تم إلغاء الدفع', 'Payment cancelled'); });
         return;
       }
       await ApiClient.instance.dio.post('/payment/paypal/capture', data: {
@@ -987,13 +1008,14 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       });
       _finishSuccess();
     } catch (_) {
-      if (mounted) setState(() { _loading = false; _error = 'حدث خطأ، حاول مجدداً'; });
+      if (mounted) setState(() { _loading = false; _error = tr('حدث خطأ، حاول مجدداً', 'Something went wrong, please try again'); });
     }
   }
 
   Future<void> _mobicashOpen() async {
+    final tr = context.tr;
     if (_cardCtrl.text.trim().isEmpty) {
-      setState(() => _error = 'يرجى إدخال رقم البطاقة');
+      setState(() => _error = tr('يرجى إدخال رقم البطاقة', 'Please enter the card number'));
       return;
     }
     setState(() { _loading = true; _error = null; });
@@ -1009,13 +1031,14 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       setState(() { _loading = false; _step = 2; });
     } catch (_) {
       if (!mounted) return;
-      setState(() { _loading = false; _error = 'البطاقة غير صحيحة أو الخدمة غير متاحة'; });
+      setState(() { _loading = false; _error = tr('البطاقة غير صحيحة أو الخدمة غير متاحة', 'Invalid card, or the service is unavailable'); });
     }
   }
 
   Future<void> _mobicashComplete() async {
+    final tr = context.tr;
     if (_otpCtrl.text.trim().isEmpty) {
-      setState(() => _error = 'يرجى إدخال رمز OTP');
+      setState(() => _error = tr('يرجى إدخال رمز OTP', 'Please enter the OTP code'));
       return;
     }
     setState(() { _loading = true; _error = null; });
@@ -1028,7 +1051,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       });
       _finishSuccess();
     } catch (_) {
-      setState(() { _loading = false; _error = 'رمز OTP غير صحيح، حاول مجدداً'; });
+      setState(() { _loading = false; _error = tr('رمز OTP غير صحيح، حاول مجدداً', 'Incorrect OTP code, please try again'); });
     }
   }
 
@@ -1036,6 +1059,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
   Widget build(BuildContext context) {
     final config = ref.watch(appConfigProvider);
     final minTopup = config.minWalletTopup;
+    final methods = _methodsFor(context.isAr);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return GestureDetector(
@@ -1059,22 +1083,22 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
               GestureDetector(
                 onTap: () => setState(() { _step--; _error = null; }),
                 child: const Padding(
-                  padding: EdgeInsets.only(left: 12),
+                  padding: EdgeInsetsDirectional.only(end: 12),
                   child: Icon(Icons.arrow_back, size: 20)),
               ),
             Expanded(
               child: Text(
-                _step == 0 ? 'شحن المحفظة'
-                    : _step == 1 ? 'رقم بطاقة موبيكاش'
-                    : 'رمز التحقق OTP',
+                _step == 0 ? context.tr('شحن المحفظة', 'Top Up Wallet')
+                    : _step == 1 ? context.tr('رقم بطاقة موبيكاش', 'Mobicash card number')
+                    : context.tr('رمز التحقق OTP', 'OTP verification code'),
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
             ),
           ]),
           const SizedBox(height: 4),
           Text(
-            _step == 0 ? 'ادفع مرة، استخدمه عبر الطلبات.'
-                : _step == 1 ? 'أدخل رقم البطاقة لإرسال رمز OTP'
-                : 'تم إرسال رمز OTP إلى بطاقتك',
+            _step == 0 ? context.tr('ادفع مرة، استخدمه عبر الطلبات.', 'Pay once, use it across orders.')
+                : _step == 1 ? context.tr('أدخل رقم البطاقة لإرسال رمز OTP', 'Enter your card number to receive an OTP code')
+                : context.tr('تم إرسال رمز OTP إلى بطاقتك', 'An OTP code was sent to your card'),
             style: TextStyle(fontSize: 13, color: context.col.ink2)),
           const SizedBox(height: 20),
 
@@ -1105,7 +1129,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
               final isSelected = _customCtrl.text.trim().isEmpty && _selected == amt;
               return Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(left: i < _quickAmounts.length - 1 ? 6 : 0),
+                  padding: EdgeInsetsDirectional.only(end: i < _quickAmounts.length - 1 ? 6 : 0),
                   child: GestureDetector(
                     onTap: () => setState(() { _selected = amt; _customCtrl.clear(); }),
                     child: Container(
@@ -1140,18 +1164,18 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                 textAlign: TextAlign.center,
                 onChanged: (_) => setState(() => _selected = null),
                 decoration: InputDecoration(
-                  hintText: 'أو أدخل مبلغاً آخر',
+                  hintText: context.tr('أو أدخل مبلغاً آخر', 'Or enter another amount'),
                   hintStyle: TextStyle(fontSize: 13, color: context.col.ink3),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  suffixText: 'د.ل',
+                  suffixText: context.s.lydUnit,
                   suffixStyle: TextStyle(fontSize: 13, color: context.col.ink2, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
             const SizedBox(height: 20),
 
-            ..._methods.map((m) {
+            ...methods.map((m) {
               final isSelected = _paymentId == m.id;
               return GestureDetector(
                 onTap: () => setState(() => _paymentId = m.id),
@@ -1202,7 +1226,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'رقم بطاقة موبيكاش',
+                  hintText: context.tr('رقم بطاقة موبيكاش', 'Mobicash card number'),
                   hintStyle: TextStyle(fontSize: 14, color: context.col.ink3),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(14),
@@ -1211,7 +1235,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(context.isAr ? 'المبلغ: ${fmtPrice(_amount)} د.ل' : 'Amount: ${fmtPrice(_amount)} LYD',
+            Text(context.tr('المبلغ: ${fmtPrice(_amount)} د.ل', 'Amount: ${fmtPrice(_amount)} ${context.s.lydUnit}'),
               style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
           ],
 
@@ -1228,7 +1252,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                 autofocus: true,
                 textAlign: TextAlign.center,
                 decoration: InputDecoration(
-                  hintText: 'أدخل رمز OTP',
+                  hintText: context.tr('أدخل رمز OTP', 'Enter the OTP code'),
                   hintStyle: TextStyle(fontSize: 14, color: context.col.ink3),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(14),
@@ -1258,9 +1282,11 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : Text(
                       _step == 0
-                          ? (_amount > 0 ? 'متابعة · ${fmtPrice(_amount)} د.ل' : 'متابعة')
-                          : _step == 1 ? 'إرسال OTP'
-                          : 'تأكيد الشحن',
+                          ? (_amount > 0
+                              ? context.tr('متابعة · ${fmtPrice(_amount)} د.ل', 'Continue · ${fmtPrice(_amount)} ${context.s.lydUnit}')
+                              : context.tr('متابعة', 'Continue'))
+                          : _step == 1 ? context.tr('إرسال OTP', 'Send OTP')
+                          : context.tr('تأكيد الشحن', 'Confirm top-up'),
                       style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
             ),
@@ -1282,19 +1308,24 @@ class _TransactionRow extends StatelessWidget {
     'يناير','فبراير','مارس','أبريل','مايو','يونيو',
     'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر',
   ];
+  static const _enMonths = [
+    'Jan','Feb','Mar','Apr','May','Jun',
+    'Jul','Aug','Sep','Oct','Nov','Dec',
+  ];
 
-  String _formatDate(String? dateStr) {
+  String _formatDate(String? dateStr, bool isAr) {
     if (dateStr == null) return '';
     final dt = DateTime.tryParse(dateStr);
     if (dt == null) return '';
     final hour = dt.toLocal().hour;
-    final amPm = hour < 12 ? 'ص' : 'م';
+    final amPm = hour < 12 ? (isAr ? 'ص' : 'AM') : (isAr ? 'م' : 'PM');
     final h = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
     final min = dt.minute.toString().padLeft(2, '0');
-    return '${dt.day} ${_arMonths[dt.month - 1]} ${dt.year} - $h:$min $amPm';
+    final month = (isAr ? _arMonths : _enMonths)[dt.month - 1];
+    return '${dt.day} $month ${dt.year} - $h:$min $amPm';
   }
 
-  String _buildDescription(String type, bool isCredit) {
+  String _buildDescription(BuildContext context, String type, bool isCredit) {
     final raw = (tx['description'] as String? ?? '').trim();
     final gateway = (tx['gateway'] as String? ?? '').toLowerCase();
     final senderName = tx['sender_name'] as String?;
@@ -1305,26 +1336,26 @@ class _TransactionRow extends StatelessWidget {
     if (raw.isNotEmpty && !generics.contains(raw.toLowerCase())) return raw;
 
     switch (type) {
-      case 'cashback': return 'كاش باك على طلبك';
-      case 'referral': return 'مكافأة إحالة';
-      case 'refund': return 'استرداد مبلغ';
+      case 'cashback': return context.tr('كاش باك على طلبك', 'Cashback on your order');
+      case 'referral': return context.tr('مكافأة إحالة', 'Referral reward');
+      case 'refund': return context.tr('استرداد مبلغ', 'Refund');
       case 'transfer_in':
-        if (senderName != null && senderName.isNotEmpty) return 'تحويل من $senderName';
-        return 'تحويل وارد';
+        if (senderName != null && senderName.isNotEmpty) return context.tr('تحويل من $senderName', 'Transfer from $senderName');
+        return context.tr('تحويل وارد', 'Incoming transfer');
       case 'transfer_out':
-        if (recipientName != null && recipientName.isNotEmpty) return 'تحويل إلى $recipientName';
-        return 'تحويل صادر';
+        if (recipientName != null && recipientName.isNotEmpty) return context.tr('تحويل إلى $recipientName', 'Transfer to $recipientName');
+        return context.tr('تحويل صادر', 'Outgoing transfer');
       case 'topup':
       case 'deposit':
-        if (gateway == 'tadawel' || gateway == 'tadawul') return 'إيداع عبر تداول';
-        if (gateway == 'moamlat') return 'إيداع بالبطاقة المصرفية';
-        if (gateway == 'mobicash') return 'إيداع عبر موبيكاش';
-        if (gateway == 'admin' || gateway == 'manual' || gateway == 'baahy') return 'إيداع بواسطة باهي';
+        if (gateway == 'tadawel' || gateway == 'tadawul') return context.tr('إيداع عبر تداول', 'Deposit via Tadawul');
+        if (gateway == 'moamlat') return context.tr('إيداع بالبطاقة المصرفية', 'Deposit by bank card');
+        if (gateway == 'mobicash') return context.tr('إيداع عبر موبيكاش', 'Deposit via Mobicash');
+        if (gateway == 'admin' || gateway == 'manual' || gateway == 'baahy') return context.tr('إيداع بواسطة باهي', 'Deposit by Baahy');
         if (raw.isNotEmpty) return raw;
-        return 'إيداع في المحفظة';
+        return context.tr('إيداع في المحفظة', 'Wallet deposit');
       default:
         if (raw.isNotEmpty) return raw;
-        return isCredit ? 'إيداع' : 'سحب';
+        return isCredit ? context.tr('إيداع', 'Deposit') : context.tr('سحب', 'Withdrawal');
     }
   }
 
@@ -1387,18 +1418,18 @@ class _TransactionRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_buildDescription(type, isCredit),
+            Text(_buildDescription(context, type, isCredit),
               style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                 fontSize: 13.5, fontWeight: FontWeight.w600, height: 1.3)),
             if (tx['created_at'] != null)
               Text(
-                _formatDate(tx['created_at']),
+                _formatDate(tx['created_at'], context.isAr),
                 style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11, color: context.col.ink3),
               ),
           ]),
         ),
         Text(
-          '${isCredit ? '+' : '-'}${fmtPrice(amount)} د.ل',
+          '${isCredit ? '+' : '-'}${fmtPrice(amount)} ${context.s.lydUnit}',
           style: TextStyle(
             fontFamily: 'PlusJakartaSans',
             fontWeight: FontWeight.w800, fontSize: 14,
@@ -1428,10 +1459,10 @@ class _WalletQrSheet extends StatelessWidget {
         Center(child: Container(width: 40, height: 4,
           decoration: BoxDecoration(color: context.col.border, borderRadius: BorderRadius.circular(2)))),
         const SizedBox(height: 20),
-        const Text('كود QR محفظتك',
-          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 18, fontWeight: FontWeight.w800)),
+        Text(context.tr('كود QR محفظتك', 'Your wallet QR code'),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 18, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        Text('يمكن لأي شخص مسح هذا الكود لإرسال مبلغ لمحفظتك',
+        Text(context.tr('يمكن لأي شخص مسح هذا الكود لإرسال مبلغ لمحفظتك', 'Anyone can scan this code to send money to your wallet'),
           textAlign: TextAlign.center,
           style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12.5, color: Colors.grey.shade600)),
         const SizedBox(height: 24),
@@ -1540,9 +1571,10 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
   double get _amount => double.tryParse(_amountCtrl.text.trim()) ?? 0;
 
   Future<void> _lookup() async {
+    final tr = context.tr;
     final phone = _phoneCtrl.text.trim();
     if (phone.isEmpty) {
-      setState(() => _error = 'يرجى إدخال رقم الهاتف');
+      setState(() => _error = context.tr('يرجى إدخال رقم الهاتف', 'Please enter the phone number'));
       return;
     }
     setState(() { _loading = true; _error = null; });
@@ -1558,7 +1590,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
           _loading = false;
         });
       } else {
-        setState(() { _loading = false; _error = 'لم يتم العثور على مستخدم بهذا الرقم'; });
+        setState(() { _loading = false; _error = tr('لم يتم العثور على مستخدم بهذا الرقم', 'No user found with this number'); });
       }
     } catch (e) {
       final msg = _extractError(e);
@@ -1567,8 +1599,10 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
   }
 
   Future<void> _confirm() async {
+    final tr = context.tr;
+    final unit = context.s.lydUnit;
     if (_amount <= 0) {
-      setState(() => _error = 'يرجى إدخال مبلغ صحيح');
+      setState(() => _error = tr('يرجى إدخال مبلغ صحيح', 'Please enter a valid amount'));
       return;
     }
     setState(() { _loading = true; _error = null; });
@@ -1580,11 +1614,13 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
       });
       if (_saveContact) await _saveContactNow();
       if (mounted) {
+        final msg = tr('تم تحويل ${fmtPrice(_amount)} د.ل إلى $_recipientName',
+            '${fmtPrice(_amount)} $unit transferred to $_recipientName');
         Navigator.of(context).pop();
         widget.onSuccess();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم تحويل ${fmtPrice(_amount)} د.ل إلى $_recipientName'),
+            content: Text(msg),
             backgroundColor: AppColors.success,
             duration: const Duration(seconds: 3),
           ),
@@ -1601,7 +1637,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
       final data = (e as dynamic).response?.data;
       if (data is Map && data['message'] != null) return data['message'].toString();
     } catch (_) {}
-    return 'حدث خطأ، حاول مجدداً';
+    return context.tr('حدث خطأ، حاول مجدداً', 'Something went wrong, please try again');
   }
 
   @override
@@ -1629,23 +1665,23 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
               GestureDetector(
                 onTap: () => setState(() { _step--; _error = null; }),
                 child: const Padding(
-                  padding: EdgeInsets.only(left: 12),
+                  padding: EdgeInsetsDirectional.only(end: 12),
                   child: Icon(Icons.arrow_back, size: 20)),
               ),
             Expanded(
               child: Text(
-                _step == 0 ? 'تحويل رصيد'
-                    : _step == 1 ? 'المبلغ والملاحظة'
-                    : 'تأكيد التحويل',
+                _step == 0 ? context.tr('تحويل رصيد', 'Transfer Balance')
+                    : _step == 1 ? context.tr('المبلغ والملاحظة', 'Amount and note')
+                    : context.tr('تأكيد التحويل', 'Confirm transfer'),
                 style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 20, fontWeight: FontWeight.w800,
                   color: context.col.ink0)),
             ),
           ]),
           const SizedBox(height: 4),
           Text(
-            _step == 0 ? 'أدخل رقم هاتف المستلم'
-                : _step == 1 ? 'رصيدك المتاح: ${fmtPrice(balance)} د.ل'
-                : 'راجع التفاصيل قبل التأكيد',
+            _step == 0 ? context.tr('أدخل رقم هاتف المستلم', "Enter the recipient's phone number")
+                : _step == 1 ? context.tr('رصيدك المتاح: ${fmtPrice(balance)} د.ل', 'Your available balance: ${fmtPrice(balance)} ${context.s.lydUnit}')
+                : context.tr('راجع التفاصيل قبل التأكيد', 'Review the details before confirming'),
             style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink2)),
           const SizedBox(height: 20),
 
@@ -1737,7 +1773,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                     fontWeight: FontWeight.w800, color: Colors.grey.shade300),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  suffixText: 'د.ل',
+                  suffixText: context.s.lydUnit,
                   suffixStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14,
                     fontWeight: FontWeight.w600, color: Colors.grey.shade500),
                 ),
@@ -1755,7 +1791,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                 controller: _noteCtrl,
                 maxLength: 200,
                 decoration: InputDecoration(
-                  hintText: 'ملاحظة (اختياري)',
+                  hintText: context.tr('ملاحظة (اختياري)', 'Note (optional)'),
                   hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: Colors.grey.shade400),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.all(14),
@@ -1780,7 +1816,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text('حفظ المستلم للتحويل السريع لاحقاً',
+                Text(context.tr('حفظ المستلم للتحويل السريع لاحقاً', 'Save recipient for quick transfers later'),
                   style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink1)),
               ]),
             ),
@@ -1795,13 +1831,13 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                 border: Border.all(color: Colors.grey.shade200),
               ),
               child: Column(children: [
-                _ConfirmRow(label: 'إلى', value: _recipientName ?? ''),
-                _ConfirmRow(label: 'رقم الهاتف', value: _recipientPhoneMasked ?? '', ltr: true),
-                _ConfirmRow(label: 'المبلغ', value: '${fmtPrice(_amount)} د.ل', highlight: true),
+                _ConfirmRow(label: context.tr('إلى', 'To'), value: _recipientName ?? ''),
+                _ConfirmRow(label: context.tr('رقم الهاتف', 'Phone number'), value: _recipientPhoneMasked ?? '', ltr: true),
+                _ConfirmRow(label: context.tr('المبلغ', 'Amount'), value: '${fmtPrice(_amount)} ${context.s.lydUnit}', highlight: true),
                 if (_noteCtrl.text.trim().isNotEmpty)
-                  _ConfirmRow(label: 'ملاحظة', value: _noteCtrl.text.trim()),
-                _ConfirmRow(label: 'رصيدك بعد التحويل',
-                  value: '${fmtPrice((balance - _amount).clamp(0, double.infinity))} د.ل'),
+                  _ConfirmRow(label: context.tr('ملاحظة', 'Note'), value: _noteCtrl.text.trim()),
+                _ConfirmRow(label: context.tr('رصيدك بعد التحويل', 'Balance after transfer'),
+                  value: '${fmtPrice((balance - _amount).clamp(0, double.infinity))} ${context.s.lydUnit}'),
               ]),
             ),
           ],
@@ -1820,8 +1856,8 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                 if (_step == 0) {
                   _lookup();
                 } else if (_step == 1) {
-                  if (_amount <= 0) { setState(() => _error = 'يرجى إدخال مبلغ صحيح'); return; }
-                  if (_amount > balance) { setState(() => _error = 'الرصيد غير كافٍ'); return; }
+                  if (_amount <= 0) { setState(() => _error = context.tr('يرجى إدخال مبلغ صحيح', 'Please enter a valid amount')); return; }
+                  if (_amount > balance) { setState(() => _error = context.tr('الرصيد غير كافٍ', 'Insufficient balance')); return; }
                   setState(() { _step = 2; _error = null; });
                 } else {
                   _confirm();
@@ -1836,9 +1872,9 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                   ? const SizedBox(width: 20, height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : Text(
-                      _step == 0 ? 'بحث عن المستلم'
-                          : _step == 1 ? 'متابعة'
-                          : 'تأكيد التحويل',
+                      _step == 0 ? context.tr('بحث عن المستلم', 'Find recipient')
+                          : _step == 1 ? context.tr('متابعة', 'Continue')
+                          : context.tr('تأكيد التحويل', 'Confirm transfer'),
                       style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
             ),

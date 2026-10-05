@@ -65,6 +65,7 @@ class AppConfig {
   final double seasonalMultiplier;
   final String? seasonalEndsAt;
   final String seasonalLabelAr;
+  final String seasonalLabelEn;
 
   // Per-tier benefits (ordered: bronze, silver, gold, platinum)
   final List<double> tierCashbacks;
@@ -101,6 +102,7 @@ class AppConfig {
     this.seasonalMultiplier = 2.0,
     this.seasonalEndsAt,
     this.seasonalLabelAr = 'كاش باك مضاعف',
+    this.seasonalLabelEn = 'Double cashback',
     this.tierCashbacks = const [2.0, 3.0, 4.0, 6.0],
     this.tierShippingThresholds = const [150.0, 120.0, 100.0, 80.0],
     this.tierReturnDays = const [1, 3, 7, 14],
@@ -147,6 +149,7 @@ class AppConfig {
     seasonalMultiplier: 2.0,
     seasonalEndsAt: null,
     seasonalLabelAr: 'كاش باك مضاعف',
+    seasonalLabelEn: 'Double cashback',
     tierCashbacks: [2.0, 3.0, 4.0, 6.0],
     tierShippingThresholds: [150.0, 120.0, 100.0, 80.0],
     tierReturnDays: [1, 3, 7, 14],
@@ -238,6 +241,7 @@ class AppConfig {
       seasonalMultiplier: ((j['seasonal'] as Map<String, dynamic>?)?['multiplier'] as num?)?.toDouble() ?? 2.0,
       seasonalEndsAt: (j['seasonal'] as Map<String, dynamic>?)?['ends_at'] as String?,
       seasonalLabelAr: (j['seasonal'] as Map<String, dynamic>?)?['label_ar'] as String? ?? 'كاش باك مضاعف',
+      seasonalLabelEn: (j['seasonal'] as Map<String, dynamic>?)?['label_en'] as String? ?? 'Double cashback',
       tierCashbacks: [bronzeCb, silverCb, goldCb, platCb],
       tierShippingThresholds: [bronzeSh, silverSh, goldSh, platSh],
       tierReturnDays: [bronzeRd, silverRd, goldRd, platRd],

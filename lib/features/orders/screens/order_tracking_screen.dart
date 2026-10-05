@@ -38,14 +38,14 @@ Future<void> _shareOrderPdf(BuildContext context, Order order) async {
     final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
     await SharePlus.instance.share(ShareParams(
       files: [XFile(file.path, mimeType: 'application/pdf')],
-      subject: 'فاتورة ${order.orderNumber}',
+      subject: context.tr('فاتورة ${order.orderNumber}', 'Invoice ${order.orderNumber}'),
       sharePositionOrigin: origin,
     ));
   } catch (e, st) {
     Sentry.captureException(e, stackTrace: st);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر تحميل الفاتورة، حاول مجدداً')),
+        SnackBar(content: Text(context.tr('تعذر تحميل الفاتورة، حاول مجدداً', 'Could not load the invoice, please try again'))),
       );
     }
   }
@@ -82,13 +82,13 @@ class OrderTrackingScreen extends ConsumerWidget {
           orderAsync.maybeWhen(
             data: (o) => IconButton(
               icon: const Icon(Icons.auto_awesome_outlined, size: 22),
-              tooltip: 'اسأل عن طلبك',
+              tooltip: context.tr('اسأل عن طلبك', 'Ask about your order'),
               onPressed: () => safePush(context, '/chat',
-                  extra: 'أحتاج مساعدة بخصوص طلب رقم ${o.orderNumber}'),
+                  extra: context.tr('أحتاج مساعدة بخصوص طلب رقم ${o.orderNumber}', 'I need help with order ${o.orderNumber}')),
             ),
             orElse: () => IconButton(
               icon: const Icon(Icons.auto_awesome_outlined, size: 22),
-              tooltip: 'اسأل عن طلبك',
+              tooltip: context.tr('اسأل عن طلبك', 'Ask about your order'),
               onPressed: () => safePush(context, '/chat'),
             ),
           ),
@@ -431,7 +431,7 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () => safePush(context, '/chat',
-                extra: 'أحتاج مساعدة بخصوص طلب رقم ${order.orderNumber}'),
+                extra: context.tr('أحتاج مساعدة بخصوص طلب رقم ${order.orderNumber}', 'I need help with order ${order.orderNumber}')),
             icon: const Icon(Icons.help_outline_rounded, size: 16),
             label: Text(context.s.orderHelp,
               style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),

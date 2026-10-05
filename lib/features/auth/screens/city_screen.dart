@@ -178,7 +178,7 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                 child: TextField(
                                   controller: _searchCtrl,
                                   autofocus: false,
-                                  textAlign: isAr ? TextAlign.right : TextAlign.left,
+                                  textAlign: TextAlign.start,
                                   textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
                                   onChanged: (v) => setState(() => _query = v),
                                   style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
@@ -295,7 +295,7 @@ class _CityRow extends StatelessWidget {
           child: Row(children: [
             Expanded(
               child: Text(isAr ? cityAr : cityEn,
-                textAlign: isAr ? TextAlign.right : TextAlign.left,
+                textAlign: TextAlign.start,
                 style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14.5,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   color: selected ? _navy : const Color(0xFF33565C))),

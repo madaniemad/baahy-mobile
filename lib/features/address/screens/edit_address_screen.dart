@@ -178,7 +178,17 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
         }
       }
     } catch (_) {}
-    return 'حدث خطأ، حاول مجدداً';
+    return context.tr('حدث خطأ، حاول مجدداً', 'Something went wrong, please try again');
+  }
+
+  /// Display name for a stored (Arabic) city: the rate's English name in EN mode.
+  String _cityLabel(String ar) {
+    if (context.isAr) return ar;
+    final rates = ref.watch(shippingRatesProvider).valueOrNull ?? [];
+    for (final r in rates) {
+      if (r.cityAr == ar && r.city.isNotEmpty) return r.city;
+    }
+    return ar;
   }
 
   @override
@@ -188,7 +198,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       backgroundColor: context.col.surface,
       appBar: AppBar(
         backgroundColor: context.col.surface, elevation: 0,
-        title: Text(_isEdit ? 'تعديل عنوان' : 'عنوان جديد',
+        title: Text(_isEdit ? context.tr('تعديل عنوان', 'Edit address') : context.tr('عنوان جديد', 'New address'),
           style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         leading: IconButton(
           onPressed: () => context.pop(),
@@ -201,12 +211,12 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
               // ── Label selector ─────────────────────────────────────────────
-              const _FieldLabel('التسمية'),
+              _FieldLabel(context.tr('التسمية', 'Label')),
               Row(children: _labels.map((l) {
                 final isSelected = _label == l.$1;
                 return Expanded(
                   child: Padding(
-                    padding: EdgeInsets.only(left: l.$1 != _labels.last.$1 ? 8 : 0),
+                    padding: EdgeInsetsDirectional.only(end: l.$1 != _labels.last.$1 ? 8 : 0),
                     child: GestureDetector(
                       onTap: () => setState(() => _label = l.$1),
                       child: Container(
@@ -225,7 +235,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                           Icon(l.$2, size: 18, color: context.col.ink1),
                           const SizedBox(height: 4),
-                          Text(l.$1, style: const TextStyle(
+                          Text(context.s.translateAddrLabel(l.$1), style: const TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 13)),
                         ]),
                       ),
@@ -235,13 +245,14 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               }).toList()),
               const SizedBox(height: 16),
 
-              _TextField('الاسم الكامل', _nameCtrl, hint: 'محمد علي', autofocus: true),
+              _TextField(context.tr('الاسم الكامل', 'Full name'), _nameCtrl,
+                hint: context.tr('محمد علي', 'Mohammed Ali'), autofocus: true),
 
               // ── Phone ──────────────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const _FieldLabel('رقم الهاتف'),
+                  _FieldLabel(context.tr('رقم الهاتف', 'Phone number')),
                   Container(
                     decoration: BoxDecoration(
                       color: context.col.bg,
@@ -256,7 +267,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                         controller: _phoneCtrl,
                         focusNode: _phoneFocus,
                         keyboardType: TextInputType.phone,
-                        textAlign: TextAlign.right,
+                        textAlign: context.isAr ? TextAlign.right : TextAlign.left,
                         decoration: InputDecoration(
                           hintText: '+218 91 234 5678',
                           hintStyle: TextStyle(color: context.col.ink3, fontSize: 13),
@@ -271,7 +282,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               ),
 
               // ── City — GPS + tap to pick ───────────────────────────────────
-              const _FieldLabel('المدينة'),
+              _FieldLabel(context.tr('المدينة', 'City')),
               Row(children: [
                 // City display / picker
                 Expanded(
@@ -290,7 +301,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                       child: Row(children: [
                         Expanded(
                           child: Text(
-                            _city ?? 'اختر مدينة',
+                            _city != null ? _cityLabel(_city!) : context.s.selectCity,
                             style: TextStyle(
                               fontSize: 14,
                               color: _city != null ? context.col.ink0 : context.col.ink3,
@@ -332,8 +343,8 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                     Expanded(
                       child: Text(
                         _lat != null
-                            ? 'موقع محدد على الخريطة ✓'
-                            : 'تحديد موقع التوصيل على الخريطة',
+                            ? context.tr('موقع محدد على الخريطة ✓', 'Location set on the map ✓')
+                            : context.tr('تحديد موقع التوصيل على الخريطة', 'Set delivery location on the map'),
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: _lat != null ? FontWeight.w600 : FontWeight.normal,
@@ -356,7 +367,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: Text('إزالة الموقع', style: TextStyle(
+                    child: Text(context.tr('إزالة الموقع', 'Remove location'), style: TextStyle(
                       fontSize: 11, color: context.col.ink3)),
                   ),
                 ),
@@ -364,10 +375,11 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               const SizedBox(height: 14),
 
               // The map seeds this with the district, so the label names it first.
-              _TextField('المنطقة، الشارع، المبنى', _streetCtrl,
-                hint: 'قرقارش - شارع 7 أبريل، مبنى 12، شقة 4'),
+              _TextField(context.tr('المنطقة، الشارع، المبنى', 'Area, street, building'), _streetCtrl,
+                hint: context.tr('قرقارش - شارع 7 أبريل، مبنى 12، شقة 4',
+                    'Gargaresh - 7 April St, building 12, apt 4')),
 
-              const _FieldLabel('📍 ملاحظات معلم بارز (مستحسن)'),
+              _FieldLabel(context.tr('📍 ملاحظات معلم بارز (مستحسن)', '📍 Nearby landmark notes (recommended)')),
               Container(
                 decoration: BoxDecoration(
                   color: context.col.bg,
@@ -381,7 +393,8 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                   focusNode: _notesFocus,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'مثل: "مقابل المسجد الأبيض، بجانب مخبز المدينة"',
+                    hintText: context.tr('مثل: "مقابل المسجد الأبيض، بجانب مخبز المدينة"',
+                        'e.g. "Opposite the White Mosque, next to the city bakery"'),
                     hintStyle: TextStyle(color: context.col.ink3, fontSize: 12.5),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.all(14),
@@ -390,7 +403,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'يساعد سائقينا في الوصول إليك بسرعة.',
+                context.tr('يساعد سائقينا في الوصول إليك بسرعة.', 'Helps our drivers reach you quickly.'),
                 style: TextStyle(fontSize: 11, color: context.col.ink3, height: 1.4)),
               const SizedBox(height: 16),
 
@@ -402,7 +415,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
           padding: EdgeInsets.fromLTRB(16, 0, 16,
             MediaQuery.of(context).padding.bottom + 16),
           child: AppButton(
-            label: _isEdit ? 'حفظ التغييرات' : 'حفظ العنوان',
+            label: _isEdit ? context.tr('حفظ التغييرات', 'Save changes') : context.tr('حفظ العنوان', 'Save address'),
             onTap: _save, loading: _loading),
         ),
       ]),
@@ -465,9 +478,9 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
           child: TextField(
             controller: _ctrl,
             onChanged: (v) => setState(() => _query = v),
-            textAlign: TextAlign.right,
+            textAlign: TextAlign.start,
             decoration: InputDecoration(
-              hintText: 'ابحث…',
+              hintText: context.tr('ابحث…', 'Search…'),
               hintStyle: TextStyle(color: context.col.ink3, fontSize: 14),
               prefixIcon: _query.isEmpty
                   ? Icon(Icons.search_rounded, color: context.col.ink3, size: 18)
@@ -511,7 +524,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
                         color: selected ? AppColors.primary : context.col.border,
                         width: selected ? 1.5 : 1),
                     ),
-                    child: Text(r.cityAr,
+                    child: Text(context.isAr ? r.cityAr : (r.city.isNotEmpty ? r.city : r.cityAr),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,

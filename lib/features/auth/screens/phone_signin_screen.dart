@@ -72,7 +72,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
       // Tell a network failure apart from a refusal. "Sending failed" for both is what
       // let a user sit for an afternoon retrying a request that never left the phone,
       // while support hunted for a server fault that did not exist.
-      String msg = 'تعذر الإرسال، حاول مجدداً';
+      String msg = context.tr('تعذر الإرسال، حاول مجدداً', 'Could not send, please try again');
       if (e is DioException) {
         final d = e.response?.data;
         if (d is Map && d['message'] != null) {
@@ -175,7 +175,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.card_giftcard_outlined, size: 15, color: context.col.ink3),
                   const SizedBox(width: 5),
-                  Text('لديك كود دعوة؟',
+                  Text(context.tr('لديك كود دعوة؟', 'Have an invite code?'),
                     style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                       color: context.col.ink3, fontWeight: FontWeight.w600)),
                 ]),
@@ -197,7 +197,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   style: const TextStyle(fontFamily: 'PlusJakartaSans',
                     fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 1),
                   decoration: InputDecoration(
-                    hintText: 'كود الدعوة',
+                    hintText: context.tr('كود الدعوة', 'Invite code'),
                     hintStyle: TextStyle(
                       fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                       color: context.col.ink4, fontWeight: FontWeight.w400,

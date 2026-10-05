@@ -649,10 +649,10 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                                     child: TextField(
                                       controller: _searchCtrl,
                                       autofocus: true,
-                                      textDirection: TextDirection.rtl,
+                                      textDirection: context.isAr ? TextDirection.rtl : TextDirection.ltr,
                                       style: const TextStyle(fontSize: 13.5),
                                       decoration: InputDecoration(
-                                        hintText: 'ابحث عن موقع...',
+                                        hintText: context.tr('ابحث عن موقع...', 'Search for a location...'),
                                         hintStyle: TextStyle(
                                             color: context.col.ink3,
                                             fontSize: 13.5),
@@ -685,9 +685,9 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      _geocoding ? 'جاري تحديد الموقع…' :
+                                      _geocoding ? context.tr('جاري تحديد الموقع…', 'Locating…') :
                                       (_address.isNotEmpty
-                                          ? _address : 'ابحث أو حرّك الخريطة'),
+                                          ? _address : context.tr('ابحث أو حرّك الخريطة', 'Search or move the map')),
                                       style: TextStyle(
                                         fontSize: 13.5,
                                         color: _address.isNotEmpty
@@ -707,7 +707,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                 // Suggestions dropdown
                 if (_searching && _suggestions.isNotEmpty)
                   Container(
-                    margin: const EdgeInsets.only(top: 6, right: 54),
+                    margin: const EdgeInsetsDirectional.only(top: 6, start: 54),
                     constraints: const BoxConstraints(maxHeight: 260),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
@@ -725,7 +725,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                         final parts = (s['display_name'] as String? ?? '').split(',');
                         final main = parts.first.trim();
                         final secondary = parts.length > 1
-                            ? parts.skip(1).take(2).map((p) => p.trim()).join('، ')
+                            ? parts.skip(1).take(2).map((p) => p.trim()).join(context.tr('، ', ', '))
                             : null;
                         return InkWell(
                           onTap: () => _selectSuggestion(s),
@@ -813,7 +813,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _city.isNotEmpty ? _city : 'حرّك الخريطة لتحديد موقعك',
+                                _city.isNotEmpty ? context.s.translateCity(_city) : context.tr('حرّك الخريطة لتحديد موقعك', 'Move the map to set your location'),
                                 style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 15,
@@ -832,8 +832,10 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                               if (_gps != null && _gpsAccuracy > 0)
                                 Text(
                                   _gpsAccuracy > 60
-                                      ? 'دقة ±${_gpsAccuracy.round()} م — حرّك الدبوس لضبط الموقع'
-                                      : 'دقة ±${_gpsAccuracy.round()} م',
+                                      ? context.tr('دقة ±${_gpsAccuracy.round()} م — حرّك الدبوس لضبط الموقع',
+                                          'Accuracy ±${_gpsAccuracy.round()} m — move the pin to fine-tune')
+                                      : context.tr('دقة ±${_gpsAccuracy.round()} م',
+                                          'Accuracy ±${_gpsAccuracy.round()} m'),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -874,8 +876,8 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                         const SizedBox(width: 8),
                         Text(
                           _locating
-                              ? 'جارٍ تحديد موقعك...'
-                              : 'استخدم موقعي الحالي',
+                              ? context.tr('جارٍ تحديد موقعك...', 'Finding your location...')
+                              : context.tr('استخدم موقعي الحالي', 'Use my current location'),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -908,7 +910,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      'تأكيد الموقع',
+                      context.tr('تأكيد الموقع', 'Confirm location'),
                       style: TextStyle(
                         color: _city.isNotEmpty && !_geocoding
                             ? Colors.white : context.col.ink3,

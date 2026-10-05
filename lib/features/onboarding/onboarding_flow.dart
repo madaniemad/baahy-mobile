@@ -127,9 +127,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         // can jump straight into the app. Hidden on the city page (must pick a
         // city) and on the last slide (which already has "Start Shopping").
         if (_page >= 1 && _page < _count - 1)
-          Positioned(
+          PositionedDirectional(
             top: MediaQuery.of(context).padding.top + 6,
-            left: 12,
+            end: 12,
             child: _SkipButton(label: isAr ? 'تخطّي' : 'Skip', onTap: _finish),
           ),
       ]),

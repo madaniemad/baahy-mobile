@@ -69,8 +69,9 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
   Future<void> _initCameras() async {
     try {
       _cameras = await availableCameras();
+      if (!mounted) return;
       if (_cameras.isEmpty) {
-        _setError('لا توجد كاميرا');
+        _setError(context.tr('لا توجد كاميرا', 'No camera found'));
         return;
       }
       await _startCamera(0);
@@ -80,7 +81,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
   }
 
   Future<void> _startCamera(int idx) async {
-    if (idx >= _cameras.length) { _setError('لا توجد كاميرا'); return; }
+    if (idx >= _cameras.length) { _setError(context.tr('لا توجد كاميرا', 'No camera found')); return; }
     final ctrl = CameraController(
       _cameras[idx],
       ResolutionPreset.veryHigh, // 1080p — sharper preview + better visual-search recognition

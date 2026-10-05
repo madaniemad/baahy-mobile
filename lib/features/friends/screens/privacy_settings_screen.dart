@@ -36,6 +36,11 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // The Arabic labels stay exactly as before ("أصدقاء / Friends"); English shows English only.
+    final friendsNobody = {
+      'friends': context.tr('أصدقاء / Friends', 'Friends'),
+      'nobody': context.tr('لا أحد / Nobody', 'Nobody'),
+    };
     return Scaffold(
       backgroundColor: context.col.bg,
       appBar: AppBar(
@@ -68,7 +73,7 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
             label: context.tr('قائمة الرغبات', 'Wishlist'),
             value: _wishlist,
             options: const ['friends', 'nobody'],
-            optionLabels: const {'friends': 'أصدقاء / Friends', 'nobody': 'لا أحد / Nobody'},
+            optionLabels: friendsNobody,
             onChanged: (v) => setState(() => _wishlist = v),
           ),
           _PrivacyTile(
@@ -76,7 +81,7 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
             label: context.tr('المشتريات', 'Purchases'),
             value: _purchases,
             options: const ['friends', 'nobody'],
-            optionLabels: const {'friends': 'أصدقاء / Friends', 'nobody': 'لا أحد / Nobody'},
+            optionLabels: friendsNobody,
             onChanged: (v) => setState(() => _purchases = v),
           ),
           _PrivacyTile(
@@ -84,10 +89,9 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
             label: context.tr('التقييمات', 'Reviews'),
             value: _reviews,
             options: const ['public', 'friends', 'nobody'],
-            optionLabels: const {
-              'public':  'الجميع / Public',
-              'friends': 'أصدقاء / Friends',
-              'nobody':  'لا أحد / Nobody',
+            optionLabels: {
+              'public':  context.tr('الجميع / Public', 'Public'),
+              ...friendsNobody,
             },
             onChanged: (v) => setState(() => _reviews = v),
           ),
@@ -96,7 +100,7 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
             label: context.tr('درجة العضوية', 'Tier Badge'),
             value: _tier,
             options: const ['friends', 'nobody'],
-            optionLabels: const {'friends': 'أصدقاء / Friends', 'nobody': 'لا أحد / Nobody'},
+            optionLabels: friendsNobody,
             onChanged: (v) => setState(() => _tier = v),
           ),
         ],
