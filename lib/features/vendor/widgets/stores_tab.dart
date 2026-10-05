@@ -300,35 +300,35 @@ class _StoreCard extends ConsumerWidget {
                   children: [
                     _StoreVisual(vendor: v, categoryId: categoryId),
                     PositionedDirectional(
-                        start: 10,
-                        bottom: 10,
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: hasLogo
-                                ? CachedNetworkImage(
-                                    imageUrl: v.logo!,
-                                    fit: BoxFit.cover,
-                                    memCacheWidth: 120,
-                                    errorWidget: (_, __, ___) =>
-                                        const StoreLogoPlaceholder(),
-                                  )
-                                : const StoreLogoPlaceholder(),
-                          ),
+                      start: 10,
+                      bottom: 10,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: hasLogo
+                              ? CachedNetworkImage(
+                                  imageUrl: v.logo!,
+                                  fit: BoxFit.cover,
+                                  memCacheWidth: 120,
+                                  errorWidget: (_, __, ___) =>
+                                      const StoreLogoPlaceholder(),
+                                )
+                              : const StoreLogoPlaceholder(),
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -359,26 +359,30 @@ class _StoreCard extends ConsumerWidget {
                 if (deps.isNotEmpty) ...[
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (int i = 0; i < shown.length; i++)
-                            Flexible(
-                              child: Padding(
-                                padding: EdgeInsetsDirectional.only(
-                                    start: i == 0 ? 0 : 6),
-                                child: _DeptChip(
-                                    label: isAr ? shown[i].$1 : shown[i].$2),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (int i = 0; i < shown.length; i++)
+                              Flexible(
+                                child: Padding(
+                                  padding: EdgeInsetsDirectional.only(
+                                      start: i == 0 ? 0 : 6),
+                                  child: _DeptChip(
+                                      label: isAr ? shown[i].$1 : shown[i].$2),
+                                ),
                               ),
-                            ),
-                          if (more > 0)
-                            Padding(
-                              padding: const EdgeInsetsDirectional.only(start: 6),
-                              child: _DeptChip(label: '\u200E+$more'),
-                            ),
-                        ],
+                            if (more > 0)
+                              Padding(
+                                padding:
+                                    const EdgeInsetsDirectional.only(start: 6),
+                                child: _DeptChip(label: '\u200E+$more'),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
