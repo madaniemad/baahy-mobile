@@ -333,10 +333,11 @@ class _StoreCard extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            // Name on the start side, the departments on the end side of the SAME line
+            const SizedBox(height: 6),
+            // Name on the start side, the departments on the end side of the SAME line, both
+            // starting at the same distance from the banner
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ConstrainedBox(
                   constraints: BoxConstraints(
@@ -347,6 +348,7 @@ class _StoreCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 16,
+                      height: 1.25,
                       fontWeight: FontWeight.w800,
                       color: context.col.ink0,
                       fontFamily: 'Manrope',
@@ -383,7 +385,7 @@ class _StoreCard extends ConsumerWidget {
                 ],
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             // Review stars (outline when the store has no reviews yet)
             Row(children: [
               for (int i = 1; i <= 5; i++)

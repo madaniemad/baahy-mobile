@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Default logo for a store that has none: a soft Baahy-teal tile with a storefront mark.
+/// Default logo for a store that has none: a Baahy-teal storefront mark on white.
 /// Fills whatever box it is given (square card or round badge).
 class StoreLogoPlaceholder extends StatelessWidget {
   const StoreLogoPlaceholder({super.key});
@@ -10,17 +10,8 @@ class StoreLogoPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (_, c) {
           final side = c.biggest.shortestSide.isFinite ? c.biggest.shortestSide : 60.0;
-          return DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.28),
-                  AppColors.teal600.withValues(alpha: 0.16),
-                ],
-              ),
-            ),
+          return ColoredBox(
+            color: Colors.white,
             child: Center(
               child: Icon(Icons.storefront_rounded,
                   size: side * 0.46, color: AppColors.teal600),
