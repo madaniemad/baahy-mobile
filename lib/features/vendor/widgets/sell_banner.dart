@@ -65,7 +65,7 @@ class SellOnBaahyBanner extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              context.tr('افتح متجرك', 'Open your store'),
+              context.tr('افتح متجرك الآن', 'Open your store now'),
               style: font.copyWith(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w800,
