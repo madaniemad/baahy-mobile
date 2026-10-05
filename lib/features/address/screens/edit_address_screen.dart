@@ -518,7 +518,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: selected
-                          ? Color(0xFFF5F5F5) : context.col.surfaceSoft,
+                          ? AppColors.primary.withValues(alpha: 0.12) : context.col.surfaceSoft,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: selected ? AppColors.primary : context.col.border,
@@ -529,7 +529,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: selected ? AppColors.primary : context.col.ink0,
+                        color: context.col.ink0,
                       )),
                   ),
                 );

@@ -264,6 +264,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         ..._filters.attributeValueIds.isNotEmpty
             ? {'attribute_value_ids[]': _filters.attributeValueIds.toList()} : {},
       });
+      if (!mounted) return;
       final data = res.data['data'];
       final newProducts = (data['data'] as List).map((p) => Product.fromJson(p)).toList();
       final rawSuggestions = res.data['suggested_categories'] as List? ?? [];
@@ -280,6 +281,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         _loadingMore = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() { _loading = false; _loadingMore = false; });
     }
   }
@@ -1045,7 +1047,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                     child: Text(b,
                                       style: TextStyle(
                                         fontSize: 12, fontWeight: FontWeight.w600,
-                                        color: sel ? Colors.white : context.col.ink1)),
+                                        color: sel ? context.col.bg : context.col.ink1)),
                                   ),
                                 );
                               }).toList(),
@@ -1147,12 +1149,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                 ),
                                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                                   Icon(Icons.star_rounded, size: 14,
-                                    color: selected ? Colors.white : AppColors.warn),
+                                    color: selected ? context.col.bg : AppColors.warn),
                                   const SizedBox(width: 4),
                                   Text('$star+ ${context.isAr ? 'نجوم' : 'stars'}',
                                     style: TextStyle(
                                       fontSize: 12, fontWeight: FontWeight.w700,
-                                      color: selected ? Colors.white : context.col.ink1)),
+                                      color: selected ? context.col.bg : context.col.ink1)),
                                 ]),
                               ),
                             );
@@ -1194,7 +1196,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                 child: Text(v.name,
                                   style: TextStyle(
                                     fontSize: 12, fontWeight: FontWeight.w600,
-                                    color: sel ? Colors.white : context.col.ink1)),
+                                    color: sel ? context.col.bg : context.col.ink1)),
                               ),
                             );
                           }).toList(),

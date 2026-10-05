@@ -295,7 +295,7 @@ class PushNotificationService {
       case 'referral_reminder':
       case 'referral_reward_earned':
       case 'friend_joined':
-        return '/rewards';
+        return '/rewards-hub';
       case 'wallet_unused':
         return '/wallet';
       // Product-specific

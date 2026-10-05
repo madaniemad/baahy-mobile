@@ -53,7 +53,7 @@ final _freshWalletBalanceProvider = FutureProvider.autoDispose<double>((ref) asy
   }
 });
 
-final _referralCountProvider = FutureProvider<int>((ref) async {
+final _referralCountProvider = FutureProvider.autoDispose<int>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/referrals');
     return (res.data['data']?['total_referrals'] as num?)?.toInt() ?? 0;
@@ -133,8 +133,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
         actions: [
           GestureDetector(
             onTap: () => safePush(context, '/notifications'),
+            behavior: HitTestBehavior.opaque,
             child: Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16),
+              // vertical 12 -> 48pt tap target around the 24pt icon (AppBar centres it)
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -519,6 +521,7 @@ class _ProfileCardState extends ConsumerState<_ProfileCard> {
                             imageUrl: networkAvatar,
                             fit: BoxFit.cover,
                             width: 68, height: 68,
+                            memCacheWidth: 160,
                             placeholder: (_, __) => Center(child: Text(initial,
                               style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800,
                                 color: AppColors.primary, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
@@ -1226,7 +1229,6 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           const SizedBox(height: 8),
           TextField(
             controller: _nameCtrl,
-            textDirection: TextDirection.rtl,
             decoration: InputDecoration(
               hintText: context.s.fullNameHint,
               hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink3),

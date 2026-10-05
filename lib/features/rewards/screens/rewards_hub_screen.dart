@@ -13,7 +13,7 @@ import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
-final _hubReferralProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final _hubReferralProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/referrals');
     final data = res.data['data'] as Map<String, dynamic>? ?? {};

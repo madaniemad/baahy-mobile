@@ -337,13 +337,13 @@ class _BottomBar extends StatelessWidget {
           child: Stack(alignment: Alignment.center, children: [
             Text(label, style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
               fontSize: 15, fontWeight: FontWeight.w900, color: _navy)),
-            Positioned(
-              right: 0,
+            // arrow_forward_ios mirrors with text direction, so it points
+            // "into the flow" at the trailing edge in both languages.
+            PositionedDirectional(
+              end: 0,
               child: Opacity(
                 opacity: 0.45,
-                child: Icon(
-                  isAr ? Icons.arrow_forward_ios : Icons.arrow_back_ios_new_rounded,
-                  size: 16, color: _teal),
+                child: const Icon(Icons.arrow_forward_ios, size: 16, color: _teal),
               ),
             ),
           ]),

@@ -782,7 +782,14 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
             child: Row(children: [
               GestureDetector(
                 onTap: () => ref.read(cartProvider.notifier).removeCoupon(),
-                child: Icon(Icons.close, size: 18, color: context.col.ink3)),
+                behavior: HitTestBehavior.opaque,
+                // 40x40 hit area; the glyph stays 18pt and flush with the start edge.
+                child: SizedBox(
+                  width: 40, height: 40,
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Icon(Icons.close, size: 18, color: context.col.ink3)),
+                )),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -892,7 +899,13 @@ class _CartItemCard extends ConsumerWidget {
             child: SizedBox(
               width: 78, height: 78,
               child: item.image != null
-                  ? CachedNetworkImage(imageUrl: item.image!, fit: BoxFit.cover)
+                  ? CachedNetworkImage(
+                      imageUrl: item.image!, fit: BoxFit.cover,
+                      memCacheWidth: 156,
+                      errorWidget: (_, __, ___) => Container(
+                        color: context.col.surfaceSoft,
+                        child: Icon(Icons.image_not_supported_outlined,
+                          color: context.col.ink4)))
                   : Container(color: context.col.surfaceSoft,
                       child: Icon(Icons.image_outlined, color: context.col.ink4)),
             ),
@@ -1058,9 +1071,12 @@ class _CartItemCard extends ConsumerWidget {
                       ),
                     ])),
                   ),
-                  const Spacer(),
-                  // Save for later (RIGHT of trash in RTL)
-                  GestureDetector(
+                  // Save for later (RIGHT of trash in RTL). Expanded + end-aligned so it
+                  // sits at the end exactly as the old Spacer did, but can shrink
+                  // (ellipsis) on narrow screens / large text instead of overflowing.
+                  Expanded(child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: GestureDetector(
                     onTap: () {
                       // Only add if not already wishlisted — toggle() would remove it
                       if (!ref.read(wishlistProvider).contains(item.productId)) {
@@ -1075,17 +1091,24 @@ class _CartItemCard extends ConsumerWidget {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(Icons.favorite_border_rounded, color: context.col.ink3, size: 16),
                       const SizedBox(width: 3),
-                      Text(context.s.saveForLater,
-                        style: TextStyle(fontSize: 11.5, color: context.col.ink3,
-                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+                      Flexible(
+                        child: Text(context.s.saveForLater,
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11.5, color: context.col.ink3,
+                            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+                      ),
                     ]),
-                  ),
-                  const SizedBox(width: 10),
-                  // Delete (leftmost)
+                  ))),
+                  // Delete (leftmost): 40x40 hit area around the 18pt glyph
                   GestureDetector(
                     onTap: () => ref.read(cartProvider.notifier).remove(item.key),
-                    child: const Icon(Icons.delete_outline_rounded,
-                      color: AppColors.danger, size: 18),
+                    behavior: HitTestBehavior.opaque,
+                    child: const SizedBox(
+                      width: 40, height: 40,
+                      child: Center(
+                        child: Icon(Icons.delete_outline_rounded,
+                          color: AppColors.danger, size: 18)),
+                    ),
                   ),
                 ]),
               ],
@@ -1308,7 +1331,13 @@ class _RecommendedCard extends ConsumerWidget {
               child: SizedBox(
                 width: 100, height: 76,
                 child: product.firstImage != null
-                    ? CachedNetworkImage(imageUrl: product.firstImage!, fit: BoxFit.cover)
+                    ? CachedNetworkImage(
+                        imageUrl: product.firstImage!, fit: BoxFit.cover,
+                        memCacheWidth: 200,
+                        errorWidget: (_, __, ___) => Container(
+                          color: context.col.surfaceSoft,
+                          child: Icon(Icons.image_not_supported_outlined,
+                            color: context.col.ink4)))
                     : Container(color: context.col.surfaceSoft,
                         child: Icon(Icons.image_outlined, color: context.col.ink4)),
               ),

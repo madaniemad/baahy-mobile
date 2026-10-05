@@ -101,7 +101,7 @@ class _SearchHintText extends StatelessWidget {
 
 // ── Active order strip + rewards nudge carousel ───────────────────────────────
 
-final _activeOrderProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+final _activeOrderProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/orders',
       queryParameters: {
@@ -905,6 +905,7 @@ class _PromiseStrip extends StatelessWidget {
         border: Border.all(color: context.col.border),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Expanded(child: _PromiseChip(icon: Icons.local_shipping_outlined,
             ar: 'توصيل سريع', en: 'Fast delivery')),
@@ -994,13 +995,17 @@ class _CategoryImagesCarousel extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 5),
-                      Text(
-                        isAr ? cat.nameAr : cat.name,
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink1),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      // Fixed 110pt carousel height: cap text scale so 2 lines can't overflow.
+                      MediaQuery.withClampedTextScaling(
+                        maxScaleFactor: 1.15,
+                        child: Text(
+                          isAr ? cat.nameAr : cat.name,
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                            fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink1),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -1215,14 +1220,18 @@ class _CategoriesGridState extends State<_CategoriesGrid> {
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(name,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: item.isParent ? FontWeight.w700 : FontWeight.w500,
-                    color: item.isParent ? context.col.ink0 : context.col.ink1,
-                  ),
-                  textAlign: TextAlign.center, maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
+                // Fixed 80pt tile extent: cap text scale so the label can't overflow it.
+                MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1.15,
+                  child: Text(name,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: item.isParent ? FontWeight.w700 : FontWeight.w500,
+                      color: item.isParent ? context.col.ink0 : context.col.ink1,
+                    ),
+                    textAlign: TextAlign.center, maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                ),
               ],
             ),
           );
@@ -2369,7 +2378,9 @@ class _WelcomeCouponBanner extends ConsumerWidget {
                   onPressed: () =>
                       ref.read(_welcomeBannerDismissedProvider.notifier).state = true,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                  // 40x40 hit area; the 18pt glyph stays flush with the end edge.
+                  alignment: AlignmentDirectional.centerEnd,
+                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 ),
               ]),
             ),

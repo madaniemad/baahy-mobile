@@ -196,6 +196,7 @@ class _WishlistCard extends ConsumerWidget {
                         ? CachedNetworkImage(
                             imageUrl: product.firstImage!,
                             fit: BoxFit.cover,
+                            memCacheWidth: 240,
                             errorWidget: (_, __, ___) => Container(
                                 color: context.col.surfaceSoft,
                                 child: Icon(Icons.image_outlined, color: context.col.ink4, size: 28)),
@@ -297,15 +298,18 @@ class _WishlistCard extends ConsumerWidget {
           ),
           // X — top corner at the end side (physical top-left in Arabic)
           PositionedDirectional(
-            top: 6, end: 6,
+            top: 0, end: 0,
             child: GestureDetector(
               onTap: () {
                 ref.read(wishlistProvider.notifier).toggle(product.id);
                 ref.read(wishlistProductsProvider.notifier).remove(product.id);
               },
               behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.all(3),
+              // 40x40 hit area; the 16pt icon stays 9pt from the top/end corner as before
+              child: Container(
+                width: 40, height: 40,
+                alignment: AlignmentDirectional.topEnd,
+                padding: const EdgeInsetsDirectional.only(top: 9, end: 9),
                 child: Icon(Icons.close, size: 16, color: context.col.ink3),
               ),
             ),

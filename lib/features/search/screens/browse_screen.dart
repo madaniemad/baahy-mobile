@@ -142,8 +142,12 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                     ),
                     GestureDetector(
                       onTap: () => safePush(context, '/search/camera'),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                      behavior: HitTestBehavior.opaque,
+                      // 40x40 hit area; the icon keeps its original spot at the end edge
+                      child: Container(
+                        width: 40, height: 40,
+                        alignment: AlignmentDirectional.centerEnd,
+                        padding: const EdgeInsetsDirectional.only(end: 6),
                         child: Icon(Icons.camera_alt_outlined,
                             size: 17, color: context.col.ink1),
                       ),
@@ -188,8 +192,13 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                   if (_storeSearchCtrl.text.isNotEmpty)
                     GestureDetector(
                       onTap: () => setState(_storeSearchCtrl.clear),
-                      child:
-                          Icon(Icons.close, size: 17, color: context.col.ink1),
+                      behavior: HitTestBehavior.opaque,
+                      // 40x40 hit area; the icon keeps its original spot at the end edge
+                      child: Container(
+                        width: 40, height: 40,
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: Icon(Icons.close, size: 17, color: context.col.ink1),
+                      ),
                     ),
                 ]),
               ),

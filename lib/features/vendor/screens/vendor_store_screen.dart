@@ -160,17 +160,30 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
       }
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
-      if (mounted)
+      // A superseded request must not touch the newer one's state.
+      if (mounted && seq == _reqSeq) {
         setState(() {
+          if (page == 1) _products = [];
           _loading = false;
           _loadingMore = false;
         });
+      }
     }
   }
 
   void _selectCategory(int? catId) {
     if (_selectedCategoryId == catId) return;
-    setState(() => _selectedCategoryId = catId);
+    // Brand / size / colour / rating picks belong to the previous category's options and would be
+    // sent invisibly, so they reset; sort, price and deals-only carry over.
+    setState(() {
+      _selectedCategoryId = catId;
+      _filters = StoreFilters(
+        sort: _filters.sort,
+        minPrice: _filters.minPrice,
+        maxPrice: _filters.maxPrice,
+        onSaleOnly: _filters.onSaleOnly,
+      );
+    });
     _loadProducts(1);
   }
 
@@ -195,7 +208,8 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
       body: NotificationListener<ScrollNotification>(
         onNotification: (n) {
           // Infinite scroll — auto-load the next page as the user nears the bottom
-          if (n.metrics.pixels >= n.metrics.maxScrollExtent - 600 &&
+          if (n.depth == 0 &&
+              n.metrics.pixels >= n.metrics.maxScrollExtent - 600 &&
               _hasMore &&
               !_loadingMore &&
               !_loading) {
@@ -212,19 +226,25 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Column(children: [
-                    _StoreHero(vendor: _vendor, loading: _loadingVendor),
-                    // ── Name, description, rating ──
-                    _StoreInfo(
-                      vendor: _vendor,
-                      name: vendorName,
-                      reviewsCount: _reviewsCount,
-                    ),
-                  ]),
-                  if (_vendor != null && _StoreHero.showsBadge(_vendor, _loadingVendor))
+                  Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _StoreHero(vendor: _vendor, loading: _loadingVendor),
+                        // ── Name, description, rating ──
+                        _StoreInfo(
+                          vendor: _vendor,
+                          name: vendorName,
+                          reviewsCount: _reviewsCount,
+                          reserveBadge:
+                              _StoreHero.showsBadge(_vendor, _loadingVendor),
+                        ),
+                      ]),
+                  if (_vendor != null &&
+                      _StoreHero.showsBadge(_vendor, _loadingVendor))
                     PositionedDirectional(
                       end: 16,
-                      top: _StoreHero.heightOf(context) - _StoreHero.badgeSize / 2,
+                      top: _StoreHero.heightOf(context) -
+                          _StoreHero.badgeSize / 2,
                       child: _StoreLogoBadge(logo: _vendor!.logo),
                     ),
                 ],
@@ -321,7 +341,9 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    // chips carry 8pt end margin, so the trailing padding is 4
+                    // to keep 12pt symmetric gutters at both ends.
+                    padding: const EdgeInsetsDirectional.only(start: 12, end: 4),
                     child: Row(
                       children: [
                         _CatChip(
@@ -421,7 +443,7 @@ class _CatChip extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
         child: Container(
-          margin: const EdgeInsets.only(left: 8),
+          margin: const EdgeInsetsDirectional.only(end: 8),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
             color: selected ? AppColors.primary : context.col.surface,
@@ -451,7 +473,8 @@ class _StoreHero extends StatelessWidget {
   static const badgeSize = 60.0;
 
   static double heightOf(BuildContext context) =>
-      MediaQuery.paddingOf(context).top + MediaQuery.sizeOf(context).width / 3.4;
+      MediaQuery.paddingOf(context).top +
+      MediaQuery.sizeOf(context).width / 3.4;
 
   /// A store with no banner already shows its logo centred; otherwise the logo is a badge
   /// (the default store mark when it has no logo).
@@ -470,6 +493,7 @@ class _StoreHero extends StatelessWidget {
       bg = CachedNetworkImage(
         imageUrl: banner,
         fit: BoxFit.cover,
+        memCacheWidth: 1200,
         errorWidget: (_, __, ___) => const ColoredBox(color: AppColors.primary),
       );
     } else {
@@ -487,8 +511,14 @@ class _StoreHero extends StatelessWidget {
                   child: SizedBox(
                     width: 84,
                     height: 84,
-                    child:
-                        CachedNetworkImage(imageUrl: logo, fit: BoxFit.cover),
+                    child: CachedNetworkImage(
+                      imageUrl: logo,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => Icon(
+                          Icons.storefront_outlined,
+                          size: 54,
+                          color: Colors.white.withValues(alpha: 0.85)),
+                    ),
                   ),
                 )
               : Icon(Icons.storefront_outlined,
@@ -539,8 +569,12 @@ class _StoreInfo extends StatelessWidget {
   final Vendor? vendor;
   final String name;
   final int reviewsCount;
+  final bool reserveBadge;
   const _StoreInfo(
-      {required this.vendor, required this.name, required this.reviewsCount});
+      {required this.vendor,
+      required this.name,
+      required this.reviewsCount,
+      this.reserveBadge = false});
 
   @override
   Widget build(BuildContext context) {
@@ -560,14 +594,21 @@ class _StoreInfo extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: context.col.ink0,
-              fontFamily: 'Manrope',
-              fontFamilyFallback: const ['Tajawal'],
+          Padding(
+            // keep a long name clear of the logo badge overlapping this block's corner
+            padding: EdgeInsetsDirectional.only(
+                end: reserveBadge ? _StoreHero.badgeSize + 8 : 0),
+            child: Text(
+              name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: context.col.ink0,
+                fontFamily: 'Manrope',
+                fontFamilyFallback: const ['Tajawal'],
+              ),
             ),
           ),
           const SizedBox(height: 6),

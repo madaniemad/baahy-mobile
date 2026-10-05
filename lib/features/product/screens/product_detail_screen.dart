@@ -53,8 +53,7 @@ final _sisterProductsProvider = FutureProvider.autoDispose.family<List<Product>,
 final _productReviewsProvider = FutureProvider.autoDispose.family<List<Review>, int>((ref, productId) async {
   final res = await ApiClient.instance.dio.get('/products/$productId/reviews',
     queryParameters: {'per_page': 3});
-  return (res.data['data'] as List?)
-      ?.map((r) => Review.fromJson(r)).toList() ?? [];
+  return Review.parseList(res.data['data']);
 });
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
@@ -366,7 +365,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                     ProductImageViewer.route(product.images, i)),
                                 child: CachedNetworkImage(
                                   imageUrl: product.images[i], fit: BoxFit.contain,
-                                  memCacheWidth: 1200));
+                                  memCacheWidth: 1200,
+                                  placeholder: (_, __) =>
+                                    Container(color: context.col.surfaceSoft),
+                                  errorWidget: (_, __, ___) => Container(
+                                    color: context.col.surfaceSoft,
+                                    child: Icon(Icons.image_not_supported_outlined,
+                                      size: 56, color: context.col.ink4))));
                             },
                           )),
                           if (product.images.length > 1)
@@ -546,8 +551,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 ),
                               const SizedBox(height: 14),
                               // Price — baseline aligned
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
+                              // Wrap (not Row): price + struck price + save pill is ~300pt
+                              // and overflowed at 320dp. End-aligned per run keeps the
+                              // single-line look identical to the old baseline Row.
+                              Wrap(
+                                spacing: 8, runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.end,
                                 children: [
                                   if (showRange) ...[
                                     Text('${fmtPrice(varMinPrice!)} - ${fmtPrice(varMaxPrice!)} ${context.s.lydUnit}',
@@ -558,7 +567,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                       style: TextStyle(fontFamily: 'PlusJakartaSans',
                                         fontSize: 26, fontWeight: FontWeight.w800, color: context.col.ink0)),
                                     if (displayPrice < product.price) ...[
-                                      const SizedBox(width: 8),
                                       Padding(
                                         padding: const EdgeInsets.only(bottom: 3),
                                         child: Text('${fmtPrice(product.price)} ${context.s.lydUnit}',
@@ -567,7 +575,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                             decoration: TextDecoration.lineThrough,
                                             decorationColor: context.col.ink3)),
                                       ),
-                                      const SizedBox(width: 8),
                                       Padding(
                                         padding: const EdgeInsets.only(bottom: 3),
                                         child: Container(
@@ -824,7 +831,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 top: 0, left: 0, right: 0,
                 child: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 4, right: 4),
+                    padding: const EdgeInsetsDirectional.only(top: 4, end: 4),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -832,8 +839,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           behavior: HitTestBehavior.opaque,
                           onTap: () => SharePlus.instance.share(ShareParams(text:
                             '${context.isAr ? product.nameAr : product.name}\nhttps://baahy.com/products/${product.id}')),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 4),
+                          // 1pt transparent ring inside the tap target => 40x40 hit area
+                          child: Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 3).add(const EdgeInsets.all(1)),
+                            child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: context.col.surface.withValues(alpha: 0.95),
@@ -842,13 +851,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               boxShadow: AppShadows.shadowLifted,
                             ),
                             child: Icon(Icons.ios_share, size: 20, color: context.col.ink0),
-                          ),
+                          )),
                         ),
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () => ref.read(wishlistProvider.notifier).toggle(product.id),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 4),
+                          // 1pt transparent ring inside the tap target => 40x40 hit area
+                          child: Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 3).add(const EdgeInsets.all(1)),
+                            child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: context.col.surface.withValues(alpha: 0.95),
@@ -861,7 +872,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               size: 20,
                               color: inWishlist ? AppColors.danger : context.col.ink0,
                             ),
-                          ),
+                          )),
                         ),
                       ],
                     ),

@@ -24,6 +24,7 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 import '../widgets/shop_by_store_section.dart';
+import '../../vendor/widgets/stores_tab.dart' show storesProvider;
 import '../../vendor/widgets/sell_banner.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/providers/tier_provider.dart';
@@ -35,7 +36,6 @@ import '../../misc/force_update_screen.dart';
 import '../../../core/utils/responsive.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-
 part '../widgets/home_screen_widgets.dart';
 
 class Brand {
@@ -44,14 +44,19 @@ class Brand {
   final String nameAr;
   final String imageUrl;
   final String link;
-  const Brand({required this.id, required this.name, required this.nameAr, required this.imageUrl, required this.link});
+  const Brand(
+      {required this.id,
+      required this.name,
+      required this.nameAr,
+      required this.imageUrl,
+      required this.link});
   factory Brand.fromJson(Map<String, dynamic> j) => Brand(
-    id: j['id'] as int,
-    name: j['name'] as String,
-    nameAr: j['name_ar'] as String? ?? j['name'] as String,
-    imageUrl: j['image_url'] as String? ?? '',
-    link: j['link'] as String? ?? '',
-  );
+        id: j['id'] as int,
+        name: j['name'] as String,
+        nameAr: j['name_ar'] as String? ?? j['name'] as String,
+        imageUrl: j['image_url'] as String? ?? '',
+        link: j['link'] as String? ?? '',
+      );
 }
 
 final _brandsProvider = FutureProvider<List<Brand>>((ref) async {
@@ -77,7 +82,10 @@ void _maybeShowForceUpdate(BuildContext context, WidgetRef ref) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     if (context.mounted) {
       showForceUpdateDialog(context,
-          isAr: isAr, messageAr: gate!.messageAr, messageEn: gate.messageEn, storeUrl: gate.storeUrl);
+          isAr: isAr,
+          messageAr: gate!.messageAr,
+          messageEn: gate.messageEn,
+          storeUrl: gate.storeUrl);
     }
   });
 }
@@ -112,6 +120,7 @@ class HomeScreen extends ConsumerWidget {
         color: AppColors.primary,
         onRefresh: () async {
           ref.invalidate(_activeOrderProvider);
+          ref.invalidate(storesProvider(null));
           await ref.read(homeProvider.notifier).fetch();
         },
         child: CustomScrollView(
@@ -119,7 +128,8 @@ class HomeScreen extends ConsumerWidget {
             SliverAppBar(
               pinned: true,
               automaticallyImplyLeading: false,
-              backgroundColor: isDark ? context.col.surface : const Color(0xFF1FD7E2),
+              backgroundColor:
+                  isDark ? context.col.surface : const Color(0xFF1FD7E2),
               surfaceTintColor: Colors.transparent,
               elevation: 0,
               toolbarHeight: 28,
@@ -127,7 +137,10 @@ class HomeScreen extends ConsumerWidget {
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.none,
                 background: Stack(fit: StackFit.expand, children: [
-                  Container(color: isDark ? context.col.surface : const Color(0xFF1FD7E2)),
+                  Container(
+                      color: isDark
+                          ? context.col.surface
+                          : const Color(0xFF1FD7E2)),
                   Opacity(
                     opacity: isDark ? 0.07 : 0.28,
                     child: Image.asset(
@@ -140,7 +153,9 @@ class HomeScreen extends ConsumerWidget {
                 ]),
               ),
               title: Padding(
-                padding: const EdgeInsets.only(right: 16, left: 8),
+                // Same layout as the Arabic (RTL) one in English: 16 on the city-label side,
+                // 8 on the bell side (the bell carries its own 32pt box).
+                padding: const EdgeInsetsDirectional.only(start: 16, end: 8),
                 child: Row(children: [
                   const _CityLabel(),
                   const Spacer(),
@@ -155,11 +170,13 @@ class HomeScreen extends ConsumerWidget {
                     onTap: () => safePush(context, '/search'),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: isDark ? context.col.surfaceSoft : Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.col.borderStrong, width: 1.0),
+                        border: Border.all(
+                            color: context.col.borderStrong, width: 1.0),
                       ),
                       child: Row(children: [
                         Icon(Icons.search, size: 17, color: context.col.ink1),
@@ -169,7 +186,8 @@ class HomeScreen extends ConsumerWidget {
                           onTap: () => safePush(context, '/search/camera'),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: Icon(Icons.camera_alt_outlined, size: 17, color: context.col.ink1),
+                            child: Icon(Icons.camera_alt_outlined,
+                                size: 17, color: context.col.ink1),
                           ),
                         ),
                       ]),
@@ -184,7 +202,10 @@ class HomeScreen extends ConsumerWidget {
                 child: _SeasonalBanner(config: config),
               ),
 
-            if ((home.loading && home.featured.isEmpty && home.newArrivals.isEmpty) || !banners.initialized)
+            if ((home.loading &&
+                    home.featured.isEmpty &&
+                    home.newArrivals.isEmpty) ||
+                !banners.initialized)
               const SliverFillRemaining(child: _HomeSkeleton())
             else ...[
               // One-time rewards modal (invisible trigger)
@@ -234,7 +255,8 @@ class HomeScreen extends ConsumerWidget {
               ...home.orderedDynamicSections.expand((item) sync* {
                 if (item is DynGrid) {
                   // Stores and the "sell on Baahy" invite sit right above the Under-100 grid
-                  if (identical(item, _storesAnchor(home.orderedDynamicSections))) {
+                  if (identical(
+                      item, _storesAnchor(home.orderedDynamicSections))) {
                     yield* _storesAndSellSlivers();
                   }
                   yield SliverToBoxAdapter(
@@ -243,13 +265,14 @@ class HomeScreen extends ConsumerWidget {
                       en: item.titleEn.isNotEmpty ? item.titleEn : 'Products',
                       onAll: item.viewAllUrl != null
                           ? () => BannerLink.navigate(
-                              context,
-                              '/products${item.viewAllUrl}',
-                            )
+                                context,
+                                '/products${item.viewAllUrl}',
+                              )
                           : null,
                     ),
                   );
-                  yield SliverToBoxAdapter(child: _BudgetCarousel(products: item.products));
+                  yield SliverToBoxAdapter(
+                      child: _BudgetCarousel(products: item.products));
                   yield const SliverToBoxAdapter(child: SizedBox(height: 20));
                 } else if (item is DynCarousel) {
                   yield SliverToBoxAdapter(
@@ -277,8 +300,10 @@ class HomeScreen extends ConsumerWidget {
                               imageUrl: optimizeImg(item.imageUrl, width: 1080),
                               fit: BoxFit.cover,
                               memCacheWidth: 1080,
-                              placeholder: (_, __) => Container(color: const Color(0xFF1FD7E2)),
-                              errorWidget: (_, __, ___) => Container(color: const Color(0xFF1FD7E2)),
+                              placeholder: (_, __) =>
+                                  Container(color: const Color(0xFF1FD7E2)),
+                              errorWidget: (_, __, ___) =>
+                                  Container(color: const Color(0xFF1FD7E2)),
                             ),
                           ),
                         ),
@@ -311,27 +336,38 @@ class HomeScreen extends ConsumerWidget {
                   if (featProds.isNotEmpty) {
                     yield SliverToBoxAdapter(
                       child: _SectionHead(
-                        ar: item.titleAr.isNotEmpty ? item.titleAr : 'مختارة لك',
-                        en: item.titleEn.isNotEmpty ? item.titleEn : 'Picks for you',
-                        onAll: () => safePush(context, '/search/results?q=&sort=featured'),
+                        ar: item.titleAr.isNotEmpty
+                            ? item.titleAr
+                            : 'مختارة لك',
+                        en: item.titleEn.isNotEmpty
+                            ? item.titleEn
+                            : 'Picks for you',
+                        onAll: () => safePush(
+                            context, '/search/results?q=&sort=featured'),
                       ),
                     );
-                    yield SliverToBoxAdapter(child: _HorizontalProductList(products: featProds));
+                    yield SliverToBoxAdapter(
+                        child: _HorizontalProductList(products: featProds));
                   }
                 } else if (item is DynDeals) {
-                  final dealProds = home.deals.isNotEmpty ? home.deals : item.fallbackProducts;
+                  final dealProds = home.deals.isNotEmpty
+                      ? home.deals
+                      : item.fallbackProducts;
                   if (dealProds.isNotEmpty) {
                     yield SliverToBoxAdapter(
                       child: _DealsHead(
-                        onAll: () => safePush(context, '/search/results?q=&on_sale=1&sort=popular'),
+                        onAll: () => safePush(context,
+                            '/search/results?q=&on_sale=1&sort=popular'),
                       ),
                     );
-                    yield SliverToBoxAdapter(child: _HorizontalProductList(products: dealProds));
+                    yield SliverToBoxAdapter(
+                        child: _HorizontalProductList(products: dealProds));
                   }
                 } else if (item is DynBrandCarousel) {
                   yield SliverToBoxAdapter(
                     child: Consumer(builder: (ctx, ref2, _) {
-                      final brands = ref2.watch(_brandsProvider).valueOrNull ?? [];
+                      final brands =
+                          ref2.watch(_brandsProvider).valueOrNull ?? [];
                       if (brands.isEmpty) return const SizedBox.shrink();
                       return Padding(
                         padding: const EdgeInsets.only(top: 10),
@@ -380,7 +416,8 @@ List<Widget> _storesAndSellSlivers() => const [
 /// The admin's "Under 100 LYD" grid: the shop-by-store block is placed right above it.
 HomeDynamicItem? _storesAnchor(List<HomeDynamicItem> items) {
   for (final i in items) {
-    if (i is DynGrid && (i.titleEn.contains('100') || i.titleAr.contains('100'))) return i;
+    if (i is DynGrid &&
+        (i.titleEn.contains('100') || i.titleAr.contains('100'))) return i;
   }
   return null;
 }

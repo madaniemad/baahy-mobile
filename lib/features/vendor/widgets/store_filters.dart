@@ -58,6 +58,26 @@ class _StoreOptions {
   const _StoreOptions(this.attrTypes, this.brands, this.hasReviews);
 }
 
+/// '#RGB', '#RRGGBB' or '#AARRGGBB' (with or without the '#') -> opaque-safe Color, else null.
+Color? _parseHex(String raw) {
+  var h = raw.trim().replaceFirst('#', '');
+  if (h.length == 3) h = h.split('').map((c) => '$c$c').join();
+  if (h.length == 6) h = 'FF$h';
+  if (h.length != 8) return null;
+  final n = int.tryParse(h, radix: 16);
+  return n == null ? null : Color(n);
+}
+
+/// Parses a price typed with Western or Arabic-Indic digits; null when empty or invalid.
+double? _parsePrice(String raw) {
+  const ar = '٠١٢٣٤٥٦٧٨٩';
+  var t = raw.trim().replaceAll('٫', '.').replaceAll(',', '.');
+  for (var i = 0; i < ar.length; i++) {
+    t = t.replaceAll(ar[i], '$i');
+  }
+  return double.tryParse(t);
+}
+
 Future<_StoreOptions> _loadOptions(int vendorId, int? categoryId) async {
   final res = await ApiClient.instance.dio
       .get('/products/filter-options', queryParameters: {
@@ -78,9 +98,7 @@ Future<_StoreOptions> _loadOptions(int vendorId, int? categoryId) async {
       Color? color;
       final hex = v['color_hex']?.toString();
       if (t['display_type'] == 'color' && hex != null && hex.isNotEmpty) {
-        try {
-          color = Color(int.parse(hex.replaceFirst('#', '0xFF')));
-        } catch (_) {}
+        color = _parseHex(hex);
       }
       values.add(_AttrValue(v['id'] as int, (v['value'] ?? '').toString(),
           (v['value_ar'] ?? '').toString(), color));
@@ -190,7 +208,9 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: sel ? AppColors.teal.withValues(alpha: 0.15) : context.col.surface,
+            color: sel
+                ? AppColors.teal.withValues(alpha: 0.15)
+                : context.col.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
                 color: sel ? AppColors.teal : context.col.border, width: 1.5),
@@ -216,8 +236,9 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
           for (final v in t.values)
             if (v.color != null)
               GestureDetector(
-                onTap: () => setState(() =>
-                    _attrIds.contains(v.id) ? _attrIds.remove(v.id) : _attrIds.add(v.id)),
+                onTap: () => setState(() => _attrIds.contains(v.id)
+                    ? _attrIds.remove(v.id)
+                    : _attrIds.add(v.id)),
                 child: Container(
                   width: 32,
                   height: 32,
@@ -236,10 +257,13 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
               _chip(
                 isAr && v.valueAr.isNotEmpty ? v.valueAr : v.value,
                 _attrIds.contains(v.id),
-                () => setState(() =>
-                    _attrIds.contains(v.id) ? _attrIds.remove(v.id) : _attrIds.add(v.id)),
+                () => setState(() => _attrIds.contains(v.id)
+                    ? _attrIds.remove(v.id)
+                    : _attrIds.add(v.id)),
                 // Latin/numeric sizes ("7-8 Years") must not be reversed by RTL bidi.
-                dir: t.name.toLowerCase().contains('size') ? TextDirection.ltr : null,
+                dir: t.name.toLowerCase().contains('size')
+                    ? TextDirection.ltr
+                    : null,
               ),
         ]),
       ],
@@ -247,8 +271,11 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
         _title(context.s.brand),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final b in o.brands)
-            _chip(b, _brands.contains(b),
-                () => setState(() => _brands.contains(b) ? _brands.remove(b) : _brands.add(b)),
+            _chip(
+                b,
+                _brands.contains(b),
+                () => setState(() =>
+                    _brands.contains(b) ? _brands.remove(b) : _brands.add(b)),
                 dir: TextDirection.ltr),
         ]),
       ],
@@ -260,7 +287,8 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
               '$star+',
               _rating == star,
               () => setState(() => _rating = _rating == star ? null : star),
-              leading: const Icon(Icons.star_rounded, size: 15, color: AppColors.gold),
+              leading: const Icon(Icons.star_rounded,
+                  size: 15, color: AppColors.gold),
             ),
         ]),
       ],
@@ -276,112 +304,124 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
       ('price_asc', s.sortPriceAsc),
       ('price_desc', s.sortPriceDesc),
     ];
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-          20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Expanded(
-                child: Text(s.filters,
-                    style: _font.copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: context.col.ink0)),
-              ),
-              TextButton(
-                onPressed: () =>
-                    Navigator.of(context).pop(const StoreFilters()),
-                child: Text(s.resetFilters),
-              ),
-            ]),
-            _title(s.sortBy),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final o in sorts)
-                  ChoiceChip(
-                    label: Text(o.$2,
-                        style: _font.copyWith(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: _sort == o.$1
-                                ? AppColors.teal600
-                                : context.col.ink0)),
-                    selected: _sort == o.$1,
-                    selectedColor: AppColors.teal.withValues(alpha: 0.15),
-                    onSelected: (_) => setState(() => _sort = o.$1),
-                  ),
-              ],
-            ),
-            _title(s.priceRange),
-            Row(children: [
-              _priceField(_min, s.priceFrom),
-              const SizedBox(width: 10),
-              _priceField(_max, s.priceTo),
-            ]),
-            const SizedBox(height: 6),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              activeThumbColor: AppColors.teal,
-              title: Text(s.dealsOnly,
-                  style: _font.copyWith(fontWeight: FontWeight.w700)),
-              value: _onSale,
-              onChanged: (v) => setState(() => _onSale = v),
-            ),
-            FutureBuilder<_StoreOptions?>(
-              future: _options,
-              builder: (_, snap) {
-                if (snap.connectionState != ConnectionState.done) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 18),
-                    child: Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                  );
-                }
-                final o = snap.data;
-                if (o == null) return const SizedBox.shrink();
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _optionSections(o),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Expanded(
+                  child: Text(s.filters,
+                      style: _font.copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: context.col.ink0)),
                 ),
-                onPressed: () => Navigator.of(context).pop(StoreFilters(
-                  sort: _sort,
-                  minPrice: double.tryParse(_min.text.trim()),
-                  maxPrice: double.tryParse(_max.text.trim()),
-                  onSaleOnly: _onSale,
-                  minRating: _rating,
-                  brands: {..._brands},
-                  attributeValueIds: {..._attrIds},
-                )),
-                child: Text(s.applyFilters,
-                    style: _font.copyWith(
-                        fontWeight: FontWeight.w800, fontSize: 15)),
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop(const StoreFilters()),
+                  child: Text(s.resetFilters),
+                ),
+              ]),
+              _title(s.sortBy),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final o in sorts)
+                    ChoiceChip(
+                      label: Text(o.$2,
+                          style: _font.copyWith(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _sort == o.$1
+                                  ? AppColors.teal600
+                                  : context.col.ink0)),
+                      selected: _sort == o.$1,
+                      selectedColor: AppColors.teal.withValues(alpha: 0.15),
+                      onSelected: (_) => setState(() => _sort = o.$1),
+                    ),
+                ],
               ),
-            ),
-          ],
+              _title(s.priceRange),
+              Row(children: [
+                _priceField(_min, s.priceFrom),
+                const SizedBox(width: 10),
+                _priceField(_max, s.priceTo),
+              ]),
+              const SizedBox(height: 6),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                activeThumbColor: AppColors.teal,
+                title: Text(s.dealsOnly,
+                    style: _font.copyWith(fontWeight: FontWeight.w700)),
+                value: _onSale,
+                onChanged: (v) => setState(() => _onSale = v),
+              ),
+              FutureBuilder<_StoreOptions?>(
+                future: _options,
+                builder: (_, snap) {
+                  if (snap.connectionState != ConnectionState.done) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 18),
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    );
+                  }
+                  final o = snap.data;
+                  if (o == null) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _optionSections(o),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    var lo = _parsePrice(_min.text);
+                    var hi = _parsePrice(_max.text);
+                    if (lo != null && hi != null && lo > hi) {
+                      final t = lo;
+                      lo = hi;
+                      hi = t;
+                    }
+                    Navigator.of(context).pop(StoreFilters(
+                      sort: _sort,
+                      minPrice: lo,
+                      maxPrice: hi,
+                      onSaleOnly: _onSale,
+                      minRating: _rating,
+                      brands: {..._brands},
+                      attributeValueIds: {..._attrIds},
+                    ));
+                  },
+                  child: Text(s.applyFilters,
+                      style: _font.copyWith(
+                          fontWeight: FontWeight.w800, fontSize: 15)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

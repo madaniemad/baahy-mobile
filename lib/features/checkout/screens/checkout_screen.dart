@@ -455,12 +455,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       } else {
         // COD / wallet / bank transfer (lypay) — order created immediately
         final orderData = Map<String, dynamic>.from(resData['data'] as Map);
-        if (!isReorder) await ref.read(cartProvider.notifier).clear();
         ref.read(reorderSessionProvider.notifier).state = null;
         ref.invalidate(welcomeCouponProvider);
+        if (!isReorder) await ref.read(cartProvider.notifier).clear();
         if (mounted) context.pushReplacement('/order-confirmed', extra: orderData);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _loading = false);
       if (mounted) {
         String msg = context.s.orderError;
@@ -595,7 +596,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(context.tr(
               'قد يستغرق تأكيد الدفع بضع دقائق. تحقق من طلباتك بعد قليل — لا تُعِد المحاولة لتجنّب الدفع مرتين.',
-              'Payment confirmation may take a few minutes. Check your orders shortly — do not retry, to avoid paying twice.')),
+              'Payment confirmation may take a few minutes. Check your orders shortly — do not retry, to avoid paying twice.'),
+            // Explicit white: the SnackBar bg is fixed dark (ink1), and the themed
+            // default text colour is dark in dark mode (dark on dark).
+            style: const TextStyle(color: Colors.white)),
           backgroundColor: AppColors.ink1,
           duration: const Duration(seconds: 6),
         ));
@@ -989,6 +993,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Leaving while the order request is in flight strands the confirmation screen (the order
+    // exists and the cart is already cleared), so back is blocked until it settles.
+    return PopScope(canPop: !_loading, child: _buildScaffold(context));
+  }
+
+  Widget _buildScaffold(BuildContext context) {
     final cart = ref.watch(cartProvider);
     final reorderSession = ref.watch(reorderSessionProvider);
     final isReorder = reorderSession != null;
@@ -1074,7 +1084,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: Row(children: [
                       IconButton(
-                        onPressed: () {
+                        onPressed: _loading
+                            ? null
+                            : () {
                           ref.read(reorderSessionProvider.notifier).state = null;
                           context.pop();
                         },
@@ -1325,7 +1337,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                           onTap: () => _updateReorderQty(item.key, item.quantity - 1),
                                         ),
                                         Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                                          // 4 (was 10): each _QtyBtn now has 6pt of hit-area padding.
+                                          padding: const EdgeInsets.symmetric(horizontal: 4),
                                           child: Text('${item.quantity}',
                                             style: const TextStyle(
                                               fontSize: 14, fontWeight: FontWeight.w700,
@@ -1880,7 +1893,10 @@ class _AddressSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SafeArea(
-      child: Padding(
+      child: ConstrainedBox(
+       // Cap at 80% of the screen; the address list scrolls inside it.
+       constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.8),
+       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
@@ -1893,7 +1909,10 @@ class _AddressSheet extends StatelessWidget {
           Text(context.s.shippingAddr,
             style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 16, fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
-          ...addresses.map((addr) {
+          Flexible(child: ListView(
+           shrinkWrap: true,
+           padding: EdgeInsets.zero,
+           children: addresses.map((addr) {
             final isSelected = selected?['id'] == addr['id'];
             return GestureDetector(
               onTap: () => onSelect(addr),
@@ -1926,7 +1945,8 @@ class _AddressSheet extends StatelessWidget {
                 ]),
               ),
             );
-          }),
+          }).toList(),
+          )),
           OutlinedButton.icon(
             onPressed: onAddNew,
             icon: const Icon(Icons.add, size: 16),
@@ -1939,6 +1959,7 @@ class _AddressSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ]),
+       ),
       ),
     );
   }
@@ -2057,16 +2078,23 @@ class _QtyBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: enabled ? onTap : null,
-      child: Container(
-        width: 28, height: 28,
-        decoration: BoxDecoration(
-          color: enabled
-              ? AppColors.primary.withValues(alpha: 0.12)
-              : context.col.surfaceSoft,
-          borderRadius: BorderRadius.circular(12),
+      behavior: HitTestBehavior.opaque,
+      // 40x40 hit area around the unchanged 28x28 visual.
+      child: SizedBox(
+        width: 40, height: 40,
+        child: Center(
+          child: Container(
+            width: 28, height: 28,
+            decoration: BoxDecoration(
+              color: enabled
+                  ? AppColors.primary.withValues(alpha: 0.12)
+                  : context.col.surfaceSoft,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 15,
+              color: enabled ? AppColors.primary : context.col.ink4),
+          ),
         ),
-        child: Icon(icon, size: 15,
-          color: enabled ? AppColors.primary : context.col.ink4),
       ),
     );
   }

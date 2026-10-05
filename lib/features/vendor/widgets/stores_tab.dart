@@ -28,7 +28,7 @@ final storesProvider =
     FutureProvider.family<List<StoreEntry>, int?>((ref, categoryId) async {
   try {
     final res = await ApiClient.instance.dio.get('/vendors', queryParameters: {
-      'per_page': 100,
+      'per_page': 500,
       'has_products': 1,
       // App list: the server drops stores staff switched off (Vendors > "Hide from the app's Stores list").
       'app_list': 1,
@@ -204,19 +204,29 @@ class _StoresTabState extends ConsumerState<StoresTab> {
                   ),
                 ];
               }
+              // The "open your store" invite sits in the middle of the list (after the 2nd store when
+              // the list is short), so it is seen without scrolling to the end.
+              final bannerAt = shown.length >= 3 ? (shown.length / 2).ceil() : shown.length;
               return [
-                for (final e in shown)
+                for (int i = 0; i < shown.length; i++) ...[
+                  if (i == bannerAt)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: SellOnBaahyBanner(),
+                    ),
                   _StoreCard(
-                    entry: e,
+                    entry: shown[i],
                     categoryId: _categoryId,
-                    key: ValueKey('${e.vendor.id}-$_categoryId'),
-                  )
+                    key: ValueKey('${shown[i].vendor.id}-$_categoryId'),
+                  ),
+                ],
+                if (bannerAt >= shown.length)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: SellOnBaahyBanner(),
+                  ),
               ];
             },
-          ),
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: SellOnBaahyBanner(),
           ),
         ],
       ),
@@ -341,7 +351,10 @@ class _StoreCard extends ConsumerWidget {
               children: [
                 ConstrainedBox(
                   constraints: BoxConstraints(
-                      maxWidth: (MediaQuery.sizeOf(context).width - 24) * 0.42),
+                      // cap only when departments share the line, so a lone name never truncates early
+                      maxWidth: deps.isEmpty
+                          ? double.infinity
+                          : (MediaQuery.sizeOf(context).width - 24) * 0.42),
                   child: Text(
                     name,
                     maxLines: 1,

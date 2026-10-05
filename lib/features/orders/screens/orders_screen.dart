@@ -400,6 +400,7 @@ class _OrderCard extends StatelessWidget {
                     ? CachedNetworkImage(
                         imageUrl: firstImage,
                         fit: BoxFit.cover,
+                        memCacheWidth: 160,
                         errorWidget: (_, __, ___) => Container(
                           color: context.col.surfaceSoft,
                           child: Icon(Icons.shopping_bag_outlined, color: context.col.ink3, size: 24)),

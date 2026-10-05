@@ -245,8 +245,14 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   for (int i = 0; i < all.length; i++) ...[
-                    Container(
-                      width: 80, height: 80,
+                    // Up to 80x80, but scales down (square) when 3 tiles + 2 plus
+                    // signs need more than the row has (320dp: 296 > 288).
+                    Flexible(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 80),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
@@ -260,8 +266,15 @@ class _FBTState extends ConsumerState<_FrequentlyBoughtTogether> {
                         child: all[i].firstImage != null
                             ? CachedNetworkImage(
                                 imageUrl: all[i].firstImage!, fit: BoxFit.cover,
-                                memCacheWidth: 240)
+                                memCacheWidth: 240,
+                                errorWidget: (_, __, ___) => Container(
+                                  color: context.col.surfaceSoft,
+                                  child: Icon(Icons.image_not_supported_outlined,
+                                    size: 24, color: context.col.ink4)))
                             : Container(color: context.col.surfaceSoft),
+                      ),
+                    ),
+                        ),
                       ),
                     ),
                     if (i < all.length - 1)
@@ -504,8 +517,10 @@ class _ProductAttributesDisplay extends StatelessWidget {
           child: Row(
             children: [
               Text('$label: ', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-              Wrap(
-                spacing: 6,
+              // Expanded: a Wrap directly in a Row gets unbounded width and never wraps.
+              Expanded(child: Wrap(
+                spacing: 6, runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: attr.values.map((v) {
                   final val = isAr ? v.valueAr : v.value;
                   if (isColor && v.colorHex != null) {
@@ -513,7 +528,7 @@ class _ProductAttributesDisplay extends StatelessWidget {
                   }
                   return Text(val, style: TextStyle(fontSize: 13, color: context.col.ink2));
                 }).toList(),
-              ),
+              )),
             ],
           ),
         );
@@ -594,7 +609,16 @@ class _VariationPicker extends StatelessWidget {
                 Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(width: 8),
                 if (selections[typeName] != null)
-                  Text(selections[typeName]!, style: TextStyle(fontSize: 13, color: context.col.ink2)),
+                  Text(
+                    () {
+                      final sel = selections[typeName]!;
+                      if (!isAr) return sel;
+                      for (final o in options) {
+                        if (o.value == sel && o.valueAr.isNotEmpty) return o.valueAr;
+                      }
+                      return sel;
+                    }(),
+                    style: TextStyle(fontSize: 13, color: context.col.ink2)),
               ]),
               const SizedBox(height: 10),
               Wrap(
@@ -630,7 +654,7 @@ class _VariationPicker extends StatelessWidget {
                                   : context.col.border,
                               width: isSelected ? 1.5 : 1),
                           ),
-                          child: Text(opt.value,
+                          child: Text(isAr && opt.valueAr.isNotEmpty ? opt.valueAr : opt.value,
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
@@ -758,8 +782,11 @@ class _TrustPills extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAr = context.isAr;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+    // Wrap (not Row): three chips overflowed at text scale 1.3 / <=375dp.
+    return Wrap(
+      alignment: WrapAlignment.spaceAround,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      runSpacing: 8,
       children: [
         _TrustChip(icon: Icons.local_shipping_outlined,
           label: isAr ? 'توصيل سريع' : 'Fast Delivery'),
@@ -906,7 +933,9 @@ class _VendorRow extends StatelessWidget {
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: CachedNetworkImage(
-                  imageUrl: vendor.logo!, fit: BoxFit.cover, memCacheWidth: 120))
+                  imageUrl: vendor.logo!, fit: BoxFit.cover, memCacheWidth: 120,
+                  errorWidget: (_, __, ___) =>
+                    Icon(Icons.store_outlined, size: 22, color: context.col.ink2)))
             : Icon(Icons.store_outlined, size: 22, color: context.col.ink2),
       ),
       const SizedBox(width: 12),

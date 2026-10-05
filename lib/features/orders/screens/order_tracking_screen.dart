@@ -51,7 +51,7 @@ Future<void> _shareOrderPdf(BuildContext context, Order order) async {
   }
 }
 
-final _orderDetailProvider = FutureProvider.family<Order, int>((ref, id) async {
+final _orderDetailProvider = FutureProvider.autoDispose.family<Order, int>((ref, id) async {
   final res = await ApiClient.instance.dio.get('/orders/$id');
   return Order.fromJson(res.data['data']);
 });
@@ -248,7 +248,10 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           children: [
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text(group.vendor.storeName,
+              child: Text(
+                (context.isAr && group.vendor.storeNameAr.isNotEmpty)
+                    ? group.vendor.storeNameAr
+                    : group.vendor.storeName,
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14,
                   letterSpacing: 0.3)),
             ),
@@ -712,6 +715,7 @@ class _OrderItemRow extends StatelessWidget {
                   ? CachedNetworkImage(
                       imageUrl: item.productImage!,
                       fit: BoxFit.cover,
+                      memCacheWidth: 140,
                       errorWidget: (_, __, ___) => Container(color: context.col.bg,
                           child: Icon(Icons.image_outlined, color: context.col.ink4)),
                       placeholder: (_, __) => Container(color: context.col.bg))

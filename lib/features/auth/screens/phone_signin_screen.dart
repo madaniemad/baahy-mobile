@@ -72,6 +72,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
       // Tell a network failure apart from a refusal. "Sending failed" for both is what
       // let a user sit for an afternoon retrying a request that never left the phone,
       // while support hunted for a server fault that did not exist.
+      if (!mounted) return;
       String msg = context.tr('تعذر الإرسال، حاول مجدداً', 'Could not send, please try again');
       if (e is DioException) {
         final d = e.response?.data;
@@ -175,9 +176,12 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.card_giftcard_outlined, size: 15, color: context.col.ink3),
                   const SizedBox(width: 5),
-                  Text(context.tr('لديك كود دعوة؟', 'Have an invite code?'),
-                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
-                      color: context.col.ink3, fontWeight: FontWeight.w600)),
+                  Flexible(
+                    child: Text(context.tr('لديك كود دعوة؟', 'Have an invite code?'),
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
+                        color: context.col.ink3, fontWeight: FontWeight.w600)),
+                  ),
                 ]),
               )
             else

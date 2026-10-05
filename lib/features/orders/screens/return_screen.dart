@@ -18,7 +18,7 @@ double _d(dynamic v) {
 }
 
 // Provider returns {items, shippingCost}
-final _orderDataProvider = FutureProvider.family<Map<String, dynamic>, int>(
+final _orderDataProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, int>(
   (ref, orderId) async {
     try {
       final res   = await ApiClient.instance.dio.get('/orders/$orderId');

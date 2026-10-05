@@ -9,7 +9,7 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
 final _addressesProvider =
-    StateNotifierProvider<_AddressesNotifier, AsyncValue<List<Map<String, dynamic>>>>((ref) {
+    StateNotifierProvider.autoDispose<_AddressesNotifier, AsyncValue<List<Map<String, dynamic>>>>((ref) {
   return _AddressesNotifier();
 });
 
@@ -255,7 +255,9 @@ class _AddressCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // First child = RIGHT in RTL: icon box + label/city/street
-                      Row(
+                      Flexible(
+                        flex: 3,
+                        child: Row(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -269,36 +271,44 @@ class _AddressCard extends StatelessWidget {
                               color: isDefault ? AppColors.primary : context.col.ink2),
                           ),
                           const SizedBox(width: 10),
-                          Column(
+                          Flexible(
+                            child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(label,
+                                maxLines: 1, overflow: TextOverflow.ellipsis,
                                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800,
                                   color: context.col.ink0, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                               if (cityLine.isNotEmpty) ...[
                                 const SizedBox(height: 2),
                                 Text(cityLine,
+                                  maxLines: 1, overflow: TextOverflow.ellipsis,
                                   style: TextStyle(fontSize: 12.5,
                                     color: context.col.ink2, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                               ],
                               if (street.isNotEmpty) ...[
                                 const SizedBox(height: 1),
                                 Text(street,
+                                  maxLines: 2, overflow: TextOverflow.ellipsis,
                                   style: TextStyle(fontSize: 12.5,
                                     color: context.col.ink2, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
                               ],
                             ],
                           ),
+                          ),
                         ],
+                      ),
                       ),
                       const SizedBox(width: 8),
                       // Second child = LEFT in RTL: name + phone
                       Expanded(
+                        flex: 2,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             if (name.isNotEmpty)
                               Text(name,
+                                maxLines: 1, overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.end,
                                 style: TextStyle(fontSize: 13,
                                   fontWeight: FontWeight.w600, color: context.col.ink1,

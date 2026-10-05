@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -286,7 +287,12 @@ class CartNotifier extends StateNotifier<CartState> {
       // vendor's items removed, ...). Drop it rather than keep showing a stale
       // discount the server will refuse.
       Sentry.captureException(e, stackTrace: st);
-      state = state.copyWith(clearCoupon: true);
+      // Only a server refusal (4xx) means the coupon no longer applies; a timeout or dropped
+      // connection must not silently strip a valid coupon from the cart.
+      final code = e is DioException ? e.response?.statusCode : null;
+      if (code != null && code >= 400 && code < 500) {
+        state = state.copyWith(clearCoupon: true);
+      }
     }
   }
 

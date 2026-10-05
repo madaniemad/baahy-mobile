@@ -272,7 +272,12 @@ class _WishlistSection extends StatelessWidget {
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                     child: images.isNotEmpty
-                        ? CachedNetworkImage(imageUrl: images.first, width: 120, height: 100, fit: BoxFit.cover)
+                        ? CachedNetworkImage(
+                            imageUrl: images.first, width: 120, height: 100, fit: BoxFit.cover,
+                            memCacheWidth: 240,
+                            errorWidget: (_, __, ___) => Container(
+                              width: 120, height: 100, color: context.col.surfaceSoft,
+                              child: Icon(Icons.person_outline_rounded, size: 28, color: context.col.ink3)))
                         : Container(width: 120, height: 100, color: context.col.surfaceSoft),
                   ),
                   Padding(

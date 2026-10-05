@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -9,8 +10,7 @@ import '../../../shared/theme/app_theme.dart';
 final _reviewsProvider = FutureProvider.family<List<Review>, int>((ref, productId) async {
   final res = await ApiClient.instance.dio.get('/products/$productId/reviews',
     queryParameters: {'per_page': 50});
-  return (res.data['data'] as List?)
-      ?.map((r) => Review.fromJson(r)).toList() ?? [];
+  return Review.parseList(res.data['data']);
 });
 
 class ReviewsScreen extends ConsumerStatefulWidget {
@@ -47,9 +47,9 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showWriteReview,
         backgroundColor: context.col.ink0,
-        icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 18),
+        icon: Icon(Icons.edit_outlined, color: context.col.bg, size: 18),
         label: Text(context.s.writeYourReview,
-          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, color: Colors.white)),
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], fontWeight: FontWeight.w700, color: context.col.bg)),
       ),
       appBar: AppBar(
         backgroundColor: context.col.surface,
@@ -215,7 +215,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? context.col.ink0 : Colors.white,
+          color: isSelected ? context.col.ink0 : context.col.surface,
           borderRadius: BorderRadius.circular(99),
           border: Border.all(
             color: isSelected ? context.col.ink0 : context.col.border),
@@ -225,7 +225,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
             fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
             fontSize: 12.5,
             fontWeight: FontWeight.w700,
-            color: isSelected ? Colors.white : context.col.ink1,
+            color: isSelected ? context.col.bg : context.col.ink1,
           )),
       ),
     );
@@ -325,8 +325,12 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
     setState(() => _loading = true);
     try {
       await ApiClient.instance.dio.post(
-        '/products/${widget.productId}/reviews',
-        data: {'rating': _rating.toInt(), 'body': _ctrl.text.trim()},
+        '/reviews',
+        data: {
+          'product_id': widget.productId,
+          'rating': _rating.toInt(),
+          'comment': _ctrl.text.trim(),
+        },
       );
       widget.onSubmitted();
       if (mounted) Navigator.of(context).pop();
@@ -337,12 +341,17 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
             backgroundColor: AppColors.success,
           ));
       }
-    } catch (_) {
+    } catch (e) {
+      if (!mounted) return;
       setState(() => _loading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.s.requestFailed)));
+      // The server only lets buyers review (403 with its own message); show that, not a generic failure.
+      var msg = context.s.requestFailed;
+      if (e is DioException && e.response?.statusCode == 403) {
+        final m = e.response?.data is Map ? e.response?.data['message'] : null;
+        msg = m?.toString() ??
+            context.tr('يمكنك التقييم بعد شراء المنتج', 'You can review a product after buying it');
       }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }
   }
 
@@ -382,7 +391,7 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
           TextField(
             controller: _ctrl,
             maxLines: 4,
-            textDirection: TextDirection.rtl,
+            textDirection: Directionality.of(context),
             decoration: InputDecoration(
               hintText: context.s.shareThoughtsHint,
               hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink3),
@@ -408,13 +417,13 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
               onPressed: _loading ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: context.col.ink0,
-                foregroundColor: Colors.white,
+                foregroundColor: context.col.bg,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: _loading
-                ? const SizedBox(width: 20, height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                ? SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(color: context.col.bg, strokeWidth: 2))
                 : Text(context.s.publishReview,
                     style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 15)),
             ),

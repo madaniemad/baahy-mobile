@@ -15,6 +15,24 @@ class Review {
     this.photos = const [],
   });
 
+  /// The reviews endpoint answers `data: {reviews: <paginator>, stats: {...}}`; older shapes were a
+  /// bare list or a paginator. Accept all of them and skip any malformed item.
+  static List<Review> parseList(dynamic data) {
+    dynamic list = data;
+    if (list is Map) list = list['reviews'] ?? list['data'];
+    if (list is Map) list = list['data'];
+    if (list is! List) return const [];
+    final out = <Review>[];
+    for (final r in list) {
+      if (r is Map<String, dynamic>) {
+        try {
+          out.add(Review.fromJson(r));
+        } catch (_) {}
+      }
+    }
+    return out;
+  }
+
   factory Review.fromJson(Map<String, dynamic> j) => Review(
     id: j['id'] ?? 0,
     reviewerName: j['reviewer_name'] ?? j['user']?['name'] ?? '',

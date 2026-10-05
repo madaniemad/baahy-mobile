@@ -19,6 +19,7 @@ import '../../features/search/screens/search_results_screen.dart';
 import '../../features/search/screens/camera_search_screen.dart';
 import '../../features/search/screens/browse_screen.dart';
 import '../../shared/theme/app_theme.dart';
+import 'l10n.dart';
 import '../../features/product/screens/product_detail_screen.dart';
 import '../../features/cart/screens/cart_screen.dart';
 import '../../features/checkout/screens/checkout_screen.dart';
@@ -101,24 +102,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     // Without this, go_router's stock error page offers a "Home" button pointing at
     // '/', which this app has no route for — tapping it 404s again and the only way
     // out is force-quitting.
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.link_off_rounded, size: 48, color: AppColors.primary),
-            const SizedBox(height: 12),
-            const Text('تعذّر فتح هذا الرابط',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () => context.go('/home'),
-              child: const Text('العودة للرئيسية'),
-            ),
-          ],
-        ),
-      ),
-    ),
+    errorBuilder: (context, state) => _badLink(context),
     routes: [
       GoRoute(path: '/splash',   builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/force-update', builder: (_, state) {
@@ -132,7 +116,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // The old two-button landing (AuthLandingScreen) was a redundant extra step — removed.
       GoRoute(path: '/signin',       builder: (_, __) => const PhoneSignInScreen()),
       GoRoute(path: '/phone-signin', builder: (_, __) => const PhoneSignInScreen()),
-      GoRoute(path: '/otp', builder: (_, state) {
+      GoRoute(path: '/otp', builder: (ctx, state) {
         final extra = state.extra;
         if (extra is Map<String, dynamic>) {
           return OtpScreen(
@@ -141,7 +125,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             channel: extra['channel'] as String? ?? 'whatsapp',
           );
         }
-        return OtpScreen(phone: extra as String);
+        return extra is String ? OtpScreen(phone: extra) : _badLink(ctx);
       }),
 
       // Main shell (tab bar) — StatefulShellRoute keeps each tab alive in memory
@@ -178,21 +162,33 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         }),
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/search/camera', builder: (_, __) => const CameraSearchScreen()),
-      GoRoute(parentNavigatorKey: _rootNavKey, path: '/product/:id', builder: (_, state) =>
-          ProductDetailScreen(id: int.parse(state.pathParameters['id']!))),
-      GoRoute(parentNavigatorKey: _rootNavKey, path: '/product/:id/reviews', builder: (_, state) =>
-          ReviewsScreen(productId: int.parse(state.pathParameters['id']!))),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/product/:id', builder: (ctx, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        return id == null ? _badLink(ctx) : ProductDetailScreen(id: id);
+      }),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/product/:id/reviews', builder: (ctx, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        return id == null ? _badLink(ctx) : ReviewsScreen(productId: id);
+      }),
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/checkout',   builder: (_, __) => const CheckoutScreen()),
-      GoRoute(parentNavigatorKey: _rootNavKey, path: '/order-confirmed', builder: (_, state) =>
-          OrderConfirmedScreen(data: state.extra as Map<String, dynamic>)),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/order-confirmed', builder: (ctx, state) {
+        final data = state.extra;
+        return data is Map<String, dynamic> ? OrderConfirmedScreen(data: data) : _badLink(ctx);
+      }),
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/orders',     builder: (_, __) => const OrdersScreen()),
-      GoRoute(parentNavigatorKey: _rootNavKey, path: '/orders/:id', builder: (_, state) =>
-          OrderTrackingScreen(id: int.parse(state.pathParameters['id']!))),
-      GoRoute(parentNavigatorKey: _rootNavKey, path: '/orders/:id/return', builder: (_, state) =>
-          ReturnScreen(
-            orderId: int.parse(state.pathParameters['id']!),
-            returnDeadline: state.extra is DateTime ? state.extra as DateTime : null,
-          )),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/orders/:id', builder: (ctx, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        return id == null ? _badLink(ctx) : OrderTrackingScreen(id: id);
+      }),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/orders/:id/return', builder: (ctx, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        return id == null
+            ? _badLink(ctx)
+            : ReturnScreen(
+                orderId: id,
+                returnDeadline: state.extra is DateTime ? state.extra as DateTime : null,
+              );
+      }),
       // Pushable assistant — same screen as /assistant tab but with back button
       // Pass a String via extra to pre-fill and auto-send an initial message
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/chat', builder: (_, state) =>
@@ -210,8 +206,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/terms',         builder: (_, __) => const PolicyScreen(type: PolicyType.terms)),
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/faq',           builder: (_, __) => const FaqScreen()),
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/contact',       builder: (_, __) => const ContactScreen()),
-      GoRoute(parentNavigatorKey: _rootNavKey, path: '/vendors/:id', builder: (_, state) =>
-        VendorStoreScreen(vendorId: int.parse(state.pathParameters['id']!))),
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/vendors/:id', builder: (ctx, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        return id == null ? _badLink(ctx) : VendorStoreScreen(vendorId: id);
+      }),
 
       // Friends
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/friends',        builder: (_, __) => const FriendsScreen()),
@@ -235,3 +233,25 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return router;
 });
+
+/// Shown for a link the app cannot open (unknown route, malformed id, missing data).
+/// Without it go_router's stock page offers a "Home" button pointing at '/', which this app
+/// has no route for, so tapping it 404s again.
+Widget _badLink(BuildContext context) => Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.link_off_rounded, size: 48, color: AppColors.primary),
+            const SizedBox(height: 12),
+            Text(context.tr('تعذّر فتح هذا الرابط', 'This link could not be opened'),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => context.go('/home'),
+              child: Text(context.tr('العودة للرئيسية', 'Back to home')),
+            ),
+          ],
+        ),
+      ),
+    );

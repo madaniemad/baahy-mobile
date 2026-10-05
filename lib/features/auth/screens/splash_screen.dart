@@ -141,7 +141,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 1300));
     if (!mounted) return;
     // Force-update gate (fail-open): block below the backend min_version.
-    final gate = await VersionGate.check();
+    // Fail open after 4s: a dead network must not keep the splash up for the full Dio timeouts.
+    final gate = await VersionGate.check()
+        .timeout(const Duration(seconds: 4), onTimeout: () => const VersionGateResult());
     if (!mounted) return;
     if (gate.forceUpdate) {
       // Show the update as a popup OVER home (not a full-screen block), so the

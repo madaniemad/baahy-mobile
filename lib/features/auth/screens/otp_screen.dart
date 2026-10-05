@@ -85,6 +85,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     setState(() { _resending = true; _resendError = null; });
     try {
       await ref.read(authProvider.notifier).requestOtp(widget.phone);
+      if (!mounted) return;
       _startTimer();
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st, withScope: (scope) {
@@ -140,6 +141,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       if (mounted) context.go('/home');
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
+      if (!mounted) return;
       HapticFeedback.mediumImpact();
       setState(() { _hasError = true; _loading = false; });
       _ctrl.clear();

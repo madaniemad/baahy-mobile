@@ -622,13 +622,18 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
         const SizedBox(height: 12),
 
         // ── 2×3 suggestions grid ──
-        GridView.count(
+        GridView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 2.4,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            // Fixed height (grows with the user's text scale) so the 2-line
+            // title + subtitle can never overflow on narrow screens.
+            mainAxisExtent: 76 *
+                (MediaQuery.textScalerOf(context).scale(12) / 12).clamp(1.0, 1.6),
+          ),
           children: _buildSuggestions(context)
               .map((s) => _SuggestionCard(
                     data: s,
@@ -1188,11 +1193,11 @@ class _LimitHitBubble extends StatelessWidget {
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(msg.content,
-                      style: const TextStyle(
-                          fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                      style: TextStyle(
+                          fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.ink0)),
+                          color: context.col.ink0)),
                 ),
               ],
             ),
@@ -1330,10 +1335,10 @@ class _AssistantProductCard extends StatelessWidget {
                             color: AppColors.gold, size: 11),
                         const SizedBox(width: 2),
                         Text(rating.toStringAsFixed(1),
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontFamily: 'PlusJakartaSans',
                                 fontSize: 10,
-                                color: AppColors.ink2)),
+                                color: context.col.ink2)),
                       ],
                     ),
                   ],
@@ -1357,7 +1362,7 @@ class _TypingIndicator extends AnimatedWidget {
   Widget build(BuildContext context) {
     final anim = listenable as AnimationController;
     return Align(
-      alignment: Alignment.centerRight,
+      alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12, right: 60),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

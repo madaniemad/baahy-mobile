@@ -14,7 +14,7 @@ import '../../../shared/theme/app_theme.dart';
 const _tiffany = Color(0xFF1FD7E2);
 const _tiffanyDeep = Color(0xFF08AAAC);
 
-final _referralDataProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final _referralDataProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final res = await ApiClient.instance.dio.get('/referrals');
   final data = res.data['data'] as Map<String, dynamic>? ?? {};
   return {
@@ -90,10 +90,10 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
           unselectedLabelStyle: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w500, fontSize: 14),
           indicatorColor: _tiffany,
           labelColor: _tiffany,
-          unselectedLabelColor: AppColors.ink2,
+          unselectedLabelColor: context.col.ink2,
           indicatorWeight: 2.5,
           indicatorSize: TabBarIndicatorSize.label,
-          dividerColor: const Color(0xFFE5E7EB),
+          dividerColor: context.col.border,
           tabs: [
             Tab(text: context.s.myFriends),
             Tab(
@@ -541,7 +541,7 @@ class _EmptyFriends extends StatelessWidget {
           style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 15, fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
         Text(context.tr('شارك كودك وابدأ بكسب المكافآت', 'Share your code and start earning'),
-          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: AppColors.ink2)),
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], fontSize: 13, color: context.col.ink2)),
       ])),
     );
   }

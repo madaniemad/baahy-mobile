@@ -472,7 +472,8 @@ class _SuggestionRow extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(child: _boldQuery(text, query, ctx)),
           const SizedBox(width: 8),
-          Icon(Icons.north_west_rounded, size: 14, color: ctx.col.ink3),
+          Icon(ctx.isAr ? Icons.north_east_rounded : Icons.north_west_rounded,
+              size: 14, color: ctx.col.ink3),
         ]),
       ),
     );

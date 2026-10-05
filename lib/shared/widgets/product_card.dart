@@ -49,7 +49,8 @@ class ProductCard extends ConsumerWidget {
     return BoxFit.contain;
   }
 
-  static Widget _buildProductImage(Product p, Color bgColor, {Color? placeholderColor}) {
+  static Widget _buildProductImage(Product p, Color bgColor,
+      {Color? placeholderColor, required Color iconColor}) {
     final fit = _imageFit(p);
     final ph = placeholderColor ?? bgColor;
     Widget img = p.firstImage != null
@@ -71,13 +72,13 @@ class ProductCard extends ConsumerWidget {
               placeholder: (_, __) => Container(color: ph),
               errorWidget: (_, __, ___) => Container(
                 color: ph,
-                child: Icon(Icons.image_not_supported_outlined, color: ph, size: 28),
+                child: Icon(Icons.image_not_supported_outlined, color: iconColor, size: 28),
               ),
             ),
           )
         : Container(
             color: ph,
-            child: Icon(Icons.image_outlined, color: ph),
+            child: Icon(Icons.image_outlined, color: iconColor),
           );
     img = ColorFiltered(
       colorFilter: ColorFilter.mode(bgColor, BlendMode.multiply),
@@ -131,14 +132,16 @@ class ProductCard extends ConsumerWidget {
                     child: AspectRatio(
                       aspectRatio: 0.8,
                       child: _buildProductImage(product, context.col.cardImageBg,
-                          placeholderColor: imagePlaceholder),
+                          placeholderColor: imagePlaceholder,
+                          iconColor: context.col.ink4),
                     ),
                   ),
                 ),
                 Positioned(
-                  top: 8,
-                  right: isAr ? null : 8,
-                  left: isAr ? 8 : null,
+                  // 3 = 8 - 5: the button is a 40x40 hit area around the 30pt circle.
+                  top: 3,
+                  right: isAr ? null : 3,
+                  left: isAr ? 3 : null,
                   child: _WishlistButton(productId: product.id, inWishlist: inWishlist),
                 ),
                 if (product.hasDiscount)
@@ -191,7 +194,11 @@ class ProductCard extends ConsumerWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-              child: Column(
+              // Fixed-height name box (38) fits two lines up to ~1.1x text scale;
+              // clamp so a larger system font can't spill a second line into the badge.
+              child: MediaQuery.withClampedTextScaling(
+                maxScaleFactor: 1.1,
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -245,7 +252,11 @@ class ProductCard extends ConsumerWidget {
                     count: product.reviewsCount ?? 0,
                   ),
                   const SizedBox(height: 5),
-                  Row(
+                  // scaleDown: 4-digit prices overflowed at 320dp; no change when it fits.
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Row(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
@@ -276,7 +287,9 @@ class ProductCard extends ConsumerWidget {
                       ],
                     ],
                   ),
+                  ),
                 ],
+              ),
               ),
             ),
           ],
@@ -331,18 +344,25 @@ class _WishlistButton extends ConsumerWidget {
         }
         ref.read(wishlistProvider.notifier).toggle(productId);
       },
-      child: Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: AppShadows.shadowCard,
-        ),
-        child: Icon(
-          inWishlist ? Icons.favorite_rounded : Icons.favorite_outline,
-          size: 16,
-          color: inWishlist ? AppColors.danger : context.col.ink3,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Center(
+          child: Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: AppShadows.shadowCard,
+            ),
+            child: Icon(
+              inWishlist ? Icons.favorite_rounded : Icons.favorite_outline,
+              size: 16,
+              color: inWishlist ? AppColors.danger : context.col.ink3,
+            ),
+          ),
         ),
       ),
     );

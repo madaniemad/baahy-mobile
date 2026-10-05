@@ -17,7 +17,7 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../checkout/screens/payment_webview_screen.dart';
 
-final _walletProvider = FutureProvider<List<dynamic>>((ref) async {
+final _walletProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async {
   final res = await ApiClient.instance.dio.get('/wallet/transactions');
   return (res.data['data'] as List?) ?? [];
 });
@@ -175,6 +175,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     if (user == null) return;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _WalletQrSheet(phone: user.phone, name: user.name),
     );
@@ -1072,7 +1073,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
         color: context.col.surface,
         borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
+      child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(child: Container(width: 40, height: 4,
             decoration: BoxDecoration(color: context.col.border, borderRadius: BorderRadius.circular(2)))),
@@ -1292,7 +1293,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
             ),
           ),
         ],
-      ),
+      )),
     ));
   }
 }
@@ -1455,7 +1456,7 @@ class _WalletQrSheet extends StatelessWidget {
         color: context.col.surface,
         borderRadius: const BorderRadius.all(Radius.circular(20)),
       ),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
+      child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
         Center(child: Container(width: 40, height: 4,
           decoration: BoxDecoration(color: context.col.border, borderRadius: BorderRadius.circular(2)))),
         const SizedBox(height: 20),
@@ -1495,7 +1496,7 @@ class _WalletQrSheet extends StatelessWidget {
         Text(phone,
           textDirection: TextDirection.ltr,
           style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 14, color: Colors.grey.shade500)),
-      ]),
+      ])),
     );
   }
 }
@@ -1655,7 +1656,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
           color: context.col.surface,
           borderRadius: const BorderRadius.all(Radius.circular(20)),
         ),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Center(child: Container(width: 40, height: 4,
             decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 16),
@@ -1714,7 +1715,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
             ],
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.col.surfaceSoft,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.col.border)),
               child: TextField(
@@ -1758,7 +1759,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
 
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.col.surfaceSoft,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.col.border)),
               child: TextField(
@@ -1766,7 +1767,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 autofocus: true,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 24, fontWeight: FontWeight.w800),
+                style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 24, fontWeight: FontWeight.w800, color: context.col.ink0),
                 decoration: InputDecoration(
                   hintText: '0',
                   hintStyle: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 24,
@@ -1784,12 +1785,13 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
 
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.col.surfaceSoft,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: context.col.border)),
               child: TextField(
                 controller: _noteCtrl,
                 maxLength: 200,
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], color: context.col.ink0),
                 decoration: InputDecoration(
                   hintText: context.tr('ملاحظة (اختياري)', 'Note (optional)'),
                   hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: Colors.grey.shade400),
@@ -1826,9 +1828,9 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: context.col.surfaceSoft,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: context.col.border),
               ),
               child: Column(children: [
                 _ConfirmRow(label: context.tr('إلى', 'To'), value: _recipientName ?? ''),
@@ -1879,7 +1881,7 @@ class _TransferSheetState extends ConsumerState<_TransferSheet> {
                         fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
             ),
           ),
-        ]),
+        ])),
       ),
     );
   }
@@ -1907,7 +1909,7 @@ class _ConfirmRow extends StatelessWidget {
             fontFamilyFallback: const ['Tajawal'],
             fontSize: 13.5,
             fontWeight: highlight ? FontWeight.w800 : FontWeight.w600,
-            color: highlight ? const Color(0xFF08AAAC) : Colors.black87)),
+            color: highlight ? const Color(0xFF08AAAC) : context.col.ink0)),
       ]),
     );
   }

@@ -13,6 +13,56 @@ class SellOnBaahyBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     const font =
         TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']);
+    final scale = MediaQuery.textScalerOf(context).scale(1.0);
+
+    final icon = Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.2),
+        shape: BoxShape.circle,
+      ),
+      child:
+          const Icon(Icons.storefront_outlined, color: Colors.white, size: 24),
+    );
+
+    final texts = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.tr('تاجر أو عندك متجر؟', 'A merchant or have a store?'),
+          style: font.copyWith(
+              fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          context.tr('عرض وإدارة وبيع منتجاتك أصبح أسهل مع باهي',
+              'Showing, managing and selling your products is easier with Baahy'),
+          style: font.copyWith(
+              fontSize: 12,
+              height: 1.3,
+              color: Colors.white.withValues(alpha: 0.9)),
+        ),
+      ],
+    );
+
+    Widget button({required bool wide}) => Container(
+          width: wide ? double.infinity : null,
+          alignment: wide ? Alignment.center : null,
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: wide ? 11 : 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFE14D),
+            borderRadius: BorderRadius.circular(wide ? 12 : 20),
+          ),
+          child: Text(
+            context.tr('افتح متجرك الآن', 'Open your store now'),
+            style: font.copyWith(
+                fontSize: wide ? 14 : 12.5,
+                fontWeight: FontWeight.w800,
+                color: Colors.black),
+          ),
+        );
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => launchUrl(_url, mode: LaunchMode.externalApplication),
@@ -22,57 +72,31 @@ class SellOnBaahyBanner extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           color: AppColors.primary,
         ),
-        child: Row(children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.storefront_outlined,
-                color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.tr('تاجر أو عندك متجر؟', 'A merchant or have a store?'),
-                  style: font.copyWith(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  context.tr('عرض وإدارة وبيع منتجاتك أصبح أسهل مع باهي',
-                      'Showing, managing and selling your products is now easier with Baahy'),
-                  style: font.copyWith(
-                      fontSize: 12,
-                      height: 1.3,
-                      color: Colors.white.withValues(alpha: 0.9)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE14D),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              context.tr('افتح متجرك الآن', 'Open your store now'),
-              style: font.copyWith(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black),
-            ),
-          ),
-        ]),
+        child: LayoutBuilder(builder: (context, c) {
+          // Side by side only when the text keeps a readable width; otherwise the button drops
+          // below (320-360pt phones, English, or large text sizes).
+          final stacked = c.maxWidth < (context.isAr ? 310 : 350) || scale > 1.15;
+          if (stacked) {
+            return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    icon,
+                    const SizedBox(width: 12),
+                    Expanded(child: texts),
+                  ]),
+                  const SizedBox(height: 12),
+                  button(wide: true),
+                ]);
+          }
+          return Row(children: [
+            icon,
+            const SizedBox(width: 12),
+            Expanded(child: texts),
+            const SizedBox(width: 8),
+            button(wide: false),
+          ]);
+        }),
       ),
     );
   }
