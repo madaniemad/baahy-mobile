@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/utils/l10n.dart';
+import '../../../core/utils/size_order.dart';
 import '../../../shared/theme/app_theme.dart';
 
 /// What a shopper can narrow a single store's products by.
@@ -234,7 +235,10 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
       for (final t in o.attrTypes) ...[
         _title(isAr && t.nameAr.isNotEmpty ? t.nameAr : t.name),
         Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final v in t.values)
+          for (final v in isSizeAttribute(t.name, t.nameAr)
+              ? sortSizeValues(
+                  t.values, (v) => v.value.isNotEmpty ? v.value : v.valueAr)
+              : t.values)
             if (v.color != null)
               GestureDetector(
                 onTap: () => setState(() => _attrIds.contains(v.id)
@@ -262,7 +266,7 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
                     ? _attrIds.remove(v.id)
                     : _attrIds.add(v.id)),
                 // Latin/numeric sizes ("7-8 Years") must not be reversed by RTL bidi.
-                dir: t.name.toLowerCase().contains('size')
+                dir: isSizeAttribute(t.name, t.nameAr)
                     ? TextDirection.ltr
                     : null,
               ),
