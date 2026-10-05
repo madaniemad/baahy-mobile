@@ -24,6 +24,7 @@ import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 import '../widgets/shop_by_store_section.dart';
+import '../../vendor/widgets/sell_banner.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/models/tier_status.dart';
@@ -231,6 +232,14 @@ class HomeScreen extends ConsumerWidget {
 
               // Shop by store (hides itself until stores load)
               const SliverToBoxAdapter(child: ShopByStoreSection()),
+
+              // Invite store owners to apply (opens baahy.com/sell)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 18, 16, 0),
+                  child: SellOnBaahyBanner(),
+                ),
+              ),
 
 
               // ── Admin-controlled sections in exact admin order ──

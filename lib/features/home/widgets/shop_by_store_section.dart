@@ -43,12 +43,12 @@ class ShopByStoreSection extends ConsumerWidget {
           ]),
         ),
         SizedBox(
-          height: 118,
+          height: 128,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: shown.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, i) => _StoreTile(entry: shown[i]),
           ),
         ),
@@ -57,90 +57,60 @@ class ShopByStoreSection extends ConsumerWidget {
   }
 }
 
-class _StoreTile extends ConsumerWidget {
+/// Square white card with the store's logo; stores with no logo get a soft tile with their initial.
+class _StoreTile extends StatelessWidget {
   final StoreEntry entry;
   const _StoreTile({required this.entry});
 
+  static const _size = 96.0;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final isAr = context.isAr;
     final v = entry.vendor;
     final name = isAr && v.storeNameAr.isNotEmpty ? v.storeNameAr : v.storeName;
+    final logo = v.logo;
+    final initial = name.trim().isEmpty ? '' : name.trim().characters.first.toUpperCase();
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => safePush(context, '/vendors/${v.id}'),
       child: SizedBox(
-        width: 136,
+        width: _size,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 136,
-              height: 66,
+              width: _size,
+              height: _size,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
+                color: logo != null && logo.isNotEmpty
+                    ? Colors.white
+                    : context.col.surfaceSoft,
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: context.col.border),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(13),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    _TileImage(vendor: v),
-                    if (v.logo != null && v.logo!.isNotEmpty)
-                      PositionedDirectional(
-                        start: 5,
-                        bottom: 5,
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 1.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.18),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: v.logo!,
-                              fit: BoxFit.cover,
-                              memCacheWidth: 72,
-                              errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                borderRadius: BorderRadius.circular(17),
+                child: logo != null && logo.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: logo,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 300,
+                        errorWidget: (_, __, ___) => _Initial(initial),
+                      )
+                    : _Initial(initial),
               ),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 6),
             Text(
               name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: context.col.ink0,
-                fontFamily: 'Manrope',
-                fontFamilyFallback: const ['Tajawal'],
-              ),
-            ),
-            const SizedBox(height: 1),
-            Text(
-              context.s.storeProductsN(entry.productsCount),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10.5,
-                color: context.col.ink3,
                 fontFamily: 'Manrope',
                 fontFamilyFallback: const ['Tajawal'],
               ),
@@ -152,41 +122,21 @@ class _StoreTile extends ConsumerWidget {
   }
 }
 
-/// The store's banner when it has one, otherwise its first product photo.
-class _TileImage extends ConsumerWidget {
-  final dynamic vendor;
-  const _TileImage({required this.vendor});
+class _Initial extends StatelessWidget {
+  final String letter;
+  const _Initial(this.letter);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bg = context.col.surfaceSoft;
-    final banner = vendor.banner as String?;
-    if (banner != null && banner.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: banner,
-        fit: BoxFit.cover,
-        memCacheWidth: 400,
-        placeholder: (_, __) => ColoredBox(color: bg),
-        errorWidget: (_, __, ___) => ColoredBox(color: bg),
-      );
-    }
-    final imgs = ref.watch(storePreviewProvider((vendor.id as int, null))).valueOrNull;
-    if (imgs == null || imgs.isEmpty) {
-      return ColoredBox(
-        color: bg,
-        child: Center(
-          child: Icon(Icons.storefront_outlined, size: 32, color: context.col.ink3),
+  Widget build(BuildContext context) => Center(
+        child: Text(
+          letter,
+          style: TextStyle(
+            fontSize: 34,
+            fontWeight: FontWeight.w800,
+            color: context.col.ink3,
+            fontFamily: 'Manrope',
+            fontFamilyFallback: const ['Tajawal'],
+          ),
         ),
       );
-    }
-    return ColoredBox(
-      color: bg,
-      child: CachedNetworkImage(
-        imageUrl: imgs.first,
-        fit: BoxFit.cover,
-        memCacheWidth: 400,
-        errorWidget: (_, __, ___) => const SizedBox.shrink(),
-      ),
-    );
-  }
 }

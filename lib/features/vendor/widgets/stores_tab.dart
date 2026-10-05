@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'sell_banner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -212,6 +213,10 @@ class _StoresTabState extends ConsumerState<StoresTab> {
               ];
             },
           ),
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: SellOnBaahyBanner(),
+          ),
         ],
       ),
     );
@@ -268,34 +273,15 @@ class _StoreCard extends ConsumerWidget {
     final isAr = context.isAr;
     final v = entry.vendor;
     final name = isAr && v.storeNameAr.isNotEmpty ? v.storeNameAr : v.storeName;
-    // The count is the store's whole catalogue. While a department chip is selected the server
-    // narrows the number to that department, which read as if the store had shrunk.
-    final total = ref
-            .watch(storesProvider(null))
-            .valueOrNull
-            ?.where((e) => e.vendor.id == v.id)
-            .firstOrNull
-            ?.productsCount ??
-        entry.productsCount;
     final rating = v.averageRating ?? 0;
     final hasReviews = entry.reviewsCount > 0 && rating > 0;
     final deps = entry.departments;
     final shown = deps.take(_maxChips).toList();
     final more = deps.length - shown.length;
+    final hasLogo = v.logo != null && v.logo!.isNotEmpty;
 
-    final countText = Text(
-      context.s.storeProductsN(total),
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
-        color: context.col.ink1,
-        fontFamily: 'Manrope',
-        fontFamilyFallback: const ['Tajawal'],
-      ),
-    );
-
-    // One card = name, banner, then departments and count, with generous space below
-    // (no divider lines) so it is clear which banner and count belong to which store.
+    // One card = banner (logo badge over its corner), then the name with stars, then the
+    // departments the store sells in. Generous space below, no divider lines.
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => safePush(context, '/vendors/${v.id}'),
@@ -304,101 +290,123 @@ class _StoreCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Name (+ logo, stars) above the banner
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (v.logo != null && v.logo!.isNotEmpty) ...[
-                  ClipOval(
-                    child: SizedBox(
-                      width: 34,
-                      height: 34,
-                      child: CachedNetworkImage(
-                        imageUrl: v.logo!,
-                        fit: BoxFit.cover,
-                        memCacheWidth: 110,
-                        errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: context.col.ink0,
-                          fontFamily: 'Manrope',
-                          fontFamilyFallback: const ['Tajawal'],
-                        ),
-                      ),
-                      if (hasReviews) ...[
-                        const SizedBox(height: 2),
-                        Row(children: [
-                          for (int i = 1; i <= 5; i++)
-                            Icon(
-                              i <= rating.round()
-                                  ? Icons.star_rounded
-                                  : Icons.star_outline_rounded,
-                              size: 15,
-                              color: i <= rating.round()
-                                  ? AppColors.gold
-                                  : context.col.ink3,
-                            ),
-                          const SizedBox(width: 5),
-                          Text(
-                            '${rating.toStringAsFixed(1)} (${entry.reviewsCount})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: context.col.ink3,
-                              fontFamily: 'Manrope',
-                              fontFamilyFallback: const ['Tajawal'],
-                            ),
-                          ),
-                        ]),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: AspectRatio(
                 aspectRatio: 2.6,
-                child: _StoreVisual(vendor: v, categoryId: categoryId),
-              ),
-            ),
-            const SizedBox(height: 6),
-            // Departments and the product count on ONE line under the banner
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      for (final d in shown)
-                        Flexible(
-                          child: Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 6),
-                            child: _DeptChip(label: isAr ? d.$1 : d.$2),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _StoreVisual(vendor: v, categoryId: categoryId),
+                    if (hasLogo)
+                      PositionedDirectional(
+                        start: 10,
+                        bottom: 10,
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: v.logo!,
+                              fit: BoxFit.cover,
+                              memCacheWidth: 120,
+                              errorWidget: (_, __, ___) =>
+                                  const SizedBox.shrink(),
+                            ),
                           ),
                         ),
-                      if (more > 0) _DeptChip(label: '\u200E+$more'),
-                    ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Name on the start side, the departments on the end side of the SAME line
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                      maxWidth: (MediaQuery.sizeOf(context).width - 24) * 0.42),
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: context.col.ink0,
+                      fontFamily: 'Manrope',
+                      fontFamilyFallback: const ['Tajawal'],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                countText,
+                if (deps.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (int i = 0; i < shown.length; i++)
+                            Flexible(
+                              child: Padding(
+                                padding: EdgeInsetsDirectional.only(
+                                    start: i == 0 ? 0 : 6),
+                                child: _DeptChip(
+                                    label: isAr ? shown[i].$1 : shown[i].$2),
+                              ),
+                            ),
+                          if (more > 0)
+                            Padding(
+                              padding: const EdgeInsetsDirectional.only(start: 6),
+                              child: _DeptChip(label: '\u200E+$more'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
+            const SizedBox(height: 4),
+            // Review stars (outline when the store has no reviews yet)
+            Row(children: [
+              for (int i = 1; i <= 5; i++)
+                Icon(
+                  hasReviews && i <= rating.round()
+                      ? Icons.star_rounded
+                      : Icons.star_outline_rounded,
+                  size: 16,
+                  color: hasReviews && i <= rating.round()
+                      ? AppColors.gold
+                      : context.col.ink3,
+                ),
+              const SizedBox(width: 6),
+              Text(
+                hasReviews
+                    ? '${rating.toStringAsFixed(1)} (${entry.reviewsCount})'
+                    : context.s.noReviews,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.col.ink3,
+                  fontFamily: 'Manrope',
+                  fontFamilyFallback: const ['Tajawal'],
+                ),
+              ),
+            ]),
           ],
         ),
       ),

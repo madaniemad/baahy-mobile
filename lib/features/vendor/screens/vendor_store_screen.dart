@@ -72,7 +72,8 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
   }
 
   Future<void> _openFilters() async {
-    final result = await showStoreFilterSheet(context, _filters);
+    final result = await showStoreFilterSheet(context, _filters,
+        vendorId: widget.vendorId, categoryId: _selectedCategoryId);
     if (result != null && mounted) {
       setState(() => _filters = result);
       _loadProducts(1);
@@ -132,6 +133,10 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
         if (_filters.minPrice != null) 'min_price': _filters.minPrice,
         if (_filters.maxPrice != null) 'max_price': _filters.maxPrice,
         if (_filters.onSaleOnly) 'on_sale': '1',
+        if (_filters.minRating != null) 'min_rating': _filters.minRating,
+        if (_filters.brands.isNotEmpty) 'brands[]': _filters.brands.toList(),
+        if (_filters.attributeValueIds.isNotEmpty)
+          'attribute_value_ids[]': _filters.attributeValueIds.toList(),
       });
       final list = (res.data['data']['data'] as List?)
               ?.map((p) => Product.fromJson(p))
@@ -434,7 +439,7 @@ class _StoreHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
     final width = MediaQuery.sizeOf(context).width;
-    final height = top + width / 2.7;
+    final height = top + width / 3.4;
     final banner = vendor?.banner;
     final logo = vendor?.logo;
 
@@ -476,6 +481,39 @@ class _StoreHero extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           bg,
+          // Logo badge on the banner corner (a store with no banner already shows it centred)
+          if (!loading &&
+              banner != null &&
+              banner.isNotEmpty &&
+              logo != null &&
+              logo.isNotEmpty)
+            PositionedDirectional(
+              start: 16,
+              bottom: 10,
+              child: Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.22),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: CachedNetworkImage(
+                    imageUrl: logo,
+                    fit: BoxFit.cover,
+                    memCacheWidth: 200,
+                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+            ),
           PositionedDirectional(
             top: top + 8,
             start: 12,
