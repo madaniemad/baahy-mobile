@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Default logo for a store that has none: a Baahy-teal storefront mark on white.
+/// Default logo for a store that has none: a brand-tiffany storefront mark on white.
 /// Fills whatever box it is given (square card or round badge).
 class StoreLogoPlaceholder extends StatelessWidget {
   const StoreLogoPlaceholder({super.key});
@@ -14,7 +14,7 @@ class StoreLogoPlaceholder extends StatelessWidget {
             color: Colors.white,
             child: Center(
               child: Icon(Icons.storefront_rounded,
-                  size: side * 0.46, color: AppColors.teal600),
+                  size: side * 0.46, color: AppColors.primary),
             ),
           );
         },

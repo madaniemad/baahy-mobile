@@ -20,11 +20,7 @@ class SellOnBaahyBanner extends StatelessWidget {
         padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 14, 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.primary, AppColors.teal600],
-          ),
+          color: AppColors.primary,
         ),
         child: Row(children: [
           Container(
@@ -73,7 +69,7 @@ class SellOnBaahyBanner extends StatelessWidget {
               style: font.copyWith(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.teal600),
+                  color: context.col.ink0),
             ),
           ),
         ]),
