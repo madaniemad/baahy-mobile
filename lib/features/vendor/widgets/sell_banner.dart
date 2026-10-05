@@ -61,7 +61,7 @@ class SellOnBaahyBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: const Color(0xFFFFD23F),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -69,7 +69,7 @@ class SellOnBaahyBanner extends StatelessWidget {
               style: font.copyWith(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white),
+                  color: Colors.black),
             ),
           ),
         ]),
