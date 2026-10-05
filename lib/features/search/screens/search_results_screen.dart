@@ -1300,17 +1300,17 @@ class _CategoryChipsRow extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
-                    color: AppColors.teal50,
+                    color: AppColors.tealChipBg(context),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: AppColors.teal, width: 1),
                   ),
                   child: Text(
                     '$label  ${cat.productCount}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                      color: AppColors.teal600,
+                      fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                      color: AppColors.tealChipText(context),
                     ),
                   ),
                 ),

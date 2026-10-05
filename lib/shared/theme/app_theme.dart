@@ -112,6 +112,15 @@ class AppColors {
   // Slightly muted tiffany for use on dark backgrounds (text/icons on dark bg)
   static const primaryDim  = Color(0xFF26C0C7);
 
+  // Soft tiffany chips (trending searches, suggested categories): the light mint tint is a bright
+  // block on a dark page, so dark mode gets a translucent tiffany fill with tiffany text instead.
+  static bool _dark(BuildContext c) => Theme.of(c).brightness == Brightness.dark;
+  static Color tealChipBg(BuildContext c) =>
+      _dark(c) ? primary.withValues(alpha: 0.14) : teal50;
+  static Color tealChipBorder(BuildContext c) =>
+      _dark(c) ? primary.withValues(alpha: 0.40) : teal100;
+  static Color tealChipText(BuildContext c) => _dark(c) ? primary : teal700;
+
   // Returns brightness-appropriate primary: muted on dark, full on light
   static Color adaptive(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark ? primaryDim : primary;
