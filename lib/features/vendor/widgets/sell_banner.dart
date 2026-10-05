@@ -26,56 +26,52 @@ class SellOnBaahyBanner extends StatelessWidget {
             colors: [AppColors.primary, AppColors.teal600],
           ),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.storefront_outlined,
-                  color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.tr('تاجر أو عندك متجر؟',
-                        'A merchant or have a store?'),
-                    style: font.copyWith(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    context.tr('عرض وإدارة وبيع منتجاتك توا أسهل مع باهي',
-                        'Showing, managing and selling your products is now easier with Baahy'),
-                    style: font.copyWith(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: Colors.white.withValues(alpha: 0.92)),
-                  ),
-                ],
-              ),
-            ),
-          ]),
-          const SizedBox(height: 12),
+        child: Row(children: [
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 11),
-            alignment: Alignment.center,
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.storefront_outlined,
+                color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr('تاجر أو عندك متجر؟', 'A merchant or have a store?'),
+                  style: font.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  context.tr('عرض وإدارة وبيع منتجاتك توا أسهل مع باهي',
+                      'Showing, managing and selling your products is now easier with Baahy'),
+                  style: font.copyWith(
+                      fontSize: 12,
+                      height: 1.3,
+                      color: Colors.white.withValues(alpha: 0.9)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               context.tr('افتح متجرك', 'Open your store'),
               style: font.copyWith(
-                  fontSize: 14,
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w800,
                   color: AppColors.teal600),
             ),
