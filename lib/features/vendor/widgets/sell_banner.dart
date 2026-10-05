@@ -44,8 +44,8 @@ class SellOnBaahyBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    context.tr('تاجر أو عندك متجر؟ انضم معانا',
-                        'A merchant or have a store? Join us'),
+                    context.tr('تاجر أو عندك متجر؟',
+                        'A merchant or have a store?'),
                     style: font.copyWith(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -53,8 +53,8 @@ class SellOnBaahyBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    context.tr('عرض وإدارة وبيع منتجاتك أصبح أسهل مع باهي',
-                        'Showing, managing and selling your products is easier with Baahy'),
+                    context.tr('عرض وإدارة وبيع منتجاتك توا أسهل مع باهي',
+                        'Showing, managing and selling your products is now easier with Baahy'),
                     style: font.copyWith(
                         fontSize: 12,
                         height: 1.35,
@@ -73,7 +73,7 @@ class SellOnBaahyBanner extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              context.tr('افتح متجرك الآن', 'Open your store now'),
+              context.tr('افتح متجرك', 'Open your store'),
               style: font.copyWith(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
