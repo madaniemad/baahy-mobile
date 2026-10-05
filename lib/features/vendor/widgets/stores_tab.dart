@@ -337,7 +337,7 @@ class _StoreCard extends ConsumerWidget {
             // Name on the start side, the departments on the end side of the SAME line, both
             // starting at the same distance from the banner
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 ConstrainedBox(
                   constraints: BoxConstraints(
@@ -425,7 +425,7 @@ class _DeptChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         decoration: BoxDecoration(
           color: context.col.surfaceSoft,
           borderRadius: BorderRadius.circular(20),
