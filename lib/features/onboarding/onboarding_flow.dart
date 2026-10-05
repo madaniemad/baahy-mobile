@@ -11,7 +11,8 @@ import 'onb_city_picker.dart';
 /// Flutter chrome). Rules:
 ///  - City (page 0): no swipe — must confirm/pick to proceed.
 ///  - Plain promos (delivery/payments/rewards): swipe to advance, dots, no button.
-///  - Coupon (last): no swipe — must tap "Start shopping" to finish.
+///  - Coupon (last): "Start shopping" finishes, and so does swiping forward past
+///    it; swiping back to the earlier promos works too.
 class OnboardingFlow extends ConsumerStatefulWidget {
   const OnboardingFlow({super.key});
   @override
@@ -43,12 +44,37 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   int get _iLast => _slides.length - 1;      // last slide (idx)
   int get _count => _slides.length + 1;      // + city
 
-  // Pages where the user may swipe freely (no button): every promo between the
-  // city picker and the final slide. Only the city (page 0) and the last page are
-  // gated. Keyed off the settled page so physics is stable during an in-flight
-  // settle. While a programmatic slide runs we also allow scrolling, otherwise
-  // the animation is swallowed.
-  bool get _canScroll => _animating || (_settled >= 1 && _settled <= _iLast);
+  // Pages where the user may swipe freely: every promo after the city picker,
+  // including the last (swiping forward past it finishes, see _onScroll). Only the
+  // city (page 0) is gated. Keyed off the settled page so physics is stable during
+  // an in-flight settle. While a programmatic slide runs we also allow scrolling,
+  // otherwise the animation is swallowed.
+  bool get _canScroll => _animating || _settled >= 1;
+
+  // Swiping forward past the last slide does what "Start Shopping" does. Measured as
+  // how far the bouncing physics was dragged beyond the end during ONE gesture, so a
+  // stray touch or a tiny nudge does not count.
+  static const _finishOvershoot = 30.0;
+  double _overshoot = 0;
+  bool _finishing = false;
+
+  bool _onScroll(ScrollNotification n) {
+    if (n.depth != 0) return false;            // the PageView itself, not a list inside a page
+    if (_page == _count - 1) {
+      final over = n.metrics.pixels - n.metrics.maxScrollExtent;
+      if (over > _overshoot) _overshoot = over;
+    }
+    if (n is ScrollEndNotification) {
+      // Update the gate only once a swipe fully settles, so the physics never flips
+      // while an animation is still running.
+      final s = _pc.hasClients ? (_pc.page?.round() ?? _settled) : _settled;
+      if (s != _settled) setState(() => _settled = s);
+      final finish = _page == _count - 1 && _overshoot >= _finishOvershoot;
+      _overshoot = 0;
+      if (finish) _finish();
+    }
+    return false;
+  }
 
   @override
   void dispose() { _pc.dispose(); super.dispose(); }
@@ -76,6 +102,8 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   }
 
   Future<void> _finish() async {
+    if (_finishing) return;                    // button tap and swipe must not both fire
+    _finishing = true;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarding_v2_done', true);
     if (mounted) context.go('/home');
@@ -87,14 +115,8 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     return Scaffold(
       backgroundColor: const Color(0xFFEAF9FB),
       body: Stack(children: [
-        NotificationListener<ScrollEndNotification>(
-          // Update the gate only once a swipe fully settles, so the physics never
-          // flips while an animation is still running.
-          onNotification: (_) {
-            final s = _pc.hasClients ? (_pc.page?.round() ?? _settled) : _settled;
-            if (s != _settled) setState(() => _settled = s);
-            return false;
-          },
+        NotificationListener<ScrollNotification>(
+          onNotification: _onScroll,
           child: PageView.builder(
             controller: _pc,
             itemCount: _count,
