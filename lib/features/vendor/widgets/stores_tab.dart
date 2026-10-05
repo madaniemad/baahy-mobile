@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'sell_banner.dart';
+import '../../../shared/widgets/store_logo_placeholder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -298,8 +299,7 @@ class _StoreCard extends ConsumerWidget {
                   fit: StackFit.expand,
                   children: [
                     _StoreVisual(vendor: v, categoryId: categoryId),
-                    if (hasLogo)
-                      PositionedDirectional(
+                    PositionedDirectional(
                         start: 10,
                         bottom: 10,
                         child: Container(
@@ -317,13 +317,15 @@ class _StoreCard extends ConsumerWidget {
                             ],
                           ),
                           child: ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: v.logo!,
-                              fit: BoxFit.cover,
-                              memCacheWidth: 120,
-                              errorWidget: (_, __, ___) =>
-                                  const SizedBox.shrink(),
-                            ),
+                            child: hasLogo
+                                ? CachedNetworkImage(
+                                    imageUrl: v.logo!,
+                                    fit: BoxFit.cover,
+                                    memCacheWidth: 120,
+                                    errorWidget: (_, __, ___) =>
+                                        const StoreLogoPlaceholder(),
+                                  )
+                                : const StoreLogoPlaceholder(),
                           ),
                         ),
                       ),

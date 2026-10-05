@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/store_logo_placeholder.dart';
 import '../../vendor/widgets/stores_tab.dart';
 
 /// Home-page "Shop by store": a horizontal strip of the stores with the most products.
@@ -57,7 +58,7 @@ class ShopByStoreSection extends ConsumerWidget {
   }
 }
 
-/// Square white card with the store's logo; stores with no logo get a soft tile with their initial.
+/// Square card with the store's logo; stores with no logo get the default Baahy store mark.
 class _StoreTile extends StatelessWidget {
   final StoreEntry entry;
   const _StoreTile({required this.entry});
@@ -70,7 +71,6 @@ class _StoreTile extends StatelessWidget {
     final v = entry.vendor;
     final name = isAr && v.storeNameAr.isNotEmpty ? v.storeNameAr : v.storeName;
     final logo = v.logo;
-    final initial = name.trim().isEmpty ? '' : name.trim().characters.first.toUpperCase();
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -83,9 +83,7 @@ class _StoreTile extends StatelessWidget {
               width: _size,
               height: _size,
               decoration: BoxDecoration(
-                color: logo != null && logo.isNotEmpty
-                    ? Colors.white
-                    : context.col.surfaceSoft,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: context.col.border),
               ),
@@ -96,9 +94,9 @@ class _StoreTile extends StatelessWidget {
                         imageUrl: logo,
                         fit: BoxFit.cover,
                         memCacheWidth: 300,
-                        errorWidget: (_, __, ___) => _Initial(initial),
+                        errorWidget: (_, __, ___) => const StoreLogoPlaceholder(),
                       )
-                    : _Initial(initial),
+                    : const StoreLogoPlaceholder(),
               ),
             ),
             const SizedBox(height: 6),
@@ -120,23 +118,4 @@ class _StoreTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Initial extends StatelessWidget {
-  final String letter;
-  const _Initial(this.letter);
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Text(
-          letter,
-          style: TextStyle(
-            fontSize: 34,
-            fontWeight: FontWeight.w800,
-            color: context.col.ink3,
-            fontFamily: 'Manrope',
-            fontFamilyFallback: const ['Tajawal'],
-          ),
-        ),
-      );
 }

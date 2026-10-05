@@ -11,6 +11,7 @@ import '../../../shared/widgets/product_card.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../../core/utils/responsive.dart';
 import '../widgets/store_filters.dart';
+import '../../../shared/widgets/store_logo_placeholder.dart';
 
 class VendorStoreScreen extends ConsumerStatefulWidget {
   final int vendorId;
@@ -224,7 +225,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                     PositionedDirectional(
                       end: 16,
                       top: _StoreHero.heightOf(context) - _StoreHero.badgeSize / 2,
-                      child: _StoreLogoBadge(logo: _vendor!.logo!),
+                      child: _StoreLogoBadge(logo: _vendor!.logo),
                     ),
                 ],
               ),
@@ -452,12 +453,10 @@ class _StoreHero extends StatelessWidget {
   static double heightOf(BuildContext context) =>
       MediaQuery.paddingOf(context).top + MediaQuery.sizeOf(context).width / 3.4;
 
-  /// A store with no banner already shows its logo centred; otherwise the logo is a badge.
+  /// A store with no banner already shows its logo centred; otherwise the logo is a badge
+  /// (the default store mark when it has no logo).
   static bool showsBadge(Vendor? v, bool loading) =>
-      !loading &&
-      v != null &&
-      (v.banner ?? '').isNotEmpty &&
-      (v.logo ?? '').isNotEmpty;
+      !loading && v != null && (v.banner ?? '').isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -620,7 +619,7 @@ class _StoreInfo extends StatelessWidget {
 }
 
 class _StoreLogoBadge extends StatelessWidget {
-  final String logo;
+  final String? logo;
   const _StoreLogoBadge({required this.logo});
 
   @override
@@ -639,12 +638,14 @@ class _StoreLogoBadge extends StatelessWidget {
           ],
         ),
         child: ClipOval(
-          child: CachedNetworkImage(
-            imageUrl: logo,
-            fit: BoxFit.cover,
-            memCacheWidth: 200,
-            errorWidget: (_, __, ___) => const SizedBox.shrink(),
-          ),
+          child: (logo ?? '').isEmpty
+              ? const StoreLogoPlaceholder()
+              : CachedNetworkImage(
+                  imageUrl: logo!,
+                  fit: BoxFit.cover,
+                  memCacheWidth: 200,
+                  errorWidget: (_, __, ___) => const StoreLogoPlaceholder(),
+                ),
         ),
       );
 }
