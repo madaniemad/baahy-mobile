@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'test_fonts.dart';
 
 import 'package:baahy_customer/core/models/product.dart';
 import 'package:baahy_customer/features/vendor/widgets/sell_banner.dart';
@@ -9,6 +12,7 @@ import 'package:baahy_customer/shared/theme/app_theme.dart';
 
 /// The "open your store" invite sits in the middle of the stores list, once.
 void main() {
+  setUpAll(loadAppFonts);
   List<StoreEntry> stores(int n) => [
         for (int i = 1; i <= n; i++)
           StoreEntry(
@@ -29,6 +33,8 @@ void main() {
       child: MaterialApp(
         theme: buildAppTheme(),
         locale: const Locale('ar'),
+        supportedLocales: const [Locale('ar'), Locale('en')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
         home: const Scaffold(body: StoresTab(categories: [], query: '')),
       ),
     ));
@@ -50,4 +56,50 @@ void main() {
     await pump(t, 1);
     expect(find.byType(SellOnBaahyBanner), findsOneWidget);
   });
+
+  // Long names with no / many departments on the narrowest phone, both languages: no overflow.
+  for (final loc in const [Locale('ar'), Locale('en')]) {
+    testWidgets('store cards do not overflow at 320pt (${loc.languageCode})', (t) async {
+      await t.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => t.binding.setSurfaceSize(null));
+      final long = [
+        StoreEntry(
+          const Vendor(
+              id: 1,
+              storeName: 'An Extremely Long Store Name That Keeps Going And Going',
+              storeNameAr: 'متجر باسم طويل جداً جداً يستمر في الطول بلا نهاية أبداً'),
+          10,
+        ),
+        StoreEntry(
+          const Vendor(
+              id: 2,
+              storeName: 'Another Quite Long Store Name Here Too',
+              storeNameAr: 'متجر آخر باسم طويل أيضاً هنا'),
+          10,
+          reviewsCount: 12,
+          departments: const [
+            ('الجمال والعناية الشخصية', 'Beauty and Personal Care'),
+            ('البيت والأجهزة المنزلية', 'Home and Appliances'),
+            ('نساء', 'Women'),
+            ('رجال', 'Men'),
+          ],
+        ),
+      ];
+      await t.pumpWidget(ProviderScope(
+        overrides: [
+          storesProvider.overrideWith((ref, id) async => long),
+          storePreviewProvider.overrideWith((ref, key) async => <String>[]),
+        ],
+        child: MaterialApp(
+          theme: buildAppTheme(),
+          locale: loc,
+          supportedLocales: const [Locale('ar'), Locale('en')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          home: const Scaffold(body: StoresTab(categories: [], query: '')),
+        ),
+      ));
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+    });
+  }
 }

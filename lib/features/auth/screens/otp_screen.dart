@@ -355,10 +355,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(Icons.refresh_rounded, size: 15, color: AppColors.primary),
                     const SizedBox(width: 4),
-                    Text(
-                      '${context.s.resendIn} ${(_seconds ~/ 60).toString().padLeft(2, '0')}:${(_seconds % 60).toString().padLeft(2, '0')}',
-                      style: const TextStyle(fontSize: 13.5,
-                        color: AppColors.primary, fontWeight: FontWeight.w600)),
+                    // Flexible: the countdown sentence is long in Arabic and overflowed a 320pt phone by 72px.
+                    Flexible(
+                      child: Text(
+                        '${context.s.resendIn} ${(_seconds ~/ 60).toString().padLeft(2, '0')}:${(_seconds % 60).toString().padLeft(2, '0')}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 13.5,
+                          color: AppColors.primary, fontWeight: FontWeight.w600)),
+                    ),
                   ])
                 : GestureDetector(
                     onTap: _resending ? null : _resend,

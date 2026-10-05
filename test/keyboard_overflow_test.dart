@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'test_fonts.dart';
 
 import 'package:baahy_customer/features/auth/screens/otp_screen.dart';
 import 'package:baahy_customer/features/auth/screens/phone_signin_screen.dart';
@@ -15,6 +18,7 @@ import 'package:baahy_customer/shared/theme/app_theme.dart';
 /// Here we simulate the keyboard by setting viewInsets.bottom, at the SMALLEST
 /// supported phone size (iPhone SE) — the worst case.
 void main() {
+  setUpAll(loadAppFonts);
   const seSize = Size(320, 568); // iPhone SE — tightest screen we support
   const keyboardInset = 291.0; // its numeric keypad height
 
@@ -24,6 +28,8 @@ void main() {
           // without the real theme that null-asserts before any layout happens.
           theme: buildAppTheme(),
           locale: const Locale('ar'),
+          supportedLocales: const [Locale('ar'), Locale('en')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
           home: MediaQuery(
             data: const MediaQueryData(
               size: seSize,
