@@ -230,18 +230,6 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
 
-              // Shop by store (hides itself until stores load)
-              const SliverToBoxAdapter(child: ShopByStoreSection()),
-
-              // Invite store owners to apply (opens baahy.com/sell)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 18, 16, 0),
-                  child: SellOnBaahyBanner(),
-                ),
-              ),
-
-
               // ── Admin-controlled sections in exact admin order ──
               ...home.orderedDynamicSections.expand((item) sync* {
                 if (item is DynGrid) {
@@ -324,6 +312,8 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     );
                     yield SliverToBoxAdapter(child: _HorizontalProductList(products: featProds));
+                    // Stores and the "sell on Baahy" invite sit right below "Picks for you"
+                    yield* _storesAndSellSlivers();
                   }
                 } else if (item is DynDeals) {
                   final dealProds = home.deals.isNotEmpty ? home.deals : item.fallbackProducts;
@@ -356,6 +346,11 @@ class HomeScreen extends ConsumerWidget {
                 }
               }),
 
+              // No "Picks for you" section to anchor to: keep the stores block before Recently viewed
+              if (!home.orderedDynamicSections.any((i) => i is DynFeatured) ||
+                  home.featured.isEmpty)
+                ..._storesAndSellSlivers(),
+
               // Recently viewed
               const SliverToBoxAdapter(child: _RecentlyViewedSection()),
 
@@ -367,3 +362,15 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 }
+
+/// "Shop by store" (hides itself until stores load) and the invite for store owners to apply
+/// (opens baahy.com/sell).
+List<Widget> _storesAndSellSlivers() => const [
+      SliverToBoxAdapter(child: ShopByStoreSection()),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, 18, 16, 0),
+          child: SellOnBaahyBanner(),
+        ),
+      ),
+    ];
