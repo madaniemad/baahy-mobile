@@ -61,7 +61,7 @@ class SellOnBaahyBanner extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFD23F),
+              color: const Color(0xFFFFE14D),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
