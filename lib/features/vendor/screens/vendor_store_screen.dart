@@ -475,28 +475,40 @@ class _StoreHero extends StatelessWidget {
       );
     }
 
+    // A store with no banner already shows its logo centred; otherwise the logo straddles the
+    // banner's bottom edge on the side opposite the back button (half over, half below).
+    final showBadge = !loading &&
+        banner != null &&
+        banner.isNotEmpty &&
+        logo != null &&
+        logo.isNotEmpty;
+    const badge = 60.0;
+    final extra = showBadge ? badge / 2 : 0.0;
+
     return SizedBox(
-      height: height,
+      height: height + extra,
       child: Stack(
-        fit: StackFit.expand,
+        clipBehavior: Clip.none,
         children: [
-          bg,
-          // Logo badge on the banner corner (a store with no banner already shows it centred)
-          if (!loading &&
-              banner != null &&
-              banner.isNotEmpty &&
-              logo != null &&
-              logo.isNotEmpty)
+          Positioned(top: 0, left: 0, right: 0, height: height, child: bg),
+          if (showBadge) ...[
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: extra,
+              child: ColoredBox(color: context.col.surface),
+            ),
             PositionedDirectional(
-              start: 16,
-              bottom: 10,
+              end: 16,
+              bottom: 0,
               child: Container(
-                width: 54,
-                height: 54,
+                width: badge,
+                height: badge,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2.5),
+                  border: Border.all(color: Colors.white, width: 3),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.22),
@@ -514,6 +526,7 @@ class _StoreHero extends StatelessWidget {
                 ),
               ),
             ),
+          ],
           PositionedDirectional(
             top: top + 8,
             start: 12,
