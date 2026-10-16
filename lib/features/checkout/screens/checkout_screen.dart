@@ -1658,6 +1658,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                         style: TextStyle(
                                             fontSize: 12.5, color: accent)),
                                   ],
+                                  // The first-order discount and welcome/reward credit do not
+                                  // combine: say so here, where the customer decides, instead of
+                                  // only inside the wallet sheet. A customer topped up 65 on
+                                  // 2026-10-16 believing her 20 bonus would cover the rest.
+                                  if (offerBlocks &&
+                                      _walletBalance - _walletSpendable > 0.009) ...[
+                                    const SizedBox(height: 3),
+                                    Text(
+                                        isAr
+                                            ? 'رصيد المكافأة (${fmtPrice(_walletBalance - _walletSpendable)} د.ل) لا يُجمع مع خصم أول طلب — يبقى لطلبك القادم'
+                                            : 'Bonus credit (${fmtPrice(_walletBalance - _walletSpendable)} LD) cannot be combined with the first-order discount — it stays for your next order',
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFFB45309))),
+                                  ],
                                 ])),
                             Icon(Icons.keyboard_arrow_down_rounded,
                                 size: 22, color: context.col.ink2),
@@ -2015,7 +2030,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               boxShadow: AppShadows.shadowPop,
             ),
             child: Column(children: [
-              if (_paymentMethod.isEmpty)
+              // The wallet paying for everything IS a payment method: this used to stay on
+              // "choose a payment method" with nothing left to choose (baahy.com fixed the same
+              // dead end earlier; the app never was).
+              if (_paymentMethod.isEmpty && !walletCoversAll)
                 Container(
                   width: double.infinity,
                   height: 50,
