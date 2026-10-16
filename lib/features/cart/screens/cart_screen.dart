@@ -433,8 +433,15 @@ class _CartBodyState extends ConsumerState<_CartBody> {
       );
       if (ok != true || !mounted) return;
       for (final u in unavailable) {
-        ref.read(cartProvider.notifier).remove(u.item.key);
+        await ref.read(cartProvider.notifier).remove(u.item.key);
       }
+      // "Continue with updated prices" must actually take the updated prices: without this the
+      // cart kept sending the old figure and checkout refused it again ("تغير سعر X") forever.
+      await ref.read(cartProvider.notifier).applyServerPrices({
+        for (final u in priceChanged)
+          if (u.newPrice != null) u.item.key: u.newPrice!,
+      });
+      if (!mounted) return;
       if (ref.read(cartProvider).items.isEmpty) return;
     }
     if (mounted) safePush(context, '/checkout');

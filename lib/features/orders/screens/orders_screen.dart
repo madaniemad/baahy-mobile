@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/optimized_network_image.dart';
 import '../../../core/api/api_client.dart';
-import '../../../core/models/cart.dart';
 import '../../../core/models/order.dart';
 import '../../../core/models/product.dart';
-import '../../../core/providers/reorder_provider.dart';
+import '../../../core/providers/cart_provider.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
@@ -195,8 +194,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               children: [
                 Text(
                   isAr
-                    ? 'سيتم طلب ${toAdd.length} من ${order.allItems.length} منتجات.'
-                    : '${toAdd.length} of ${order.allItems.length} items will be ordered.',
+                    ? 'ستُضاف ${toAdd.length} من ${order.allItems.length} منتجات إلى السلة.'
+                    : '${toAdd.length} of ${order.allItems.length} items will be added to your cart.',
                   style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13),
                 ),
                 const SizedBox(height: 12),
@@ -222,23 +221,32 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       if (confirmed != true || !context.mounted) return;
     }
 
-    // Build CartItems for the reorder session (no cart modification)
-    final sessionItems = toAdd.map((r) => CartItem(
-      productId: r.product.id,
-      variationId: r.variation?.id,
-      product: r.product,
-      variation: r.variation,
-      quantity: r.qty,
-    )).toList();
-
-    // Set reorder session and navigate directly to checkout
-    ref.read(reorderSessionProvider.notifier).state = ReorderSession(
-      items: sessionItems,
-      address: order.shippingAddress,
-      paymentMethod: order.paymentMethod,
-    );
-
-    if (context.mounted) safePush(context, '/checkout');
+    // Reorder goes through the NORMAL cart (exact variation, unavailable lines skipped, quantity
+    // capped to stock) and opens it, so it is priced like any order: collection fee, the offer
+    // the server auto-applies, coupons, price checks. The old direct-to-checkout session priced
+    // itself and missed both the collection fee and the auto-applied offer.
+    final cartNotifier = ref.read(cartProvider.notifier);
+    var added = 0;
+    for (final r in toAdd) {
+      final key = r.variation != null ? '${r.product.id}_${r.variation!.id}' : '${r.product.id}';
+      final inCart = ref.read(cartProvider).items
+          .where((i) => i.key == key)
+          .fold<int>(0, (n, i) => n + i.quantity);
+      final stock = r.variation?.stockQuantity ?? r.product.stockQuantity;
+      final qty = stock == null ? r.qty : (stock - inCart < r.qty ? stock - inCart : r.qty);
+      if (qty <= 0) continue;
+      await cartNotifier.add(r.product, variation: r.variation, qty: qty);
+      added++;
+    }
+    if (!context.mounted) return;
+    if (added == 0) {
+      snack.showSnackBar(SnackBar(
+        content: Text(context.s.noItemsInStock),
+        backgroundColor: AppColors.warn,
+      ));
+      return;
+    }
+    context.go('/cart');
   }
 
   @override

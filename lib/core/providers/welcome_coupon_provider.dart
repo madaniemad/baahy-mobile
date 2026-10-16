@@ -48,6 +48,7 @@ class WelcomeCoupon {
   });
 }
 
+/// Null = the server said there is no offer. An error = we do not know (see the catch below).
 final welcomeCouponProvider = FutureProvider.autoDispose<WelcomeCoupon?>((ref) async {
   try {
     final res = await ApiClient.instance.dio.get('/coupons/welcome');
@@ -86,6 +87,9 @@ final welcomeCouponProvider = FutureProvider.autoDispose<WelcomeCoupon?>((ref) a
     );
   } catch (e, st) {
     Sentry.captureException(e, stackTrace: st);
-    return null;
+    // Rethrow, never `return null`: null means "no offer", and a failed lookup is NOT that.
+    // Checkout reads an unresolved/failed answer as unknown and caps the wallet to the spendable
+    // (topped-up) part, which is what the server allows when an offer does block it.
+    rethrow;
   }
 });

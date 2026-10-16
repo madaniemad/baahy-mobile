@@ -124,6 +124,194 @@ class _OrderBody extends ConsumerStatefulWidget {
 
 class _OrderBodyState extends ConsumerState<_OrderBody> {
   bool _reordering = false;
+  bool _cancelling = false;
+
+  /// The statuses OrderController::cancel accepts from the customer.
+  static const _cancellable = ['pending_confirmation', 'paid', 'confirmed'];
+
+  Future<void> _cancelOrder(BuildContext context) async {
+    if (_cancelling) return;
+    final order = widget.order;
+    final paidSomething = order.paymentStatus == 'paid' || order.walletAmount > 0;
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: context.col.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Container(width: 36, height: 4,
+              decoration: BoxDecoration(color: context.col.border, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 16),
+            Text(context.s.cancelOrderQ,
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                fontSize: 16, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            Text(context.s.orderNumber(order.orderNumber),
+              style: TextStyle(fontSize: 13, color: context.col.ink2)),
+            if (paidSomething) ...[
+              const SizedBox(height: 10),
+              Text(context.s.cancelOrderPaidNote,
+                style: TextStyle(fontSize: 12.5, height: 1.5, color: context.col.ink2)),
+            ],
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity, height: 48,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(sheetCtx).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.danger, foregroundColor: Colors.white, elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: Text(context.s.yesCancelOrder,
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity, height: 48,
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(sheetCtx).pop(false),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: context.col.border),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: Text(context.s.keepOrder,
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                    fontWeight: FontWeight.w700, color: context.col.ink0)),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    setState(() => _cancelling = true);
+    try {
+      final res = await ApiClient.instance.dio.post('/orders/${order.id}/cancel');
+      if (!context.mounted) return;
+      final serverMsg = res.data is Map ? res.data['message']?.toString() : null;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(serverMsg ?? context.s.orderCancelled),
+        backgroundColor: AppColors.success));
+      ref.invalidate(_orderDetailProvider(order.id));
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+      if (!context.mounted) return;
+      String msg = context.s.orderError;
+      if (e is DioException) {
+        final d = e.response?.data;
+        if (d is Map && d['message'] != null) msg = d['message'].toString();
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: AppColors.danger));
+      // The order may have moved on (e.g. already being prepared) — show where it is now.
+      ref.invalidate(_orderDetailProvider(order.id));
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  /// "Rate this product" on a delivered order — POST /reviews (the endpoint baahy.com uses).
+  /// The server checks the purchase itself and holds the review for moderation.
+  Future<void> _rateItem(BuildContext context, OrderItem item) async {
+    int rating = 0;
+    bool sending = false;
+    String? error;
+    final commentCtrl = TextEditingController();
+    final done = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.col.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (sheetCtx, setS) => SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(sheetCtx).viewInsets.bottom + 16),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Center(child: Container(width: 36, height: 4,
+                decoration: BoxDecoration(color: context.col.border, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+              Text(context.s.rateProduct,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                  fontSize: 16, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              Text(context.isAr ? item.productNameAr : item.productName,
+                maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 13, color: context.col.ink2)),
+              const SizedBox(height: 12),
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(5, (i) =>
+                  IconButton(
+                    onPressed: sending ? null : () => setS(() { rating = i + 1; error = null; }),
+                    icon: Icon(i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                      size: 34, color: i < rating ? AppColors.gold : context.col.ink4),
+                  ))),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: commentCtrl,
+                maxLines: 3,
+                maxLength: 1000,
+                decoration: InputDecoration(
+                  hintText: context.s.reviewHint,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              if (error != null) ...[
+                Text(error!, style: const TextStyle(color: AppColors.danger, fontSize: 12.5)),
+                const SizedBox(height: 8),
+              ],
+              SizedBox(
+                width: double.infinity, height: 48,
+                child: ElevatedButton(
+                  onPressed: sending ? null : () async {
+                    if (rating == 0) {
+                      setS(() => error = context.s.chooseStars);
+                      return;
+                    }
+                    setS(() { sending = true; error = null; });
+                    final thanks = context.s.reviewThanks;
+                    final fallbackError = context.s.orderError;
+                    try {
+                      await ApiClient.instance.dio.post('/reviews', data: {
+                        'product_id': item.productId,
+                        'rating': rating,
+                        if (commentCtrl.text.trim().isNotEmpty) 'comment': commentCtrl.text.trim(),
+                      });
+                      if (sheetCtx.mounted) Navigator.of(sheetCtx).pop(thanks);
+                    } catch (e) {
+                      String msg = fallbackError;
+                      if (e is DioException) {
+                        final d = e.response?.data;
+                        if (d is Map && d['message'] != null) msg = d['message'].toString();
+                      }
+                      setS(() { sending = false; error = msg; });
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary, foregroundColor: Colors.white, elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: sending
+                      ? const SizedBox(width: 20, height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Text(context.s.submitReview,
+                          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+    commentCtrl.dispose();
+    if (done != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(done), backgroundColor: AppColors.success));
+    }
+  }
 
   Future<void> _reorder(BuildContext context) async {
     if (_reordering) return;
@@ -268,6 +456,9 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                   _OrderItemRow(
                     item: e.value,
                     hasBorder: e.key < group.items.length - 1,
+                    onRate: order.status == 'delivered'
+                        ? () => _rateItem(context, e.value)
+                        : null,
                   ),
                 ).toList(),
               ),
@@ -410,6 +601,28 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           ],
         ],
         const SizedBox(height: 8),
+        // Cancel — only while the backend still accepts it (OrderController::cancel).
+        if (_cancellable.contains(order.status)) ...[
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _cancelling ? null : () => _cancelOrder(context),
+              icon: _cancelling
+                  ? const SizedBox(width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.danger))
+                  : const Icon(Icons.cancel_outlined, size: 16, color: AppColors.danger),
+              label: Text(context.s.cancelOrder,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                  fontWeight: FontWeight.w700, color: AppColors.danger)),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                side: BorderSide(color: AppColors.danger.withValues(alpha: 0.5)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         // Reorder button
         SizedBox(
           width: double.infinity,
@@ -699,7 +912,9 @@ String _paymentMethodLabel(BuildContext ctx, String m, {List<PaymentMethod> conf
 class _OrderItemRow extends StatelessWidget {
   final OrderItem item;
   final bool hasBorder;
-  const _OrderItemRow({required this.item, required this.hasBorder});
+  /// Set on a delivered order: shows "Rate this product".
+  final VoidCallback? onRate;
+  const _OrderItemRow({required this.item, required this.hasBorder, this.onRate});
 
   @override
   Widget build(BuildContext context) {
@@ -742,6 +957,21 @@ class _OrderItemRow extends StatelessWidget {
               Text('${fmtPrice(item.price)} ${context.s.lydUnit} × ${item.quantity}',
                 style: TextStyle(fontFamily: 'PlusJakartaSans',
                   fontSize: 11, color: context.col.ink2)),
+              if (onRate != null)
+                GestureDetector(
+                  onTap: onRate,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 6, bottom: 2),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.star_outline_rounded, size: 15, color: AppColors.gold),
+                      const SizedBox(width: 4),
+                      Text(context.s.rateProduct,
+                        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                          fontSize: 12, fontWeight: FontWeight.w700, color: context.col.ink1)),
+                    ]),
+                  ),
+                ),
             ]),
           ),
           Text('${fmtPrice(item.total)} ${context.s.lydUnit}',

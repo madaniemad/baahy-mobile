@@ -20,6 +20,9 @@ class User {
   final String privacyPurchases;
   final String privacyReviews;
   final String privacyTier;
+  /// Cash on delivery withdrawn from this customer (two doorsteps the driver could not reach) —
+  /// they prepay. Absent from older servers, which means not blocked.
+  final bool codBlocked;
 
   const User({
     required this.id,
@@ -37,6 +40,7 @@ class User {
     this.privacyPurchases = 'friends',
     this.privacyReviews = 'public',
     this.privacyTier = 'friends',
+    this.codBlocked = false,
   });
 
   User copyWith({String? avatar}) => User(
@@ -46,6 +50,7 @@ class User {
     referralCode: referralCode, birthday: birthday, username: username,
     privacyWishlist: privacyWishlist, privacyPurchases: privacyPurchases,
     privacyReviews: privacyReviews, privacyTier: privacyTier,
+    codBlocked: codBlocked,
   );
 
   factory User.fromJson(Map<String, dynamic> j) => User(
@@ -64,5 +69,6 @@ class User {
     privacyPurchases: j['privacy_purchases'] as String? ?? 'friends',
     privacyReviews:   j['privacy_reviews']   as String? ?? 'public',
     privacyTier:      j['privacy_tier']      as String? ?? 'friends',
+    codBlocked:       j['cod_blocked'] == true,
   );
 }

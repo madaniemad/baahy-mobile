@@ -11,6 +11,7 @@ import 'core/utils/l10n.dart';
 import 'core/services/deep_link_service.dart';
 import 'core/services/push_notification_service.dart';
 import 'shared/theme/app_theme.dart';
+import 'shared/widgets/pending_payment_watcher.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // FIREBASE SETUP:
@@ -124,11 +125,16 @@ class BaahyApp extends ConsumerWidget {
       // Distribute each text line's leading evenly above and below the glyphs so
       // Arabic text (Tajawal reserves extra vertical space) sits vertically
       // centred in pills/buttons instead of riding high. Applies app-wide.
-      builder: (context, child) => DefaultTextHeightBehavior(
-        textHeightBehavior: const TextHeightBehavior(
-          leadingDistribution: TextLeadingDistribution.even,
+      // PendingPaymentWatcher follows a card payment interrupted by the app being backgrounded
+      // or killed, on open and on every return to the foreground.
+      builder: (context, child) => PendingPaymentWatcher(
+        router: router,
+        child: DefaultTextHeightBehavior(
+          textHeightBehavior: const TextHeightBehavior(
+            leadingDistribution: TextLeadingDistribution.even,
+          ),
+          child: child ?? const SizedBox.shrink(),
         ),
-        child: child ?? const SizedBox.shrink(),
       ),
       routerConfig: router,
       locale: locale,

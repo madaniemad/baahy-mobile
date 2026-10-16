@@ -645,4 +645,44 @@ Account Termination: We reserve the right to suspend any account that violates t
   String get reviewsPrivacy       => isAr ? 'التقييمات'                   : 'Reviews';
   String get tierPrivacy          => isAr ? 'درجة العضوية'                : 'Tier Badge';
   String get friendsCard          => isAr ? 'الأصدقاء'                    : 'Friends';
+
+  // ── Checkout / orders (2026-10-16) ───────────────────────────────────────────
+  String get okGotIt              => isAr ? 'حسناً'                        : 'OK';
+  String get paymentReviewTitle   => isAr ? 'دفعتك قيد المراجعة'          : 'Your payment is under review';
+  String get paymentReviewDefault => isAr
+      ? 'تم استلام دفعتك وهي قيد المراجعة. سيتواصل معك فريق الدعم قريباً — لا تُعِد الدفع.'
+      : 'We received your payment and it is under review. Our support team will contact you soon — please do not pay again.';
+  String get paymentStillChecking => isAr
+      ? 'لم يصلنا تأكيد الدفع بعد. إذا دفعت، سيتأكد طلبك تلقائياً — لا تدفع مرة ثانية.'
+      : 'We have not received the payment confirmation yet. If you paid, your order will be confirmed automatically — do not pay again.';
+  String get paymentConfirmedOrder => isAr ? 'تم تأكيد دفعتك وطلبك'        : 'Your payment and order are confirmed';
+  String get pricesUpdatedNotice  => isAr
+      ? 'تم تحديث أسعار بعض المنتجات في سلتك. راجع المجموع ثم اضغط تأكيد الطلب مرة ثانية.'
+      : 'Some prices in your cart were updated. Check the total, then tap Place Order again.';
+  String get cityNotServed        => isAr
+      ? 'لا يوجد توصيل لهذه المدينة حالياً — اختر عنواناً آخر'
+      : 'We do not deliver to this city yet — choose another address';
+  String get codBlockedForAccount => isAr
+      ? 'الدفع عند الاستلام غير متاح لحسابك حالياً. اختر طريقة دفع إلكترونية.'
+      : 'Cash on delivery is not available for your account right now. Please choose an electronic payment method.';
+  String get nothingToPay         => isAr ? 'لا يوجد مبلغ للدفع'           : 'Nothing to pay';
+  String get walletCouponBlocked  => isAr
+      ? 'رصيد المكافآت لا يُستخدم مع هذا الكوبون — يبقى لطلبك القادم.'
+      : 'Reward credit cannot be combined with this coupon — it stays for your next order.';
+  String get walletOfferUnknown   => isAr
+      ? 'لم نتمكن من التحقق من عرضك الآن — رصيد المكافآت غير متاح لهذا الطلب.'
+      : 'We could not check your offer right now — reward credit is unavailable for this order.';
+  String get cancelOrder          => isAr ? 'إلغاء الطلب'                  : 'Cancel order';
+  String get cancelOrderQ         => isAr ? 'هل تريد إلغاء هذا الطلب؟'     : 'Cancel this order?';
+  String get cancelOrderPaidNote  => isAr
+      ? 'ما دفعته من المحفظة يرجع لمحفظتك فوراً، وما دفعته إلكترونياً يتواصل معك فريق الدعم لإرجاعه.'
+      : 'Wallet money goes straight back to your wallet; for an online payment our support team will contact you to refund it.';
+  String get keepOrder            => isAr ? 'لا، أبقِ الطلب'               : 'No, keep it';
+  String get yesCancelOrder       => isAr ? 'نعم، ألغِ الطلب'              : 'Yes, cancel it';
+  String get orderCancelled       => isAr ? 'تم إلغاء الطلب'               : 'Your order was cancelled';
+  String get rateProduct          => isAr ? 'قيّم المنتج'                  : 'Rate this product';
+  String get reviewHint           => isAr ? 'اكتب رأيك في المنتج (اختياري)' : 'Tell others what you think (optional)';
+  String get submitReview         => isAr ? 'إرسال التقييم'                : 'Submit review';
+  String get chooseStars          => isAr ? 'اختر عدد النجوم'              : 'Choose a star rating';
+  String get reviewThanks         => isAr ? 'شكراً! سيظهر تقييمك بعد المراجعة.' : 'Thank you! Your review will appear after it is checked.';
 }

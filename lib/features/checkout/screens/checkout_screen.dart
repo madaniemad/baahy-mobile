@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:math';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +16,9 @@ import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/tier_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
 import '../../../core/providers/welcome_coupon_provider.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/pending_checkout_service.dart';
+import '../../../shared/widgets/pending_payment_watcher.dart';
 import '../../../core/utils/delivery.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
@@ -90,16 +95,38 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   /// The part of the balance an offer-blocked order may still use (topped-up money).
   double _walletSpendable = 0;
+  /// First order (no delivered order yet): under this subtotal only the topped-up part of the
+  /// wallet may be used — the welcome bonus waits (server GET /wallet). Null otherwise.
+  double? _bonusMinFirstOrder;
   bool _useWallet = false;
   bool _walletLoading = false;
   bool _itemsExpanded = false;
+
+  /// Idempotency-Key for POST /orders: one per checkout attempt, reused only when the previous
+  /// attempt got no answer (timeout / dropped connection) and the order is unchanged, so a retry
+  /// cannot create a second order. Dropped after any server answer.
+  String? _idemKey;
+  String? _idemSig;
+
+  /// Saved-address city → the shipping_rates city the server prices it as (null = not served).
+  /// Old saved addresses can carry a district ("جنزور") the server folds into طرابلس; asking
+  /// /shipping/calculate keeps the app from calling those undeliverable.
+  final Map<String, String?> _cityAlias = {};
+  final Set<String> _cityResolving = {};
+
+  /// Bumped per order attempt; a background payment check from an older attempt stops.
+  int _watchToken = 0;
+  bool _codClearScheduled = false;
 
   @override
   void initState() {
     super.initState();
     _initCheckout();
     _loadWallet();
+    // cod_blocked can change between visits (a failed doorstep); read it fresh.
+    ref.read(authProvider.notifier).refreshProfile();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _resumePendingCheckout();
       _startCheckoutSession();
       // Analytics: begin_checkout (Firebase + Meta) — once when the screen opens
       final rs = ref.read(reorderSessionProvider);
@@ -138,15 +165,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Future<void> _initCheckout() async {
     await Future.wait([_loadAddresses(), _loadSavedPayment()]);
     if (!mounted) return;
+    // A remembered COD the address (or the customer's account) no longer allows is cleared, not
+    // swapped for some gateway the customer never picked.
     if (_paymentMethod == 'cash_on_delivery' && !_codAllowedForAddress) {
-      final altMethods = (ref.read(appConfigProvider).paymentMethods as List)
-          .where((m) =>
-              m.enabled == true &&
-              m.id != 'wallet' &&
-              m.id != 'cash_on_delivery')
-          .toList();
-      if (altMethods.isNotEmpty)
-        _setPaymentMethod(altMethods.first.id as String);
+      setState(() => _paymentMethod = '');
     }
     // A pre-filled method (reorder of an order paid with the wallet / 'cash' / a since-disabled gateway,
     // or a stale last-used choice) must be one the server will accept now; otherwise the order 422s or,
@@ -228,6 +250,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         setState(() {
           _walletBalance = balance;
           _walletSpendable = spendable;
+          _bonusMinFirstOrder = (d?['first_order_min_for_bonus'] as num?)?.toDouble();
         });
       }
     } catch (_) {}
@@ -254,32 +277,139 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   void _selectAddress(Map<String, dynamic> addr) {
     setState(() => _selectedAddress = addr);
-    // Auto-switch away from COD if the new city doesn't allow it
-    final city = addr['city']?.toString() ?? '';
-    if (city.isNotEmpty && _paymentMethod == 'cash_on_delivery') {
-      final rates = ref.read(shippingRatesProvider).valueOrNull ?? [];
-      bool codAllowed = true;
-      try {
-        final rate = rates.firstWhere((r) =>
-            r.cityAr == city || r.city.toLowerCase() == city.toLowerCase());
-        codAllowed = rate.codAllowed;
-      } catch (_) {
-        codAllowed =
-            city.contains('طرابلس') || city.toLowerCase().contains('tripoli');
-      }
-      if (!codAllowed) {
-        final altMethods = (ref.read(appConfigProvider).paymentMethods as List)
-            .where((m) =>
-                m.enabled == true &&
-                m.id != 'wallet' &&
-                m.id != 'cash_on_delivery')
-            .toList();
-        if (altMethods.isNotEmpty) _setPaymentMethod(altMethods.first.id);
+    // Clear COD if the new city doesn't allow it — the customer picks again.
+    if (_paymentMethod == 'cash_on_delivery' && !_codAllowedForAddress) {
+      setState(() => _paymentMethod = '');
+    }
+  }
+
+  /// Reopening checkout after an interrupted card payment: finish it before offering a new one.
+  Future<void> _resumePendingCheckout() async {
+    final st = await settleStoredPendingCheckout(ref);
+    if (st == null || !mounted) return;
+    if (st.outcome == PendingOutcome.completed && st.orderId != null) {
+      await _goConfirmed(st.orderId, st.orderNumber);
+    } else if (st.outcome == PendingOutcome.review) {
+      await showPaymentReviewDialog(context, st.message);
+      if (mounted) context.go('/home');
+    }
+  }
+
+  Future<void> _goConfirmed(dynamic orderId, String orderNumber) async {
+    Map<String, dynamic> orderData = {'id': orderId, 'order_number': orderNumber};
+    try {
+      final orderRes = await ApiClient.instance.dio.get('/orders/$orderId');
+      orderData = Map<String, dynamic>.from(orderRes.data['data'] as Map);
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _loading = false);
+    context.pushReplacement('/order-confirmed', extra: orderData);
+  }
+
+  /// The gateway took the money but the server could not turn it into an order: show the
+  /// server's message, empty the cart, and offer NO retry — paying again would charge twice.
+  Future<void> _paymentReview(String? message,
+      {required bool clearCart, String? pendingRef}) async {
+    if (pendingRef != null) await PendingCheckoutService.instance.clear(pendingRef);
+    if (clearCart) await ref.read(cartProvider.notifier).clear();
+    ref.read(reorderSessionProvider.notifier).state = null;
+    ref.invalidate(welcomeCouponProvider);
+    if (!mounted) return;
+    setState(() => _loading = false);
+    await showPaymentReviewDialog(context, message);
+    if (mounted) context.go('/home');
+  }
+
+  /// The 409 `{payment_review: true, message}` Mobicash / Masarat / PayPal answer with. Null when
+  /// [e] is anything else; '' when the server sent no message (the dialog has a default).
+  String? _reviewMessage(Object e) {
+    if (e is DioException) {
+      final d = e.response?.data;
+      if (d is Map && d['payment_review'] == true) return d['message']?.toString() ?? '';
+    }
+    return null;
+  }
+
+  static String _newIdemKey() {
+    final r = Random.secure();
+    final b = List<int>.generate(16, (_) => r.nextInt(256));
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    final h = b.map((x) => x.toRadixString(16).padLeft(2, '0')).join();
+    return '${h.substring(0, 8)}-${h.substring(8, 12)}-${h.substring(12, 16)}-${h.substring(16, 20)}-${h.substring(20)}';
+  }
+
+  /// After the payment page closed with no answer yet, keep asking the server for a while
+  /// instead of going quiet; the stored reference also lets the app finish it on its next
+  /// open / return to the foreground.
+  Future<void> _watchPendingInBackground(String pendingRef, bool clearCart) async {
+    final token = _watchToken;
+    for (int i = 0; i < 45; i++) {
+      await Future.delayed(const Duration(seconds: 4));
+      if (!mounted || token != _watchToken) return;
+      final st = await PendingCheckoutService.instance.fetchStatus(pendingRef);
+      if (!mounted || token != _watchToken) return;
+      switch (st.outcome) {
+        case PendingOutcome.completed:
+          await PendingCheckoutService.instance.clear(pendingRef);
+          if (clearCart) await ref.read(cartProvider.notifier).clear();
+          ref.read(reorderSessionProvider.notifier).state = null;
+          ref.invalidate(welcomeCouponProvider);
+          await _goConfirmed(st.orderId, st.orderNumber);
+          return;
+        case PendingOutcome.review:
+          await _paymentReview(st.message, clearCart: clearCart, pendingRef: pendingRef);
+          return;
+        case PendingOutcome.failed:
+          await PendingCheckoutService.instance.clear(pendingRef);
+          return;
+        case PendingOutcome.pending:
+        case PendingOutcome.unknown:
+          break;
       }
     }
   }
 
+  /// Does the discount on this order block reward credit (capping the wallet to the money the
+  /// customer topped up)? It follows the coupon actually applied: a typed code replaces the
+  /// auto-offer. With no code the server applies the auto-offer itself, and while that offer is
+  /// unknown (loading, or the lookup failed) we assume it blocks — never offer what may be refused.
+  bool _offerBlocksWallet(CartState cart) {
+    // A small first order cannot spend the welcome bonus either (server: capBonusOnSmallFirstOrder).
+    if (_smallFirstOrder(cart)) return true;
+    final isReorder = ref.read(reorderSessionProvider) != null;
+    if (!isReorder && (cart.couponCode ?? '').isNotEmpty) return cart.couponBlocksWallet;
+    final offer = ref.read(welcomeCouponProvider);
+    return !offer.hasValue || offer.valueOrNull?.blocksWallet == true;
+  }
+
+  bool _smallFirstOrder(CartState cart) =>
+      _bonusMinFirstOrder != null && cart.subtotal < _bonusMinFirstOrder!;
+
+  /// The explanation on the disabled wallet option when nothing of it can be used.
+  String _walletBlockedNote(CartState cart, bool isAr) {
+    if (_smallFirstOrder(cart)) {
+      final m = fmtPrice(_bonusMinFirstOrder!);
+      return isAr
+          ? 'رصيد المكافأة يُستخدم في طلبك الأول إذا كان فوق $m د.ل'
+          : 'Bonus credit can be used on your first order above $m LD';
+    }
+    final isReorder = ref.read(reorderSessionProvider) != null;
+    final offerAsync = ref.read(welcomeCouponProvider);
+    final offer = offerAsync.valueOrNull;
+    final code = isReorder ? '' : (cart.couponCode ?? '');
+    if (offer != null &&
+        offer.blocksWallet &&
+        (code.isEmpty || code.toUpperCase() == offer.code.toUpperCase())) {
+      return _walletBlockedNoteText(offer, isAr);
+    }
+    if (code.isEmpty && !offerAsync.hasValue) return context.s.walletOfferUnknown;
+    return context.s.walletCouponBlocked;
+  }
+
   void _showPaymentSheet(List methods, double cartTotal) {
+    final cart = ref.read(cartProvider);
+    final blocks = _offerBlocksWallet(cart);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -289,13 +419,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       builder: (_) => _PaymentSheet(
         // Only call the wallet blocked when NOTHING of it can be used. With topped-up
         // money present the sheet should offer that portion, not refuse the whole balance.
-        walletBlockedNote: (ref
-                        .read(welcomeCouponProvider)
-                        .valueOrNull
-                        ?.blocksWallet ==
-                    true &&
-                _walletSpendable <= 0)
-            ? _walletBlockedNoteText(ref.read(welcomeCouponProvider).valueOrNull!, context.isAr)
+        walletBlockedNote: (blocks && _walletSpendable <= 0)
+            ? _walletBlockedNote(cart, context.isAr)
             : null,
         initialUseWallet: _useWallet,
         initialWalletAmount: _walletAmountCtrl.text,
@@ -303,13 +428,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         // The amount the sheet may actually offer. Passing the raw balance made it
         // propose 71 on an order where only 51 is spendable, and quote a remainder
         // 20 LYD lower than the customer would be charged.
-        walletBalance:
-            (ref.read(welcomeCouponProvider).valueOrNull?.blocksWallet == true)
-                ? _walletSpendable
-                : _walletBalance,
+        walletBalance: blocks ? _walletSpendable : _walletBalance,
         walletLoading: _walletLoading,
         cartTotal: cartTotal,
         codAllowed: _codAllowedForAddress,
+        codNote: _userCodBlocked ? context.s.codBlockedForAccount : null,
         methods: methods,
         onTopUp: () {
           Navigator.of(context).pop();
@@ -361,6 +484,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final reorderSession = ref.read(reorderSessionProvider);
     final isReorder = reorderSession != null;
 
+    // The server refuses a city it does not deliver to; say so before anything is charged.
+    if (_cityUnserviceable) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.s.cityNotServed),
+          backgroundColor: AppColors.danger));
+      return;
+    }
+
     if (!isReorder) {
       // Pre-flight: variable items without a chosen variation.
       final allItems = ref.read(cartProvider).items;
@@ -389,19 +520,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     setState(() => _loading = true);
 
     if (!isReorder) {
-      final validationError =
+      final check =
           await ref.read(cartProvider.notifier).validate(isAr: context.isAr);
       if (!mounted) return;
-      if (validationError != null) {
+      if (check.error != null) {
         setState(() => _loading = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(validationError),
-              backgroundColor: AppColors.danger));
-        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(check.error!), backgroundColor: AppColors.danger));
+        return;
+      }
+      if (check.pricesUpdated) {
+        // The new prices are already in the cart, so the total on screen is now right and the
+        // next tap validates cleanly. Tell the customer once rather than ordering at a price
+        // they have not seen.
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(context.s.pricesUpdatedNotice,
+                style: const TextStyle(color: Colors.white)),
+            backgroundColor: AppColors.ink1,
+            duration: const Duration(seconds: 5)));
         return;
       }
     }
+    _watchToken++;
 
     try {
       final orderItems =
@@ -423,23 +564,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           : cart.subtotal - cart.discountAmount + orderDeliveryFee;
       final couponCode = isReorder ? null : cart.couponCode;
       final addr = _selectedAddress!;
-      // Same fail-closed rule as the build method: an unresolved offer means we
-      // cannot claim the wallet is usable.
-      final offerState = ref.read(welcomeCouponProvider);
-      final blocks = offerState.valueOrNull?.blocksWallet == true;
+      // Same rule as the build method: the wallet cap follows the coupon actually applied, and
+      // an unresolved offer caps it to the topped-up part.
+      final blocks = _offerBlocksWallet(cart);
       final cap = blocks ? _walletSpendable : _walletBalance;
-      final walletActive = _useWallet && cap > 0 && offerState.hasValue;
+      final walletActive = _useWallet && cap > 0;
       final maxUse = walletActive ? (cap < orderTotal ? cap : orderTotal) : 0.0;
       final walletDeduct = walletActive
           ? (double.tryParse(_walletAmountCtrl.text) ?? 0.0).clamp(0.0, maxUse)
           : 0.0;
       final walletCoversAll = walletActive && walletDeduct >= orderTotal;
+      // A 100%-off coupon (with free delivery) leaves nothing to pay: no method is needed, and
+      // the server settles a zero total as a wallet order that takes nothing from the balance.
+      final nothingDue = orderTotal <= 0.0001 && (isReorder || _cartDelivery(cart).known);
       // The method the SERVER was asked to use. When the wallet covers everything that is 'wallet'
       // (an immediate order, no gateway) even if the last-used method in the picker is a gateway;
       // the response handling below must follow this, not the picker.
-      final sentMethod = walletCoversAll ? 'wallet' : _paymentMethod;
+      final sentMethod = (walletCoversAll || nothingDue) ? 'wallet' : _paymentMethod;
+      if (sentMethod.isEmpty) {
+        setState(() => _loading = false);
+        return;
+      }
 
-      final res = await ApiClient.instance.dio.post('/orders', data: {
+      final body = <String, dynamic>{
         'items': orderItems
             .map((i) => {
                   'product_id': i.productId,
@@ -448,7 +595,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 })
             .toList(),
         'payment_method': sentMethod,
-        if (walletActive && !walletCoversAll) ...{
+        if (walletActive && !walletCoversAll && !nothingDue) ...{
           'use_wallet_partial': true,
           'wallet_amount': walletDeduct,
         },
@@ -460,15 +607,33 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         if (addr['longitude'] != null) 'shipping_lng': addr['longitude'],
         if (couponCode != null) 'coupon_code': couponCode,
         if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
-      });
+      };
+      // Same order as the attempt that got no answer → same key, so the server returns that
+      // order instead of creating a second one. Anything changed → a new attempt, a new key.
+      final sig = jsonEncode(body);
+      if (_idemKey == null || _idemSig != sig) {
+        _idemKey = _newIdemKey();
+        _idemSig = sig;
+      }
+      final res = await ApiClient.instance.dio.post('/orders',
+          data: body,
+          options: Options(headers: {'Idempotency-Key': _idemKey}));
+      _idemKey = null; // the server answered: the next attempt is a new one
 
-      SharedPreferences.getInstance().then((p) => p.setString(
-          _kLastPaymentKey, _paymentMethod)); // remember the picker choice
+      if (_paymentMethod.isNotEmpty) {
+        SharedPreferences.getInstance().then((p) => p.setString(
+            _kLastPaymentKey, _paymentMethod)); // remember the picker choice
+      }
 
       final resData = res.data;
       // Gateway payments return pending_ref; COD/wallet return data.data directly
       final pendingRef = resData['pending_ref'] as String?;
       if (pendingRef != null) {
+        // Remember the payment before leaving for the gateway: if the app is killed or the page
+        // closed mid-payment, the next open / resume asks the server how it ended.
+        await PendingCheckoutService.instance
+            .save(pendingRef, sentMethod, clearCart: !isReorder);
+        PendingCheckoutService.instance.handledOnScreen = true;
         if (sentMethod == 'paypal') {
           await _handlePayPalPayment(pendingRef, clearCart: !isReorder);
         } else if (sentMethod == 'tadawel') {
@@ -533,6 +698,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           context.pushReplacement('/order-confirmed', extra: orderData);
       }
     } catch (e) {
+      // Only a request that got NO answer keeps its key for the retry.
+      if (e is DioException && e.response != null) _idemKey = null;
       if (!mounted) return;
       setState(() => _loading = false);
       if (mounted) {
@@ -550,6 +717,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   void dispose() {
+    // Leaving checkout hands any unfinished payment to the app-wide resume check.
+    PendingCheckoutService.instance.handledOnScreen = false;
     _notesCtrl.dispose();
     _walletAmountCtrl.dispose();
     super.dispose();
@@ -601,6 +770,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           final orderRes = await ApiClient.instance.dio.get('/orders/$orderId');
           orderData = Map<String, dynamic>.from(orderRes.data['data'] as Map);
         } catch (_) {}
+        await PendingCheckoutService.instance.clear(pendingRef);
         if (clearCart) await ref.read(cartProvider.notifier).clear();
         ref.read(reorderSessionProvider.notifier).state = null;
         ref.invalidate(welcomeCouponProvider);
@@ -609,6 +779,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           context.pushReplacement('/order-confirmed', extra: orderData);
         }
       } catch (e) {
+        final review = _reviewMessage(e);
+        if (review != null) {
+          await _paymentReview(review, clearCart: clearCart, pendingRef: pendingRef);
+          return;
+        }
         if (mounted) {
           setState(() => _loading = false);
           String msg = context.tr('فشل تأكيد الدفع — تواصل مع الدعم',
@@ -665,10 +840,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (!mounted) return;
       setState(() => _loading = true);
 
-      // Closed with no return link (back / swipe): the customer may still have paid, so look once more
-      // (a few tries) before letting them place the order again; a full poll when a return link came back.
+      // Closed with no return link (back / swipe): the customer may still have paid, so look a few
+      // times before letting them place the order again; a full poll when a return link came back.
+      // Either way an unanswered payment is then followed in the background (and on the next app
+      // open via the stored reference) instead of being dropped.
       Map<String, dynamic>? result;
       String? terminal;
+      String? review;
       final tries = deepLink == null ? 3 : 15;
       for (int i = 0; i < tries; i++) {
         try {
@@ -677,6 +855,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           final status = statusRes.data['status'] as String?;
           if (status == 'completed') {
             result = Map<String, dynamic>.from(statusRes.data as Map);
+            break;
+          }
+          if (status == 'payment_review') {
+            review = statusRes.data['message']?.toString() ?? '';
             break;
           }
           if (status == 'failed' || status == 'expired') {
@@ -688,9 +870,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
 
       if (!mounted) return;
+      if (review != null) {
+        await _paymentReview(review, clearCart: clearCart, pendingRef: pendingRef);
+        return;
+      }
       if (result == null) {
         setState(() => _loading = false);
-        if (deepLink == null) return; // plain close and nothing was paid
+        if (terminal != null) {
+          await PendingCheckoutService.instance.clear(pendingRef);
+          if (deepLink == null) return; // closed, and the server says nothing was paid
+        } else {
+          _watchPendingInBackground(pendingRef, clearCart);
+          if (deepLink == null) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(context.s.paymentStillChecking,
+                  style: const TextStyle(color: Colors.white)),
+              backgroundColor: AppColors.ink1,
+              duration: const Duration(seconds: 6),
+            ));
+            return;
+          }
+        }
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
               terminal != null
@@ -718,6 +920,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         orderData = Map<String, dynamic>.from(orderRes.data['data'] as Map);
       } catch (_) {}
 
+      await PendingCheckoutService.instance.clear(pendingRef);
       if (clearCart) await ref.read(cartProvider.notifier).clear();
       ref.read(reorderSessionProvider.notifier).state = null;
       ref.invalidate(welcomeCouponProvider);
@@ -754,7 +957,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         final r = await ApiClient.instance.dio
             .get('/payment/pending-status/$pendingRef');
         final status = r.data['status'] as String?;
-        if (status == 'completed')
+        // 'payment_review' is returned too: money taken, no order — the caller must not retry.
+        if (status == 'completed' || status == 'payment_review')
           return Map<String, dynamic>.from(r.data as Map);
         if (status == 'failed' || status == 'expired') return null;
       } catch (_) {}
@@ -924,12 +1128,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     });
                                   }
                                 } catch (e) {
+                                  final review = _reviewMessage(e);
+                                  if (review != null) {
+                                    if (ctx.mounted) {
+                                      Navigator.of(ctx)
+                                          .pop<Map<String, dynamic>>({
+                                        'payment_review': true,
+                                        'message': review,
+                                      });
+                                    }
+                                    return;
+                                  }
                                   if (_isAmbiguous(e)) {
                                     // Timeout / dropped connection / 5xx: the gateway may have charged and the order may
                                     // exist. Ask the server before showing "wrong code" (a retry would send a spent OTP).
                                     final done =
                                         await _confirmPending(pendingRef);
                                     if (!ctx.mounted) return;
+                                    if (done != null &&
+                                        done['status'] == 'payment_review') {
+                                      Navigator.of(ctx)
+                                          .pop<Map<String, dynamic>>({
+                                        'payment_review': true,
+                                        'message': done['message'],
+                                      });
+                                      return;
+                                    }
                                     if (done != null) {
                                       Navigator.of(ctx)
                                           .pop<Map<String, dynamic>>({
@@ -998,6 +1222,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     if (result == null) return;
     if (!mounted) return;
+    if (result['payment_review'] == true) {
+      await _paymentReview(result['message']?.toString(),
+          clearCart: clearCart, pendingRef: pendingRef);
+      return;
+    }
+    await PendingCheckoutService.instance.clear(pendingRef);
 
     // Fetch full order data for the confirmation screen
     Map<String, dynamic> orderData = result;
@@ -1183,12 +1413,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     });
                                   }
                                 } catch (e) {
+                                  final review = _reviewMessage(e);
+                                  if (review != null) {
+                                    if (ctx.mounted) {
+                                      Navigator.of(ctx)
+                                          .pop<Map<String, dynamic>>({
+                                        'payment_review': true,
+                                        'message': review,
+                                      });
+                                    }
+                                    return;
+                                  }
                                   if (_isAmbiguous(e)) {
                                     // Timeout / dropped connection / 5xx: the gateway may have charged and the order may
                                     // exist. Ask the server before showing "wrong code" (a retry would send a spent OTP).
                                     final done =
                                         await _confirmPending(pendingRef);
                                     if (!ctx.mounted) return;
+                                    if (done != null &&
+                                        done['status'] == 'payment_review') {
+                                      Navigator.of(ctx)
+                                          .pop<Map<String, dynamic>>({
+                                        'payment_review': true,
+                                        'message': done['message'],
+                                      });
+                                      return;
+                                    }
                                     if (done != null) {
                                       Navigator.of(ctx)
                                           .pop<Map<String, dynamic>>({
@@ -1257,6 +1507,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     if (result == null) return;
     if (!mounted) return;
+    if (result['payment_review'] == true) {
+      await _paymentReview(result['message']?.toString(),
+          clearCart: clearCart, pendingRef: pendingRef);
+      return;
+    }
+    await PendingCheckoutService.instance.clear(pendingRef);
 
     Map<String, dynamic> orderData = result;
     final orderId = result['id'];
@@ -1274,29 +1530,71 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   /// Delivery fee for a NORMAL (cart) checkout. It follows the address chosen on this page — the server
-  /// prices by shipping_city — and only falls back to the cart's header-city rate while the chosen
-  /// address has no matching rate. (Quoting the header city made the total wrong whenever the customer
-  /// picked an address in another city.) Collection fee handling is unchanged.
+  /// prices by shipping_city. When that city has no rate the fee is UNKNOWN: falling back to the
+  /// header city's fee quoted a price for somewhere else (and the server refuses the order).
+  /// The cart's header-city rate is used only while no address is chosen yet.
+  /// The collection fee applies to Tripoli-hub deliveries only, like the server.
   ({double fee, bool known}) _cartDelivery(CartState cart) {
     if (cart.couponFreeShipping) return (fee: 0.0, known: true);
-    final rate = _selectedRate ?? cart.cityRate;
+    final rate = _hasAddressCity ? _selectedRate : cart.cityRate;
     if (rate == null) return (fee: 0.0, known: false);
     final base = rate.effectiveRate(cart.subtotal);
     if (base == 0) return (fee: 0.0, known: true); // free shipping — waive collection fee too
-    return (fee: base + cart.totalCollectionFee, known: true);
+    return (fee: base + cart.collectionFeeFor(rate), known: true);
+  }
+
+  String get _addressCity => (_selectedAddress?['city'] ?? '').toString();
+  bool get _hasAddressCity => _addressCity.isNotEmpty;
+
+  ShippingRate? _rateNamed(String city) {
+    final rates = ref.read(shippingRatesProvider).valueOrNull ?? [];
+    for (final r in rates) {
+      if (r.cityAr == city || r.city.toLowerCase() == city.toLowerCase()) return r;
+    }
+    return null;
   }
 
   ShippingRate? get _selectedRate {
-    final city = (_selectedAddress?['city'] ?? '').toString();
+    final city = _addressCity;
     if (city.isEmpty) return null;
+    final direct = _rateNamed(city);
+    if (direct != null) return direct;
+    final alias = _cityAlias[city];
+    return alias == null ? null : _rateNamed(alias);
+  }
+
+  /// The chosen address's city is one the server confirmed it does not deliver to.
+  bool get _cityUnserviceable {
+    final city = _addressCity;
+    if (city.isEmpty) return false;
     final rates = ref.read(shippingRatesProvider).valueOrNull ?? [];
+    if (rates.isEmpty) return false; // rates not loaded: unknown, not "no delivery"
+    return _selectedRate == null &&
+        _cityAlias.containsKey(city) &&
+        _cityAlias[city] == null;
+  }
+
+  /// A saved city with no exact rate row may be a district or spelling the server folds into a
+  /// city it serves; ask it once (read-only quote) before calling the city undeliverable.
+  Future<void> _resolveCity(String city) async {
+    if (city.isEmpty || _cityAlias.containsKey(city) || _cityResolving.contains(city)) return;
+    _cityResolving.add(city);
     try {
-      return rates.firstWhere((r) =>
-          r.cityAr == city || r.city.toLowerCase() == city.toLowerCase());
+      final res = await ApiClient.instance.dio.post('/shipping/calculate',
+          data: {'city': city, 'total': ref.read(cartProvider).subtotal});
+      final d = res.data['data'];
+      _cityAlias[city] = (d is Map ? d['city_ar']?.toString() : null) ?? '';
+    } on DioException catch (e) {
+      // 404 = the server has no rate for it. Anything else (offline, 5xx) stays unresolved.
+      if (e.response?.statusCode == 404) _cityAlias[city] = null;
     } catch (_) {
-      return null;
+    } finally {
+      _cityResolving.remove(city);
+      if (mounted) setState(() {});
     }
   }
+
+  bool get _userCodBlocked => ref.read(currentUserProvider)?.codBlocked == true;
 
   /// The server-written wallet note in the app language; falls back to the other language only
   /// when this one is empty. Always non-null so the wallet row still reads as blocked.
@@ -1332,17 +1630,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
+  /// COD for the chosen address AND this customer: the city must allow it and not require
+  /// prepayment (the server refuses both), and the customer must not be COD-blocked.
   bool get _codAllowedForAddress {
-    final city = (_selectedAddress?['city'] ?? '').toString();
+    if (_userCodBlocked) return false;
+    final city = _addressCity;
     if (city.isEmpty) return true;
-    final rates = ref.read(shippingRatesProvider).valueOrNull ?? [];
-    try {
-      final rate = rates.firstWhere((r) =>
-          r.cityAr == city || r.city.toLowerCase() == city.toLowerCase());
-      return rate.codAllowed;
-    } catch (_) {
-      return city.contains('طرابلس') || city.toLowerCase().contains('tripoli');
-    }
+    final rate = _selectedRate;
+    if (rate != null) return rate.codAllowed && !rate.prepaidRequired;
+    return city.contains('طرابلس') || city.toLowerCase().contains('tripoli');
   }
 
   @override
@@ -1377,16 +1673,27 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // offer blocks the wallet. valueOrNull is null in all three cases, so
     // `?.blocksWallet == true` read "not blocked" while still loading and the wallet
     // was offered for an order the server then refused with a bare Server Error.
-    // The server decides this fail-closed; match it.
-    final autoOfferUnknown = !autoOfferAsync.hasValue;
+    // The server decides this fail-closed; match it — _offerBlocksWallet treats an unknown
+    // offer (loading, or the lookup failed) as blocking, capping the wallet to the spendable part.
 
     // Effective items and subtotal: reorder session takes priority over cart
     final effectiveItems = isReorder ? reorderSession.items : cart.items;
     final effectiveSubtotal =
         isReorder ? reorderSession.subtotal : cart.subtotal;
     // Watch shipping rates so delivery fee recalculates when address changes
-    ref.watch(shippingRatesProvider);
+    final ratesLoaded =
+        (ref.watch(shippingRatesProvider).valueOrNull ?? const []).isNotEmpty;
+    // cod_blocked arrives with the profile refresh started in initState.
+    ref.watch(currentUserProvider);
     final selectedRate = _selectedRate;
+    // A saved city with no exact rate row: ask the server what it prices it as.
+    if (ratesLoaded && _hasAddressCity && selectedRate == null) {
+      final city = _addressCity;
+      if (!_cityAlias.containsKey(city) && !_cityResolving.contains(city)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _resolveCity(city));
+      }
+    }
+    final cityUnserviceable = _cityUnserviceable;
     // A reorder with no rate for its city yet must not fall back to the flat fee — that
     // invents a price. Treated as unknown, exactly like the cart does.
     final cartDelivery = _cartDelivery(cart);
@@ -1412,6 +1719,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final methods = codBlocked
         ? allMethods.where((m) => m.id != 'cash_on_delivery').toList()
         : allMethods;
+    // A remembered COD that is no longer allowed (customer blocked, over 5,000, over 20 items,
+    // prepaid-only city) is cleared rather than left selected under a red note.
+    if (codBlocked && _paymentMethod == 'cash_on_delivery' && !_codClearScheduled) {
+      _codClearScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _codClearScheduled = false;
+        if (mounted && _paymentMethod == 'cash_on_delivery') {
+          setState(() => _paymentMethod = '');
+        }
+      });
+    }
 
     // An offer that IS the discount on this order (the first-order 15%) cannot be combined
     // with wallet credit — the balance stays for the next order. The server refuses the
@@ -1419,10 +1737,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // A blocking offer no longer means "no wallet": reward credit waits for the next
     // order, but money the customer topped up stays spendable, so cap rather than hide.
     // Unknown still means blocked — we must not offer what the server may refuse.
-    final offerBlocks = autoOffer?.blocksWallet == true;
+    // The cap follows the coupon actually applied (a typed code can block too, and replaces the
+    // offer); an unknown offer counts as blocking — see _offerBlocksWallet.
+    final offerBlocks = _offerBlocksWallet(cart);
+    final hasTypedCoupon = !isReorder && (cart.couponCode ?? '').isNotEmpty;
+    // The bonus-credit note below speaks about the first-order discount, so only show it when
+    // that offer is what blocks.
+    final autoOfferBlocks = autoOffer?.blocksWallet == true &&
+        (!hasTypedCoupon ||
+            cart.couponCode!.toUpperCase() == autoOffer!.code.toUpperCase());
     final walletCap = offerBlocks ? _walletSpendable : _walletBalance;
-    final walletBlocked =
-        autoOfferUnknown || (offerBlocks && _walletSpendable <= 0);
+    final walletBlocked = offerBlocks && _walletSpendable <= 0;
     final walletActive = _useWallet && walletCap > 0 && !walletBlocked;
     final maxWalletUse = walletActive
         ? (walletCap < effectiveTotal ? walletCap : effectiveTotal)
@@ -1434,6 +1759,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final amountDue = walletActive
         ? (effectiveTotal - walletDeduct).clamp(0.0, effectiveTotal)
         : effectiveTotal;
+    // 100%-off coupon with free delivery: nothing to pay, so no method is needed.
+    final nothingDue = deliveryKnown && effectiveTotal <= 0.0001;
     final isAr = context.isAr;
 
     final topPad = MediaQuery.of(context).padding.top;
@@ -1562,7 +1889,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                             style: TextStyle(
                                                 fontSize: 12.5,
                                                 color: context.col.ink2)),
-                                        if (_selectedRate != null) ...[
+                                        if (cityUnserviceable) ...[
+                                          const SizedBox(height: 4),
+                                          Text(context.s.cityNotServed,
+                                              style: const TextStyle(
+                                                  fontSize: 11.5,
+                                                  color: AppColors.danger,
+                                                  fontWeight: FontWeight.w600)),
+                                        ] else if (_selectedRate != null) ...[
                                           const SizedBox(height: 4),
                                           Text(
                                               // Show the SAME delivery fee as the order summary — i.e. incl. the
@@ -1629,7 +1963,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                   Text(
-                                      walletCoversAll
+                                      nothingDue && !walletCoversAll
+                                          ? context.s.nothingToPay
+                                          : walletCoversAll
                                           ? context.s.walletTitle
                                           : (walletActive &&
                                                   _paymentMethod.isNotEmpty
@@ -1643,7 +1979,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                       style: TextStyle(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 14,
-                                          color: _paymentMethod.isEmpty
+                                          color: _paymentMethod.isEmpty &&
+                                                  !nothingDue &&
+                                                  !walletCoversAll
                                               ? const Color(0xFF9CA3AF)
                                               : null)),
                                   if (walletActive && walletDeduct > 0) ...[
@@ -1662,7 +2000,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   // combine: say so here, where the customer decides, instead of
                                   // only inside the wallet sheet. A customer topped up 65 on
                                   // 2026-10-16 believing her 20 bonus would cover the rest.
-                                  if (offerBlocks &&
+                                  if (autoOfferBlocks &&
                                       _walletBalance - _walletSpendable > 0.009) ...[
                                     const SizedBox(height: 3),
                                     Text(
@@ -1679,7 +2017,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ]),
                     ),
                   ),
-                  if (codValueExceeded || codItemsExceeded) ...[
+                  if (_userCodBlocked) ...[
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline,
+                              size: 13, color: AppColors.danger),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(context.s.codBlockedForAccount,
+                                style: const TextStyle(
+                                    fontSize: 11.5, color: AppColors.danger)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else if (codValueExceeded || codItemsExceeded) ...[
                     const SizedBox(height: 6),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -2033,7 +2388,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               // The wallet paying for everything IS a payment method: this used to stay on
               // "choose a payment method" with nothing left to choose (baahy.com fixed the same
               // dead end earlier; the app never was).
-              if (_paymentMethod.isEmpty && !walletCoversAll)
+              if (_paymentMethod.isEmpty && !walletCoversAll && !nothingDue)
                 Container(
                   width: double.infinity,
                   height: 50,
@@ -2085,8 +2440,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         if (!_loading)
                           PositionedDirectional(
                             end: 16,
+                            // What is still to pay after the wallet (as baahy.com shows), and no
+                            // figure at all while delivery is unknown.
                             child: Text(
-                                '${fmtPrice(effectiveTotal)} ${context.s.lydUnit}',
+                                deliveryKnown
+                                    ? '${fmtPrice(amountDue)} ${context.s.lydUnit}'
+                                    : '—',
                                 style: const TextStyle(
                                     fontFamily: 'PlusJakartaSans',
                                     fontSize: 13,
@@ -2115,6 +2474,8 @@ class _PaymentSheet extends StatefulWidget {
   final bool walletLoading;
   final double cartTotal;
   final bool codAllowed;
+  /// Why COD is missing, when it is the customer's account rather than the city.
+  final String? codNote;
   final List methods;
   final VoidCallback onTopUp;
   final void Function(bool useWallet, String walletAmount, String paymentMethod)
@@ -2133,6 +2494,7 @@ class _PaymentSheet extends StatefulWidget {
     required this.walletLoading,
     required this.cartTotal,
     required this.codAllowed,
+    this.codNote,
     required this.methods,
     required this.onTopUp,
     required this.onConfirm,
@@ -2236,7 +2598,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                     size: 15, color: AppColors.warn),
                 const SizedBox(width: 8),
                 Expanded(
-                    child: Text(context.s.codTripiliOnly,
+                    child: Text(widget.codNote ?? context.s.codTripiliOnly,
                         style: const TextStyle(
                             fontSize: 12, color: AppColors.warn, height: 1.4))),
               ]),

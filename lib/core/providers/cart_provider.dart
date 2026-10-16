@@ -21,6 +21,10 @@ class CartState {
   /// The applied coupon also waives delivery (coupons.free_shipping). Independent of
   /// [discountAmount] — a delivery-only offer discounts nothing and sets only this.
   final bool couponFreeShipping;
+  /// The applied coupon cannot be combined with reward credit (coupons.blocks_wallet, from the
+  /// /coupons/apply answer). The wallet cap must follow the coupon actually on the order, not only
+  /// the auto-offer: a typed code can block the wallet too, and a typed code replaces the offer.
+  final bool couponBlocksWallet;
   // City-specific rate (null = city unknown, fall back to fallbackShippingFee)
   final ShippingRate? cityRate;
   // Fallback estimate shown before city is selected
@@ -34,6 +38,7 @@ class CartState {
     this.couponCode,
     this.discountAmount = 0,
     this.couponFreeShipping = false,
+    this.couponBlocksWallet = false,
     this.cityRate,
     this.fallbackShippingFee = 10.0,
     this.collectionFee = 0,
@@ -50,7 +55,16 @@ class CartState {
   /// a single vendor — and the web mirrors that. This summed every vendor instead, so a one-vendor
   /// basket (which is most of them) was quoted 5 LYD more than the order was actually created with:
   /// checkout said 585, the server charged 580, and the driver collected the smaller figure.
-  double get totalCollectionFee {
+  ///
+  /// Only Tripoli-hub deliveries carry it: the server adds it only when the zone is a `hub_city`
+  /// (OrderController), and the website does the same (collectionFeeForCart). Adding it for every
+  /// city quoted Benghazi more than the order was created with.
+  double get totalCollectionFee => collectionFeeFor(cityRate);
+
+  /// The collection fee for delivery under [rate] — checkout prices the chosen ADDRESS's city,
+  /// which need not be the header city this cart's [cityRate] follows.
+  double collectionFeeFor(ShippingRate? rate) {
+    if (rate?.zoneType != 'hub_city') return 0;
     final perVendor = <int, double>{};
     for (final item in items) {
       if (item.product.fulfilledByBaahy) continue;
@@ -100,6 +114,7 @@ class CartState {
     String? couponCode,
     double? discountAmount,
     bool? couponFreeShipping,
+    bool? couponBlocksWallet,
     ShippingRate? cityRate,
     bool clearCityRate = false,
     double? fallbackShippingFee,
@@ -111,6 +126,7 @@ class CartState {
     couponCode: clearCoupon ? null : (couponCode ?? this.couponCode),
     discountAmount: clearCoupon ? 0 : (discountAmount ?? this.discountAmount),
     couponFreeShipping: clearCoupon ? false : (couponFreeShipping ?? this.couponFreeShipping),
+    couponBlocksWallet: clearCoupon ? false : (couponBlocksWallet ?? this.couponBlocksWallet),
     cityRate: clearCityRate ? null : (cityRate ?? this.cityRate),
     fallbackShippingFee: fallbackShippingFee ?? this.fallbackShippingFee,
     collectionFee: collectionFee ?? this.collectionFee,
@@ -192,13 +208,18 @@ class CartNotifier extends StateNotifier<CartState> {
               : fresh.variations
                   .where((v) => v.id == i.variationId)
                   .firstOrNull ?? i.variation;
-          return CartItem(
+          final refreshed = CartItem(
             productId: i.productId,
             variationId: i.variationId,
             quantity: i.quantity,
             product: fresh,
             variation: freshVariation,
           );
+          // Keep a server-quoted price only while the catalogue still disagrees with it; once the
+          // product shows the same figure the correction has nothing left to do.
+          final keep = i.priceOverride != null &&
+              (refreshed.catalogUnitPrice - i.priceOverride!).abs() > 0.5;
+          return keep ? refreshed.copyWith(priceOverride: i.priceOverride) : refreshed;
         }).toList(),
       );
     }
@@ -269,6 +290,17 @@ class CartNotifier extends StateNotifier<CartState> {
   /// old subtotal (apply on a 38 cart -> 4; swap to a 53 cart -> still 4,
   /// instead of ~5). The server recomputes at checkout anyway, so the app was
   /// showing a total that wouldn't match what was actually charged.
+  /// Cart lines for /coupons/apply. An at-cost (profit-based) coupon is priced off our margin
+  /// on each line, so a total alone gets it refused or mispriced. Ids and quantities only —
+  /// the server reads every price and cost itself (same as baahy.com, commit 6f7ee92).
+  List<Map<String, dynamic>> _couponLines() => state.items
+      .map((i) => {
+            'product_id': i.productId,
+            if (i.variationId != null) 'variation_id': i.variationId,
+            'quantity': i.quantity,
+          })
+      .toList();
+
   Future<void> _refreshCouponDiscount() async {
     final code = state.couponCode;
     if (code == null || code.trim().isEmpty) return;
@@ -283,6 +315,7 @@ class CartNotifier extends StateNotifier<CartState> {
       final res = await ApiClient.instance.dio.post('/coupons/apply', data: {
         'code': code,
         'order_total': state.subtotal,
+        'items': _couponLines(),
       });
       final raw = res.data['data']?['discount'] ?? res.data['data']?['discount_amount'];
       final discount =
@@ -290,6 +323,7 @@ class CartNotifier extends StateNotifier<CartState> {
       state = state.copyWith(
         discountAmount: discount,
         couponFreeShipping: res.data['data']?['free_shipping'] == true,
+        couponBlocksWallet: res.data['data']?['blocks_wallet'] == true,
       );
     } catch (e, st) {
       // The coupon no longer applies to this cart (min order no longer met,
@@ -311,6 +345,7 @@ class CartNotifier extends StateNotifier<CartState> {
       final res = await ApiClient.instance.dio.post('/coupons/apply', data: {
         'code': code.trim(),
         'order_total': state.subtotal,
+        'items': _couponLines(),
       });
       final raw = res.data['data']?['discount'] ?? res.data['data']?['discount_amount'];
       final discount = raw is num ? raw.toDouble() : double.tryParse(raw?.toString() ?? '') ?? 0.0;
@@ -318,6 +353,7 @@ class CartNotifier extends StateNotifier<CartState> {
         couponCode: code.trim(),
         discountAmount: discount,
         couponFreeShipping: res.data['data']?['free_shipping'] == true,
+        couponBlocksWallet: res.data['data']?['blocks_wallet'] == true,
       );
       return null;
     } catch (e, st) {
@@ -330,8 +366,42 @@ class CartNotifier extends StateNotifier<CartState> {
     state = state.copyWith(clearCoupon: true);
   }
 
-  Future<String?> validate({bool isAr = true}) async {
-    if (state.items.isEmpty) return isAr ? 'السلة فارغة' : 'Your cart is empty';
+  /// Adopt the server's unit price for these cart lines (key → price from /cart/validate
+  /// `current_price`). The order is priced by the server anyway; this makes the cart show — and
+  /// send back — the same figure, so the next validation passes instead of looping on
+  /// "تغير سعر X".
+  Future<void> applyServerPrices(Map<String, double> pricesByKey) async {
+    if (pricesByKey.isEmpty) return;
+    state = state.copyWith(
+      items: state.items
+          .map((i) => pricesByKey.containsKey(i.key)
+              ? i.copyWith(priceOverride: pricesByKey[i.key])
+              : i)
+          .toList(),
+    );
+    await _save();
+    await _refreshCouponDiscount();
+  }
+
+  static double? _num(dynamic v) {
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
+  static String _lineKey(dynamic pid, dynamic vid) {
+    final p = pid is int ? pid : int.tryParse('$pid');
+    final v = vid == null ? null : (vid is int ? vid : int.tryParse('$vid'));
+    return v != null ? '${p}_$v' : '$p';
+  }
+
+  /// Checkout's last look at the cart. [error] blocks the order. [pricesUpdated] means some
+  /// prices moved: they are already applied to the cart, the customer is told once and the next
+  /// tap goes through.
+  Future<({String? error, bool pricesUpdated})> validate({bool isAr = true}) async {
+    if (state.items.isEmpty) {
+      return (error: isAr ? 'السلة فارغة' : 'Your cart is empty', pricesUpdated: false);
+    }
     try {
       final res = await ApiClient.instance.dio.post('/cart/validate', data: {
         'items': state.items
@@ -343,25 +413,38 @@ class CartNotifier extends StateNotifier<CartState> {
                 })
             .toList(),
       });
-      if (res.data['valid'] == true) return null;
+      if (res.data['valid'] == true) return (error: null, pricesUpdated: false);
+      final newPrices = <String, double>{};
+      String? firstError;
       for (final item in (res.data['items'] as List? ?? [])) {
-        if (item['ok'] == false) {
-          return item['message'] as String? ??
-              (isAr ? 'بعض المنتجات غير متاحة' : 'Some items are unavailable');
+        if (item['ok'] != false) continue;
+        final price = _num(item['current_price']);
+        if (item['type'] == 'price_changed' && price != null) {
+          newPrices[_lineKey(item['product_id'], item['variation_id'])] = price;
+          continue;
         }
+        firstError ??= item['message'] as String? ??
+            (isAr ? 'بعض المنتجات غير متاحة' : 'Some items are unavailable');
       }
-      return isAr ? 'بعض المنتجات غير متاحة' : 'Some items are unavailable';
+      if (newPrices.isNotEmpty) await applyServerPrices(newPrices);
+      if (firstError != null) return (error: firstError, pricesUpdated: newPrices.isNotEmpty);
+      if (newPrices.isNotEmpty) return (error: null, pricesUpdated: true);
+      return (error: isAr ? 'بعض المنتجات غير متاحة' : 'Some items are unavailable', pricesUpdated: false);
     } catch (e) {
       try {
         final resp = (e as dynamic).response;
         final status = resp?.statusCode as int?;
         // Skip validation for server errors or unimplemented endpoint
-        if (status == null || status >= 500 || status == 404 || status == 405) return null;
+        if (status == null || status >= 500 || status == 404 || status == 405) {
+          return (error: null, pricesUpdated: false);
+        }
         // Surface meaningful 4xx messages (e.g. out of stock from backend)
         final data = resp?.data;
-        if (data is Map && data['message'] != null) return data['message'].toString();
+        if (data is Map && data['message'] != null) {
+          return (error: data['message'].toString(), pricesUpdated: false);
+        }
       } catch (_) {}
-      return null;
+      return (error: null, pricesUpdated: false);
     }
   }
 
@@ -386,12 +469,19 @@ class CartNotifier extends StateNotifier<CartState> {
       final issues = <({CartItem item, String message, String type, double? newPrice, double? oldPrice})>[];
       for (final apiItem in (res.data['items'] as List? ?? [])) {
         if (apiItem['ok'] != false) continue;
-        final pid = apiItem['product_id'] as int?;
-        final vid = apiItem['variation_id'] as int?;
+        final pid = apiItem['product_id'] is int
+            ? apiItem['product_id'] as int
+            : int.tryParse('${apiItem['product_id']}');
+        final vid = apiItem['variation_id'] == null
+            ? null
+            : (apiItem['variation_id'] is int
+                ? apiItem['variation_id'] as int
+                : int.tryParse('${apiItem['variation_id']}'));
         final msg = (apiItem['message'] as String?) ?? (isAr ? 'مشكلة في المنتج' : 'There is a problem with this item');
         final issueType = (apiItem['type'] as String?) ?? 'unavailable';
-        final newPrice = (apiItem['current_price'] as num?)?.toDouble();
-        final oldPrice = (apiItem['old_price'] as num?)?.toDouble();
+        // Laravel sends decimals as strings ("45.00"); a bare `as num?` threw here.
+        final newPrice = _num(apiItem['current_price']);
+        final oldPrice = _num(apiItem['old_price']);
         final cartItem = state.items.where((i) =>
           i.productId == pid &&
           (vid == null ? i.variationId == null : i.variationId == vid)
