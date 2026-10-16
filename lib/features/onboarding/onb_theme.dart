@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 /// (design_handoff_baahy_onboarding/README.md). Keep in sync with the PNG designs.
 class Onb {
   // Brand — a single tiffany everywhere, per brand spec.
-  static const teal = Color(0xFF3FD6E4); // brand / "Tiffany"
-  static const tealDeep = Color(0xFF3FD6E4); // buttons, active text, icons — same tiffany
+  static const teal = Color(0xFF1FD7E2); // brand / "Tiffany"
+  static const tealDeep = Color(0xFF1FD7E2); // buttons, active text, icons — same tiffany
   static const navy = Color(0xFF0E3C46); // headings & primary text
   static const inkMuted = Color(0xFF8A9591); // secondary text
   static const inkMuted2 = Color(0xFF5E6B6E); // map labels
@@ -20,15 +20,15 @@ class Onb {
   static const fieldBg = Color(0xFFF4F6F7);
   static const iconTile = Color(0xFFE1F6F8); // teal-tint tile
 
-  // CTA — brand tiffany #3FD6E4 (flat, per brand spec)
-  static const ctaGradient = LinearGradient(colors: [Color(0xFF3FD6E4), Color(0xFF3FD6E4)]);
+  // CTA — brand tiffany #1FD7E2 (flat, per brand spec)
+  static const ctaGradient = LinearGradient(colors: [Color(0xFF1FD7E2), Color(0xFF1FD7E2)]);
 
   // City-picker background (punchy radial). RadialGradient approximates
-  // radial-gradient(125% 55% at 50% 2%, #47E1EA 0%, #3FD6E4 48%, #1AC6D2 100%)
+  // radial-gradient(125% 55% at 50% 2%, #47E1EA 0%, #1FD7E2 48%, #1AC6D2 100%)
   static const cityBg = RadialGradient(
     center: Alignment(0, -0.96),
     radius: 1.25,
-    colors: [Color(0xFF47E1EA), Color(0xFF3FD6E4), Color(0xFF1AC6D2)],
+    colors: [Color(0xFF47E1EA), Color(0xFF1FD7E2), Color(0xFF1AC6D2)],
     stops: [0.0, 0.48, 1.0],
   );
 
@@ -36,7 +36,7 @@ class Onb {
   static const promoBg = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Color(0xFF33D3DE), Color(0xFF3FD6E4), Color(0xFFEAF9FB)],
+    colors: [Color(0xFF33D3DE), Color(0xFF1FD7E2), Color(0xFFEAF9FB)],
     stops: [0.0, 0.42, 1.0],
   );
 

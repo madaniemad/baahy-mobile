@@ -8,7 +8,7 @@ import '../../core/utils/l10n.dart';
 /// Brand accent. It is the button and the icon only — never the backdrop. A
 /// full-bleed tiffany panel reads as a branded interstitial; the update block
 /// should read as the app quietly asking for something.
-const _accent = Color(0xFF3FD6E4);
+const _accent = Color(0xFF1FD7E2);
 
 const _kTitleAr = 'تحديث مطلوب';
 const _kTitleEn = 'Update Required';

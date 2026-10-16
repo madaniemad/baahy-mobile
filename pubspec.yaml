@@ -1,7 +1,7 @@
 name: baahy_customer
 description: baahy — Libya's marketplace. Customer app.
 publish_to: 'none'
-version: 5.0.26+191
+version: 5.0.26+192
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -95,7 +95,7 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true          # App Store rejects icons with an alpha channel
   android: "ic_launcher"
-  adaptive_icon_background: "#30EADF"
+  adaptive_icon_background: "#1FD7E2"
   adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
 
 flutter:

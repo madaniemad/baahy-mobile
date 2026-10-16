@@ -24,7 +24,7 @@ class OnbCityPicker extends ConsumerStatefulWidget {
 const _navy = Onb.navy;                    // card text
 const _ink = Color(0xFF161719);            // main titles — black
 const _muted = Color(0xFF4B4E54);          // secondary text — dark grey
-const _teal = Color(0xFF3FD6E4);           // brand tiffany
+const _teal = Color(0xFF1FD7E2);           // brand tiffany
 const _boxBg = Color(0xFFF0F6F7);          // inner tint
 const _cardShadow = [BoxShadow(color: Color(0x12023A42), blurRadius: 22, offset: Offset(0, 8))];
 
