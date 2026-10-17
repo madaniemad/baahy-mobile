@@ -97,6 +97,9 @@ flutter_launcher_icons:
   android: "ic_launcher"
   adaptive_icon_background: "#1FD7E2"
   adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  # Foreground art is the official icon at 72/108 of the canvas, i.e. the
+  # launcher viewport shows exactly the official icon. No extra inset.
+  adaptive_icon_foreground_inset: 0
 
 flutter:
   uses-material-design: true
