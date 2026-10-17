@@ -17,6 +17,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../widgets/bank_transfer_card.dart';
+import '../widgets/return_request_card.dart';
 import '../../../shared/theme/app_theme.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -529,10 +530,18 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           ]),
         ),
 
+        // Her return on this order, with edit / cancel until it is collected.
+        if (const {'delivered', 'partial_return', 'returned'}.contains(order.status))
+          ReturnRequestCard(orderId: order.id),
+
         // Actions
         if (order.status == 'delivered') ...[
           const SizedBox(height: 14),
-          if (order.returnEligible) ...[
+          // One open return per order (the API refuses a second), so the button steps aside
+          // while one is in progress — she edits that one from the card above instead.
+          if (kOpenReturnStatuses.contains(ref.watch(orderReturnProvider(order.id)).valueOrNull?['status']))
+            const SizedBox.shrink()
+          else if (order.returnEligible) ...[
             if (order.returnDeadline != null)
               Builder(builder: (ctx) {
                 final today       = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
@@ -569,8 +578,11 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => safePush(context, '/orders/${order.id}/return',
-                  extra: order.returnDeadline),
+                onPressed: () async {
+                  await safePush(context, '/orders/${order.id}/return', extra: order.returnDeadline);
+                  // A return filed just now shows up in the card without a manual refresh.
+                  ref.invalidate(orderReturnProvider(order.id));
+                },
                 icon: const Icon(Icons.assignment_return_outlined, size: 16),
                 label: Text(context.s.returnItems,
                   style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
