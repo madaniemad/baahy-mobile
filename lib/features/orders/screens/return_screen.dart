@@ -818,6 +818,27 @@ class _StepReason extends StatelessWidget {
                 const SizedBox(height: 12),
               ],
               const SizedBox(height: 4),
+              // The seller decides these two against the listing (Emad, 2026-10-17), so photos
+              // and a short note help. Optional: the ask, not a gate.
+              if (reasonKey == 'wrong_item' || reasonKey == 'not_as_described') ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+                  ),
+                  child: Text(
+                    isAr
+                        ? 'يُرجى إرفاق صور للمنتج ووصف مختصر لسبب عدم مطابقته، إذ يساعد ذلك البائع على مراجعة طلبك بشكل أسرع.'
+                        : 'Please attach photos of the product and a short description of why it does not match — it helps the seller review your request faster.',
+                    textAlign: TextAlign.start,
+                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                      fontSize: 12.5, height: 1.5, color: context.col.ink1)),
+                ),
+                const SizedBox(height: 12),
+              ],
               Text(isAr ? 'ملاحظات إضافية' : 'Additional Notes',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.col.ink1)),
               const SizedBox(height: 8),
