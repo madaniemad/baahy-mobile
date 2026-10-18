@@ -17,6 +17,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../widgets/bank_transfer_card.dart';
+import '../widgets/order_help.dart';
 import '../widgets/return_request_card.dart';
 import '../../../shared/theme/app_theme.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -534,6 +535,9 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
         if (const {'delivered', 'partial_return', 'returned'}.contains(order.status))
           ReturnRequestCard(orderId: order.id),
 
+        // What she asked through "Need help?", with our status and answer.
+        HelpRequestsCard(orderId: order.id),
+
         // Actions
         if (order.status == 'delivered') ...[
           const SizedBox(height: 14),
@@ -660,10 +664,22 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () => safePush(context, '/chat',
-                extra: context.tr('أحتاج مساعدة بخصوص طلب رقم ${order.orderNumber}', 'I need help with order ${order.orderNumber}')),
+            // Self-service first (Emad, 2026-10-18): the sheet offers what fits this order's stage,
+            // then the assistant. Never WhatsApp from here.
+            onPressed: () {
+              final openReturn = kOpenReturnStatuses.contains(ref.read(orderReturnProvider(order.id)).valueOrNull?['status']);
+              showOrderHelpSheet(context, ref, orderId: order.id, orderNumber: order.orderNumber, extra: [
+                if (order.status == 'delivered' && order.returnEligible && !openReturn)
+                  (icon: Icons.assignment_return_outlined, label: context.s.returnItems, color: null, onTap: () async {
+                    await safePush(context, '/orders/${order.id}/return', extra: order.returnDeadline);
+                    ref.invalidate(orderReturnProvider(order.id));
+                  }),
+                if (_cancellable.contains(order.status))
+                  (icon: Icons.cancel_outlined, label: context.s.cancelOrder, color: AppColors.danger, onTap: () => _cancelOrder(context)),
+              ]);
+            },
             icon: const Icon(Icons.help_outline_rounded, size: 16),
-            label: Text(context.s.orderHelp,
+            label: Text(context.tr('تحتاج مساعدة؟', 'Need help?'),
               style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 13),

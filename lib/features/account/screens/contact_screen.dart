@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/providers/app_pages_provider.dart';
 import '../../../core/utils/l10n.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
 class ContactScreen extends ConsumerWidget {
@@ -68,78 +69,81 @@ class ContactScreen extends ConsumerWidget {
             ]),
           ),
 
-          // ── Contact cards ──────────────────────────────────────────────────
-          Text(isAr ? 'تواصل معنا عبر' : 'Reach us via',
-              style: TextStyle(
-                  fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700,
-                  fontSize: 13, color: context.col.ink3)),
+          // ── Self-service first (Emad, 2026-10-18) ─────────────────────────
+          // Order problems are filed on the order itself, then the assistant; WhatsApp and
+          // email come last, as buttons only — the number is never printed.
+          _ContactCard(
+            icon: Icons.receipt_long_rounded,
+            color: AppColors.primary,
+            bgColor: AppColors.primary.withValues(alpha: 0.10),
+            darkBgColor: AppColors.primary.withValues(alpha: 0.18),
+            label: isAr ? 'مشكلة في طلب؟' : 'A problem with an order?',
+            subtitle: isAr
+                ? 'افتح الطلب واضغط «تحتاج مساعدة؟» لتبلغنا أو تطلب تغييراً، ويصلك الرد في التطبيق'
+                : 'Open the order and tap "Need help?" to report a problem or ask for a change — we answer in the app',
+            onTap: () => safePush(context, '/orders'),
+          ),
           const SizedBox(height: 10),
-
-          if (pages.contactWhatsapp.isNotEmpty) ...[
-            _ContactCard(
-              icon: Icons.chat_rounded,
-              color: const Color(0xFF25D366),
-              bgColor: const Color(0xFFECFDF5),
-              darkBgColor: const Color(0xFF0F2A1F),
-              label: context.s.whatsappLabel,
-              subtitle: isAr ? 'دردشة فورية · الأسرع' : 'Instant chat · Fastest',
-              value: pages.contactWhatsapp,
-              onTap: () => _openWhatsapp(pages.contactWhatsapp),
-            ),
-            const SizedBox(height: 10),
-          ],
-
-          if (pages.contactEmail.isNotEmpty) ...[
-            _ContactCard(
-              icon: Icons.email_rounded,
-              color: const Color(0xFF6366F1),
-              bgColor: const Color(0xFFEEF2FF),
-              darkBgColor: const Color(0xFF16142A),
-              label: context.s.emailLabel,
-              subtitle: isAr ? 'رد خلال 24 ساعة' : 'Reply within 24h',
-              value: pages.contactEmail,
-              onTap: () => _openEmail(pages.contactEmail),
-            ),
-            const SizedBox(height: 10),
-          ],
-
-          // ── Hours ─────────────────────────────────────────────────────────
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: context.col.surfaceSoft,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: context.col.border),
-            ),
-            child: Row(children: [
-              Icon(Icons.access_time_rounded, size: 16, color: context.col.ink3),
-              const SizedBox(width: 8),
-              Text(isAr ? 'الدعم متاح 7 أيام في الأسبوع' : 'Support available 7 days a week',
-                  style: TextStyle(fontSize: 12.5, color: context.col.ink2, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
-            ]),
+          _ContactCard(
+            icon: Icons.auto_awesome_rounded,
+            color: const Color(0xFF0EA5B7),
+            bgColor: const Color(0xFFE6FBFC),
+            darkBgColor: const Color(0xFF0E2427),
+            label: isAr ? 'اسأل المساعد' : 'Ask the assistant',
+            subtitle: isAr ? 'إجابات فورية عن طلباتك والتوصيل والإرجاع' : 'Instant answers about orders, delivery and returns',
+            onTap: () => safePush(context, '/chat'),
+          ),
+          const SizedBox(height: 10),
+          _ContactCard(
+            icon: Icons.help_outline_rounded,
+            color: const Color(0xFF6366F1),
+            bgColor: const Color(0xFFEEF2FF),
+            darkBgColor: const Color(0xFF16142A),
+            label: isAr ? 'الأسئلة الشائعة' : 'FAQ',
+            subtitle: isAr ? 'الدفع والشحن والإرجاع والمكافآت' : 'Payment, shipping, returns and rewards',
+            onTap: () => safePush(context, '/faq'),
           ),
 
-          // ── Order complaint tip ───────────────────────────────────────────
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.20)),
-            ),
-            child: Row(children: [
-              Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 17),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  context.s.orderComplaintTip,
-                  style: TextStyle(fontSize: 12, color: context.col.ink1, height: 1.5),
+          // ── Last resort ───────────────────────────────────────────────────
+          if (pages.contactWhatsapp.isNotEmpty || pages.contactEmail.isNotEmpty) ...[
+            const SizedBox(height: 26),
+            Text(isAr ? 'ما زلت تحتاج مساعدة؟' : 'Still need help?',
+                style: TextStyle(
+                    fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700,
+                    fontSize: 13, color: context.col.ink3)),
+            const SizedBox(height: 10),
+            Row(children: [
+              if (pages.contactWhatsapp.isNotEmpty)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openWhatsapp(pages.contactWhatsapp),
+                    icon: const Icon(Icons.chat_rounded, size: 18, color: Color(0xFF25D366)),
+                    label: Text(context.s.whatsappLabel,
+                        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                            fontWeight: FontWeight.w700, color: context.col.ink0)),
+                    style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        side: BorderSide(color: context.col.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
                 ),
-              ),
+              if (pages.contactWhatsapp.isNotEmpty && pages.contactEmail.isNotEmpty) const SizedBox(width: 10),
+              if (pages.contactEmail.isNotEmpty)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openEmail(pages.contactEmail),
+                    icon: const Icon(Icons.email_rounded, size: 18, color: Color(0xFF6366F1)),
+                    label: Text(context.s.emailLabel,
+                        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                            fontWeight: FontWeight.w700, color: context.col.ink0)),
+                    style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        side: BorderSide(color: context.col.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                ),
             ]),
-          ),
+          ],
         ],
       ),
     );
@@ -153,7 +157,6 @@ class _ContactCard extends StatelessWidget {
   final Color darkBgColor;
   final String label;
   final String subtitle;
-  final String value;
   final VoidCallback onTap;
 
   const _ContactCard({
@@ -163,7 +166,6 @@ class _ContactCard extends StatelessWidget {
     required this.darkBgColor,
     required this.label,
     required this.subtitle,
-    required this.value,
     required this.onTap,
   });
 
@@ -199,13 +201,7 @@ class _ContactCard extends StatelessWidget {
                   fontSize: 14, color: context.col.ink0)),
               const SizedBox(height: 2),
               Text(subtitle, style: TextStyle(
-                  fontSize: 11.5, color: context.col.ink3)),
-              const SizedBox(height: 3),
-              Text(value,
-                textDirection: TextDirection.ltr,
-                style: TextStyle(
-                  fontFamily: 'PlusJakartaSans', fontSize: 12.5,
-                  color: color, fontWeight: FontWeight.w600)),
+                  fontSize: 11.5, height: 1.4, color: context.col.ink3)),
             ],
           )),
           Icon(Icons.arrow_forward_ios_rounded, size: 14, color: context.col.ink4),

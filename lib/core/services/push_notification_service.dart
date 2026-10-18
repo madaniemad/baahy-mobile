@@ -311,6 +311,8 @@ class PushNotificationService {
         return vid != null ? '/vendors/$vid' : '/home';
       // Delivery
       case 'delivery_attempt_failed':
+      // Staff answered her "Need help?" request on an order (2026-10-18).
+      case 'help_request':
         final oid = data['order_id']?.toString();
         return oid != null ? '/orders/$oid' : '/orders';
       // Deal of the day → open the featured product (backend sends product_id)
