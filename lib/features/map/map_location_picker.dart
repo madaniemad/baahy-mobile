@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dio/dio.dart' show Options;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import '../../core/api/api_client.dart';
 import '../../core/utils/l10n.dart';
 import '../../shared/theme/app_theme.dart';
 
@@ -16,12 +18,17 @@ class MapPickResult {
   final String district;
   final double lat;
   final double lng;
+  /// The area (server `areas`) the customer confirmed — drivers see it (2026-10-18).
+  final int? areaId;
+  final String? areaName;
   const MapPickResult({
     required this.city,
     required this.address,
     this.district = '',
     required this.lat,
     required this.lng,
+    this.areaId,
+    this.areaName,
   });
 }
 
@@ -83,6 +90,14 @@ const _tripoliDistricts = <String>{
 /// The city we actually price and deliver against.
 String _resolveCity(String name) =>
     _tripoliDistricts.contains(name.trim()) ? 'طرابلس' : name.trim();
+
+/// Whether an address in [city] needs a confirmed map location — our own drivers deliver there.
+/// Same rule as the server's AreaResolver::pinRequired (a district counts as Tripoli; «Tripoli»
+/// in any case), so checkout never sends an order the server would refuse for a missing pin.
+bool deliveryPinRequired(String? city) {
+  final c = _resolveCity(city ?? '');
+  return c.contains('طرابلس') || c.toLowerCase().contains('tripoli');
+}
 
 /// Anchors for the nearest-point fallback. Districts are included deliberately:
 /// Tripoli sprawls about 30km, so a single centroid loses its own outskirts to
@@ -491,11 +506,22 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
 
   // ── Confirm ───────────────────────────────────────────────────────────────────
 
-  void _confirm() {
+  /// «هل هذا موقع التوصيل الصحيح؟» (Emad, 2026-10-18): the customer confirms the pin, and in a
+  /// city with areas (Tripoli) the area too — suggested from the district the map gave, else the
+  /// pin — so the driver sees where it is. «تعديل الموقع» goes back to the map.
+  Future<void> _confirm() async {
     if (_city.isEmpty || _geocoding) return;
+    final lat = _center.latitude, lng = _center.longitude;
+    final picked = await showModalBottomSheet<_AreaChoice>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ConfirmLocationSheet(city: _city, district: _district, address: _address, lat: lat, lng: lng),
+    );
+    if (picked == null || !mounted) return;
     Navigator.of(context).pop(MapPickResult(
-      city: _city, address: _address, district: _district,
-      lat: _center.latitude, lng: _center.longitude,
+      city: _city, address: _address, district: _district, lat: lat, lng: lng,
+      areaId: picked.id, areaName: picked.name,
     ));
   }
 
@@ -924,6 +950,204 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Confirm the location and the area ─────────────────────────────────────────
+
+class _AreaChoice {
+  final int? id;
+  final String? name;
+  const _AreaChoice(this.id, this.name);
+}
+
+class _ConfirmLocationSheet extends StatefulWidget {
+  final String city;
+  final String district;
+  final String address;
+  final double lat;
+  final double lng;
+  const _ConfirmLocationSheet({required this.city, required this.district, required this.address, required this.lat, required this.lng});
+  @override
+  State<_ConfirmLocationSheet> createState() => _ConfirmLocationSheetState();
+}
+
+class _ConfirmLocationSheetState extends State<_ConfirmLocationSheet> {
+  List<Map<String, dynamic>> _areas = const [];
+  int? _areaId;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  // Short waits: on a slow network the confirm button must not sit disabled for half a minute.
+  static final _quick = Options(sendTimeout: const Duration(seconds: 6), receiveTimeout: const Duration(seconds: 6));
+  static const _cap = Duration(seconds: 8);
+
+  Future<void> _load() async {
+    final dio = ApiClient.instance.dio;
+    List<Map<String, dynamic>> list = const [];
+    try {
+      final res = await dio.get('/areas', queryParameters: {'city': widget.city}, options: _quick).timeout(_cap);
+      final data = (res.data is Map ? res.data['data'] : null) as Map?;
+      list = ((data?['areas'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (_) {
+      // No list → she just confirms the pin; the server reads the area from it.
+    }
+    if (!mounted) return;
+    setState(() { _areas = list; _loading = false; });
+    if (list.isEmpty) return;
+    // The suggestion on its own: if it fails she still picks from the list.
+    try {
+      final r = await dio.get('/areas/resolve', queryParameters: {
+        'lat': widget.lat, 'lng': widget.lng, 'city': widget.city,
+        'text': [widget.district, widget.address].where((s) => s.isNotEmpty).join(' '),
+      }, options: _quick).timeout(_cap);
+      final a = (r.data is Map ? r.data['data'] : null) as Map?;
+      final id = a?['id'] as int?;
+      // Only an area of this list (this city), and never over one she already picked.
+      if (mounted && _areaId == null && list.any((x) => x['id'] == id)) setState(() => _areaId = id);
+    } catch (_) {}
+  }
+
+  String? get _areaName => _areas.where((a) => a['id'] == _areaId).map((a) => (a['name_ar'] ?? '').toString()).firstOrNull;
+
+  @override
+  Widget build(BuildContext context) {
+    final needsArea = _areas.isNotEmpty;
+    final ready = !_loading && (!needsArea || _areaId != null);
+    return Container(
+      decoration: BoxDecoration(color: context.col.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + MediaQuery.of(context).padding.bottom),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: context.col.border, borderRadius: BorderRadius.circular(2)))),
+        const SizedBox(height: 14),
+        Text(context.tr('هل هذا موقع التوصيل الصحيح؟', 'Is this the right delivery location?'),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.col.ink0)),
+        const SizedBox(height: 6),
+        Text(context.tr('يصل المندوب إلى النقطة التي حددتها على الخريطة.', 'Our driver comes to the point you set on the map.'),
+            style: TextStyle(fontSize: 13.5, color: context.col.ink2)),
+        if (_loading) const Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+        if (!_loading && needsArea) ...[
+          const SizedBox(height: 14),
+          Text(context.tr('المنطقة', 'Area'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.col.ink1)),
+          const SizedBox(height: 6),
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () async {
+              final id = await showModalBottomSheet<int>(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => _AreaListSheet(areas: _areas, current: _areaId),
+              );
+              if (id != null && mounted) setState(() => _areaId = id);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _areaId != null ? AppColors.primary : context.col.border, width: _areaId != null ? 1.5 : 1),
+              ),
+              child: Row(children: [
+                Icon(Icons.place_outlined, size: 20, color: _areaId != null ? AppColors.primary : context.col.ink3),
+                const SizedBox(width: 8),
+                Expanded(child: Text(_areaName ?? context.tr('اختر منطقتك', 'Choose your area'),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: _areaId != null ? context.col.ink0 : context.col.ink3))),
+                Text(context.tr('تغيير', 'Change'), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
+              ]),
+            ),
+          ),
+        ],
+        const SizedBox(height: 18),
+        GestureDetector(
+          onTap: ready ? () => Navigator.of(context).pop(_AreaChoice(_areaId, _areaName)) : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: ready ? const LinearGradient(colors: [Color(0xFF1AC5CD), AppColors.primary]) : null,
+              color: ready ? null : context.col.border,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(context.tr('نعم، هذا موقع التوصيل', 'Yes, deliver here'),
+                style: TextStyle(color: ready ? Colors.white : context.col.ink3, fontWeight: FontWeight.w700, fontSize: 15)),
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(context.tr('تعديل الموقع', 'Adjust the location'), style: TextStyle(color: context.col.ink2)),
+        ),
+      ]),
+    );
+  }
+}
+
+class _AreaListSheet extends StatefulWidget {
+  final List<Map<String, dynamic>> areas;
+  final int? current;
+  const _AreaListSheet({required this.areas, this.current});
+  @override
+  State<_AreaListSheet> createState() => _AreaListSheetState();
+}
+
+/// The areas, searchable — 40+ names is too many to scroll for one (2026-10-18).
+class _AreaListSheetState extends State<_AreaListSheet> {
+  String _q = '';
+
+  static String _fold(String s) => s
+      .replaceAll(RegExp('[أإآ]'), 'ا').replaceAll('ة', 'ه').replaceAll('ى', 'ي')
+      .replaceAll(RegExp(r'\s+'), ' ').trim().toLowerCase();
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _fold(_q);
+    final shown = widget.areas.where((a) => q.isEmpty
+        || _fold((a['name_ar'] ?? '').toString()).contains(q)
+        || _fold((a['name_en'] ?? '').toString()).contains(q)).toList();
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      decoration: BoxDecoration(color: context.col.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
+      child: SafeArea(
+        top: false,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+            child: TextField(
+              autofocus: true,
+              onChanged: (v) => setState(() => _q = v),
+              decoration: InputDecoration(
+                hintText: context.tr('ابحث عن منطقتك', 'Search your area'),
+                prefixIcon: const Icon(Icons.search_rounded),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                isDense: true,
+              ),
+            ),
+          ),
+          Flexible(
+            child: ListView(shrinkWrap: true, padding: const EdgeInsets.only(bottom: 10), children: [
+              for (final a in shown)
+                ListTile(
+                  title: Text(context.tr((a['name_ar'] ?? '').toString(), (a['name_en'] ?? a['name_ar'] ?? '').toString())),
+                  trailing: a['id'] == widget.current ? const Icon(Icons.check_rounded, color: AppColors.primary) : null,
+                  onTap: () => Navigator.of(context).pop(a['id'] as int),
+                ),
+              if (shown.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(context.tr('لا توجد منطقة بهذا الاسم', 'No area with that name'),
+                      textAlign: TextAlign.center, style: TextStyle(color: context.col.ink3)),
+                ),
+            ]),
+          ),
+        ]),
       ),
     );
   }

@@ -20,6 +20,7 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/pending_checkout_service.dart';
 import '../../../shared/widgets/pending_payment_watcher.dart';
 import '../../../core/utils/delivery.dart';
+import '../../map/map_location_picker.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -473,11 +474,60 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
+  /// Opens the map for the chosen address and saves the confirmed pin and area on it.
+  Future<void> _setLocationForSelected() async {
+    final addr = _selectedAddress;
+    if (addr == null) return;
+    final result = await Navigator.of(context).push<MapPickResult>(
+      MaterialPageRoute(builder: (_) => const MapLocationPicker()),
+    );
+    if (result == null || !mounted) return;
+    // A pin in another city is another address: priced and routed as this one it would send the
+    // driver to the wrong town. Edit the address instead (audit 2026-10-18).
+    final addrCity = (addr['city'] ?? '').toString();
+    if (result.city.isNotEmpty && addrCity.isNotEmpty
+        && deliveryPinRequired(result.city) != deliveryPinRequired(addrCity)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.tr('الموقع الذي حددته خارج $addrCity — عدّل العنوان أو اختر عنواناً آخر',
+              'The location you picked is outside $addrCity — edit the address or choose another one'))));
+      return;
+    }
+    final updated = {...addr, 'latitude': result.lat, 'longitude': result.lng, 'area_id': result.areaId,
+        if (result.areaName != null) 'area': {'id': result.areaId, 'name_ar': result.areaName}};
+    setState(() {
+      _selectedAddress = updated;
+      // Keep the list in step, or picking this address again asks for the pin a second time.
+      final i = _addresses.indexWhere((a) => a['id'] != null && a['id'] == addr['id']);
+      if (i >= 0) _addresses[i] = updated;
+    });
+    if (addr['id'] != null) {
+      try {
+        await ApiClient.instance.dio.put('/addresses/${addr['id']}',
+            data: {'latitude': result.lat, 'longitude': result.lng, if (result.areaId != null) 'area_id': result.areaId});
+      } catch (_) {/* the order still carries the pin; the address catches up next time */}
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.tr('تم تحديد موقع التوصيل${result.areaName != null ? ' — ${result.areaName}' : ''}',
+              'Delivery location set${result.areaName != null ? ' — ${result.areaName}' : ''}'))));
+    }
+  }
+
   Future<void> _placeOrder() async {
     if (_loading) return; // re-entrancy guard: a second tap while the order request is in flight
     if (_selectedAddress == null || _selectedAddress!.isEmpty) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(context.s.pleaseSelectAddr)));
+      return;
+    }
+
+    // A Tripoli address with no location on the map: ask for it now, and save it on the address
+    // so it is asked once (Emad, 2026-10-18 — drivers need the exact point and the area).
+    if (deliveryPinRequired((_selectedAddress!['city'] ?? '').toString())
+        && (_selectedAddress!['latitude'] == null || _selectedAddress!['longitude'] == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.tr('حدد موقع التوصيل على الخريطة', 'Set your delivery location on the map'))));
+      await _setLocationForSelected();
       return;
     }
 
@@ -605,6 +655,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         'shipping_address': addr['address'] ?? '',
         if (addr['latitude'] != null) 'shipping_lat': addr['latitude'],
         if (addr['longitude'] != null) 'shipping_lng': addr['longitude'],
+        if (addr['area_id'] != null) 'shipping_area_id': addr['area_id'],
         if (couponCode != null) 'coupon_code': couponCode,
         if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
       };
@@ -704,13 +755,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       setState(() => _loading = false);
       if (mounted) {
         String msg = context.s.orderError;
+        var needsPin = false;
         if (e is DioException) {
           final data = e.response?.data;
           if (data is Map && data['message'] != null)
             msg = data['message'].toString();
+          // The server wants a map location this app did not ask for: open the map right away.
+          needsPin = e.response?.statusCode == 422 && data is Map && data['errors'] is Map
+              && (data['errors'] as Map).containsKey('shipping_lat');
         }
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(msg), backgroundColor: AppColors.danger));
+        if (needsPin) await _setLocationForSelected();
       }
     }
   }

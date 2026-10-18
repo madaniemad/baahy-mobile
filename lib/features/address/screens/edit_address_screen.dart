@@ -33,6 +33,9 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
   late bool _isDefault  = widget.address == null ? true : widget.address?['is_default'] == true;
   double? _lat;
   double? _lng;
+  /// The area the customer confirmed with the pin (2026-10-18) — drivers see it.
+  int? _areaId;
+  String? _areaName;
   bool _loading = false;
   final _phoneFocus = FocusNode();
   final _notesFocus = FocusNode();
@@ -56,6 +59,8 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
     final rawLng = widget.address?['longitude'];
     _lat = rawLat != null ? double.tryParse(rawLat.toString()) : null;
     _lng = rawLng != null ? double.tryParse(rawLng.toString()) : null;
+    _areaId = widget.address?['area_id'] as int?;
+    _areaName = (widget.address?['area'] is Map) ? (widget.address!['area']['name_ar'] as String?) : null;
     _phoneFocus.addListener(_onFocusChange);
     _notesFocus.addListener(_onFocusChange);
 
@@ -95,6 +100,8 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       _city = result.city;
       _lat  = result.lat;
       _lng  = result.lng;
+      _areaId = result.areaId;
+      _areaName = result.areaName;
       if (_streetCtrl.text.trim().isEmpty) {
         // Seed the street line with the district the pin landed in. The backend
         // stores a greater-Tripoli address as "<district> - <street>"
@@ -132,6 +139,14 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
         SnackBar(content: Text(context.s.selectCityAndStreet)));
       return;
     }
+    // Where our own drivers deliver (Tripoli), the location on the map is required (2026-10-18).
+    if (deliveryPinRequired(_city) && (_lat == null || _lng == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.tr('حدد موقع التوصيل على الخريطة — مطلوب حتى يصل المندوب إليك بالضبط',
+              'Set the delivery location on the map — our driver needs it'))));
+      _openMapPicker();
+      return;
+    }
     setState(() => _loading = true);
     final data = {
       'label':      _label,
@@ -143,6 +158,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       'is_default': _isDefault,
       if (_lat != null) 'latitude':  _lat,
       if (_lng != null) 'longitude': _lng,
+      if (_areaId != null) 'area_id': _areaId,
     };
     try {
       if (_isEdit) {
@@ -342,7 +358,8 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                     Expanded(
                       child: Text(
                         _lat != null
-                            ? context.tr('موقع محدد على الخريطة ✓', 'Location set on the map ✓')
+                            ? context.tr('موقع محدد على الخريطة ✓${_areaName != null ? ' — $_areaName' : ''}',
+                                'Location set on the map ✓${_areaName != null ? ' — $_areaName' : ''}')
                             : context.tr('تحديد موقع التوصيل على الخريطة', 'Set delivery location on the map'),
                         style: TextStyle(
                           fontSize: 13.5,
@@ -360,7 +377,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
                   child: TextButton(
-                    onPressed: () => setState(() { _lat = null; _lng = null; }),
+                    onPressed: () => setState(() { _lat = null; _lng = null; _areaId = null; _areaName = null; }),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       minimumSize: Size.zero,
