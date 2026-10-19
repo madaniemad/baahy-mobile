@@ -19,6 +19,7 @@ import '../../../core/providers/welcome_coupon_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/pending_checkout_service.dart';
 import '../../../shared/widgets/pending_payment_watcher.dart';
+import '../../../shared/widgets/account_restricted.dart';
 import '../../../core/utils/delivery.dart';
 import '../../map/map_location_picker.dart';
 import '../../../core/utils/format.dart';
@@ -118,6 +119,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   /// Bumped per order attempt; a background payment check from an older attempt stops.
   int _watchToken = 0;
   bool _codClearScheduled = false;
+
+  /// Set when the server refused this order / payment with `account_restricted`; the card at the
+  /// top then shows the server's own message.
+  AccountRestriction? _restriction;
 
   @override
   void initState() {
@@ -331,6 +336,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return null;
   }
 
+  /// Staff restricted this account from ordering: known from the profile, or from a refusal here.
+  bool get _orderingBlocked =>
+      _restriction != null || ref.read(currentUserProvider)?.orderingBlocked == true;
+
+  /// `403 account_restricted` from POST /orders or a payment initiate: show the server's message
+  /// with the support button (a dialog now, the card at the top of the page after), and refresh the
+  /// profile so the restriction sticks. Never a generic error. False for any other error.
+  bool _onAccountRestricted(Object e, {String? pendingRef}) {
+    final r = AccountRestriction.from(e);
+    if (r == null) return false;
+    // The initiate was refused, so nothing was paid: do not leave this checkout to be resumed.
+    if (pendingRef != null) PendingCheckoutService.instance.clear(pendingRef);
+    if (!mounted) return true;
+    setState(() {
+      _loading = false;
+      _restriction = r;
+    });
+    ref.read(authProvider.notifier).markOrderingBlocked(r.reason);
+    showAccountRestrictedDialog(context, ref, r);
+    return true;
+  }
+
   static String _newIdemKey() {
     final r = Random.secure();
     final b = List<int>.generate(16, (_) => r.nextInt(256));
@@ -515,6 +542,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _placeOrder() async {
     if (_loading) return; // re-entrancy guard: a second tap while the order request is in flight
+    if (_orderingBlocked) return; // the button is disabled too; the card at the top says why
     if (_selectedAddress == null || _selectedAddress!.isEmpty) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(context.s.pleaseSelectAddr)));
@@ -751,6 +779,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (e) {
       // Only a request that got NO answer keeps its key for the retry.
       if (e is DioException && e.response != null) _idemKey = null;
+      if (_onAccountRestricted(e)) return;
       if (!mounted) return;
       setState(() => _loading = false);
       if (mounted) {
@@ -853,6 +882,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         }
       }
     } catch (e) {
+      if (_onAccountRestricted(e, pendingRef: pendingRef)) return;
       if (mounted) {
         setState(() => _loading = false);
         String msg = context.tr(
@@ -985,6 +1015,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         context.pushReplacement('/order-confirmed', extra: orderData);
       }
     } catch (e) {
+      if (_onAccountRestricted(e, pendingRef: pendingRef)) return;
       if (mounted) {
         setState(() => _loading = false);
         String msg =
@@ -1141,6 +1172,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     otpStep = true;
                                   });
                                 } catch (e) {
+                                  // Account restricted: close the sheet; the page shows why.
+                                  if (AccountRestriction.from(e) != null) {
+                                    if (ctx.mounted) {
+                                      Navigator.of(ctx).pop<Map<String, dynamic>>(
+                                          {'account_restricted': e});
+                                    }
+                                    return;
+                                  }
                                   String msg = context.tr(
                                       'البطاقة غير صحيحة أو الخدمة غير متاحة',
                                       'Invalid card or service unavailable');
@@ -1277,6 +1316,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
 
     if (result == null) return;
+    if (result['account_restricted'] != null) {
+      _onAccountRestricted(result['account_restricted'] as Object, pendingRef: pendingRef);
+      return;
+    }
     if (!mounted) return;
     if (result['payment_review'] == true) {
       await _paymentReview(result['message']?.toString(),
@@ -1427,6 +1470,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     otpStep = true;
                                   });
                                 } catch (e) {
+                                  // Account restricted: close the sheet; the page shows why.
+                                  if (AccountRestriction.from(e) != null) {
+                                    if (ctx.mounted) {
+                                      Navigator.of(ctx).pop<Map<String, dynamic>>(
+                                          {'account_restricted': e});
+                                    }
+                                    return;
+                                  }
                                   String msg = context.tr(
                                       'البطاقة غير صحيحة أو الخدمة غير متاحة',
                                       'Invalid card or service unavailable');
@@ -1562,6 +1613,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
 
     if (result == null) return;
+    if (result['account_restricted'] != null) {
+      _onAccountRestricted(result['account_restricted'] as Object, pendingRef: pendingRef);
+      return;
+    }
     if (!mounted) return;
     if (result['payment_review'] == true) {
       await _paymentReview(result['message']?.toString(),
@@ -1739,8 +1794,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // Watch shipping rates so delivery fee recalculates when address changes
     final ratesLoaded =
         (ref.watch(shippingRatesProvider).valueOrNull ?? const []).isNotEmpty;
-    // cod_blocked arrives with the profile refresh started in initState.
-    ref.watch(currentUserProvider);
+    // cod_blocked / ordering_blocked arrive with the profile refresh started in initState.
+    final currentUser = ref.watch(currentUserProvider);
+    final orderingBlocked = _restriction != null || currentUser?.orderingBlocked == true;
     final selectedRate = _selectedRate;
     // A saved city with no exact rate row: ask the server what it prices it as.
     if (ratesLoaded && _hasAddressCity && selectedRate == null) {
@@ -1869,6 +1925,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Account restricted from ordering ──────────────────
+                  if (orderingBlocked) ...[
+                    AccountRestrictedCard(
+                      serverMessage: _restriction?.message(isAr),
+                      reason: _restriction?.reason ?? currentUser?.orderingBlockReason,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                   // ── Delivery address ──────────────────────────────────
                   _SectionLabel(context.s.shippingAddr),
                   const SizedBox(height: 8),
@@ -2444,7 +2508,27 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               // The wallet paying for everything IS a payment method: this used to stay on
               // "choose a payment method" with nothing left to choose (baahy.com fixed the same
               // dead end earlier; the app never was).
-              if (_paymentMethod.isEmpty && !walletCoversAll && !nothingDue)
+              // Restricted account: the button stays visible but cannot place the order.
+              if (orderingBlocked)
+                Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: context.col.surfaceSoft,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.col.border),
+                  ),
+                  child: Center(
+                    child: Text(context.s.placeOrder,
+                        style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontFamilyFallback: const ['Tajawal'],
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: context.col.ink3)),
+                  ),
+                )
+              else if (_paymentMethod.isEmpty && !walletCoversAll && !nothingDue)
                 Container(
                   width: double.infinity,
                   height: 50,

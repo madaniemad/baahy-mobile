@@ -716,4 +716,17 @@ Account Termination: We reserve the right to suspend any account that violates t
   String get submitReview         => isAr ? 'إرسال التقييم'                : 'Submit review';
   String get chooseStars          => isAr ? 'اختر عدد النجوم'              : 'Choose a star rating';
   String get reviewThanks         => isAr ? 'شكراً! سيظهر تقييمك بعد المراجعة.' : 'Thank you! Your review will appear after it is checked.';
+
+  // ── Account restricted from ordering (2026-10-19) ───────────────────────────
+  String get orderingBlockedTitle => isAr
+      ? 'لا يمكن إتمام الطلب من حسابك حالياً'
+      : 'Orders cannot be placed from your account at the moment';
+  String orderingBlockedReason(String reason) => isAr ? 'السبب: $reason' : 'Reason: $reason';
+  String get orderingBlockedHelp  => isAr
+      ? 'يُرجى التواصل مع فريق الدعم لمساعدتك'
+      : 'Please contact our support team so we can help you';
+  String get contactSupport       => isAr ? 'تواصل مع فريق الدعم'          : 'Contact support';
+  String get orderingBlockedSupportText => isAr
+      ? 'مرحباً، لا يمكنني إتمام الطلب من حسابي في تطبيق باهي، أرجو المساعدة.'
+      : 'Hello, I cannot place an order from my Baahy app account. Could you please help?';
 }

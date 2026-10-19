@@ -23,6 +23,11 @@ class User {
   /// Cash on delivery withdrawn from this customer (two doorsteps the driver could not reach) —
   /// they prepay. Absent from older servers, which means not blocked.
   final bool codBlocked;
+  /// Staff restricted this account: it can sign in but cannot order or start a payment. Sent only
+  /// for the person themself; absent from older servers, which means not blocked.
+  final bool orderingBlocked;
+  /// Why ordering is restricted, when staff gave a reason. Null when none.
+  final String? orderingBlockReason;
 
   const User({
     required this.id,
@@ -41,6 +46,8 @@ class User {
     this.privacyReviews = 'public',
     this.privacyTier = 'friends',
     this.codBlocked = false,
+    this.orderingBlocked = false,
+    this.orderingBlockReason,
   });
 
   User copyWith({String? avatar}) => User(
@@ -51,6 +58,20 @@ class User {
     privacyWishlist: privacyWishlist, privacyPurchases: privacyPurchases,
     privacyReviews: privacyReviews, privacyTier: privacyTier,
     codBlocked: codBlocked,
+    orderingBlocked: orderingBlocked, orderingBlockReason: orderingBlockReason,
+  );
+
+  /// This user with ordering restricted — used when the server refuses an order before the
+  /// profile refresh has caught up.
+  User withOrderingBlocked(String? reason) => User(
+    id: id, name: name, phone: phone, email: email, avatar: avatar,
+    city: city, walletBalance: walletBalance, loyaltyPoints: loyaltyPoints,
+    referralCode: referralCode, birthday: birthday, username: username,
+    privacyWishlist: privacyWishlist, privacyPurchases: privacyPurchases,
+    privacyReviews: privacyReviews, privacyTier: privacyTier,
+    codBlocked: codBlocked,
+    orderingBlocked: true,
+    orderingBlockReason: (reason != null && reason.trim().isNotEmpty) ? reason.trim() : orderingBlockReason,
   );
 
   factory User.fromJson(Map<String, dynamic> j) => User(
@@ -70,5 +91,13 @@ class User {
     privacyReviews:   j['privacy_reviews']   as String? ?? 'public',
     privacyTier:      j['privacy_tier']      as String? ?? 'friends',
     codBlocked:       j['cod_blocked'] == true,
+    orderingBlocked:  j['ordering_blocked'] == true || j['ordering_blocked'] == 1,
+    orderingBlockReason: _reasonOrNull(j['ordering_block_reason']),
   );
+}
+
+String? _reasonOrNull(dynamic v) {
+  if (v is! String) return null;
+  final t = v.trim();
+  return t.isEmpty ? null : t;
 }

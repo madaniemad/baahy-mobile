@@ -177,6 +177,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// The server refused an order or payment with `account_restricted`: show the account as
+  /// restricted at once (and across restarts), then take the server's own profile as the truth.
+  Future<void> markOrderingBlocked(String? reason) async {
+    final user = state.user;
+    if (user == null) return;
+    state = state.copyWith(user: user.withOrderingBlocked(reason));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString(_kCachedUser);
+      if (cached != null) {
+        final json = jsonDecode(cached) as Map<String, dynamic>;
+        json['ordering_blocked'] = true;
+        if (reason != null && reason.trim().isNotEmpty) json['ordering_block_reason'] = reason.trim();
+        await prefs.setString(_kCachedUser, jsonEncode(json));
+      }
+    } catch (_) {}
+    await refreshProfile();
+  }
+
   Future<void> updateAvatar(String url) async {
     final user = state.user;
     if (user == null) return;
