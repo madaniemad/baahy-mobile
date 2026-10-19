@@ -28,6 +28,8 @@ class Product {
   final String? brand;
   final String fulfillmentType;
   final bool manageStock;
+  /// The seller is on holiday (baahyShops): still orderable, ships from this day.
+  final DateTime? shipsAfter;
   /// Admin/backend-assigned promo badge keys. Only the *manual* editorial
   /// badges live here (e.g. 'original','warranty'); baahy+, trending,
   /// fast-moving, new and big-deal are derived automatically.
@@ -59,6 +61,7 @@ class Product {
     this.descriptionAr,
     this.brand,
     this.fulfillmentType = 'inherit',
+    this.shipsAfter,
     this.manageStock = false,
     this.badges = const [],
     this.createdAt,
@@ -108,6 +111,7 @@ class Product {
     'brand': brand,
     'fulfillment_type': fulfillmentType,
     'manage_stock': manageStock,
+    if (shipsAfter != null) 'ships_after': '${shipsAfter!.year}-${shipsAfter!.month.toString().padLeft(2, '0')}-${shipsAfter!.day.toString().padLeft(2, '0')}',
   };
 
   static double _d(dynamic v) {
@@ -156,6 +160,7 @@ class Product {
     fulfillmentType: j['fulfillment_type'] as String? ?? 'inherit',
     badges: _parseBadges(j['badges']),
     createdAt: _parseDate(j['created_at']),
+    shipsAfter: _parseDate(j['ships_after']),
   );
 
   static DateTime? _parseDate(dynamic raw) {

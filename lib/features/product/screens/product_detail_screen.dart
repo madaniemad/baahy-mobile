@@ -884,6 +884,27 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               const SizedBox(height: 12),
                             ],
                             const _DeliveryCard(),
+                            // The seller's holiday switch: still orderable, ships from this day.
+                            if (product.shipsAfter != null) ...[
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                                decoration: BoxDecoration(color: const Color(0xFFFFF4E5), borderRadius: BorderRadius.circular(10)),
+                                child: Text(
+                                  () {
+                                    const ar = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+                                    const arM = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+                                    const en = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                                    const enM = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                    final d = product.shipsAfter!;
+                                    return context.isAr
+                                        ? 'يُشحن هذا المنتج ابتداءً من ${ar[d.weekday - 1]} ${d.day} ${arM[d.month - 1]}.'
+                                        : 'This item ships from ${en[d.weekday - 1]} ${d.day} ${enM[d.month - 1]}.';
+                                  }(),
+                                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF9A5B00)),
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 14),
                             Divider(height: 1, color: context.col.border),
                             const SizedBox(height: 12),
