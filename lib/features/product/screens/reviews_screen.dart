@@ -314,8 +314,49 @@ class _ReviewCard extends StatelessWidget {
               ),
             ),
           ],
+          if (review.reply != null) ...[
+            const SizedBox(height: 10),
+            _ShopReply(review: review),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// The shop's public answer under a review.
+class _ShopReply extends StatelessWidget {
+  final Review review;
+  const _ShopReply({required this.review});
+
+  @override
+  Widget build(BuildContext context) {
+    final date = _shortReviewDate(review.repliedAt, context.isAr);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.storefront_outlined, size: 15, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(context.s.shopReply,
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                fontSize: 12.5, fontWeight: FontWeight.w700, color: context.col.ink0)),
+          ),
+          if (date.isNotEmpty)
+            Text(date, style: TextStyle(fontSize: 11, color: context.col.ink3)),
+        ]),
+        const SizedBox(height: 6),
+        Text(review.reply!,
+          textAlign: TextAlign.start,
+          style: TextStyle(fontSize: 13, color: context.col.ink1, height: 1.5)),
+      ]),
     );
   }
 }

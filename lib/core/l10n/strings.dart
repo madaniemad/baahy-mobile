@@ -131,9 +131,10 @@ class AppStrings {
 
   String statusLabel(String s) {
     switch (s) {
-      case 'pending_vendor':
       case 'pending_confirmation': return isAr ? 'بانتظار التأكيد' : 'Pending Confirmation';
+      case 'pending_vendor':       return isAr ? 'قيد التأكيد مع البائع' : 'Confirming with the seller';
       case 'pending':              return isAr ? 'قيد الانتظار'    : 'Pending';
+      case 'paid':                 return isAr ? 'تم الدفع'        : 'Paid';
       case 'confirmed':            return isAr ? 'مؤكد'            : 'Confirmed';
       case 'processing':           return isAr ? 'قيد التجهيز'    : 'Processing';
       case 'fulfilled':            return isAr ? 'قيد التجهيز'    : 'Processing';
@@ -141,15 +142,45 @@ class AppStrings {
       case 'out_for_delivery':     return isAr ? 'قيد التوصيل'    : 'Out for Delivery';
       case 'delivered':            return isAr ? 'تم التسليم'      : 'Delivered';
       case 'cancelled':            return isAr ? 'ملغي'            : 'Cancelled';
-      case 'returned':             return isAr ? 'مُرجَع'          : 'Returned';
-      case 'refunded':             return isAr ? 'مُسترد'          : 'Refunded';
-      case 'pending_payment':      return isAr ? 'بانتظار التحويل' : 'Awaiting transfer';
-      case 'returned_to_vendor':   return isAr ? 'أُعيد إلى المتجر' : 'Returned to store';
-      case 'failed':               return isAr ? 'فشل التوصيل'     : 'Delivery failed';
-      case 'partial_return':       return isAr ? 'مرتجع جزئي'      : 'Partial return';
+      case 'returned':             return isAr ? 'تم الإرجاع'      : 'Returned';
+      case 'refunded':             return isAr ? 'تم استرداد المبلغ' : 'Refunded';
+      case 'pending_payment':      return isAr ? 'بانتظار الدفع'   : 'Awaiting payment';
+      case 'returned_to_vendor':   return isAr ? 'أُعيد إلى البائع' : 'Returned to seller';
+      case 'failed':               return isAr ? 'تعذّر التوصيل'   : 'Delivery failed';
+      case 'partial_return':       return isAr ? 'تم إرجاع جزء من الطلب' : 'Partly returned';
       default: return s;
     }
   }
+
+  /// Payment status, for the ones worth telling the customer about.
+  String paymentStatusLabel(String s) {
+    switch (s) {
+      case 'paid':             return isAr ? 'مدفوع'                     : 'Paid';
+      case 'pending':          return isAr ? 'بانتظار الدفع'             : 'Awaiting payment';
+      case 'refunded':         return isAr ? 'تم استرداد المبلغ'         : 'Refunded';
+      case 'partial_refunded': return isAr ? 'تم استرداد جزء من المبلغ'  : 'Partly refunded';
+      case 'void':             return isAr ? 'أُلغيت عملية الدفع'         : 'Payment voided';
+      default: return s;
+    }
+  }
+
+  /// A short line under an order that ended without a normal delivery.
+  String? orderEndedNote(String s) {
+    switch (s) {
+      case 'failed':             return isAr ? 'لم يتم تسليم هذا الطلب.' : 'This order was not delivered.';
+      case 'returned_to_vendor': return isAr ? 'لم يتم تسليم هذا الطلب، وأُعيدت منتجاته إلى البائع.' : 'This order was not delivered and its items went back to the seller.';
+      case 'partial_return':     return isAr ? 'تم إرجاع بعض منتجات هذا الطلب.' : 'Some items from this order were returned.';
+      default: return null;
+    }
+  }
+
+  String get paymentStatusTitle  => isAr ? 'حالة الدفع'                     : 'Payment status';
+  String get doorstepTitle       => isAr ? 'منتجات لم تُستلم عند التسليم'   : 'Items not accepted at delivery';
+  String get doorstepNote        => isAr ? 'لا تُحتسب قيمة هذه المنتجات ضمن المبلغ المستحق.' : 'These items are not included in the amount due.';
+  String get doorstepDeductionLabel => isAr ? 'منتجات لم تُستلم'           : 'Items not accepted';
+  String get awaitingPaymentTitle    => isAr ? 'طلبك بانتظار إتمام الدفع'  : 'Your order is awaiting payment';
+  String get awaitingPaymentSub      => isAr ? 'سنبدأ بتجهيز طلبك بعد تأكيد الدفع' : 'We will start preparing it once the payment is confirmed';
+  String get confirmingWithSellerSub => isAr ? 'نتحقق من توفر المنتجات لدى البائع' : 'We are checking the items with the seller';
 
   // ── Browse / Search ─────────────────────────────────────────────────────────
   String get categories     => isAr ? 'الأقسام'               : 'Categories';
@@ -309,8 +340,7 @@ class AppStrings {
   String basedOnN(int n)       => isAr ? 'بناءً على $n تقييم موثّق' : 'Based on $n verified review(s)';
   String deliveryToCity(String c) => isAr ? 'التوصيل إلى $c' : 'Delivery to ${translateCity(c)}';
   String get visitStore        => isAr ? 'زيارة المتجر'            : 'Visit Store';
-  String get hasCoupon         => isAr ? 'هل لديك كوبون خصم؟'     : 'Have a discount coupon?';
-  String get priceLabel        => isAr ? 'السعر'                   : 'Price';
+  String get priceLabel       => isAr ? 'السعر'                   : 'Price';
 
   // ── Search extras ────────────────────────────────────────────────────────────
   String get seeAllResultsFor  => isAr ? 'عرض كل النتائج لـ'      : 'See all results for';
@@ -323,6 +353,7 @@ class AppStrings {
   String get shareThoughtsHint => isAr ? 'شارك رأيك في هذا المنتج...' : 'Share your thoughts on this product...';
   String get publishReview     => isAr ? 'نشر التقييم'             : 'Submit Review';
   String reviewCountN(int n)   => isAr ? '$n تقييم'                : '$n review(s)';
+  String get shopReply         => isAr ? 'رد المتجر'               : "Shop's reply";
 
   // ── Referral extras ──────────────────────────────────────────────────────────
   String get inviteTitle       => isAr ? 'ادعُ أصدقاءك'           : 'Invite Your Friends';

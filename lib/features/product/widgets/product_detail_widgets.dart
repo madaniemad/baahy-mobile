@@ -425,8 +425,49 @@ class _ReviewCard extends StatelessWidget {
           Text(review.body,
               style: TextStyle(
                   fontSize: 13, color: context.col.ink1, height: 1.5)),
+          if (review.reply != null) ...[
+            const SizedBox(height: 10),
+            _ShopReply(review: review),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// The shop's public answer under a review.
+class _ShopReply extends StatelessWidget {
+  final Review review;
+  const _ShopReply({required this.review});
+
+  @override
+  Widget build(BuildContext context) {
+    final date = _shortReviewDate(review.repliedAt, context.isAr);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.storefront_outlined, size: 15, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(context.s.shopReply,
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                fontSize: 12.5, fontWeight: FontWeight.w700, color: context.col.ink0)),
+          ),
+          if (date.isNotEmpty)
+            Text(date, style: TextStyle(fontSize: 11, color: context.col.ink3)),
+        ]),
+        const SizedBox(height: 6),
+        Text(review.reply!,
+          textAlign: TextAlign.start,
+          style: TextStyle(fontSize: 13, color: context.col.ink1, height: 1.5)),
+      ]),
     );
   }
 }
@@ -1018,117 +1059,6 @@ class _VendorRow extends StatelessWidget {
                 color: AppColors.success)),
       ),
     ]);
-  }
-}
-
-// ── Coupon section ────────────────────────────────────────────────────────────
-
-class _CouponSection extends StatefulWidget {
-  const _CouponSection();
-  @override
-  State<_CouponSection> createState() => _CouponSectionState();
-}
-
-class _CouponSectionState extends State<_CouponSection> {
-  bool _expanded = false;
-  final _ctrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Divider(height: 1, color: context.col.border),
-        const SizedBox(height: 12),
-        GestureDetector(
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: Row(children: [
-            const Spacer(),
-            Text(context.s.hasCoupon,
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            const SizedBox(width: 6),
-            Icon(Icons.local_offer_outlined, size: 15, color: context.col.ink3),
-            const SizedBox(width: 8),
-            AnimatedRotation(
-              turns: _expanded ? 0.5 : 0,
-              duration: const Duration(milliseconds: 200),
-              child: Icon(Icons.expand_more_rounded,
-                  size: 20, color: context.col.ink3),
-            ),
-          ]),
-        ),
-        AnimatedCrossFade(
-          firstChild: const SizedBox.shrink(),
-          secondChild: Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Row(children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: context.col.border),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: TextField(
-                    controller: _ctrl,
-                    textDirection: TextDirection.ltr,
-                    textAlign: TextAlign.start,
-                    style: const TextStyle(
-                        fontFamily: 'PlusJakartaSans',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5),
-                    decoration: InputDecoration(
-                      hintText:
-                          context.tr('أدخل كود الخصم', 'Enter coupon code'),
-                      hintTextDirection:
-                          context.isAr ? TextDirection.rtl : TextDirection.ltr,
-                      hintStyle: TextStyle(
-                        color: context.col.ink3,
-                        fontWeight: FontWeight.w400,
-                        fontSize: 13,
-                        letterSpacing: 0,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  elevation: 0,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: Text(context.s.apply,
-                    style: const TextStyle(
-                        fontFamily: 'Manrope',
-                        fontFamilyFallback: ['Tajawal'],
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: Colors.black87)),
-              ),
-            ]),
-          ),
-          crossFadeState:
-              _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-          duration: const Duration(milliseconds: 200),
-        ),
-      ],
-    );
   }
 }
 

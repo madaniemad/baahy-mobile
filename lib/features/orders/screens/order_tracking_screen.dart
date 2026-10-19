@@ -393,8 +393,13 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
   @override
   Widget build(BuildContext context) {
     final order = widget.order;
-    final isActive = ['pending_payment', 'pending_confirmation', 'pending_vendor', 'pending', 'confirmed', 'processing',
+    final isActive = ['pending_payment', 'pending_confirmation', 'pending_vendor', 'pending', 'paid', 'confirmed', 'processing',
         'fulfilled', 'shipped', 'out_for_delivery'].contains(order.status);
+    // What is still owed: the server's figure (it also nets off items refused at the door);
+    // the old local sum only when talking to a server that does not send it.
+    final amountDue = order.amountDue ??
+        (order.paymentStatus == 'paid' ? 0.0 : (order.total - order.walletAmount).clamp(0.0, double.infinity));
+    final showAmountDue = order.walletAmount > 0 || order.doorstepDeduction > 0 || order.doorstepRejections.isNotEmpty;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -409,8 +414,8 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
         if (order.paymentMethod == 'lypay' && order.status == 'pending_payment') ...[
           BankTransferCard(
             orderId: order.id,
-            // Amount to transfer = total minus what the wallet already covered.
-            total: (order.total - order.walletAmount).clamp(0.0, double.infinity),
+            // Amount to transfer = what is still owed (total minus what the wallet already covered).
+            total: amountDue,
             alreadyUploaded: order.paymentSlip != null && order.paymentSlip!.isNotEmpty,
           ),
           const SizedBox(height: 14),
@@ -469,6 +474,12 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           ],
         )),
 
+        // Items she did not accept at the door, and how many of each.
+        if (order.doorstepRejections.isNotEmpty) ...[
+          _DoorstepRejectionsCard(lines: order.doorstepRejections),
+          const SizedBox(height: 12),
+        ],
+
         // Price breakdown
         Container(
           padding: const EdgeInsets.all(14),
@@ -501,17 +512,22 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 color: AppColors.success, ctx: context),
             Divider(height: 20, color: context.col.border),
             _SumRow(context.s.totalLabel, '${fmtPrice(order.total)} ${context.s.lydUnit}', bold: true, ctx: context),
-            // Part (or all) of the order already paid from wallet balance — the customer needs to
-            // know what is still owed at the door.
-            if (order.walletAmount > 0) ...[
-              _SumRow(context.tr('مدفوع من المحفظة', 'Paid from wallet'),
-                '-${fmtPrice(order.walletAmount)} ${context.s.lydUnit}',
-                color: AppColors.success, ctx: context),
+            // Part (or all) of the order already paid from wallet balance, or items refused at the
+            // door — the customer needs to know what is still owed.
+            if (showAmountDue) ...[
+              if (order.walletAmount > 0)
+                _SumRow(context.tr('مدفوع من المحفظة', 'Paid from wallet'),
+                  '-${fmtPrice(order.walletAmount)} ${context.s.lydUnit}',
+                  color: AppColors.success, ctx: context),
+              if (order.doorstepDeduction > 0)
+                _SumRow(context.s.doorstepDeductionLabel,
+                  '-${fmtPrice(order.doorstepDeduction)} ${context.s.lydUnit}',
+                  color: AppColors.success, ctx: context),
               _SumRow(
                 order.paymentStatus == 'paid'
                     ? context.tr('مدفوع بالكامل', 'Already paid')
                     : context.tr('المبلغ المستحق', 'Amount due'),
-                '${fmtPrice(order.paymentStatus == 'paid' ? 0 : (order.total - order.walletAmount).clamp(0, double.infinity))} ${context.s.lydUnit}',
+                '${fmtPrice(amountDue)} ${context.s.lydUnit}',
                 bold: true, ctx: context),
             ],
             const SizedBox(height: 10),
@@ -528,6 +544,18 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: context.col.ink0,
                   fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'])),
             ]),
+            // Only the payment outcomes she would not otherwise see (money sent back, payment voided).
+            if (const {'refunded', 'partial_refunded', 'void'}.contains(order.paymentStatus)) ...[
+              const SizedBox(height: 8),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text(context.s.paymentStatusTitle,
+                  style: TextStyle(fontSize: 13.5, color: context.col.ink2,
+                    fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'])),
+                Text(context.s.paymentStatusLabel(order.paymentStatus),
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: context.col.ink0,
+                    fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'])),
+              ]),
+            ],
           ]),
         ),
 
@@ -693,16 +721,88 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
   }
 }
 
+class _DoorstepRejectionsCard extends StatelessWidget {
+  final List<DoorstepRejectionLine> lines;
+  const _DoorstepRejectionsCard({required this.lines});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.col.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.col.border),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.assignment_late_outlined, size: 18, color: context.col.ink2),
+          const SizedBox(width: 8),
+          Expanded(child: Text(context.s.doorstepTitle,
+            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+              fontSize: 14, fontWeight: FontWeight.w700))),
+        ]),
+        const SizedBox(height: 10),
+        ...lines.map((l) {
+          final name = context.isAr
+              ? (l.productNameAr.isNotEmpty ? l.productNameAr : l.productName)
+              : (l.productName.isNotEmpty ? l.productName : l.productNameAr);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(name.isNotEmpty ? name : context.tr('منتج', 'Item'),
+                  textAlign: TextAlign.start,
+                  maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, height: 1.35, color: context.col.ink0)),
+                if (l.variationLabel != null && l.variationLabel!.isNotEmpty)
+                  Text(l.variationLabel!,
+                    style: TextStyle(fontSize: 11, color: context.col.ink3)),
+              ])),
+              const SizedBox(width: 10),
+              Text(context.s.quantityN(l.quantity),
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                  fontSize: 12.5, fontWeight: FontWeight.w600, color: context.col.ink2)),
+            ]),
+          );
+        }),
+        const SizedBox(height: 4),
+        Text(context.s.doorstepNote,
+          textAlign: TextAlign.start,
+          style: TextStyle(fontSize: 12, height: 1.4, color: context.col.ink3)),
+      ]),
+    );
+  }
+}
+
 class _HeroCard extends StatelessWidget {
   final Order order;
   const _HeroCard({required this.order});
 
   _HeroInfo _info(BuildContext context) {
     final s = order.status;
-    if (s == 'pending_confirmation' || s == 'pending_vendor') {
+    // Not paid yet — it is not on its way (it used to fall through to "On the way").
+    if (s == 'pending_payment') {
+      return _HeroInfo(
+        icon: Icons.payments_outlined,
+        badge: context.s.statusLabel(s),
+        title: context.s.awaitingPaymentTitle,
+        subtitle: context.s.awaitingPaymentSub,
+      );
+    }
+    if (s == 'pending_vendor') {
+      return _HeroInfo(
+        icon: Icons.storefront_outlined,
+        badge: context.s.statusLabel(s),
+        title: context.s.isAr ? 'تم استلام طلبك' : 'Order Received',
+        subtitle: context.s.confirmingWithSellerSub,
+      );
+    }
+    if (s == 'pending_confirmation' || s == 'paid') {
       return _HeroInfo(
         icon: Icons.hourglass_empty_rounded,
-        badge: context.s.isAr ? 'بانتظار التأكيد' : 'Pending Confirmation',
+        badge: context.s.statusLabel(s),
         title: context.s.isAr ? 'تم استلام طلبك' : 'Order Received',
         subtitle: context.s.isAr ? 'سيتم مراجعة طلبك قريباً' : 'We\'ll review your order soon',
       );
@@ -783,21 +883,32 @@ class _Timeline extends StatelessWidget {
   const _Timeline({required this.status, this.history = const [], required this.orderCreatedAt});
 
   static const _extraMap = {
+    // Not confirmed yet: waiting for payment, for us, or for the seller → the first step.
+    'pending_payment': 0,
     'pending_confirmation': 0,
     'pending_vendor': 0,
+    'paid': 0,
     // 'confirmed' resolves to its own step (مؤكد). The order auto-advances to 'processing'
     // ~30s later, and 'fulfilled' rolls up when collected — both map to قيد التجهيز (step 2).
     'processing': 2,
     'fulfilled': 2,
     'out_for_delivery': 3,
-    'cancelled': 0,
-    'returned': 4,
-    'refunded': 4,
   };
+
+  /// Statuses an order ends in. The timeline shows the steps it actually reached, then one closing
+  /// row in its own words — failed / returned_to_vendor / partial_return used to sit on step 0
+  /// ("Order received"), and cancelled did too.
+  static const _endedStatuses = {
+    'cancelled', 'failed', 'returned_to_vendor', 'refunded', 'returned', 'partial_return',
+  };
+  static const _endedBad = {'cancelled', 'failed', 'returned_to_vendor'};
+  /// These only happen after the hand-over, so the delivered step is reached even when the
+  /// history (legacy orders) does not say so.
+  static const _afterDelivery = {'returned', 'partial_return'};
 
   // Each step maps to one or more possible to_status values in history
   static const _stepAliases = {
-    'pending':    ['pending', 'pending_confirmation', 'pending_vendor'],
+    'pending':    ['pending', 'pending_payment', 'pending_confirmation', 'pending_vendor', 'paid'],
     'confirmed':  ['confirmed'],
     'processing': ['processing', 'fulfilled'],
     'shipped':    ['shipped', 'out_for_delivery'],
@@ -805,11 +916,25 @@ class _Timeline extends StatelessWidget {
   };
 
   int _currentIdx(List<(String, String)> steps) {
+    if (_endedStatuses.contains(status)) {
+      final reached = _reachedIdx(steps);
+      return _afterDelivery.contains(status) ? steps.length - 1 : reached;
+    }
     if (_extraMap.containsKey(status)) return _extraMap[status]!;
     for (int i = 0; i < steps.length; i++) {
       if (steps[i].$1 == status) return i;
     }
     return 0;
+  }
+
+  /// Furthest step the history shows the order got to.
+  int _reachedIdx(List<(String, String)> steps) {
+    var reached = 0;
+    for (int i = 0; i < steps.length; i++) {
+      final aliases = _stepAliases[steps[i].$1] ?? [steps[i].$1];
+      if (history.any((e) => aliases.contains(e.toStatus))) reached = i;
+    }
+    return reached;
   }
 
   DateTime? _timestampFor(String stepStatus, bool isFirst) {
@@ -824,19 +949,36 @@ class _Timeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final steps = [
-      ('pending',     context.s.stepPending),
+      // Waiting for payment is not "received" yet — say what it is waiting for.
+      ('pending',     status == 'pending_payment' ? context.s.statusLabel(status) : context.s.stepPending),
       ('confirmed',   context.s.stepConfirmed),
       ('processing',  context.s.stepProcessing),
       ('shipped',     context.s.stepShipped),
       ('delivered',   context.s.stepDelivered),
     ];
     final current = _currentIdx(steps);
+    final ended = _endedStatuses.contains(status);
+    // An ended order shows only the steps it reached, then the closing row.
+    final shown = ended ? current + 1 : steps.length;
+    final rows = shown + (ended ? 1 : 0);
+    final endColor = _endedBad.contains(status) ? AppColors.danger : AppColors.info;
+    DateTime? endTs;
+    if (ended) {
+      for (final e in history) {
+        if (e.toStatus == status) endTs = e.createdAt;
+      }
+    }
+    final endNote = ended ? context.s.orderEndedNote(status) : null;
+
     return Column(
-      children: List.generate(steps.length, (i) {
-        final isDone = i <= current;
-        final isActive = i == current;
-        final isLast = i == steps.length - 1;
-        final ts = isDone ? _timestampFor(steps[i].$1, i == 0) : null;
+      children: List.generate(rows, (i) {
+        final isEnd = ended && i == shown;
+        final isDone = isEnd || i <= current;
+        final isActive = isEnd || (!ended && i == current);
+        final isLast = i == rows - 1;
+        final ts = isEnd ? endTs : (isDone ? _timestampFor(steps[i].$1, i == 0) : null);
+        final dotColor = isEnd ? endColor : AppColors.primary;
+        final label = isEnd ? context.s.statusLabel(status) : steps[i].$2;
         return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SizedBox(
             width: 22,
@@ -845,19 +987,23 @@ class _Timeline extends StatelessWidget {
                 width: 22, height: 22,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isDone ? AppColors.primary : Colors.transparent,
+                  color: isDone ? dotColor : Colors.transparent,
                   border: Border.all(
-                    color: isDone ? AppColors.primary : context.col.borderStrong,
+                    color: isDone ? dotColor : context.col.borderStrong,
                     width: 2),
                 ),
                 child: isDone
-                    ? const Icon(Icons.check_rounded, size: 12, color: Colors.white)
+                    ? Icon(
+                        isEnd
+                            ? (_endedBad.contains(status) ? Icons.close_rounded : Icons.undo_rounded)
+                            : Icons.check_rounded,
+                        size: 12, color: Colors.white)
                     : null,
               ),
               if (!isLast)
                 Container(
                   width: 2, height: ts != null ? 50 : 40,
-                  color: isDone && (i + 1) <= current
+                  color: (isDone && (i + 1) <= current) || (ended && i + 1 == shown)
                       ? AppColors.primary
                       : context.col.border),
             ]),
@@ -867,11 +1013,11 @@ class _Timeline extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.only(top: 1, bottom: isLast ? 0 : (ts != null ? 24 : 20)),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(steps[i].$2,
+                Text(label,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    color: isActive ? AppColors.primary : context.col.ink0)),
+                    color: isEnd ? endColor : (isActive ? AppColors.primary : context.col.ink0))),
                 if (ts != null) ...[
                   const SizedBox(height: 2),
                   Text(
@@ -881,6 +1027,12 @@ class _Timeline extends StatelessWidget {
                     }(),
                     style: TextStyle(fontSize: 11, color: context.col.ink3,
                       fontFamily: 'PlusJakartaSans')),
+                ],
+                if (isEnd && endNote != null) ...[
+                  const SizedBox(height: 3),
+                  Text(endNote,
+                    textAlign: TextAlign.start,
+                    style: TextStyle(fontSize: 12, height: 1.4, color: context.col.ink2)),
                 ],
               ]),
             ),

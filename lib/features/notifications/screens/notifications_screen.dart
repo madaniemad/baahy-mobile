@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/notifications_provider.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -141,7 +142,8 @@ class _NotifCard extends ConsumerWidget {
   final AppNotification n;
   const _NotifCard({required this.n});
 
-  static bool _isOrder(String? type) => type == 'order' || type == 'order_update';
+  static bool _isOrder(String? type) =>
+      NotificationTarget.isOrderType(type) || NotificationTarget.isReturnType(type);
 
   /// Where tapping this notification should go.
   ///
@@ -157,6 +159,12 @@ class _NotifCard extends ConsumerWidget {
       final s = v.toString().trim();
       return s.isEmpty ? null : s;
     }
+
+    // Same rules as a tapped push (NotificationTarget): staff alerts never open a customer
+    // screen; order pushes carry the order in order_id (or id), return pushes in order_id.
+    if (NotificationTarget.isStaff(d)) return null;
+    final orderRoute = NotificationTarget.orderRoute(n.type ?? val('type'), d);
+    if (orderRoute != null) return orderRoute;
 
     final orderId = val('order_id');
     if (orderId != null) return '/orders/$orderId';
@@ -255,8 +263,13 @@ class _NotifCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         ref.read(notificationsProvider.notifier).markRead(n.id);
+        // A notification carrying a link (refund choice, a staff alert's admin page) opens it in
+        // the browser, exactly like tapping the push.
+        final link = NotificationTarget.link(n.data ?? const <String, dynamic>{});
+        if (link != null && await NotificationTarget.openLink(link)) return;
+        if (!context.mounted) return;
         final target = _target(n);
         if (target != null) safePush(context, target);
       },

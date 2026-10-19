@@ -5,6 +5,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
 import '../models/user.dart';
+import '../services/push_notification_service.dart';
 
 const _kCachedUser = 'cached_user';
 
@@ -115,7 +116,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    try { await _api.dio.post('/auth/logout'); } catch (e, st) { Sentry.captureException(e, stackTrace: st); }
+    // Send this phone's push token so the server drops it with the sign-in: the phone must stop
+    // getting this account's pushes (the server also drops tokens registered under this sign-in).
+    // Best-effort — sign-out never fails or waits long because of it.
+    String? fcmToken;
+    try { fcmToken = await PushNotificationService.instance.currentTokenForSignOut(); } catch (_) {}
+    try {
+      await _api.dio.post('/auth/logout', data: {if (fcmToken != null) 'fcm_token': fcmToken});
+    } catch (e, st) { Sentry.captureException(e, stackTrace: st); }
     await _api.clearToken();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kCachedUser);

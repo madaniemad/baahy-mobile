@@ -999,20 +999,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           ),
                         ],
 
-                        // ── Card 5: Coupon ────────────────────────────
-                        const SizedBox(height: 10),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 12),
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                          decoration: BoxDecoration(
-                            color: context.col.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: context.col.border),
-                            boxShadow: AppShadows.shadowLifted,
-                          ),
-                          child: const _CouponSection(),
-                        ),
-
                         // ── Complementary products (sister categories) ──
                         if (product.category != null)
                           _FrequentlyBoughtTogether(

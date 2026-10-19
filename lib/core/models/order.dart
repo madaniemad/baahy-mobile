@@ -51,6 +51,13 @@ class Order {
   final DateTime? updatedAt;
   final bool returnEligible;
   final DateTime? returnDeadline;
+  /// What is still owed, computed by the server (`GET orders/{id}` only): it subtracts the wallet
+  /// AND items refused at the door. Null on the list endpoint and on older servers.
+  final double? amountDue;
+  /// Value of the items refused at the door; `total` deliberately keeps the placed value.
+  final double doorstepDeduction;
+  /// Items refused at the door, with the quantity refused.
+  final List<DoorstepRejectionLine> doorstepRejections;
 
   const Order({
     required this.id,
@@ -74,12 +81,21 @@ class Order {
     this.updatedAt,
     this.returnEligible = false,
     this.returnDeadline,
+    this.amountDue,
+    this.doorstepDeduction = 0,
+    this.doorstepRejections = const [],
   });
 
   List<OrderItem> get allItems =>
       vendorGroups.expand((g) => g.items).toList();
 
-  factory Order.fromJson(Map<String, dynamic> j) => Order(
+  factory Order.fromJson(Map<String, dynamic> j) {
+    final vendorGroups = (j['vendor_groups'] as List?)
+        ?.map((g) => OrderVendorGroup.fromJson(g)).toList() ?? <OrderVendorGroup>[];
+    return Order._fromJson(j, vendorGroups);
+  }
+
+  factory Order._fromJson(Map<String, dynamic> j, List<OrderVendorGroup> vendorGroups) => Order(
     id: _i(j['id']),
     orderNumber: j['order_number'] ?? '#${j['id']}',
     status: j['status'] ?? 'pending',
@@ -97,15 +113,73 @@ class Order {
     shippingAddress: j['shipping_address'] is Map
         ? Map<String, dynamic>.from(j['shipping_address'])
         : null,
-    vendorGroups: (j['vendor_groups'] as List?)
-        ?.map((g) => OrderVendorGroup.fromJson(g)).toList() ?? [],
+    vendorGroups: vendorGroups,
     statusHistory: (j['status_history'] as List?)
         ?.map((e) => OrderStatusEntry.fromJson(e)).toList() ?? [],
     createdAt: DateTime.tryParse(j['created_at'] ?? '') ?? DateTime.now(),
     updatedAt: j['updated_at'] != null ? DateTime.tryParse(j['updated_at']) : null,
     returnEligible: j['return_eligible'] == true,
     returnDeadline: j['return_deadline'] != null ? DateTime.tryParse(j['return_deadline']) : null,
+    amountDue: j['amount_due'] != null ? _d(j['amount_due']) : null,
+    doorstepDeduction: _d(j['doorstep_deduction'] ?? 0),
+    doorstepRejections: DoorstepRejectionLine.parseAll(j['doorstep_rejections'], j['items'], vendorGroups),
   );
+}
+
+/// One item refused at the door. The server sends `doorstep_rejections` keyed by order_item_id
+/// (an object), or `[]` when there are none; the item's name is resolved from the order's lines.
+class DoorstepRejectionLine {
+  final int orderItemId;
+  final int quantity;
+  final String productName;
+  final String productNameAr;
+  final String? variationLabel;
+
+  const DoorstepRejectionLine({
+    required this.orderItemId,
+    required this.quantity,
+    required this.productName,
+    required this.productNameAr,
+    this.variationLabel,
+  });
+
+  static List<DoorstepRejectionLine> parseAll(
+      dynamic raw, dynamic flatItems, List<OrderVendorGroup> groups) {
+    final entries = raw is Map ? raw.values : (raw is List ? raw : const []);
+    if (entries.isEmpty) return const [];
+    // The flat `items` list carries every line, including ones hidden from the vendor groups.
+    final byId = <int, OrderItem>{};
+    for (final g in groups) {
+      for (final it in g.items) {
+        byId[it.id] = it;
+      }
+    }
+    if (flatItems is List) {
+      for (final r in flatItems) {
+        if (r is! Map) continue;
+        try {
+          final it = OrderItem.fromJson(Map<String, dynamic>.from(r));
+          byId.putIfAbsent(it.id, () => it);
+        } catch (_) {}
+      }
+    }
+    final out = <DoorstepRejectionLine>[];
+    for (final e in entries) {
+      if (e is! Map) continue;
+      final itemId = _i(e['order_item_id']);
+      final qty = _i(e['qty_rejected']);
+      if (qty <= 0) continue;
+      final item = byId[itemId];
+      out.add(DoorstepRejectionLine(
+        orderItemId: itemId,
+        quantity: qty,
+        productName: item?.productName ?? '',
+        productNameAr: item?.productNameAr ?? '',
+        variationLabel: item?.variationLabel,
+      ));
+    }
+    return out;
+  }
 }
 
 class OrderVendorGroup {

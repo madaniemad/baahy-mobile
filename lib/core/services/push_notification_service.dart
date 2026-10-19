@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
 
 // Top-level handler — must be a top-level function (not a closure or class method).
@@ -12,6 +13,66 @@ import '../api/api_client.dart';
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   // Firebase is already initialized when this runs.
   // No UI work here — just handle data if needed.
+}
+
+/// Where a notification leads. Shared by the push tap handler and the in-app notifications
+/// list so both behave the same (audit 2026-10-19).
+class NotificationTarget {
+  NotificationTarget._();
+
+  static String? _val(Map<String, dynamic> d, String k) {
+    final v = d[k];
+    if (v == null) return null;
+    final s = v.toString().trim();
+    return s.isEmpty ? null : s;
+  }
+
+  /// Staff alerts (`staff: "1"`) are for team members who also use the customer app. They open
+  /// their admin `link` in the browser and never a customer screen.
+  static bool isStaff(Map<String, dynamic> d) {
+    final v = _val(d, 'staff');
+    return v == '1' || v == 'true';
+  }
+
+  /// The absolute https link a push may carry (e.g. "choose how you want your refund" after an
+  /// order edit). Anything that is not a plain web URL is ignored.
+  static Uri? link(Map<String, dynamic> d) {
+    final s = _val(d, 'link');
+    if (s == null) return null;
+    final u = Uri.tryParse(s);
+    if (u == null || u.host.isEmpty || (u.scheme != 'https' && u.scheme != 'http')) return null;
+    return u;
+  }
+
+  static bool isOrderType(String? t) =>
+      t == 'order' || t == 'order_update' || t == 'order_items_unavailable';
+
+  static bool isReturnType(String? t) => t != null && t.startsWith('return_');
+
+  /// Order and return notifications lead to the order page. Order pushes carry the order in
+  /// `order_id` (and `id`); on a return push `id` is the RETURN id, so only `order_id` is used —
+  /// her return is shown on that order's page.
+  static String? orderRoute(String? type, Map<String, dynamic> d) {
+    if (isOrderType(type)) {
+      final id = _val(d, 'order_id') ?? _val(d, 'id');
+      return id != null ? '/orders/$id' : '/orders';
+    }
+    if (isReturnType(type)) {
+      final oid = _val(d, 'order_id');
+      return oid != null ? '/orders/$oid' : '/orders';
+    }
+    return null;
+  }
+
+  /// Opens [uri] in the browser. False when it could not be opened, so the caller can fall back.
+  static Future<bool> openLink(Uri uri) async {
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+      return false;
+    }
+  }
 }
 
 class PushNotificationService {
@@ -149,6 +210,17 @@ class PushNotificationService {
     return _fcm.getToken();
   }
 
+  /// This phone's current FCM token, for sign-out to tell the server which token to drop.
+  /// Quick and best-effort: never waits for APNs and gives up after a few seconds.
+  Future<String?> currentTokenForSignOut() async {
+    try {
+      if (Platform.isIOS && await _fcm.getAPNSToken() == null) return null;
+      return await _fcm.getToken().timeout(const Duration(seconds: 3));
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _uploadToken() async {
     try {
       final token = await _getFcmToken();
@@ -205,6 +277,7 @@ class PushNotificationService {
       ),
       payload: jsonEncode({
         'route': _routeFromData(message.data),
+        'link': NotificationTarget.link(message.data)?.toString(),
         'log_id': message.data['log_id']?.toString(),
       }),
     );
@@ -212,8 +285,14 @@ class PushNotificationService {
 
   void _onMessageOpened(RemoteMessage message) {
     _reportOpened(message.data['log_id']?.toString());
-    final route = _routeFromData(message.data);
-    if (route != null && _router != null) {
+    _open(route: _routeFromData(message.data), link: NotificationTarget.link(message.data));
+  }
+
+  /// A push with a `link` opens it in the browser; otherwise (or if it cannot be opened) the
+  /// in-app route. Staff alerts have no route, so they only ever open their link.
+  Future<void> _open({String? route, Uri? link}) async {
+    if (link != null && await NotificationTarget.openLink(link)) return;
+    if (route != null && route.isNotEmpty && _router != null) {
       _router!.go(route);
     }
   }
@@ -240,29 +319,31 @@ class PushNotificationService {
     if (payload == null || payload.isEmpty) return;
 
     String? route = payload;
+    Uri? link;
     if (payload.startsWith('{')) {
       try {
         final decoded = jsonDecode(payload) as Map<String, dynamic>;
         _reportOpened(decoded['log_id']?.toString());
         route = decoded['route'] as String?;
+        link = NotificationTarget.link(decoded);
       } catch (_) {
         route = null;
       }
     }
 
-    if (route != null && route.isNotEmpty && _router != null) {
-      _router!.go(route);
-    }
+    _open(route: route, link: link);
   }
 
   /// Maps FCM data payload to an app route.
   String? _routeFromData(Map<String, dynamic> data) {
-    final type = data['type'] as String?;
+    // Staff alerts: their admin link only, never a customer order screen.
+    if (NotificationTarget.isStaff(data)) return null;
+    final type = data['type']?.toString();
+    // order / order_update / order_items_unavailable and return_* → the order page.
+    final orderRoute = NotificationTarget.orderRoute(type, data);
+    if (orderRoute != null) return orderRoute;
     final id = data['id']?.toString();
     switch (type) {
-      case 'order':
-      case 'order_update':
-        return id != null ? '/orders/$id' : '/orders';
       case 'product':
         return id != null ? '/product/$id' : null;
       case 'wallet':

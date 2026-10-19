@@ -54,8 +54,13 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   ];
 
   static const _activeStatuses = [
-    'pending_payment', 'pending_confirmation', 'pending_vendor', 'pending', 'confirmed',
+    'pending_payment', 'pending_confirmation', 'pending_vendor', 'pending', 'paid', 'confirmed',
     'processing', 'fulfilled', 'shipped', 'out_for_delivery',
+  ];
+
+  /// Every status an order can end in. failed / returned_to_vendor used to sit in neither tab.
+  static const _closedStatuses = [
+    'delivered', 'returned', 'partial_return', 'refunded', 'cancelled', 'failed', 'returned_to_vendor',
   ];
 
   List<Order> _filtered(List<Order> all) {
@@ -63,8 +68,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       case 'active':
         return all.where((o) => _activeStatuses.contains(o.status)).toList();
       case 'delivered':
-        return all.where((o) =>
-          ['delivered', 'returned', 'refunded', 'cancelled'].contains(o.status)).toList();
+        return all.where((o) => _closedStatuses.contains(o.status)).toList();
       default:
         return all;
     }
@@ -361,8 +365,12 @@ class _OrderCard extends StatelessWidget {
     switch (s) {
       case 'delivered': return AppColors.success;
       case 'cancelled':
+      case 'failed':
+      case 'returned_to_vendor':
       case 'returned': return AppColors.danger;
-      case 'shipped': return AppColors.info;
+      case 'shipped':
+      case 'refunded':
+      case 'partial_return': return AppColors.info;
       default: return AppColors.warn;
     }
   }
@@ -371,8 +379,12 @@ class _OrderCard extends StatelessWidget {
     switch (s) {
       case 'delivered': return AppColors.success.withValues(alpha: 0.15);
       case 'cancelled':
+      case 'failed':
+      case 'returned_to_vendor':
       case 'returned': return AppColors.danger.withValues(alpha: 0.15);
-      case 'shipped': return AppColors.info.withValues(alpha: 0.15);
+      case 'shipped':
+      case 'refunded':
+      case 'partial_return': return AppColors.info.withValues(alpha: 0.15);
       default: return AppColors.warn.withValues(alpha: 0.15);
     }
   }
