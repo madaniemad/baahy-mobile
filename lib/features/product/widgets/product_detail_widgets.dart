@@ -1040,6 +1040,8 @@ class _VendorRow extends StatelessWidget {
                 style: TextStyle(fontSize: 12, color: context.col.ink3)),
         ],
       )),
+      // A white-label shop is shown as Baahy and has no store page to visit (404).
+      if (!vendor.anonymous)
       OutlinedButton(
         onPressed: () => safePush(context, '/vendors/${vendor.id}'),
         style: OutlinedButton.styleFrom(

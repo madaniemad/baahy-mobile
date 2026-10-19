@@ -160,10 +160,15 @@ class _WishlistCard extends ConsumerWidget {
     final salePrice = product.displayPrice;
     final hasDiscount = salePrice < product.price;
     final isVariable = product.productType == 'variable';
+    // A saved product that is no longer for sale (unpublished / hidden): no add-to-cart.
+    final forSale = product.forSale;
 
     final Color stockColor;
     final String stockLabel;
-    if (!product.inStock) {
+    if (!forSale) {
+      stockColor = AppColors.danger;
+      stockLabel = context.s.productUnavailableShort;
+    } else if (!product.inStock) {
       stockColor = AppColors.danger;
       stockLabel = isAr ? 'غير متوفر' : 'Out of stock';
     } else if (product.stockQuantity != null && product.stockQuantity! > 0 && product.stockQuantity! <= 5) {
@@ -265,7 +270,14 @@ class _WishlistCard extends ConsumerWidget {
                                   fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12,
                                   fontWeight: FontWeight.w600, color: stockColor)),
                         ]),
-                        if (isVariable)
+                        if (!forSale)
+                          _WishBtn(
+                            label: isAr ? 'غير متوفر' : 'Unavailable',
+                            isVariable: false,
+                            disabled: true,
+                            onTap: () {},
+                          )
+                        else if (isVariable)
                           _WishBtn(
                             label: isAr ? 'اختر المقاس' : 'Select Size',
                             isVariable: true,

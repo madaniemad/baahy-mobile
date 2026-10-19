@@ -35,6 +35,9 @@ class Product {
   /// fast-moving, new and big-deal are derived automatically.
   final List<String> badges;
   final DateTime? createdAt;
+  /// False when the server says this product is not for sale (product detail's `purchasable`).
+  /// Absent on list endpoints and older responses, so it defaults to true.
+  final bool purchasable;
 
   const Product({
     required this.id,
@@ -65,6 +68,7 @@ class Product {
     this.manageStock = false,
     this.badges = const [],
     this.createdAt,
+    this.purchasable = true,
   });
 
   /// True for products created within the last 14 days.
@@ -73,6 +77,10 @@ class Product {
     if (c == null) return false;
     return DateTime.now().difference(c).inDays <= 14;
   }
+
+  /// On sale at all: the server's `purchasable` (product detail) and the raw `status` (the wishlist
+  /// embeds the bare product row, where only `active` sells). Stock is a separate question.
+  bool get forSale => purchasable && status == 'active';
 
   double get displayPrice => currentPrice ?? salePrice ?? price;
   bool get hasDiscount => salePrice != null && salePrice! < price;
@@ -111,6 +119,7 @@ class Product {
     'brand': brand,
     'fulfillment_type': fulfillmentType,
     'manage_stock': manageStock,
+    if (!purchasable) 'purchasable': false,
     if (shipsAfter != null) 'ships_after': '${shipsAfter!.year}-${shipsAfter!.month.toString().padLeft(2, '0')}-${shipsAfter!.day.toString().padLeft(2, '0')}',
   };
 
@@ -161,6 +170,7 @@ class Product {
     badges: _parseBadges(j['badges']),
     createdAt: _parseDate(j['created_at']),
     shipsAfter: _parseDate(j['ships_after']),
+    purchasable: j['purchasable'] != false && j['purchasable'] != 0,
   );
 
   static DateTime? _parseDate(dynamic raw) {
@@ -365,6 +375,9 @@ class Vendor {
   final double? averageRating;
   final String fulfillmentType;
   final double? collectionFee;
+  /// White-label seller: the API shows the shop as Baahy and has no public store page for it
+  /// (`/vendors/{id}` is 404), so the app must not link to one.
+  final bool anonymous;
 
   const Vendor({
     required this.id,
@@ -378,6 +391,7 @@ class Vendor {
     this.averageRating,
     this.fulfillmentType = 'vendor',
     this.collectionFee,
+    this.anonymous = false,
   });
 
   bool get fulfilledByBaahy => fulfillmentType == 'baahy';
@@ -392,6 +406,7 @@ class Vendor {
     'average_rating': averageRating,
     'fulfillment_type': fulfillmentType,
     'collection_fee': collectionFee,
+    if (anonymous) 'anonymous': true,
   };
 
   factory Vendor.fromJson(Map<String, dynamic> j) => Vendor(
@@ -406,6 +421,7 @@ class Vendor {
     averageRating: j['average_rating'] != null ? Product._d(j['average_rating']) : null,
     fulfillmentType: j['fulfillment_type'] as String? ?? 'vendor',
     collectionFee: j['collection_fee'] != null ? Product._d(j['collection_fee']) : null,
+    anonymous: j['anonymous'] == true || j['anonymous'] == 1,
   );
 }
 

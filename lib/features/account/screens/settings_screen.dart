@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -192,6 +193,43 @@ Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
         style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
     ));
     context.go('/signin');
+  } on DioException catch (e, st) {
+    rootNav.pop(); // dismiss progress
+    if (!context.mounted) return;
+    // 409: the account owns or staffs a shop, which must be closed or left in baahyShops first.
+    // An expected refusal, not a failure: show the server's own explanation in the app language.
+    final body = e.response?.data;
+    if (e.response?.statusCode == 409 && body is Map) {
+      final ar = body['message'], en = body['message_en'];
+      final msg = (s.isAr ? ar : (en ?? ar))?.toString().trim() ?? '';
+      if (msg.isNotEmpty) {
+        await showDialog<void>(
+          context: context,
+          builder: (dialogCtx) => AlertDialog(
+            backgroundColor: dialogCtx.col.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            content: Text(msg,
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                fontSize: 14, height: 1.5, color: dialogCtx.col.ink0)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+                child: Text(s.okGotIt,
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                    fontWeight: FontWeight.w700, color: AppColors.primary)),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    }
+    Sentry.captureException(e, stackTrace: st);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(s.deleteAccountFailed,
+        style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+      backgroundColor: AppColors.danger,
+    ));
   } catch (e, st) {
     Sentry.captureException(e, stackTrace: st);
     rootNav.pop(); // dismiss progress

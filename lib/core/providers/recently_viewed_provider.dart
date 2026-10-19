@@ -45,6 +45,15 @@ class RecentlyViewedNotifier extends StateNotifier<List<Product>> {
     _persist(updated);
   }
 
+  /// Drop a product that is no longer for sale (its page answered 404), so the row stops
+  /// offering it.
+  void remove(int productId) {
+    if (!state.any((p) => p.id == productId)) return;
+    final updated = state.where((p) => p.id != productId).toList();
+    state = updated;
+    _persist(updated);
+  }
+
   static Future<void> _persist(List<Product> products) async {
     final prefs = await SharedPreferences.getInstance();
     // IDs used by the recommendations endpoint.

@@ -93,6 +93,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   bool _lazyTriggered = false;
   bool _viewLogged = false;
   int? _initForId; // product the one-time setup below already ran for
+  bool _goneHandled = false; // 404 clean-up below already scheduled
   ProductVariation? _selectedVariation;
   int _qty = 1;
   final Map<String, String> _selections = {};
@@ -207,6 +208,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 
   Future<void> _addToCart(Product product, {bool goToCart = false}) async {
+    if (!product.purchasable) return; // not for sale; the buy bar says so
     if ((product.variations.isNotEmpty || product.productType == 'variable') &&
         _selectedVariation == null) {
       _notice(_chooseOptionsMessage(product));
@@ -258,6 +260,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             child: CircularProgressIndicator(color: AppColors.primary)),
         error: (err, __) {
           final is404 = err is DioException && err.response?.statusCode == 404;
+          // Not for sale any more: stop offering it in "recently viewed" (once).
+          if (is404 && !_goneHandled) {
+            _goneHandled = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              ref.read(recentlyViewedProvider.notifier).remove(widget.id);
+            });
+          }
           return Scaffold(
             backgroundColor: context.col.bg,
             appBar: AppBar(
@@ -280,10 +290,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       color: context.col.ink3),
                   const SizedBox(height: 16),
                   Text(
+                      // 404 = not on sale (the server hides products that are not for sale).
                       is404
-                          ? (context.isAr
-                              ? 'هذا المنتج لم يعد متاحاً'
-                              : 'This product is no longer available')
+                          ? context.s.productUnavailable
                           : context.s.loadProductFailed,
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -292,10 +301,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           color: context.col.ink1)),
                   const SizedBox(height: 8),
                   if (is404)
-                    Text(
-                        context.isAr
-                            ? 'ربما تم سحبه من المتجر أو نفذت الكمية بشكل نهائي.'
-                            : 'It may have been removed from the store.',
+                    Text(context.s.productUnavailableBody,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             fontSize: 13,
@@ -371,12 +377,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               varMaxPrice != null &&
               varMinPrice != varMaxPrice;
 
-          final effectiveInStock = _selectedVariation != null
-              ? _selectedVariation!.inStock
-              : product.productType == 'variable' &&
-                      product.variations.isNotEmpty
-                  ? product.variations.any((v) => v.inStock)
-                  : product.inStock;
+          // Not for sale (`purchasable: false`) reads as unavailable whatever the stock says.
+          final effectiveInStock = product.purchasable &&
+              (_selectedVariation != null
+                  ? _selectedVariation!.inStock
+                  : product.productType == 'variable' &&
+                          product.variations.isNotEmpty
+                      ? product.variations.any((v) => v.inStock)
+                      : product.inStock);
           final _effQty =
               _selectedVariation?.stockQuantity ?? product.stockQuantity;
           final effectiveLowStock = effectiveInStock &&
@@ -624,8 +632,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                 )
                               else if (product.vendor != null)
                                 GestureDetector(
-                                  onTap: () => safePush(context,
-                                      '/vendors/${product.vendor!.id}'),
+                                  // A white-label shop has no store page (404): name only.
+                                  onTap: product.vendor!.anonymous
+                                      ? null
+                                      : () => safePush(context,
+                                          '/vendors/${product.vendor!.id}'),
                                   child: Text(
                                       isAr
                                           ? (product.vendor!.storeNameAr
@@ -830,9 +841,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               _QtySelector(
                                 qty: _qty,
                                 onChanged: (v) => setState(() => _qty = v),
-                                enabled: product.variations.isNotEmpty
-                                    ? (_selectedVariation?.inStock ?? false)
-                                    : product.inStock,
+                                enabled: product.purchasable &&
+                                    (product.variations.isNotEmpty
+                                        ? (_selectedVariation?.inStock ?? false)
+                                        : product.inStock),
                                 max: () {
                                   if (!product.manageStock) return 10;
                                   if (product.variations.isNotEmpty) {
@@ -1109,7 +1121,36 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     boxShadow: AppShadows.shadowPop,
                     border: Border(top: BorderSide(color: context.col.border)),
                   ),
-                  child: product.inStock
+                  // Not for sale: say so, and offer no add-to-cart or notify-me.
+                  child: !product.purchasable
+                      ? Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: context.col.surfaceSoft,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.col.border),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.info_outline_rounded,
+                                  size: 18, color: context.col.ink2),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(context.s.productUnavailable,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                        fontFamily: 'Manrope',
+                                        fontFamilyFallback: const ['Tajawal'],
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                        color: context.col.ink1)),
+                              ),
+                            ],
+                          ),
+                        )
+                      : product.inStock
                       ? Row(children: [
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

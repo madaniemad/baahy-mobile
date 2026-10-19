@@ -165,6 +165,9 @@ class _NotifCard extends ConsumerWidget {
     if (NotificationTarget.isStaff(d)) return null;
     final orderRoute = NotificationTarget.orderRoute(n.type ?? val('type'), d);
     if (orderRoute != null) return orderRoute;
+    // Abandonment (incl. the coupon offer), explore, delivery and wishlist — same table as a push.
+    final typed = NotificationTarget.typedRoute(n.type ?? val('type'), d);
+    if (typed != null) return typed;
 
     final orderId = val('order_id');
     if (orderId != null) return '/orders/$orderId';
@@ -196,8 +199,9 @@ class _NotifCard extends ConsumerWidget {
         return '/referral';
       case 'cart_low_stock':
       case 'cart_price_drop':
-      case 'abandoned_cart':
         return '/cart';
+      // cod_blocked / cod_restored: the card itself is the whole message (a push opens this
+      // screen), so tapping it only marks it read.
       case 'deal_of_the_day':
       case 'deals_in_your_categories':
       case 'trending_this_week':

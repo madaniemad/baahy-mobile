@@ -327,6 +327,12 @@ class AppStrings {
   String get notifyAvailability=> isAr ? 'سنعلمك عند توفر المنتج'  : "We'll notify you when available";
   String get requestFailed     => isAr ? 'تعذّر تسجيل الطلب، حاول مجدداً' : 'Failed to register request, try again';
   String get loadProductFailed => isAr ? 'تعذر تحميل المنتج'      : 'Failed to load product';
+  // A product that is not on sale (404, or `purchasable: false`).
+  String get productUnavailable     => isAr ? 'هذا المنتج غير متوفر حالياً' : 'This product is currently unavailable';
+  String get productUnavailableShort => isAr ? 'غير متوفر حالياً' : 'Currently unavailable';
+  String get productUnavailableBody => isAr
+      ? 'نعتذر، هذا المنتج غير معروض للبيع في الوقت الحالي. يمكنك تصفّح منتجات أخرى في باهي.'
+      : 'Sorry, this product is not on sale at the moment. You can browse other products on Baahy.';
   String nSold(int n)          => isAr ? '$n مُباع'               : '$n sold';
   String get trustedSellers    => isAr ? 'منتجات موثوقة من بائعين معتمدين • الدفع آمن ومضمون' : 'Trusted products from verified sellers • Safe & secure payment';
   String get soldByBaahy       => isAr ? 'يُباع ويُسلَّم عبر باهي'  : 'Sold & delivered by Baahy';

@@ -64,6 +64,37 @@ class NotificationTarget {
     return null;
   }
 
+  /// Types whose destination must be the same from a push and from the bell, checked by both
+  /// before their own fallbacks (audit 2026-10-19). Null = not one of these types.
+  static String? typedRoute(String? type, Map<String, dynamic> d) {
+    switch (type) {
+      // Cart / checkout abandonment reminders. abandoned_offer carries a coupon; the server has
+      // never sent `abandoned_cart` (the bell looked for it), it sends cart_abandoned.
+      case 'abandoned_offer':
+      case 'abandoned_followup':
+      case 'abandoned_cart':
+      case 'cart_abandoned':
+        return '/cart';
+      // A section she has never bought from with many new arrivals: the newest first. Not
+      // on_sale — the reason given is new arrivals, not discounts.
+      case 'explore_categories':
+        final cid = _val(d, 'category_id');
+        return cid != null ? '/search/results?q=&category=$cid&sort=latest' : '/browse';
+      // The driver could not reach her / she postponed: that order's page.
+      case 'delivery_postponed':
+      case 'delivery_attempt_failed':
+        final oid = _val(d, 'order_id');
+        return oid != null ? '/orders/$oid' : '/orders';
+      // Wishlist alerts are about one product; the wishlist only when none is named.
+      case 'wishlist_price_drop':
+      case 'wishlist_back_in_stock':
+      case 'wishlist_low_stock':
+        final pid = _val(d, 'product_id');
+        return pid != null ? '/product/$pid' : '/wishlist';
+    }
+    return null;
+  }
+
   /// Opens [uri] in the browser. False when it could not be opened, so the caller can fall back.
   static Future<bool> openLink(Uri uri) async {
     try {
@@ -342,6 +373,9 @@ class PushNotificationService {
     // order / order_update / order_items_unavailable and return_* → the order page.
     final orderRoute = NotificationTarget.orderRoute(type, data);
     if (orderRoute != null) return orderRoute;
+    // Abandonment, explore, delivery and wishlist types — same table as the bell.
+    final typed = NotificationTarget.typedRoute(type, data);
+    if (typed != null) return typed;
     final id = data['id']?.toString();
     switch (type) {
       case 'product':
@@ -350,18 +384,18 @@ class PushNotificationService {
         return '/wallet';
       case 'promotion':
         return '/home';
-      // Cart & checkout abandonment
-      case 'cart_abandoned':
+      // Cart & checkout abandonment (cart_abandoned / abandoned_* are in typedRoute)
       case 'cart_low_stock':
       case 'cart_price_drop':
         return '/cart';
       case 'checkout_abandoned':
         return '/checkout';
-      // Wishlist
-      case 'wishlist_price_drop':
-      case 'wishlist_back_in_stock':
-      case 'wishlist_low_stock':
-        return '/wishlist';
+      // Cash on delivery switched off for her account (a failed doorstep) or back on. The app
+      // has no account/payment-info screen; checkout explains a block only once she is paying.
+      // The bell is where the full message can be read, so that is where it opens.
+      case 'cod_blocked':
+      case 'cod_restored':
+        return '/notifications';
       // Re-engagement
       case 'reengagement_7d':
       case 'reengagement_21d':
@@ -390,9 +424,8 @@ class PushNotificationService {
       case 'favourite_vendor_new_arrivals':
         final vid = data['vendor_id']?.toString();
         return vid != null ? '/vendors/$vid' : '/home';
-      // Delivery
-      case 'delivery_attempt_failed':
       // Staff answered her "Need help?" request on an order (2026-10-18).
+      // (delivery_attempt_failed / delivery_postponed are in typedRoute.)
       case 'help_request':
         final oid = data['order_id']?.toString();
         return oid != null ? '/orders/$oid' : '/orders';
