@@ -51,8 +51,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // Step 3: Token exists — silently refresh profile from API.
     if (!state.isLoggedIn) state = state.copyWith(loading: true);
     try {
+      // renew=1: once this sign-in is 30 days old the server hands a fresh token back, so a
+      // customer who uses the app is never signed out at 90 days (2026-10-19).
       final res = await _api.dio.get('/auth/me',
-          options: Options(extra: {'silent401': true}));
+          queryParameters: {'renew': 1}, options: Options(extra: {'silent401': true}));
+      await _takeRenewedToken(res.data);
       final userJson = res.data['user'] as Map<String, dynamic>;
       // Preserve locally-saved avatar if API returns null or empty string.
       final apiAvatar = userJson['avatar'];
@@ -141,9 +144,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState();
   }
 
+  /// Stores the fresh sign-in token /auth/me?renew=1 returns when the current one is old.
+  Future<void> _takeRenewedToken(dynamic data) async {
+    final t = data is Map ? data['token'] : null;
+    if (t is String && t.isNotEmpty) await _api.setToken(t);
+  }
+
   Future<void> refreshProfile() async {
     try {
-      final res = await _api.dio.get('/auth/me');
+      final res = await _api.dio.get('/auth/me', queryParameters: {'renew': 1});
+      await _takeRenewedToken(res.data);
       final userJson = res.data['user'] as Map<String, dynamic>;
       final apiAvatar = userJson['avatar'];
       final cachedAvatar = state.user?.avatar;
