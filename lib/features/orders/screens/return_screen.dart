@@ -124,6 +124,8 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
         'order_id':   widget.orderId,
         'reason_key': _reasonKey,
         'resolution': _exchangeAllowed ? _resolution : 'refund',
+        // Reward credit never goes to a bank, so the split depends on how she is paid.
+        'refund_method': _refundMethod,
         'items':      items,
       });
       if (!mounted || seq != _quoteSeq) return;
@@ -349,7 +351,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
           quote:           _quote,
           quoting:         _quoting,
           refundMethod:    _refundMethod,
-          onRefundMethodChanged: (m) => setState(() => _refundMethod = m),
+          onRefundMethodChanged: (m) { setState(() => _refundMethod = m); _fetchQuote(); },
           bankNameCtrl:    _bankNameCtrl,
           accountNameCtrl: _accountNameCtrl,
           accountNumberCtrl: _accountNumberCtrl,
@@ -1041,6 +1043,19 @@ class _QuoteBox extends StatelessWidget {
                                : 'Or ${money(worst)} if the item turns out to match the description.',
                 style: st(11.5, c: context.col.ink3)),
             ),
+          if (_d(q['to_wallet_reward']) > 0) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: context.col.surface, borderRadius: BorderRadius.circular(12)),
+              child: Text(
+                isAr
+                    ? '${_d(q['to_bank']) > 0 ? 'يُحوَّل ${money(_d(q['to_bank']))} إلى حسابك المصرفي، و' : ''}يُعاد ${money(_d(q['to_wallet_reward']))} إلى محفظتك لأنها دُفعت من رصيد المكافآت، ورصيد المكافآت لا يُحوَّل نقداً.'
+                    : '${_d(q['to_bank']) > 0 ? '${money(_d(q['to_bank']))} goes to your bank account and ' : ''}${money(_d(q['to_wallet_reward']))} back to your wallet, because it was paid with reward credit, which cannot be paid out.',
+                style: st(12, c: context.col.ink1)),
+            ),
+          ],
           const SizedBox(height: 8),
           Text(
             q['blocked'] == true
