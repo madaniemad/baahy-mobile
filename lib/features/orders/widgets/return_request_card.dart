@@ -174,14 +174,64 @@ class _ReturnRequestCardState extends ConsumerState<ReturnRequestCard> {
       'تم إلغاء طلب الإرجاع', 'Return cancelled');
   }
 
+  // ── Her yes before anything moves (Emad, 2026-10-21) ──────────────────────
+  // An approved return waits for her: she sees what she paid, each deduction and what she gets
+  // back, then confirms (the pickup is arranged) or keeps the item (the return is cancelled).
+  // Unanswered for 48 h, it is cancelled. The same two answers exist on WhatsApp and baahy.com.
+
+  Future<void> _confirm(Map<String, dynamic> rr) => _run(
+      () => ApiClient.instance.dio.post('/returns/${rr['id']}/confirm', data: {'via': 'app'}),
+      'تم تأكيد الإرجاع', 'Return confirmed');
+
+  Future<void> _keep(Map<String, dynamic> rr) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.tr('الاحتفاظ بالمنتج؟', 'Keep the item?'),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
+        content: Text(ctx.tr('سيتم إلغاء طلب الإرجاع ويبقى المنتج لديك.', 'The return will be cancelled and you keep the item.'),
+          style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false),
+            child: Text(ctx.tr('رجوع', 'Back'), style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true),
+            child: Text(ctx.tr('إلغاء الإرجاع', 'Cancel return'),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                fontWeight: FontWeight.w700, color: AppColors.danger))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await _run(() => ApiClient.instance.dio.post('/returns/${rr['id']}/cancel', data: {'via': 'app'}),
+      'تم إلغاء طلب الإرجاع', 'Return cancelled');
+  }
+
+  /// «الخميس 23/10 الساعة 3:05 م» — when an unanswered return is cancelled. Written out by hand (as the
+  /// delivery estimate is) rather than through intl, whose Arabic date data the app never loads.
+  static String _deadline(BuildContext c, String? iso) {
+    final d = DateTime.tryParse(iso ?? '')?.toLocal();
+    if (d == null) return '';
+    const ar = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+    const en = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final h12 = d.hour % 12 == 0 ? 12 : d.hour % 12;
+    final mm  = d.minute.toString().padLeft(2, '0');
+    final pm  = d.hour >= 12;
+    return c.tr(
+      // No comma: next to the digits an Arabic comma reads as a full stop.
+      '${ar[d.weekday - 1]} ${d.day}/${d.month} الساعة $h12:$mm ${pm ? 'م' : 'ص'}',
+      '${en[d.weekday - 1]} ${d.day}/${d.month} at $h12:$mm ${pm ? 'PM' : 'AM'}');
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(orderReturnProvider(widget.orderId));
     final rr = async.valueOrNull;
     if (rr == null) return const SizedBox.shrink();
 
-    final status  = (rr['status'] ?? '').toString();
-    final canEdit = rr['can_edit'] == true;
+    final status   = (rr['status'] ?? '').toString();
+    final awaiting = rr['awaiting_confirmation'] == true;
+    final canEdit  = rr['can_edit'] == true && !awaiting;
+    final breakdown = (rr['refund_breakdown'] ?? '').toString();
     final items   = ((rr['return_items'] as List?) ?? const []).cast<Map>();
     final active  = items.where((it) => it['status'] != 'removed').toList();
     final net     = double.tryParse('${rr['net_refund_amount'] ?? 0}') ?? 0;
@@ -207,7 +257,7 @@ class _ReturnRequestCardState extends ConsumerState<ReturnRequestCard> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9999)),
-            child: Text(_statusLabel(context, status),
+            child: Text(awaiting ? context.tr('بانتظار تأكيدك', 'Needs your confirmation') : _statusLabel(context, status),
               style: TextStyle(fontFamily: font, fontFamilyFallback: const ['Tajawal'],
                 fontSize: 12, fontWeight: FontWeight.w700, color: color)),
           ),
@@ -225,7 +275,66 @@ class _ReturnRequestCardState extends ConsumerState<ReturnRequestCard> {
             ),
           );
         }),
-        if (status != 'cancelled' && status != 'rejected' && net > 0) ...[
+        if (awaiting) ...[
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(context.tr('تم قبول طلب الإرجاع، يُرجى تأكيده', 'Your return was accepted — please confirm it'),
+                style: TextStyle(fontFamily: font, fontFamilyFallback: const ['Tajawal'],
+                  fontSize: 13.5, fontWeight: FontWeight.w800, color: context.col.ink0)),
+              if (breakdown.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                // The server's breakdown is Arabic; keep it right-to-left in either language.
+                Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: SizedBox(width: double.infinity, child: Text(breakdown,
+                    style: TextStyle(fontFamily: font, fontFamilyFallback: const ['Tajawal'],
+                      fontSize: 13, height: 1.6, color: context.col.ink1))),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: FilledButton(
+                  onPressed: _busy ? null : () => _confirm(rr),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: Text(context.tr('تأكيد الإرجاع', 'Confirm return'),
+                    style: const TextStyle(fontFamily: font, fontFamilyFallback: ['Tajawal'],
+                      fontWeight: FontWeight.w800, color: Colors.white)),
+                )),
+                const SizedBox(width: 10),
+                Expanded(child: OutlinedButton(
+                  onPressed: _busy ? null : () => _keep(rr),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(color: context.col.borderStrong),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: Text(context.tr('إلغاء الإرجاع', 'Keep the item'),
+                    style: TextStyle(fontFamily: font, fontFamilyFallback: const ['Tajawal'],
+                      fontWeight: FontWeight.w700, color: context.col.ink0)),
+                )),
+              ]),
+              if (_deadline(context, rr['confirm_deadline']?.toString()).isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(context.tr(
+                    'إذا لم يصلنا تأكيدك قبل ${_deadline(context, rr['confirm_deadline']?.toString())} يُلغى طلب الإرجاع ويبقى المنتج لديك.',
+                    'If we do not hear from you by ${_deadline(context, rr['confirm_deadline']?.toString())}, the return is cancelled and you keep the item.'),
+                  style: TextStyle(fontFamily: font, fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 12, color: context.col.ink3)),
+              ],
+            ]),
+          ),
+        ],
+        if (!awaiting && status != 'cancelled' && status != 'rejected' && net > 0) ...[
           const SizedBox(height: 6),
           Text(
             context.tr(
