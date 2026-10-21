@@ -88,13 +88,14 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
   // orthogonal: 'the size is wrong' and 'I want a bigger one' are both true at once.
   String _resolution = 'refund';
   bool _exchangeAllowed = false;
-  // Refunds are paid by bank transfer only (Emad, 2026-10-21), so a refund always asks for the
-  // account; an exchange needs none.
+  // She chooses how she is paid (Emad, 2026-10-21): wallet credit or bank transfer. The account
+  // is asked for only for a transfer; an exchange needs none.
+  String _refundMethod = 'wallet';
   final _bankNameCtrl = TextEditingController();
   final _accountNameCtrl = TextEditingController();
   final _accountNumberCtrl = TextEditingController();
 
-  bool get _wantsTransfer => _resolution == 'refund';
+  bool get _wantsTransfer => _resolution == 'refund' && _refundMethod == 'bank_transfer';
   bool get _bankDetailsMissing => _wantsTransfer &&
       (_bankNameCtrl.text.trim().isEmpty ||
        _accountNameCtrl.text.trim().isEmpty ||
@@ -347,6 +348,8 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
           exchangeAllowed: _exchangeAllowed,
           quote:           _quote,
           quoting:         _quoting,
+          refundMethod:    _refundMethod,
+          onRefundMethodChanged: (m) => setState(() => _refundMethod = m),
           bankNameCtrl:    _bankNameCtrl,
           accountNameCtrl: _accountNameCtrl,
           accountNumberCtrl: _accountNumberCtrl,
@@ -647,6 +650,8 @@ class _StepReason extends StatelessWidget {
   final bool exchangeAllowed;
   final Map<String, dynamic>? quote;
   final bool quoting;
+  final String refundMethod;
+  final ValueChanged<String> onRefundMethodChanged;
   final TextEditingController bankNameCtrl;
   final TextEditingController accountNameCtrl;
   final TextEditingController accountNumberCtrl;
@@ -661,7 +666,8 @@ class _StepReason extends StatelessWidget {
     required this.loading, required this.itemsValue, required this.collectionFee,
     required this.netRefund, required this.isFree, required this.isBlocked,
     required this.resolution, required this.exchangeAllowed, required this.onResolutionChanged,
-    required this.quote, required this.quoting, required this.bankNameCtrl, required this.accountNameCtrl,
+    required this.quote, required this.quoting, required this.refundMethod, required this.onRefundMethodChanged,
+    required this.bankNameCtrl, required this.accountNameCtrl,
     required this.accountNumberCtrl,
     required this.onBankDetailsChanged,
     required this.onReasonChanged, required this.onImagesChanged, required this.onSubmit,
@@ -763,14 +769,44 @@ class _StepReason extends StatelessWidget {
 
               if (resolution == 'refund') ...[
                 const SizedBox(height: 16),
-                Text(isAr ? 'الحساب البنكي لاسترداد المبلغ' : 'Bank account for your refund',
+                Text(isAr ? 'كيف تريد استرداد المبلغ؟' : 'How would you like your refund?',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text(isAr ? 'يُعاد المبلغ بتحويل بنكي خلال 2-5 أيام عمل من إتمام الإرجاع.'
-                          : 'The refund is paid by bank transfer within 2–5 working days of the return being completed.',
-                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
-                    fontSize: 12, color: context.col.ink2)),
-                ...[
+                const SizedBox(height: 12),
+                Row(children: [
+                  for (final o in const [
+                    ['wallet',        'رصيد المحفظة', 'Wallet credit', 'فور إتمام الإرجاع', 'Once the return is completed'],
+                    ['bank_transfer', 'تحويل بنكي',   'Bank transfer', '2-5 أيام عمل',     '2-5 working days'],
+                  ])
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => onRefundMethodChanged(o[0]),
+                        child: Container(
+                          margin: EdgeInsetsDirectional.only(start: o[0] == 'wallet' ? 8 : 0),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: refundMethod == o[0]
+                                ? AppColors.primary.withValues(alpha: 0.08)
+                                : context.col.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: refundMethod == o[0] ? AppColors.primary : context.col.border,
+                              width: refundMethod == o[0] ? 2 : 1),
+                          ),
+                          child: Column(mainAxisSize: MainAxisSize.min, children: [
+                            Text(isAr ? o[1] : o[2],
+                              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                                fontWeight: FontWeight.w600, fontSize: 14)),
+                            Text(isAr ? o[3] : o[4],
+                              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                                fontSize: 11, color: context.col.ink2)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                ]),
+                if (refundMethod == 'bank_transfer') ...[
+                  const SizedBox(height: 10),
                   const SizedBox(height: 10),
                   for (final f in [
                     [bankNameCtrl, 'اسم المصرف', 'Bank name'],
