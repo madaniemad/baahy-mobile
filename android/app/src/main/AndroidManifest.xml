@@ -69,7 +69,7 @@
             android:resource="@color/ic_launcher_background"/>
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCl_h5WPxFwo6I8VDhNCWn9UHDk-Tys6bo"/>
+            android:value="AIzaSyBGXrngxjpdNf3UL_AIXs9F_Wdk37di764"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
