@@ -160,12 +160,27 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
     final t = _CityStr(isAr);
     final cityLabel = _cityAr.isNotEmpty ? (isAr ? _cityAr : _cityEn(_cityAr)) : '';
     final botPad = MediaQuery.of(context).padding.bottom;
+    final topPad = MediaQuery.of(context).padding.top;
 
     return Directionality(
       textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
       child: ColoredBox(
         color: Colors.white,
         child: Stack(children: [
+          // Brand pattern in the empty upper section (Emad, 2026-10-23): the same line
+          // drawings as the splash and home header, tinted tiffany on white and faded
+          // out before the language label.
+          Positioned(top: 0, left: 0, right: 0, height: topPad + 150,
+            child: IgnorePointer(child: ShaderMask(
+              blendMode: BlendMode.dstIn,
+              shaderCallback: (r) => const LinearGradient(
+                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                colors: [Colors.white, Colors.white, Color(0x00FFFFFF)], stops: [0.0, 0.45, 1.0],
+              ).createShader(r),
+              child: Opacity(opacity: 0.30, child: Image.asset('assets/images/onb-pattern.png',
+                  fit: BoxFit.cover, alignment: Alignment.topCenter, color: _teal, colorBlendMode: BlendMode.srcIn)),
+            )),
+          ),
           SafeArea(bottom: false, child: Padding(
             padding: EdgeInsets.fromLTRB(24, 0, 24, botPad + 16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
