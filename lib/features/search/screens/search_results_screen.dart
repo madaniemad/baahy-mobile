@@ -1632,9 +1632,11 @@ class _CategoryChipsRow extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
-                    color: AppColors.tealChipBg(context),
+                    // White + grey outline, like the «الأقسام» chips on the
+                    // search screen (Emad, 2026-10-23: not the old mint teal).
+                    color: context.col.surface,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.teal, width: 1),
+                    border: Border.all(color: context.col.border),
                   ),
                   child: Text(
                     '$label  ${cat.productCount}',
@@ -1643,7 +1645,7 @@ class _CategoryChipsRow extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       fontFamily: 'Manrope',
                       fontFamilyFallback: const ['Tajawal'],
-                      color: AppColors.tealChipText(context),
+                      color: context.col.ink1,
                     ),
                   ),
                 ),
