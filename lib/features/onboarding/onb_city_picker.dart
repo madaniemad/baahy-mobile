@@ -28,7 +28,7 @@ const _ink = Color(0xFF14181A);            // values (city, selected language)
 const _muted = Color(0xFF6B7578);          // labels and helper lines
 const _teal = Color(0xFF1FD7E2);           // brand tiffany — button and icons only
 const _line = Color(0xFFE4E7E7);           // field borders (app border token)
-const _tint = Color(0xFFF4F5F6);           // selected language: the light grey `fill` of baahyShops/baahyDriver (Emad, 2026-10-23)
+const _tint = Color(0xFFE6FAFB);           // selected language
 
 class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
   bool _detecting = true;
@@ -170,11 +170,8 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
             padding: EdgeInsets.fromLTRB(24, 0, 24, botPad + 16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Expanded(child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                const SizedBox(height: 64),
-                // Official wordmark in brand tiffany (the splash's white wordmark,
-                // filled #1FD7E2). Not logo.png: that is the older lettering.
-                Center(child: Image.asset('assets/images/logo_wordmark.png', height: 30)),
-                const SizedBox(height: 72),
+                // No logo (Emad, 2026-10-23): the splash just showed it.
+                const SizedBox(height: 48),
 
                 _Label(t.language),
                 const SizedBox(height: 12),
