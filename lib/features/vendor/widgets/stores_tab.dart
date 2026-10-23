@@ -270,11 +270,13 @@ class _FilterChip extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected
-                ? AppColors.teal.withValues(alpha: 0.10)
+                ? AppColors.chipSelectedBg(context)
                 : context.col.surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: selected ? AppColors.teal : context.col.borderStrong,
+              color: selected
+                  ? AppColors.chipSelectedBorder(context)
+                  : context.col.borderStrong,
               width: selected ? 1.4 : 1,
             ),
           ),
@@ -283,7 +285,9 @@ class _FilterChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: selected ? AppColors.teal600 : context.col.ink1,
+              color: selected
+                  ? AppColors.chipSelectedText(context)
+                  : context.col.ink1,
               fontFamily: 'Manrope',
               fontFamilyFallback: const ['Tajawal'],
             ),

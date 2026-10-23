@@ -65,7 +65,8 @@ All from `lib/shared/theme/app_theme.dart`:
 
 **Colors:**
 - `AppColors.primary` — `#1FD7E2` tiffany (buttons, CTAs)
-- `AppColors.teal` / `teal600` — `#4ECDC4` teal (active nav, links, selections, spinner)
+- `AppColors.teal` / `teal600` / `teal700` — tiffany shades (`#1FD7E2` / `#16BEC8` / `#0E98A1`) for small accents only: links, spinners, accent bars, icons. **Was mint green `#4ECDC4` until 2026-10-23; Emad: no green anywhere.**
+- **Chips / pills / tabs are neutral** (2026-10-23): `AppColors.tealChipBg/Border/Text` = white + grey border + dark text; selected = `AppColors.chipSelectedBg/Border/Text` (light grey `#F4F5F6` fill, dark outline). Never tint a chip mint/teal.
 - `AppColors.ink0–ink4` — text hierarchy (ink0 = primary text, ink3 = placeholder)
 - `AppColors.bg` — `#FAFBFC` page background
 - `AppColors.surfaceSoft` — `#F6F7F7` search boxes, input backgrounds
@@ -276,7 +277,7 @@ Required keys already present:
 - **SKU/code search**: typing a hyphenated code like "V162-1WCL1006" returns the actual product with thumbnail in suggestions; tapping goes directly to product detail
 - **Brand phonetics**: "انكر"→Anker, "نايك"→NIKE, "شانيل"→Chanel, etc. — resolved in backend before searching
 - **Arabic plural stems**: "ساعات"→"ساعة", "حقائب"→"حقيبة" etc. — resolved in backend for both suggestions and results
-- **Trending now**: horizontal pills carousel (tiffany color: `teal50` bg, `teal100` border, `teal700` text); tapping runs text search
+- **Trending now**: horizontal pills carousel (neutral: white, grey border, dark text — `tealChip*` helpers); tapping runs text search
 - **Recent searches**: persisted to SharedPreferences under `recent_searches_v1`; max 8 entries
 - **Routing**: brand → `/search/results?q=X&brand=X`; category → `?q=X&category=ID`; product → `/product/:id`; else → `?q=X`
 

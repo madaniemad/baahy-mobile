@@ -112,27 +112,33 @@ class AppColors {
   // Slightly muted tiffany for use on dark backgrounds (text/icons on dark bg)
   static const primaryDim  = Color(0xFF26C0C7);
 
-  // Soft tiffany chips (trending searches, suggested categories): the light mint tint is a bright
-  // block on a dark page, so dark mode gets a translucent tiffany fill with tiffany text instead.
+  // Chips, pills and tabs are NEUTRAL (Emad, 2026-10-23: no mint/green tabs anywhere): white with
+  // the grey card border and dark text, like the «الأقسام» chips. Selected = light grey fill
+  // (#F4F5F6, the onboarding language highlight) with a dark outline. Dark mode keeps the outline look.
   static bool _dark(BuildContext c) => Theme.of(c).brightness == Brightness.dark;
-  static Color tealChipBg(BuildContext c) =>
-      _dark(c) ? primary.withValues(alpha: 0.14) : teal50;
-  static Color tealChipBorder(BuildContext c) =>
-      _dark(c) ? primary.withValues(alpha: 0.40) : teal100;
-  static Color tealChipText(BuildContext c) => _dark(c) ? primary : teal700;
+  static BaahyColors _col(BuildContext c) => Theme.of(c).extension<BaahyColors>()!;
+  static Color tealChipBg(BuildContext c) => _col(c).surface;
+  static Color tealChipBorder(BuildContext c) => _col(c).border;
+  static Color tealChipText(BuildContext c) => _col(c).ink1;
+  static Color chipSelectedBg(BuildContext c) =>
+      _dark(c) ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF4F5F6);
+  static Color chipSelectedBorder(BuildContext c) => _col(c).ink0;
+  static Color chipSelectedText(BuildContext c) => _col(c).ink0;
 
   // Returns brightness-appropriate primary: muted on dark, full on light
   static Color adaptive(BuildContext context) =>
       Theme.of(context).brightness == Brightness.dark ? primaryDim : primary;
 
-  // Tiffany — highlight/accent only (active nav, links, selections, spinner)
-  static const teal        = Color(0xFF4ECDC4);
-  static const teal600     = Color(0xFF3BBDB5);
-  static const teal700     = Color(0xFF2A9D94);
-  static const teal50      = Color(0xFFEAF9F8);
-  static const teal50bg    = Color(0xFFEAF9F8);
-  static const teal100     = Color(0xFFC5F0ED);
-  static const teal100bg   = Color(0xFFC5F0ED);
+  // Tiffany — highlight/accent only (links, spinner, accent bars, icons). Was a mint green
+  // (#4ECDC4 family) until 2026-10-23; Emad: no green anywhere, so these are brand tiffany
+  // (#1FD7E2) shades now. Chips/tabs don't use them — see tealChip*/chipSelected* above.
+  static const teal        = Color(0xFF1FD7E2);
+  static const teal600     = Color(0xFF16BEC8);
+  static const teal700     = Color(0xFF0E98A1);
+  static const teal50      = Color(0xFFE8FBFC);
+  static const teal50bg    = Color(0xFFE8FBFC);
+  static const teal100     = Color(0xFFC0F2F5);
+  static const teal100bg   = Color(0xFFC0F2F5);
 
   // Ink (text hierarchy)
   static const ink0        = Color(0xFF0A1A1A); // primary text
