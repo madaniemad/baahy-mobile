@@ -114,7 +114,7 @@ class AppColors {
 
   // THE standard tab/chip style (Emad, 2026-10-23: "this is our standard design", copied from the
   // subcategory tabs `_Tab` on search results): unselected = surfaceSoft fill, no outline, ink1 text
-  // (w500); selected = solid tiffany (`adaptive`) fill, near-white text (w700). No mint, no dark
+  // (w500); selected = solid tiffany (`adaptive`) fill, white text (w700). No mint, no dark
   // outlines. Borders are the fill colour so existing Border.all calls draw nothing visible.
   static BaahyColors _col(BuildContext c) => Theme.of(c).extension<BaahyColors>()!;
   static Color tealChipBg(BuildContext c) => _col(c).surfaceSoft;
@@ -122,7 +122,7 @@ class AppColors {
   static Color tealChipText(BuildContext c) => _col(c).ink1;
   static Color chipSelectedBg(BuildContext c) => adaptive(c);
   static Color chipSelectedBorder(BuildContext c) => adaptive(c);
-  static Color chipSelectedText(BuildContext c) => const Color(0xFFF0F0F0);
+  static Color chipSelectedText(BuildContext c) => Colors.white;
 
   // Returns brightness-appropriate primary: muted on dark, full on light
   static Color adaptive(BuildContext context) =>

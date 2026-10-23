@@ -767,7 +767,7 @@ class _Tab extends StatelessWidget {
               fontFamilyFallback: ['Tajawal'],
               fontSize: 13,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected ? const Color(0xFFF0F0F0) : context.col.ink1,
+              color: selected ? Colors.white : context.col.ink1,
             )),
       ),
     );
@@ -1256,7 +1256,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
                                                 color: sel
-                                                    ? const Color(0xFFF0F0F0)
+                                                    ? Colors.white
                                                     : context.col.ink1)),
                                       ),
                                     );
@@ -1586,7 +1586,7 @@ class _CatChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected ? const Color(0xFFF0F0F0) : context.col.ink1,
+              color: selected ? Colors.white : context.col.ink1,
             )),
       ),
     );

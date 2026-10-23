@@ -66,7 +66,7 @@ All from `lib/shared/theme/app_theme.dart`:
 **Colors:**
 - `AppColors.primary` — `#1FD7E2` tiffany (buttons, CTAs)
 - `AppColors.teal` / `teal600` / `teal700` — tiffany shades (`#1FD7E2` / `#16BEC8` / `#0E98A1`) for small accents only: links, spinners, accent bars, icons. **Was mint green `#4ECDC4` until 2026-10-23; Emad: no green anywhere.**
-- **Tabs / chips / pills — ONE standard** (Emad, 2026-10-23, copied from the search-results subcategory `_Tab`): unselected = `surfaceSoft` fill, no outline, `ink1` text w500; selected = solid tiffany `AppColors.adaptive` fill, `#F0F0F0` text w700; radius 20. Use `AppColors.tealChipBg/Border/Text` (unselected) and `chipSelectedBg/Border/Text` (selected). No mint, no dark or tiffany outlines, no grey-outline chips.
+- **Tabs / chips / pills — ONE standard** (Emad, 2026-10-23, copied from the search-results subcategory `_Tab`): unselected = `surfaceSoft` fill, no outline, `ink1` text w500; selected = solid tiffany `AppColors.adaptive` fill, white text w700; radius 20. Use `AppColors.tealChipBg/Border/Text` (unselected) and `chipSelectedBg/Border/Text` (selected). No mint, no dark or tiffany outlines, no grey-outline chips.
 - `AppColors.ink0–ink4` — text hierarchy (ink0 = primary text, ink3 = placeholder)
 - `AppColors.bg` — `#FAFBFC` page background
 - `AppColors.surfaceSoft` — `#F6F7F7` search boxes, input backgrounds
