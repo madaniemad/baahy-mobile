@@ -561,7 +561,7 @@ class AppStrings {
   String nudgePending(String amount)           => isAr ? '$amount د.ل مكافآت في انتظار التأكيد'     : '$amount LD rewards pending';
 
   // ── AI Assistant ─────────────────────────────────────────────────────────────
-  String get assistantTitle    => 'BaahyAi';
+  String get assistantTitle    => 'baahyAi';
   String get assistantGreeting => isAr ? 'كيف يمكنني مساعدتك اليوم؟' : 'How can I help you today?';
   String get assistantInputHint=> isAr ? 'اكتب رسالتك...'         : 'Type your message...';
   String get assistantLimitHit => isAr ? 'استنفدت رصيدك من المحادثات اليوم.' : 'You\'ve reached your daily limit.';
