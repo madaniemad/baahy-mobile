@@ -180,7 +180,9 @@ class RewardsHubScreen extends ConsumerWidget {
                 refAsync: refAsync,
                 user: user,
                 giverAmount: config.referralGiverAmount,
-                receiverAmount: config.referralReceiverAmount,
+                // What the friend gets is the welcome credit on signup — there is no referral
+                // reward for the friend (it was 0, so invites said «ستُضاف 0 د.ل»).
+                receiverAmount: config.welcomeBonusAmount.round(),
               ),
 
               const SizedBox(height: 16),
@@ -1179,9 +1181,6 @@ class _PendingRewardsBanner extends StatelessWidget {
     if (tier.pendingReferralCount > 0) {
       lines.add(context.tr('${tier.pendingReferralCount} دعوة بانتظار التسليم',
           '${tier.pendingReferralCount} ${tier.pendingReferralCount == 1 ? 'invite' : 'invites'} awaiting delivery'));
-    }
-    if (tier.pendingReceiverReward) {
-      lines.add(context.tr('مكافأة ترحيب بانتظار تسليم طلبك', 'Welcome reward pending your order delivery'));
     }
 
     return Container(

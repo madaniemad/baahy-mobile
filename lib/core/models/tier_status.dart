@@ -17,7 +17,6 @@ class TierStatus {
   final double pendingTotal;
   final List<Map<String, dynamic>> pendingMilestones;
   final int pendingReferralCount;
-  final bool pendingReceiverReward;
 
   const TierStatus({
     required this.tier,
@@ -38,7 +37,6 @@ class TierStatus {
     this.pendingTotal = 0.0,
     this.pendingMilestones = const [],
     this.pendingReferralCount = 0,
-    this.pendingReceiverReward = false,
   });
 
   factory TierStatus.fromJson(Map<String, dynamic> j) {
@@ -66,7 +64,6 @@ class TierStatus {
       pendingMilestones: ((j['pending_rewards'] as Map?)?['milestones'] as List?)
           ?.cast<Map<String, dynamic>>() ?? [],
       pendingReferralCount: ((j['pending_rewards'] as Map?)?['referral_count'] as num?)?.toInt() ?? 0,
-      pendingReceiverReward: (j['pending_rewards'] as Map?)?['receiver_pending'] == true,
     );
   }
 
