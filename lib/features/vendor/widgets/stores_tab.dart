@@ -271,12 +271,12 @@ class _FilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected
                 ? AppColors.chipSelectedBg(context)
-                : context.col.surface,
+                : AppColors.tealChipBg(context),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: selected
                   ? AppColors.chipSelectedBorder(context)
-                  : context.col.borderStrong,
+                  : AppColors.tealChipBorder(context),
               width: selected ? 1.4 : 1,
             ),
           ),
@@ -284,7 +284,7 @@ class _FilterChip extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w700,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               color: selected
                   ? AppColors.chipSelectedText(context)
                   : context.col.ink1,

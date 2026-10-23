@@ -699,9 +699,9 @@ class _EmptyState extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: context.col.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: context.col.border),
+                            // Standard tab style (unselected), like `_Tab`.
+                            color: AppColors.tealChipBg(context),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(c.name,
                               style: const TextStyle(

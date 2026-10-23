@@ -1575,11 +1575,11 @@ class _CatChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.adaptive(context) : context.col.surface,
-          borderRadius: BorderRadius.circular(12),
+          color: selected ? AppColors.adaptive(context) : AppColors.tealChipBg(context),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
               color:
-                  selected ? AppColors.adaptive(context) : context.col.border,
+                  selected ? AppColors.adaptive(context) : AppColors.tealChipBorder(context),
               width: 1.5),
         ),
         child: Text(label,
@@ -1632,11 +1632,9 @@ class _CategoryChipsRow extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
-                    // White + grey outline, like the «الأقسام» chips on the
-                    // search screen (Emad, 2026-10-23: not the old mint teal).
-                    color: context.col.surface,
+                    // Standard tab style (unselected), like `_Tab` (Emad, 2026-10-23).
+                    color: AppColors.tealChipBg(context),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: context.col.border),
                   ),
                   child: Text(
                     '$label  ${cat.productCount}',

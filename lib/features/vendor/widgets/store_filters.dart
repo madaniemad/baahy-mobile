@@ -212,12 +212,12 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
           decoration: BoxDecoration(
             color: sel
                 ? AppColors.chipSelectedBg(context)
-                : context.col.surface,
-            borderRadius: BorderRadius.circular(12),
+                : AppColors.tealChipBg(context),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
                 color: sel
                     ? AppColors.chipSelectedBorder(context)
-                    : context.col.border,
+                    : AppColors.tealChipBorder(context),
                 width: 1.5),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -226,7 +226,7 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
                 textDirection: dir,
                 style: _font.copyWith(
                     fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
                     color: sel
                         ? AppColors.chipSelectedText(context)
                         : context.col.ink1)),
@@ -353,7 +353,9 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
                             label: Text(o.$2,
                                 style: _font.copyWith(
                                     fontSize: 13,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: _sort == o.$1
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
                                     color: _sort == o.$1
                                         ? AppColors.chipSelectedText(context)
                                         : context.col.ink0)),
@@ -362,7 +364,9 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
                             side: BorderSide(
                                 color: _sort == o.$1
                                     ? AppColors.chipSelectedBorder(context)
-                                    : context.col.border),
+                                    : AppColors.tealChipBorder(context)),
+                            backgroundColor: AppColors.tealChipBg(context),
+                            showCheckmark: false,
                             onSelected: (_) => setState(() => _sort = o.$1),
                           ),
                       ],

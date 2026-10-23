@@ -112,18 +112,17 @@ class AppColors {
   // Slightly muted tiffany for use on dark backgrounds (text/icons on dark bg)
   static const primaryDim  = Color(0xFF26C0C7);
 
-  // Chips, pills and tabs are NEUTRAL (Emad, 2026-10-23: no mint/green tabs anywhere): white with
-  // the grey card border and dark text, like the «الأقسام» chips. Selected = light grey fill
-  // (#F4F5F6, the onboarding language highlight) with only the very light card border (Emad: the dark outline looked bad).
-  static bool _dark(BuildContext c) => Theme.of(c).brightness == Brightness.dark;
+  // THE standard tab/chip style (Emad, 2026-10-23: "this is our standard design", copied from the
+  // subcategory tabs `_Tab` on search results): unselected = surfaceSoft fill, no outline, ink1 text
+  // (w500); selected = solid tiffany (`adaptive`) fill, near-white text (w700). No mint, no dark
+  // outlines. Borders are the fill colour so existing Border.all calls draw nothing visible.
   static BaahyColors _col(BuildContext c) => Theme.of(c).extension<BaahyColors>()!;
-  static Color tealChipBg(BuildContext c) => _col(c).surface;
-  static Color tealChipBorder(BuildContext c) => _col(c).border;
+  static Color tealChipBg(BuildContext c) => _col(c).surfaceSoft;
+  static Color tealChipBorder(BuildContext c) => _col(c).surfaceSoft;
   static Color tealChipText(BuildContext c) => _col(c).ink1;
-  static Color chipSelectedBg(BuildContext c) =>
-      _dark(c) ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF4F5F6);
-  static Color chipSelectedBorder(BuildContext c) => _col(c).border;
-  static Color chipSelectedText(BuildContext c) => _col(c).ink0;
+  static Color chipSelectedBg(BuildContext c) => adaptive(c);
+  static Color chipSelectedBorder(BuildContext c) => adaptive(c);
+  static Color chipSelectedText(BuildContext c) => const Color(0xFFF0F0F0);
 
   // Returns brightness-appropriate primary: muted on dark, full on light
   static Color adaptive(BuildContext context) =>
