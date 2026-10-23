@@ -297,8 +297,9 @@ class _AppVersionBadge extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(children: [
       Image.asset(
-        isDark ? 'assets/images/logo_white.png' : 'assets/images/logo.png',
-        height: 56,
+        // Official wordmark (white on dark, brand tiffany on light), cropped tight.
+        isDark ? 'assets/images/onb-wordmark-white.png' : 'assets/images/logo_wordmark.png',
+        height: 20,
         errorBuilder: (_, __, ___) => const Text('baahy', style: TextStyle(
           fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary)),
       ),

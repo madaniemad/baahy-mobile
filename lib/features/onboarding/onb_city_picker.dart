@@ -170,11 +170,11 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
             padding: EdgeInsets.fromLTRB(24, 0, 24, botPad + 16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Expanded(child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                const SizedBox(height: 8),
-                // logo.png is a square canvas with the wordmark centred, so its own
-                // whitespace gives the top breathing room.
-                Center(child: Image.asset('assets/images/logo.png', height: 150)),
-                const SizedBox(height: 8),
+                const SizedBox(height: 56),
+                // Official wordmark in brand tiffany (the splash's white wordmark,
+                // filled #1FD7E2). Not logo.png: that is the older lettering.
+                Center(child: Image.asset('assets/images/logo_wordmark.png', height: 46)),
+                const SizedBox(height: 56),
 
                 _Label(t.language),
                 const SizedBox(height: 8),
@@ -277,7 +277,8 @@ class _CityRow extends StatelessWidget {
           style: TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15.5,
               fontWeight: city.isEmpty ? FontWeight.w500 : FontWeight.w700, color: city.isEmpty ? _muted : _ink))),
         if (action != null)
-          Text(action!, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13.5, fontWeight: FontWeight.w600, color: _teal))
+          // Grey, not tiffany (Emad, 2026-10-23): the link is secondary to the city.
+          Text(action!, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13.5, fontWeight: FontWeight.w600, color: _muted))
         else
           const Icon(Icons.keyboard_arrow_down_rounded, color: _muted, size: 22),
       ]),
