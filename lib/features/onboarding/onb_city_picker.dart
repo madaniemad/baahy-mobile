@@ -173,7 +173,7 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
                 const SizedBox(height: 64),
                 // Official wordmark in brand tiffany (the splash's white wordmark,
                 // filled #1FD7E2). Not logo.png: that is the older lettering.
-                Center(child: Image.asset('assets/images/logo_wordmark.png', height: 52)),
+                Center(child: Image.asset('assets/images/logo_wordmark.png', height: 30)),
                 const SizedBox(height: 72),
 
                 _Label(t.language),
