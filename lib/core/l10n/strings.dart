@@ -475,6 +475,7 @@ class AppStrings {
   String get noStoresFound     => isAr ? 'لا توجد متاجر مطابقة'  : 'No matching stores';
   String get loadStoresFailed  => isAr ? 'تعذّر تحميل المتاجر'   : 'Could not load stores';
   String storeProductsN(int n) => isAr ? '$n منتج'                : '$n products';
+  String resultsCountN(int n)  => isAr ? '$n منتج'                : (n == 1 ? '1 product' : '$n products');
   String get searchInStoreHint => isAr ? 'ابحث في المتجر…'       : 'Search this store…';
   String get sortLatest        => isAr ? 'الأحدث'                : 'Newest';
   String get sortPopular       => isAr ? 'الأكثر مبيعاً'         : 'Best selling';
@@ -485,6 +486,8 @@ class AppStrings {
   String reviewsN(int n)       => isAr ? '($n تقييم)'            : '($n reviews)';
   String get loadProductsFailed => isAr ? 'تعذّر تحميل المنتجات' : 'Failed to load products';
   String get noProductsNow     => isAr ? 'لا توجد منتجات حالياً' : 'No products available';
+  String get noResultsForFilters => isAr ? 'لا توجد نتائج لهذه الفلاتر' : 'No results for these filters';
+  String get clearFilters      => isAr ? 'مسح الفلاتر'            : 'Clear filters';
   String get baahyWallet       => isAr ? 'محفظة باهي'             : 'Baahy Wallet';
   String get walletHistory     => isAr ? 'السجل'                  : 'History';
   String get availableBalance  => isAr ? 'الرصيد المتاح'          : 'Available Balance';

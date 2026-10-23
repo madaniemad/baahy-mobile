@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/utils/l10n.dart';
+import '../../../core/utils/price_input.dart';
 import '../../../core/utils/size_order.dart';
 import '../../../shared/theme/app_theme.dart';
 
@@ -69,21 +70,12 @@ Color? _parseHex(String raw) {
   return n == null ? null : Color(n);
 }
 
-/// Parses a price typed with Western or Arabic-Indic digits; null when empty or invalid.
-double? _parsePrice(String raw) {
-  const ar = '٠١٢٣٤٥٦٧٨٩';
-  var t =
-      raw.trim().replaceAll('٫', '.').replaceAll(',', '').replaceAll('٬', '');
-  for (var i = 0; i < ar.length; i++) {
-    t = t.replaceAll(ar[i], '$i');
-  }
-  return double.tryParse(t);
-}
-
 Future<_StoreOptions> _loadOptions(int vendorId, int? categoryId) async {
   final res = await ApiClient.instance.dio
       .get('/products/filter-options', queryParameters: {
     'vendor_id': vendorId,
+    // Same scope as the store's listing, which only shows products with a photo.
+    'has_image': 1,
     if (categoryId != null) 'category_id': categoryId,
   });
   final data = res.data['data'] as Map;
@@ -154,9 +146,9 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
           .then<_StoreOptions?>((o) => o)
           .catchError((_) => null);
   late final TextEditingController _min = TextEditingController(
-      text: widget.initial.minPrice?.toStringAsFixed(0) ?? '');
+      text: formatPriceInput(widget.initial.minPrice));
   late final TextEditingController _max = TextEditingController(
-      text: widget.initial.maxPrice?.toStringAsFixed(0) ?? '');
+      text: formatPriceInput(widget.initial.maxPrice));
 
   @override
   void dispose() {
@@ -423,13 +415,7 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () {
-                  var lo = _parsePrice(_min.text);
-                  var hi = _parsePrice(_max.text);
-                  if (lo != null && hi != null && lo > hi) {
-                    final t = lo;
-                    lo = hi;
-                    hi = t;
-                  }
+                  final (lo, hi) = parsePriceRange(_min.text, _max.text);
                   Navigator.of(context).pop(StoreFilters(
                     sort: _sort,
                     minPrice: lo,

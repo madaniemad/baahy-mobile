@@ -10,7 +10,7 @@ import 'navigation.dart';
 ///   /products?category_id=5              → category
 ///   /products/123                        → single product
 ///   /products?brand=SHEIN                → brand shop
-///   /products?featured=true              → deals
+///   /products?featured=true              → featured products (featured=1)
 ///   /products?max_price=100              → price-capped
 ///   /products?category_id=5&max_price=100&featured=true  → combined
 ///   /vendors/7                           → vendor shop
@@ -54,23 +54,29 @@ class BannerLink {
       return;
     }
 
-    // /vendors/7 — vendor shop
+    // /vendors/7 — vendor shop: the store page itself (the results route has no store scope)
     final vendorMatch = RegExp(r'^/vendors/(\d+)$').firstMatch(path);
     if (vendorMatch != null) {
-      safePush(context, '/search/results?q=&vendor_id=${vendorMatch.group(1)}');
+      safePush(context, '/vendors/${vendorMatch.group(1)}');
       return;
     }
 
     // /products or /products?... — map query params to search results
     if (path == '/products') {
-      final params = StringBuffer('q=');
-      if (q.containsKey('category_id')) params.write('&category=${q['category_id']}');
-      if (q.containsKey('brand'))       params.write('&brand=${q['brand']}');
-      if (q.containsKey('max_price'))   params.write('&max_price=${q['max_price']}');
-      if (q.containsKey('min_price'))   params.write('&min_price=${q['min_price']}');
-      if (q['featured'] == 'true')      params.write('&sort=featured');
-      if (q['sort'] != null && q['sort'] != 'featured') params.write('&sort=${q['sort']}');
-      safePush(context, '/search/results?$params');
+      // Uri encodes the values (a brand like "H&M" or one with spaces stays intact).
+      final params = <String, String>{
+        'q': '',
+        if (q['category_id'] != null) 'category': q['category_id']!,
+        if (q['brand'] != null)       'brand': q['brand']!,
+        if (q['max_price'] != null)   'max_price': q['max_price']!,
+        if (q['min_price'] != null)   'min_price': q['min_price']!,
+        // "featured" is a filter (featured=1), not a sort the server knows.
+        if (q['featured'] == 'true' || q['featured'] == '1') 'featured': '1',
+        if (q['on_sale'] == 'true' || q['on_sale'] == '1') 'on_sale': '1',
+        if (q['sort'] != null && q['sort'] != 'featured') 'sort': q['sort']!,
+      };
+      safePush(context,
+          Uri(path: '/search/results', queryParameters: params).toString());
       return;
     }
 

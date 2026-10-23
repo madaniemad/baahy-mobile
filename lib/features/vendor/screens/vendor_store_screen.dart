@@ -113,6 +113,9 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
   }
 
   Future<void> _loadProducts(int page, {bool resetFilter = false}) async {
+    // A next page already in flight: return BEFORE bumping the sequence, or that real
+    // in-flight page would be treated as superseded and dropped.
+    if (page != 1 && _loadingMore) return;
     final seq = ++_reqSeq; // pin this request; a newer one supersedes it
     final q = _searchCtrl.text.trim();
     if (page == 1) {
@@ -124,7 +127,6 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
           _loadMoreError = false;
         });
     } else {
-      if (_loadingMore) return;
       if (mounted) {
         setState(() {
           _loadingMore = true;
@@ -187,6 +189,15 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
       }
     }
   }
+
+  // Filters that can empty the list (sort only reorders it).
+  bool get _narrowedByFilters =>
+      _filters.minPrice != null ||
+      _filters.maxPrice != null ||
+      _filters.onSaleOnly ||
+      _filters.minRating != null ||
+      _filters.brands.isNotEmpty ||
+      _filters.attributeValueIds.isNotEmpty;
 
   void _selectCategory(int? catId) {
     if (_selectedCategoryId == catId) return;
@@ -418,6 +429,25 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                           onPressed: () => _loadProducts(1),
                           icon: const Icon(Icons.refresh_rounded, size: 18),
                           label: Text(context.s.retry),
+                        ),
+                      ])))
+            else if (_products.isEmpty && _narrowedByFilters)
+              // Filters emptied the store: say so and offer the way back, not "no products".
+              SliverToBoxAdapter(
+                  child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(children: [
+                        Text(context.s.noResultsForFilters,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: context.col.ink3)),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            setState(() => _filters = const StoreFilters());
+                            _loadProducts(1);
+                          },
+                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          label: Text(context.s.clearFilters),
                         ),
                       ])))
             else if (_products.isEmpty)

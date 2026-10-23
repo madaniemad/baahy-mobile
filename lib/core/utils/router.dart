@@ -148,6 +148,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/search/results', builder: (_, state) {
           final extra = state.extra as Map<String, dynamic>?;
           final p = state.uri.queryParameters;
+          // Results have no single-store scope: an old store link opens the store page.
+          final vendorId = int.tryParse(p['vendor_id'] ?? '');
+          if (vendorId != null) return VendorStoreScreen(vendorId: vendorId);
           return SearchResultsScreen(
             query: p['q'] ?? '',
             pageTitle: extra?['title'] as String?,
@@ -155,8 +158,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ? int.tryParse((p['category'] ?? p['category_id'])!)
                 : null,
             onSale: p['on_sale'] == '1',
+            // Old links sent sort=featured, which the server never knew: read it as the filter.
+            featured: p['featured'] == '1' || p['featured'] == 'true' || p['sort'] == 'featured',
+            minPrice: p['min_price'] != null ? double.tryParse(p['min_price']!) : null,
             maxPrice: p['max_price'] != null ? double.tryParse(p['max_price']!) : null,
-            initialSort: p['sort'],
+            initialSort: p['sort'] == 'featured' ? null : p['sort'],
             initialBrand: p['brand'],
             visionProducts: extra?['visionProducts'] as List<Product>?,
           );

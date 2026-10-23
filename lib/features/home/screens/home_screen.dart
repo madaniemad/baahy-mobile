@@ -343,7 +343,7 @@ class HomeScreen extends ConsumerWidget {
                             ? item.titleEn
                             : 'Picks for you',
                         onAll: () => safePush(
-                            context, '/search/results?q=&sort=featured'),
+                            context, '/search/results?q=&featured=1'),
                       ),
                     );
                     yield SliverToBoxAdapter(

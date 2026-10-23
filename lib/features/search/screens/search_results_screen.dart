@@ -7,6 +7,7 @@ import '../../../core/models/product.dart';
 import '../../../core/providers/home_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
+import '../../../core/utils/price_input.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 import '../../../core/utils/responsive.dart';
@@ -77,64 +78,93 @@ class _FilterOptions {
       this.hasReviews = true});
 }
 
-// Scope key: category drives dynamic re-fetching of available filter options.
+// Scope key: everything that narrows the results also narrows the options (a search for «عطر»
+// lists only perfume brands). The server leaves a facet's own picks out of that facet, so
+// picking one brand still lists the others. Any change here refetches.
 class _FilterScope {
-  final int? categoryId;
-  const _FilterScope({this.categoryId});
+  final Map<String, dynamic> params;
+  final String _key;
+  const _FilterScope._(this.params, this._key);
+
+  factory _FilterScope({
+    String query = '',
+    int? categoryId,
+    bool onSale = false,
+    bool featured = false,
+    double? minPrice,
+    double? maxPrice,
+    int? minRating,
+    Iterable<String> brands = const [],
+    Iterable<int> attributeValueIds = const [],
+    Iterable<int> vendorIds = const [],
+  }) {
+    final b = brands.toList()..sort();
+    final a = attributeValueIds.toList()..sort();
+    final v = vendorIds.toList()..sort();
+    final params = <String, dynamic>{
+      if (query.trim().isNotEmpty) 'search': query.trim(),
+      if (categoryId != null) 'category_id': categoryId,
+      if (onSale) 'on_sale': '1',
+      if (featured) 'featured': 1,
+      if (minPrice != null) 'min_price': minPrice,
+      if (maxPrice != null) 'max_price': maxPrice,
+      if (minRating != null) 'min_rating': minRating,
+      if (b.isNotEmpty) 'brands[]': b,
+      if (a.isNotEmpty) 'attribute_value_ids[]': a,
+      if (v.isNotEmpty) 'vendor_ids[]': v,
+    };
+    return _FilterScope._(
+        params, params.entries.map((e) => '${e.key}=${e.value}').join('&'));
+  }
 
   @override
-  bool operator ==(Object other) =>
-      other is _FilterScope && other.categoryId == categoryId;
+  bool operator ==(Object other) => other is _FilterScope && other._key == _key;
 
   @override
-  int get hashCode => categoryId.hashCode;
+  int get hashCode => _key.hashCode;
 }
 
-final _filterOptionsProvider =
-    FutureProvider.family<_FilterOptions, _FilterScope>((_, scope) async {
-  try {
-    final params = <String, dynamic>{};
-    if (scope.categoryId != null) params['category_id'] = scope.categoryId;
-    final res = await ApiClient.instance.dio.get('/products/filter-options',
-        queryParameters: params.isNotEmpty ? params : null);
-    final data = res.data['data'];
-    final types = (data['attribute_types'] as List? ?? [])
-        .map((t) => _AttrType(
-              id: t['id'],
-              name: t['name'] ?? '',
-              nameAr: t['name_ar'] ?? '',
-              displayType: t['display_type'] ?? 'button',
-              values: (t['values'] as List? ?? [])
-                  .map((v) => _AttrValue(
-                        id: v['id'],
-                        value: v['value'] ?? '',
-                        valueAr: v['value_ar'] ?? '',
-                        colorHex: v['color_hex'],
-                      ))
-                  .toList(),
-            ))
-        .toList();
-    final brands =
-        (data['brands'] as List? ?? []).map((b) => b.toString()).toList();
-    final vendors = (data['vendors'] as List? ?? [])
-        .map((v) {
-          final id = v is Map ? (v['id'] as int? ?? 0) : 0;
-          final name = v is Map
-              ? (v['store_name'] ?? v['name'] ?? '').toString()
-              : v.toString();
-          return _Vendor(id: id, name: name);
-        })
-        .where((v) => v.id != 0 && v.name.isNotEmpty)
-        .toList();
-    return _FilterOptions(
-        attrTypes: types,
-        brands: brands,
-        vendors: vendors,
-        hasReviews:
-            data['has_reviews'] == null ? true : data['has_reviews'] == true);
-  } catch (_) {
-    return const _FilterOptions();
-  }
+// autoDispose: a failed (or stale) load is not kept for the whole session. Errors surface so the
+// sheet can show Retry instead of silently empty options.
+final _filterOptionsProvider = FutureProvider.autoDispose
+    .family<_FilterOptions, _FilterScope>((_, scope) async {
+  final res = await ApiClient.instance.dio.get('/products/filter-options',
+      queryParameters: scope.params.isNotEmpty ? scope.params : null);
+  final data = res.data['data'];
+  final types = (data['attribute_types'] as List? ?? [])
+      .map((t) => _AttrType(
+            id: t['id'],
+            name: t['name'] ?? '',
+            nameAr: t['name_ar'] ?? '',
+            displayType: t['display_type'] ?? 'button',
+            values: (t['values'] as List? ?? [])
+                .map((v) => _AttrValue(
+                      id: v['id'],
+                      value: v['value'] ?? '',
+                      valueAr: v['value_ar'] ?? '',
+                      colorHex: v['color_hex'],
+                    ))
+                .toList(),
+          ))
+      .toList();
+  final brands =
+      (data['brands'] as List? ?? []).map((b) => b.toString()).toList();
+  final vendors = (data['vendors'] as List? ?? [])
+      .map((v) {
+        final id = v is Map ? (v['id'] as int? ?? 0) : 0;
+        final name = v is Map
+            ? (v['store_name'] ?? v['name'] ?? '').toString()
+            : v.toString();
+        return _Vendor(id: id, name: name);
+      })
+      .where((v) => v.id != 0 && v.name.isNotEmpty)
+      .toList();
+  return _FilterOptions(
+      attrTypes: types,
+      brands: brands,
+      vendors: vendors,
+      hasReviews:
+          data['has_reviews'] == null ? true : data['has_reviews'] == true);
 });
 
 // 'relevance' is never sent: with no sort param the server ranks a text search by
@@ -152,7 +182,6 @@ class _FilterState {
   final double? minPrice;
   final double? maxPrice;
   final int? minRating;
-  final bool inStockOnly;
   final bool onSaleOnly;
   final int? categoryId;
   final String? categoryName;
@@ -160,26 +189,31 @@ class _FilterState {
   final Set<String> brands;
   final Set<int> vendorIds;
 
+  /// Display names for the applied-filter chips (ids alone can't be shown).
+  final Map<int, String> attrLabels;
+  final Map<int, String> vendorNames;
+
   const _FilterState({
     this.minPrice,
     this.maxPrice,
     this.minRating,
-    this.inStockOnly = false,
     this.onSaleOnly = false,
     this.categoryId,
     this.categoryName,
     this.attributeValueIds = const {},
     this.brands = const {},
     this.vendorIds = const {},
+    this.attrLabels = const {},
+    this.vendorNames = const {},
   });
 
+  // Category is left out: a subcategory tab is navigation, not a filter. A category picked from
+  // the suggestions or the sheet is counted by the screen, which knows the tabs.
   bool get isActive =>
       minPrice != null ||
       maxPrice != null ||
       minRating != null ||
-      inStockOnly ||
       onSaleOnly ||
-      categoryId != null ||
       attributeValueIds.isNotEmpty ||
       brands.isNotEmpty ||
       vendorIds.isNotEmpty;
@@ -188,7 +222,6 @@ class _FilterState {
     Object? minPrice = _unset,
     Object? maxPrice = _unset,
     Object? minRating = _unset,
-    bool? inStockOnly,
     bool? onSaleOnly,
     Object? categoryId = _unset,
     Object? categoryName = _unset,
@@ -203,7 +236,6 @@ class _FilterState {
             identical(maxPrice, _unset) ? this.maxPrice : maxPrice as double?,
         minRating:
             identical(minRating, _unset) ? this.minRating : minRating as int?,
-        inStockOnly: inStockOnly ?? this.inStockOnly,
         onSaleOnly: onSaleOnly ?? this.onSaleOnly,
         categoryId: identical(categoryId, _unset)
             ? this.categoryId
@@ -214,6 +246,8 @@ class _FilterState {
         attributeValueIds: attributeValueIds ?? this.attributeValueIds,
         brands: brands ?? this.brands,
         vendorIds: vendorIds ?? this.vendorIds,
+        attrLabels: attrLabels,
+        vendorNames: vendorNames,
       );
 
   static const _unset = Object();
@@ -224,6 +258,10 @@ class SearchResultsScreen extends ConsumerStatefulWidget {
   final String? pageTitle;
   final int? categoryId;
   final bool onSale;
+
+  /// Featured products only (`featured=1`), e.g. a banner linked to /products?featured=true.
+  final bool featured;
+  final double? minPrice;
   final double? maxPrice;
   final String? initialSort;
   final String? initialBrand;
@@ -235,6 +273,8 @@ class SearchResultsScreen extends ConsumerStatefulWidget {
     this.pageTitle,
     this.categoryId,
     this.onSale = false,
+    this.featured = false,
+    this.minPrice,
     this.maxPrice,
     this.initialSort,
     this.initialBrand,
@@ -259,6 +299,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   bool _loadError = false;
   bool _loadMoreError = false;
   int _reqSeq = 0; // newest request wins; a reset drops older (and in-flight next-page) responses
+  int? _total; // result count from the response (data.total)
   late String _sort;
   late _FilterState _filters;
 
@@ -270,10 +311,12 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     // A text search defaults to relevance; plain browsing (category, brand, deals) keeps random.
     _sort = widget.initialSort ??
         (_hasTextQuery ? _relevanceSort.$1 : 'random');
+    // Link params seed the filter state, so the sheet shows them and the shopper can undo them.
     _filters = _FilterState(
       categoryId: widget.categoryId,
+      minPrice: widget.minPrice,
       maxPrice: widget.maxPrice,
-      inStockOnly: false,
+      onSaleOnly: widget.onSale,
       brands: (widget.initialBrand != null && widget.initialBrand!.isNotEmpty)
           ? {widget.initialBrand!}
           : const {},
@@ -314,6 +357,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         _page = 1;
         _hasMore = true;
         _products = [];
+        _total = null;
       });
     } else {
       if (_loadingMore || !_hasMore) return;
@@ -339,8 +383,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         if (_filters.minPrice != null) 'min_price': _filters.minPrice,
         if (_filters.maxPrice != null) 'max_price': _filters.maxPrice,
         if (_filters.minRating != null) 'min_rating': _filters.minRating,
-        if (_filters.inStockOnly) 'in_stock': 1,
-        if (widget.onSale || _filters.onSaleOnly) 'on_sale': '1',
+        if (_filters.onSaleOnly) 'on_sale': '1',
+        if (widget.featured) 'featured': 1,
         if (_filters.brands.isNotEmpty) 'brands[]': _filters.brands.toList(),
         if (_filters.vendorIds.isNotEmpty)
           'vendor_ids[]': _filters.vendorIds.toList(),
@@ -357,6 +401,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       setState(() {
         _products = reset ? newProducts : [..._products, ...newProducts];
         if (reset) {
+          _total = (data['total'] as num?)?.toInt();
           _suggestedCategories = rawSuggestions
               .map(
                   (c) => _SuggestedCategory.fromJson(c as Map<String, dynamic>))
@@ -407,8 +452,11 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       backgroundColor: context.col.surface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
-      builder: (_) =>
-          _FilterSheet(initial: _filters, scopeCategoryId: widget.categoryId),
+      builder: (_) => _FilterSheet(
+          initial: _filters,
+          scopeCategoryId: widget.categoryId,
+          query: widget.query,
+          featured: widget.featured),
     );
     if (result != null && mounted) {
       setState(() => _filters = result);
@@ -428,6 +476,66 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
       }
     }
     return null;
+  }
+
+  void _applyFilters(_FilterState f) {
+    setState(() => _filters = f);
+    _fetch(reset: true);
+  }
+
+  // A category picked from the «ابحث في» suggestions or the sheet: not the page's own scope and
+  // not one a subcategory tab already shows. It gets a removable chip and counts as a filter.
+  String? _categoryFilterLabel(List<Category> all, List<Category> tabs) {
+    final id = _filters.categoryId;
+    if (id == null || id == widget.categoryId) return null;
+    if (tabs.any((c) => c.id == id)) return null;
+    if (_filters.categoryName?.isNotEmpty == true) return _filters.categoryName;
+    final c = _findCategory(all, id);
+    if (c == null) return context.s.category;
+    return context.isAr ? c.nameAr : c.name;
+  }
+
+  // What the results are filtered by, each removable on its own.
+  List<_AppliedChip> _appliedChips(String? catLabel) {
+    final f = _filters;
+    final ld = context.tr('د.ل', 'LD');
+    final lo = formatPriceInput(f.minPrice);
+    final hi = formatPriceInput(f.maxPrice);
+    return [
+      if (catLabel != null)
+        _AppliedChip(
+            catLabel,
+            () => _applyFilters(f.copyWith(
+                categoryId: widget.categoryId, categoryName: null))),
+      for (final b in f.brands)
+        _AppliedChip(b,
+            () => _applyFilters(f.copyWith(brands: {...f.brands}..remove(b)))),
+      if (f.minPrice != null || f.maxPrice != null)
+        _AppliedChip(
+            f.minPrice != null && f.maxPrice != null
+                ? '$lo–$hi $ld'
+                : f.minPrice != null
+                    ? context.tr('من $lo $ld', 'From $lo $ld')
+                    : context.tr('حتى $hi $ld', 'Up to $hi $ld'),
+            () => _applyFilters(f.copyWith(minPrice: null, maxPrice: null))),
+      if (f.onSaleOnly)
+        _AppliedChip(context.s.dealsOnly,
+            () => _applyFilters(f.copyWith(onSaleOnly: false))),
+      if (f.minRating != null)
+        _AppliedChip(
+            context.tr('${f.minRating}+ نجوم', '${f.minRating}+ stars'),
+            () => _applyFilters(f.copyWith(minRating: null))),
+      for (final id in f.attributeValueIds)
+        _AppliedChip(
+            f.attrLabels[id] ?? context.tr('خيار', 'Option'),
+            () => _applyFilters(f.copyWith(
+                attributeValueIds: {...f.attributeValueIds}..remove(id)))),
+      for (final id in f.vendorIds)
+        _AppliedChip(
+            f.vendorNames[id] ?? context.s.storeLabel,
+            () => _applyFilters(
+                f.copyWith(vendorIds: {...f.vendorIds}..remove(id)))),
+    ];
   }
 
   void _selectSubcat(int? catId) {
@@ -450,6 +558,9 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         ? _findCategory(allCategories, widget.categoryId!)
         : null;
     final subcats = scopeCat?.children ?? <Category>[];
+    final catLabel = _categoryFilterLabel(allCategories, subcats);
+    final appliedChips = _appliedChips(catLabel);
+    final filtersActive = _filters.isActive || catLabel != null;
 
     // Banners: use selected sub-cat's banners, fallback to scope cat's banners
     final bannerCatId = _filters.categoryId ?? widget.categoryId;
@@ -487,7 +598,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                 onPressed: _openFilters,
                 icon: Icon(Icons.tune_rounded, color: context.col.ink0),
               ),
-              if (_filters.isActive)
+              if (filtersActive)
                 Positioned(
                   top: 10,
                   right: 10,
@@ -515,6 +626,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
               selectedId: _filters.categoryId,
               onSelect: _selectSubcat,
             ),
+          // Applied filters, each with an × that removes just that one
+          if (appliedChips.isNotEmpty) _AppliedFiltersRow(chips: appliedChips),
           // Banner slider
           if (banners.isNotEmpty) _BannerSlider(banners: banners),
           // Category chips — shown when search spans multiple categories and no category filter active
@@ -524,11 +637,13 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             _CategoryChipsRow(
               categories: _suggestedCategories,
               isAr: Localizations.localeOf(context).languageCode == 'ar',
-              onTap: (catId, catName) {
-                setState(() => _filters = _filters.copyWith(
-                    categoryId: catId, categoryName: catName));
-                _fetch(reset: true);
-              },
+              // Like the subcategory tabs: brand / size / store picks belong to the old scope.
+              onTap: (catId, catName) => _applyFilters(_filters.copyWith(
+                  categoryId: catId,
+                  categoryName: catName,
+                  attributeValueIds: const {},
+                  brands: const {},
+                  vendorIds: const {})),
             ),
           // Products
           Expanded(
@@ -551,7 +666,7 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                                     fontFamilyFallback: ['Tajawal'],
                                     fontSize: 16,
                                     color: context.col.ink2)),
-                            if (_filters.isActive) ...[
+                            if (filtersActive) ...[
                               const SizedBox(height: 12),
                               TextButton.icon(
                                 onPressed: () {
@@ -579,6 +694,21 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                         ),
                       )
                     : Column(children: [
+                      if (_total != null)
+                        Padding(
+                          padding:
+                              const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 0),
+                          child: Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Text(context.s.resultsCountN(_total!),
+                                style: TextStyle(
+                                    fontFamily: 'Manrope',
+                                    fontFamilyFallback: const ['Tajawal'],
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.col.ink3)),
+                          ),
+                        ),
                       Expanded(child: LayoutBuilder(builder: (_, box) {
                         final cols = productGridColumns(box.maxWidth);
                         final colW = productColumnWidth(
@@ -615,6 +745,69 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                     ]),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Applied filters row ───────────────────────────────────────────────────────
+
+class _AppliedChip {
+  final String label;
+  final VoidCallback onRemove;
+  const _AppliedChip(this.label, this.onRemove);
+}
+
+/// A slim, scrollable row of the filters in force, in the filter-chip look (white, grey border).
+class _AppliedFiltersRow extends StatelessWidget {
+  final List<_AppliedChip> chips;
+  const _AppliedFiltersRow({required this.chips});
+
+  static final _arabic = RegExp(r'[\u0600-\u06FF]');
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: context.col.surface,
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        itemCount: chips.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final c = chips[i];
+          return Semantics(
+            button: true,
+            label: context.tr('إزالة ${c.label}', 'Remove ${c.label}'),
+            child: GestureDetector(
+              onTap: c.onRemove,
+              child: Container(
+                padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 8, 0),
+                decoration: BoxDecoration(
+                  color: context.col.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.col.border),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text(c.label,
+                      // Latin brand / size labels ("7-8 Years") must not be reversed by RTL bidi.
+                      textDirection: _arabic.hasMatch(c.label)
+                          ? null
+                          : TextDirection.ltr,
+                      style: TextStyle(
+                          fontFamily: 'Manrope',
+                          fontFamilyFallback: const ['Tajawal'],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: context.col.ink1)),
+                  const SizedBox(width: 4),
+                  Icon(Icons.close_rounded, size: 15, color: context.col.ink3),
+                ]),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -803,7 +996,6 @@ class _SubcatTabs extends StatelessWidget {
                   selected: selectedId == null,
                   onTap: () => onSelect(null),
                 ),
-                const SizedBox(width: 8),
                 ...categories.map((cat) => Padding(
                       padding: const EdgeInsetsDirectional.only(start: 8),
                       child: _Tab(
@@ -969,7 +1161,13 @@ class _BannerSliderState extends State<_BannerSlider> {
 class _FilterSheet extends ConsumerStatefulWidget {
   final _FilterState initial;
   final int? scopeCategoryId;
-  const _FilterSheet({required this.initial, this.scopeCategoryId});
+  final String query; // the screen's search, so the options match its results
+  final bool featured;
+  const _FilterSheet(
+      {required this.initial,
+      this.scopeCategoryId,
+      this.query = '',
+      this.featured = false});
   @override
   ConsumerState<_FilterSheet> createState() => _FilterSheetState();
 }
@@ -978,7 +1176,6 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   late final TextEditingController _minCtrl;
   late final TextEditingController _maxCtrl;
   int? _rating;
-  late bool _inStock;
   late bool _onSale;
   int? _categoryId;
   String? _categoryName;
@@ -991,16 +1188,33 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   Map<int, bool> _attrExpanded = {};
   bool _brandExpanded = true;
   bool _vendorExpanded = true;
+  // Long lists (brands, sizes…) show the first [_collapsedCount] until «عرض الكل» is tapped.
+  static const _collapsedCount = 12;
+  final Set<String> _listExpanded = {};
+  // Price range the options are scoped to: the applied one (typing must not refetch per key).
+  double? _scopeMinPrice;
+  double? _scopeMaxPrice;
+  // The last options shown, kept on screen while a pick refetches the narrowed ones.
+  _FilterOptions? _lastOptions;
+  // Every value / store seen in this sheet, so a pick the narrowed options no longer list stays
+  // visible (and can be unticked), and the results page can name it on its chip.
+  final Map<int, (_AttrType, _AttrValue)> _seenAttrValues = {};
+  late final Map<int, String> _attrLabels;
+  late final Map<int, String> _vendorNames;
 
   @override
   void initState() {
     super.initState();
-    _minCtrl = TextEditingController(
-        text: widget.initial.minPrice?.toStringAsFixed(0) ?? '');
-    _maxCtrl = TextEditingController(
-        text: widget.initial.maxPrice?.toStringAsFixed(0) ?? '');
+    // Unrounded: a stored 99.5 reopens as 99.5, not 100.
+    _minCtrl =
+        TextEditingController(text: formatPriceInput(widget.initial.minPrice));
+    _maxCtrl =
+        TextEditingController(text: formatPriceInput(widget.initial.maxPrice));
+    _scopeMinPrice = widget.initial.minPrice;
+    _scopeMaxPrice = widget.initial.maxPrice;
+    _attrLabels = {...widget.initial.attrLabels};
+    _vendorNames = {...widget.initial.vendorNames};
     _rating = widget.initial.minRating;
-    _inStock = widget.initial.inStockOnly;
     _onSale = widget.initial.onSaleOnly;
     _categoryId = widget.initial.categoryId;
     _categoryName = widget.initial.categoryName;
@@ -1017,20 +1231,138 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   }
 
   void _apply() {
-    final minPrice = double.tryParse(_minCtrl.text.trim());
-    final maxPrice = double.tryParse(_maxCtrl.text.trim());
+    // Arabic-Indic digits and "1,000" parse; a min above the max is swapped.
+    final (minPrice, maxPrice) = parsePriceRange(_minCtrl.text, _maxCtrl.text);
     Navigator.of(context).pop(_FilterState(
       minPrice: minPrice,
       maxPrice: maxPrice,
       minRating: _rating,
-      inStockOnly: _inStock,
       onSaleOnly: _onSale,
       categoryId: _categoryId,
       categoryName: _categoryName,
       attributeValueIds: Set.from(_attrValueIds),
       brands: Set.from(_brands),
       vendorIds: Set.from(_vendorIds),
+      attrLabels: {
+        for (final id in _attrValueIds)
+          if (_attrLabels[id] != null) id: _attrLabels[id]!,
+      },
+      vendorNames: {
+        for (final id in _vendorIds)
+          if (_vendorNames[id] != null) id: _vendorNames[id]!,
+      },
     ));
+  }
+
+  // The shopper's current view, picks in this sheet included: the options are fetched for it.
+  _FilterScope get _scope => _FilterScope(
+        query: widget.query,
+        categoryId: _effectiveCategoryId,
+        onSale: _onSale,
+        featured: widget.featured,
+        minPrice: _scopeMinPrice,
+        maxPrice: _scopeMaxPrice,
+        minRating: _rating,
+        brands: _brands,
+        attributeValueIds: _attrValueIds,
+        vendorIds: _vendorIds,
+      );
+
+  // A deep-link brand ("nike") must match the option ("NIKE").
+  bool _brandSelected(String b) =>
+      _brands.any((x) => x.toLowerCase() == b.toLowerCase());
+
+  void _toggleBrand(String b) => setState(() => _brandSelected(b)
+      ? _brands.removeWhere((x) => x.toLowerCase() == b.toLowerCase())
+      : _brands.add(b));
+
+  void _remember(_FilterOptions o, bool isAr) {
+    for (final t in o.attrTypes) {
+      for (final v in t.values) {
+        _seenAttrValues[v.id] = (t, v);
+        _attrLabels[v.id] =
+            (isAr && v.valueAr.isNotEmpty) ? v.valueAr : v.value;
+      }
+    }
+    for (final v in o.vendors) {
+      _vendorNames[v.id] = v.name;
+    }
+  }
+
+  // Picks the narrowed options no longer list (another facet ruled them out) stay visible.
+  _FilterOptions _withSelected(_FilterOptions o) {
+    final brands = [...o.brands];
+    for (final b in _brands) {
+      if (!brands.any((x) => x.toLowerCase() == b.toLowerCase())) brands.add(b);
+    }
+    final vendors = [...o.vendors];
+    for (final id in _vendorIds) {
+      final name = _vendorNames[id];
+      if (name != null && !vendors.any((v) => v.id == id)) {
+        vendors.add(_Vendor(id: id, name: name));
+      }
+    }
+    final types = [...o.attrTypes];
+    for (final id in _attrValueIds) {
+      if (types.any((t) => t.values.any((v) => v.id == id))) continue;
+      final seen = _seenAttrValues[id];
+      if (seen == null) continue;
+      final (type, val) = seen;
+      final i = types.indexWhere((t) => t.id == type.id);
+      final base = i >= 0 ? types[i] : type;
+      final merged = _AttrType(
+          id: base.id,
+          name: base.name,
+          nameAr: base.nameAr,
+          displayType: base.displayType,
+          values: [if (i >= 0) ...base.values, val]);
+      if (i >= 0) {
+        types[i] = merged;
+      } else {
+        types.add(merged);
+      }
+    }
+    return _FilterOptions(
+        attrTypes: types,
+        brands: brands,
+        vendors: vendors,
+        hasReviews: o.hasReviews);
+  }
+
+  // The first [_collapsedCount] items, plus any picked further down, until expanded.
+  List<T> _visible<T>(String key, List<T> all, bool Function(T) isSel) {
+    if (_listExpanded.contains(key) || all.length <= _collapsedCount) {
+      return all;
+    }
+    return [
+      for (var i = 0; i < all.length; i++)
+        if (i < _collapsedCount || isSel(all[i])) all[i],
+    ];
+  }
+
+  List<Widget> _showAll(String key, int total) {
+    if (_listExpanded.contains(key) || total <= _collapsedCount) return [];
+    return [
+      GestureDetector(
+        onTap: () => setState(() => _listExpanded.add(key)),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+              color: context.col.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: context.col.border, width: 1.5)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(context.tr('عرض الكل ($total)', 'Show all ($total)'),
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: context.col.ink1)),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                size: 16, color: context.col.ink3),
+          ]),
+        ),
+      ),
+    ];
   }
 
   // The category driving filter-option scoping: user's in-sheet pick, else page scope.
@@ -1064,8 +1396,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
       _minCtrl.clear();
       _maxCtrl.clear();
       _rating = null;
-      _inStock = false;
       _onSale = false;
+      _scopeMinPrice = null;
+      _scopeMaxPrice = null;
       _categoryId = null;
       _categoryName = null;
       _attrValueIds = {};
@@ -1111,6 +1444,19 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final allCategories = ref.watch(homeProvider).categories;
+
+    // Options for the current view. While a pick refetches them the last ones stay up (with a
+    // thin progress line); first load = spinner; failure = a Retry box.
+    final scope = _scope;
+    final optsAsync = ref.watch(_filterOptionsProvider(scope));
+    final fresh = optsAsync.valueOrNull;
+    if (fresh != null && !optsAsync.isLoading) {
+      _lastOptions = fresh;
+      _remember(fresh, isAr);
+    }
+    final optsFailed = optsAsync.hasError && !optsAsync.isLoading;
+    final shownOpts = optsFailed ? null : (fresh ?? _lastOptions);
+    final opts = shownOpts == null ? null : _withSelected(shownOpts);
 
     // Compute scoped subcategories for the category filter section
     List<Category> scopedCats = [];
@@ -1241,12 +1587,36 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   ],
                 ],
 
+                // ── Options loading / failed ──────────────────────────
+                if (optsFailed)
+                  _OptionsError(
+                      onRetry: () =>
+                          ref.invalidate(_filterOptionsProvider(scope)))
+                else if (opts == null)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColors.primary),
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: 2,
+                    child: optsAsync.isLoading
+                        ? const LinearProgressIndicator(
+                            minHeight: 2, color: AppColors.primary)
+                        : null,
+                  ),
+
                 // ── Attributes (Size, Color, etc.) ────────────────────
-                Consumer(builder: (ctx, attrRef, _) {
-                  final opts = attrRef.watch(_filterOptionsProvider(
-                      _FilterScope(categoryId: _effectiveCategoryId)));
-                  return opts.maybeWhen(
-                    data: (options) {
+                if (opts != null)
+                  Builder(builder: (_) {
+                      final options = opts;
                       // Filter out brand attribute type — handled by the dedicated brand section
                       final attrTypes = options.attrTypes.where((t) {
                         final n = t.name.toLowerCase();
@@ -1273,7 +1643,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
-                                  children: _orderedValues(attrType).map((val) {
+                                  children: [
+                                  ..._visible(
+                                          'attr_${attrType.id}',
+                                          _orderedValues(attrType),
+                                          (v) => _attrValueIds.contains(v.id))
+                                      .map((val) {
                                     final sel = _attrValueIds.contains(val.id);
                                     final valLabel =
                                         (isAr && val.valueAr.isNotEmpty)
@@ -1337,11 +1712,14 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
                                                 color: sel
-                                                    ? const Color(0xFFF0F0F0)
+                                                    ? Colors.white
                                                     : context.col.ink1)),
                                       ),
                                     );
-                                  }).toList(),
+                                  }),
+                                  ..._showAll('attr_${attrType.id}',
+                                      attrType.values.length),
+                                  ],
                                 ),
                                 const SizedBox(height: 12),
                                 const Divider(height: 1),
@@ -1350,17 +1728,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                           );
                         }).toList(),
                       );
-                    },
-                    orElse: () => const SizedBox.shrink(),
-                  );
-                }),
+                  }),
 
                 // ── Brand ─────────────────────────────────────────────
-                Consumer(builder: (ctx, brandRef, _) {
-                  final opts = brandRef.watch(_filterOptionsProvider(
-                      _FilterScope(categoryId: _effectiveCategoryId)));
-                  return opts.maybeWhen(
-                    data: (options) {
+                if (opts != null)
+                  Builder(builder: (_) {
+                      final options = opts;
                       if (options.brands.isEmpty)
                         return const SizedBox.shrink();
                       return Column(
@@ -1375,11 +1748,13 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
-                              children: options.brands.map((b) {
-                                final sel = _brands.contains(b);
+                              children: [
+                              ..._visible('brand', options.brands,
+                                      _brandSelected)
+                                  .map((b) {
+                                final sel = _brandSelected(b);
                                 return GestureDetector(
-                                  onTap: () => setState(() =>
-                                      sel ? _brands.remove(b) : _brands.add(b)),
+                                  onTap: () => _toggleBrand(b),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 7),
@@ -1394,6 +1769,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                                 : context.col.border,
                                             width: 1.5)),
                                     child: Text(b,
+                                        // Latin brand names read LTR, as in the store sheet.
+                                        textDirection: TextDirection.ltr,
                                         style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
@@ -1402,17 +1779,16 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                                 : context.col.ink1)),
                                   ),
                                 );
-                              }).toList(),
+                              }),
+                              ..._showAll('brand', options.brands.length),
+                              ],
                             ),
                             const SizedBox(height: 12),
                             const Divider(height: 1),
                           ],
                         ],
                       );
-                    },
-                    orElse: () => const SizedBox.shrink(),
-                  );
-                }),
+                  }),
 
                 // ── Price ─────────────────────────────────────────────────
                 _sectionHeader(
@@ -1462,36 +1838,10 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 ),
                 const Divider(height: 1),
 
-                // ── In-stock ──────────────────────────────────────────────
-                GestureDetector(
-                  onTap: () => setState(() => _inStock = !_inStock),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Row(children: [
-                      Text(context.s.inStockOnly,
-                          style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                              color: context.col.ink1)),
-                      const Spacer(),
-                      Switch(
-                        value: _inStock,
-                        onChanged: (v) => setState(() => _inStock = v),
-                        activeColor: AppColors.primary,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ]),
-                  ),
-                ),
-                const Divider(height: 1),
-
-                // ── Rating (only shown when products in scope actually have reviews) ──
-                Consumer(builder: (ctx, ratingRef, _) {
-                  final hasReviews = ratingRef
-                      .watch(_filterOptionsProvider(
-                          _FilterScope(categoryId: _effectiveCategoryId)))
-                      .maybeWhen(
-                          data: (o) => o.hasReviews, orElse: () => false);
+                // ── Rating (only shown when products in scope actually have reviews,
+                //    or a rating is already picked so it can be cleared) ──
+                Builder(builder: (_) {
+                  final hasReviews = (opts?.hasReviews ?? false) || _rating != null;
                   if (!hasReviews) return const SizedBox.shrink();
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1554,11 +1904,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 }),
 
                 // ── Vendor / Seller ───────────────────────────────────
-                Consumer(builder: (ctx, vendorRef, _) {
-                  final optsAsync = vendorRef.watch(_filterOptionsProvider(
-                      _FilterScope(categoryId: _effectiveCategoryId)));
-                  final list = optsAsync.maybeWhen(
-                      data: (o) => o.vendors, orElse: () => <_Vendor>[]);
+                Builder(builder: (_) {
+                  final list = opts?.vendors ?? const <_Vendor>[];
                   if (list.isEmpty) return const SizedBox.shrink();
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1572,7 +1919,10 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: list.map((v) {
+                          children: [
+                          ..._visible('vendor', list,
+                                  (v) => _vendorIds.contains(v.id))
+                              .map((v) {
                             final sel = _vendorIds.contains(v.id);
                             return GestureDetector(
                               onTap: () => setState(() => sel
@@ -1600,7 +1950,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                             : context.col.ink1)),
                               ),
                             );
-                          }).toList(),
+                          }),
+                          ..._showAll('vendor', list.length),
+                          ],
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -1641,6 +1993,34 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   }
 }
 
+/// The sheet's brand / size / store options failed to load: say so, offer Retry.
+class _OptionsError extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _OptionsError({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(children: [
+        Icon(Icons.error_outline_rounded, size: 18, color: context.col.ink3),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+              context.tr('تعذّر تحميل خيارات الفلترة',
+                  'Could not load the filter options'),
+              style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontFamilyFallback: const ['Tajawal'],
+                  fontSize: 13,
+                  color: context.col.ink2)),
+        ),
+        TextButton(onPressed: onRetry, child: Text(context.s.retry)),
+      ]),
+    );
+  }
+}
+
 class _CatChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -1667,7 +2047,7 @@ class _CatChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected ? const Color(0xFFF0F0F0) : context.col.ink1,
+              color: selected ? Colors.white : context.col.ink1,
             )),
       ),
     );
