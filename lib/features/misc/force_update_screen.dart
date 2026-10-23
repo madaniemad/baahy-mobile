@@ -10,12 +10,14 @@ import '../../core/utils/l10n.dart';
 /// should read as the app quietly asking for something.
 const _accent = Color(0xFF1FD7E2);
 
-const _kTitleAr = 'تحديث مطلوب';
-const _kTitleEn = 'Update Required';
+// Wording: Emad, 2026-10-23. The body normally comes from the admin
+// force_message setting; these are the fallback when it is empty.
+const _kTitleAr = 'تحديث جديد';
+const _kTitleEn = 'New update';
 const _kButtonAr = 'تحديث الآن';
-const _kButtonEn = 'Update Now';
-const _kFallbackAr = 'يرجى تحديث التطبيق للحصول على أحدث المميزات والتحسينات.';
-const _kFallbackEn = 'Please update the app to get the latest features and improvements.';
+const _kButtonEn = 'Update now';
+const _kFallbackAr = 'حدّث التطبيق واستمتع بميزات جديدة ومطورة';
+const _kFallbackEn = 'Update the app and enjoy new and improved features';
 
 String _resolveMessage(bool isAr, String ar, String en) {
   final picked = isAr ? ar : en;
@@ -37,7 +39,8 @@ void _openStore(String storeUrl) {
 
 /// The frosted card both entry points share: a translucent surface over a real
 /// backdrop blur, so whatever sits behind stays faintly readable and the panel
-/// looks like glass rather than a coloured sheet.
+/// looks like glass rather than a coloured sheet. Title, message, button: no icon
+/// (Emad, 2026-10-23).
 class _UpdateCard extends StatelessWidget {
   final bool isAr;
   final String message;
@@ -55,7 +58,7 @@ class _UpdateCard extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(26),
+          borderRadius: BorderRadius.circular(22),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
             child: Container(
@@ -63,23 +66,13 @@ class _UpdateCard extends StatelessWidget {
                 // Translucent so the blur reads as glass; opaque enough that the
                 // text keeps its contrast over any page behind it.
                 color: col.surface.withValues(alpha: context.isDark ? 0.82 : 0.86),
-                borderRadius: BorderRadius.circular(26),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(color: col.border.withValues(alpha: 0.6)),
               ),
-              padding: const EdgeInsets.fromLTRB(26, 30, 26, 22),
+              padding: const EdgeInsets.fromLTRB(24, 30, 24, 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: _accent.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.system_update_rounded, size: 30, color: _accent),
-                  ),
-                  const SizedBox(height: 20),
                   Text(
                     title,
                     textAlign: TextAlign.center,
@@ -87,8 +80,8 @@ class _UpdateCard extends StatelessWidget {
                       fontFamily: 'Manrope',
                       fontFamilyFallback: const ['Tajawal'],
                       color: col.ink0,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -99,18 +92,18 @@ class _UpdateCard extends StatelessWidget {
                       fontFamily: 'Manrope',
                       fontFamilyFallback: const ['Tajawal'],
                       color: col.ink2,
-                      fontSize: 14.5,
+                      fontSize: 15,
                       height: 1.55,
                     ),
                   ),
-                  const SizedBox(height: 26),
+                  const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     child: Material(
                       color: _accent,
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(12),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(12),
                         onTap: () => _openStore(storeUrl),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 15),
@@ -121,8 +114,8 @@ class _UpdateCard extends StatelessWidget {
                               fontFamily: 'Manrope',
                               fontFamilyFallback: ['Tajawal'],
                               color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -194,6 +187,9 @@ Future<void> showForceUpdateDialog(
     context: context,
     barrierDismissible: false,
     barrierColor: Colors.transparent, // the blur layer below is the scrim
+    // Blur edge to edge: with the default safe area the status bar and the strip
+    // under the home indicator stayed sharp. The card is centred, so it is safe.
+    useSafeArea: false,
     builder: (ctx) => PopScope(
       canPop: false,
       child: Stack(

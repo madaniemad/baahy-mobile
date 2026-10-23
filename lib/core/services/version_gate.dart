@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../api/api_client.dart';
@@ -31,7 +32,16 @@ class VersionGateResult {
 /// FAIL-OPEN by design: any error (network, parse, missing settings) returns
 /// [VersionGateResult.none] so a transient hiccup can never brick the app.
 class VersionGate {
+  /// Debug-only: `flutter run --dart-define=PREVIEW_FORCE_UPDATE=true` shows the
+  /// force-update popup without touching the live min_version. Compiled out of
+  /// release builds (kDebugMode is a const false there).
+  static const _previewForce = kDebugMode && bool.fromEnvironment('PREVIEW_FORCE_UPDATE');
+
   static Future<VersionGateResult> check() async {
+    if (_previewForce) {
+      // Empty messages → the screen's own wording, as when admin leaves it blank.
+      return const VersionGateResult(forceUpdate: true);
+    }
     try {
       final platform = Platform.isIOS ? 'ios' : 'android';
       final info = await PackageInfo.fromPlatform();

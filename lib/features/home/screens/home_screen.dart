@@ -108,7 +108,9 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     _maybeShowForceUpdate(context, ref);
-    _maybeInitTracking();
+    // Not while an update is required: iOS's tracking prompt would land on top of
+    // the update popup (seen 2026-10-23). It runs on the next launch instead.
+    if (ref.read(pendingForceUpdateProvider)?.forceUpdate != true) _maybeInitTracking();
     final home = ref.watch(homeProvider);
     final banners = ref.watch(bannersProvider);
     final config = ref.watch(appConfigProvider);
