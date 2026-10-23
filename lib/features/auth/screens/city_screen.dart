@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/providers/address_provider.dart';
 import '../../../core/providers/app_pages_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
@@ -9,365 +8,250 @@ import '../../../core/utils/arabic_text.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 
-// ── Colors ──────────────────────────────────────────────────────────────────────
-const _navy     = Color(0xFF0E3C46);
-const _teal     = AppColors.primary; // #1FD7E2
-const _cityBase = Color(0xFF38D1E2);
-
+/// "Change city" (`/city`), opened from the home header city, Settings and Account.
+///
+/// Redesigned 2026-10-23 (Emad didn't like the full-tiffany page): a plain white page like the rest
+/// of the app — standard app bar, outlined search, a full-width list. Tapping a city saves it and
+/// goes back; there is no confirm button. Cities come from the live shipping rates. First-run city
+/// choice is NOT here — that is the onboarding picker (`onb_city_picker.dart`).
 class CityScreen extends ConsumerStatefulWidget {
   const CityScreen({super.key});
   @override
   ConsumerState<CityScreen> createState() => _CityScreenState();
 }
 
-class _CityScreenState extends ConsumerState<CityScreen>
-    with SingleTickerProviderStateMixin {
+class _CityScreenState extends ConsumerState<CityScreen> {
   final _searchCtrl = TextEditingController();
-  final _listCtrl   = ScrollController();
-  String _query      = '';
-  String _selected   = 'طرابلس';
-  bool _isReturning  = false;
-
-  late AnimationController _entryCtrl;
-  late Animation<double> _slideY;
-  late Animation<double> _fade;
-
-  @override
-  void initState() {
-    super.initState();
-    _entryCtrl = AnimationController(vsync: this,
-        duration: const Duration(milliseconds: 600))
-      ..forward();
-    _fade   = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut);
-    _slideY = Tween<double>(begin: 14, end: 0).animate(
-        CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic));
-    _checkReturning();
-  }
-
-  Future<void> _checkReturning() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _isReturning = prefs.getBool('onboarding_v2_done') ?? false;
-    });
-  }
+  String _query = '';
 
   @override
   void dispose() {
     _searchCtrl.dispose();
-    _listCtrl.dispose();
-    _entryCtrl.dispose();
     super.dispose();
   }
 
-  List<CityEntry> _filterCities(List<CityEntry> all) {
+  List<CityEntry> _filter(List<CityEntry> all) {
     if (normalizeArabic(_query).isEmpty) return all;
-    return all.where((c) =>
-      matchesArabic(c.ar, _query) || matchesArabic(c.en, _query)).toList();
+    return all
+        .where((c) => matchesArabic(c.ar, _query) || matchesArabic(c.en, _query))
+        .toList();
   }
 
-  Future<void> _proceed() async {
-    await ref.read(cityProvider.notifier).setCity(_selected);
+  Future<void> _pick(CityEntry city) async {
+    FocusScope.of(context).unfocus();
+    await ref.read(cityProvider.notifier).setCity(city.ar);
     if (!mounted) return;
-    // City is first (its language toggle sets the onboarding language); go to
-    // the intro carousel next, or straight home when changing city later.
-    context.go(_isReturning ? '/home' : '/rewards-intro');
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/home');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isAr      = ref.watch(localeProvider).languageCode == 'ar';
+    final isAr = context.isAr;
+    // The saved city may be stored in Arabic or in English (from a saved address).
+    final current = normalizeArabic(ref.watch(cityProvider)).toLowerCase();
     final ratesAsync = ref.watch(shippingRatesProvider);
-    final loading   = ratesAsync.isLoading;
-    // Load failed (offline / server) — not the same as "no city matches".
-    final failed    = !loading && ratesAsync.hasError;
-    final rates     = ratesAsync.valueOrNull ?? const [];
-    final allCities = rates.map((r) => CityEntry(ar: r.cityAr, en: r.city)).toList();
-    final filtered  = _filterCities(allCities);
+    final loading = ratesAsync.isLoading && !ratesAsync.hasValue;
+    final failed = !loading && ratesAsync.hasError && !ratesAsync.hasValue;
+    final all = (ratesAsync.valueOrNull ?? const [])
+        .map((r) => CityEntry(ar: r.cityAr, en: r.city))
+        .toList();
+    final cities = _filter(all);
+
+    bool isCurrent(CityEntry c) =>
+        normalizeArabic(c.ar) == current || c.en.toLowerCase() == current;
 
     return Scaffold(
-      backgroundColor: _cityBase,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.86),
-            radius: 1.48,
-            colors: [Color(0xFF52D9E8), _cityBase],
-            stops: [0.0, 0.40],
-          ),
+      backgroundColor: context.col.surface,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: context.col.surface,
+        leading: IconButton(
+          onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+          icon: Icon(Icons.arrow_back, color: context.col.ink0),
         ),
-        child: SafeArea(
-          child: GestureDetector(
-            onTap: () => FocusScope.of(context).unfocus(),
-            behavior: HitTestBehavior.translucent,
-            child: Column(
-              children: [
-                // Language pill
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      GestureDetector(
-                        onTap: () => ref.read(localeProvider.notifier).toggle(),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(999),
-                            boxShadow: [BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
-                              blurRadius: 16, offset: const Offset(0, 6))],
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.language_rounded, size: 16, color: _teal),
-                            const SizedBox(width: 6),
-                            Text(isAr ? 'English' : 'العربية',
-                              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                                fontSize: 13, fontWeight: FontWeight.w800, color: _navy)),
-                          ]),
+        title: Text(isAr ? 'اختر مدينتك' : 'Choose your city',
+            style: const TextStyle(
+                fontFamily: 'Manrope',
+                fontFamilyFallback: ['Tajawal'],
+                fontWeight: FontWeight.w800,
+                fontSize: 18)),
+        centerTitle: true,
+      ),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: Column(children: [
+          // Why we ask + search
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                  isAr
+                      ? 'نعرض لك المنتجات وأسعار ومواعيد التوصيل حسب مدينتك.'
+                      : 'We show products, delivery prices and times for your city.',
+                  style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontFamilyFallback: const ['Tajawal'],
+                      fontSize: 13,
+                      height: 1.5,
+                      color: context.col.ink3)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _searchCtrl,
+                onChanged: (v) => setState(() => _query = v),
+                textInputAction: TextInputAction.search,
+                style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 14,
+                    color: context.col.ink0),
+                cursorColor: AppColors.primary,
+                decoration: InputDecoration(
+                  hintText: isAr ? 'ابحث عن مدينتك' : 'Search for your city',
+                  hintStyle: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontFamilyFallback: const ['Tajawal'],
+                      fontSize: 14,
+                      color: context.col.ink3),
+                  prefixIcon: Icon(Icons.search_rounded, size: 20, color: context.col.ink3),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          onPressed: () => setState(() {
+                            _searchCtrl.clear();
+                            _query = '';
+                          }),
+                          icon: Icon(Icons.close_rounded, size: 18, color: context.col.ink3),
                         ),
-                      ),
-                    ],
-                  ),
+                  // Clear background, outline only.
+                  filled: false,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: context.col.border)),
+                  focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                 ),
-
-                // Content — fixed header, list scrolls inside its own box
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
-                    child: AnimatedBuilder(
-                      animation: Listenable.merge([_slideY, _fade]),
-                      builder: (_, child) => Opacity(
-                        opacity: _fade.value,
-                        child: Transform.translate(
-                          offset: Offset(0, _slideY.value), child: child)),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 48),
-                          // Heading
-                          Text(isAr ? 'اختار مدينتك' : 'Choose Your City',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 26,
-                              fontWeight: FontWeight.w900, color: Colors.white,
-                              shadows: [Shadow(color: Color(0x2E0E3C46), blurRadius: 14, offset: Offset(0, 3))])),
-                          const SizedBox(height: 10),
-                          Text(isAr
-                              ? 'لنتمكن من عرض المنتجات والعروض المناسبة لك'
-                              : 'To show you relevant products and offers',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
-                              fontWeight: FontWeight.w700, color: _navy, height: 1.4)),
-                          const SizedBox(height: 24),
-
-                          // Search bar
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 320),
-                            child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: [BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 14, offset: const Offset(0, 5))],
-                            ),
-                            child: Row(children: [
-                              const SizedBox(width: 14),
-                              const Icon(Icons.search_rounded, size: 20, color: Color(0xFF0D6B75)),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextField(
-                                  controller: _searchCtrl,
-                                  autofocus: false,
-                                  textAlign: TextAlign.start,
-                                  textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-                                  onChanged: (v) => setState(() => _query = v),
-                                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                                    fontSize: 13.5, fontWeight: FontWeight.w600, color: _navy),
-                                  cursorColor: _teal,
-                                  decoration: InputDecoration(
-                                    hintText: isAr ? 'ابحث عن مدينتك' : 'Search cities',
-                                    hintStyle: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                                      color: Color(0xFF2A6E78), fontSize: 13.5, fontWeight: FontWeight.w500),
-                                    border: InputBorder.none,
-                                    filled: true,
-                                    fillColor: Colors.transparent,
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 9),
-                                    isDense: true,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                            ]),
-                          )),
-                          const SizedBox(height: 18),
-
-                          // City list — clean white card, scrolls internally
-                          ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: 320,
-                              maxHeight: MediaQuery.sizeOf(context).height * 0.44),
-                            child: Container(
-                            clipBehavior: Clip.antiAlias,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.10),
-                                blurRadius: 24, offset: const Offset(0, 10))],
-                            ),
-                            child: loading
-                                ? const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 36),
-                                    child: Center(child: CircularProgressIndicator(
-                                      color: _teal, strokeWidth: 2.5)),
-                                  )
-                                : failed
-                                    ? Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                                        child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                          Text(isAr ? 'تعذر تحميل المدن' : "Couldn't load the cities",
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                                              color: _navy, fontWeight: FontWeight.w700)),
-                                          const SizedBox(height: 8),
-                                          TextButton.icon(
-                                            onPressed: () => ref.invalidate(shippingRatesProvider),
-                                            icon: const Icon(Icons.refresh_rounded, size: 18, color: _teal),
-                                            label: Text(isAr ? 'إعادة المحاولة' : 'Retry',
-                                              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                                                color: _navy, fontWeight: FontWeight.w800)),
-                                          ),
-                                        ]),
-                                      )
-                                    : filtered.isEmpty
-                                    ? Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 24),
-                                        child: Text(isAr ? 'لا توجد نتائج' : 'No results',
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(color: _navy, fontWeight: FontWeight.w700)),
-                                      )
-                                    : Scrollbar(
-                                        controller: _listCtrl,
-                                        thumbVisibility: true,
-                                        child: SingleChildScrollView(
-                                        controller: _listCtrl,
-                                        physics: const BouncingScrollPhysics(),
-                                        child: Column(children: [
-                                          for (int i = 0; i < filtered.length; i++) ...[
-                                            _CityRow(
-                                              cityAr: filtered[i].ar,
-                                              cityEn: filtered[i].en,
-                                              selected: _selected == filtered[i].ar,
-                                              isAr: isAr,
-                                              onTap: () => setState(() => _selected = filtered[i].ar),
-                                            ),
-                                            if (i < filtered.length - 1)
-                                              const Divider(height: 1, thickness: 1,
-                                                indent: 16, endIndent: 16, color: Color(0xFFEDF1F2)),
-                                          ],
-                                        ]),
-                                      )),
-                          )),
-                          const Spacer(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Bottom action bar — always visible, never overlaps list
-                _BottomBar(
-                  label: _isReturning
-                      ? (isAr ? 'تأكيد' : 'Confirm')
-                      : (isAr ? 'التالي' : 'Next'),
-                  onTap: _proceed,
-                  isAr: isAr,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── City row ───────────────────────────────────────────────────────────────────
-class _CityRow extends StatelessWidget {
-  final String cityAr;
-  final String cityEn;
-  final bool selected;
-  final bool isAr;
-  final VoidCallback onTap;
-  const _CityRow({required this.cityAr, required this.cityEn,
-    required this.selected, required this.isAr, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? _teal.withValues(alpha: 0.10) : Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
-          child: Row(children: [
-            Expanded(
-              child: Text(isAr ? cityAr : cityEn,
-                textAlign: TextAlign.start,
-                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14.5,
-                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                  color: selected ? _navy : const Color(0xFF33565C))),
-            ),
-            const SizedBox(width: 10),
-            if (selected)
-              const Icon(Icons.check_circle_rounded, size: 20, color: _teal)
-            else
-              const SizedBox(width: 20),
-          ]),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Bottom action bar ───────────────────────────────────────────────────────────
-class _BottomBar extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  final bool isAr;
-  const _BottomBar({required this.label, required this.onTap, required this.isAr});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 6, 18, 12),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 22),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: const [BoxShadow(
-              color: Color(0x330E3C46), blurRadius: 30, offset: Offset(0, 14))],
-          ),
-          child: Stack(alignment: Alignment.center, children: [
-            Text(label, style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-              fontSize: 15, fontWeight: FontWeight.w900, color: _navy)),
-            // arrow_forward_ios mirrors with text direction, so it points
-            // "into the flow" at the trailing edge in both languages.
-            PositionedDirectional(
-              end: 0,
-              child: Opacity(
-                opacity: 0.45,
-                child: const Icon(Icons.arrow_forward_ios, size: 16, color: _teal),
               ),
+            ]),
+          ),
+          Divider(height: 1, color: context.col.border),
+
+          // City list
+          Expanded(
+            child: loading
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5))
+                : failed
+                    ? _Message(
+                        icon: Icons.wifi_off_rounded,
+                        text: isAr ? 'تعذر تحميل المدن' : "Couldn't load the cities",
+                        action: isAr ? 'إعادة المحاولة' : 'Retry',
+                        onAction: () => ref.invalidate(shippingRatesProvider),
+                      )
+                    : cities.isEmpty
+                        ? _Message(
+                            icon: Icons.location_off_outlined,
+                            text: isAr
+                                ? 'لا توجد مدينة بهذا الاسم'
+                                : 'No city matches your search',
+                          )
+                        : ListView.separated(
+                            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                            padding: EdgeInsets.only(
+                                bottom: MediaQuery.paddingOf(context).bottom + 16),
+                            itemCount: cities.length,
+                            separatorBuilder: (_, __) => Divider(
+                                height: 1, indent: 52, endIndent: 16, color: context.col.border),
+                            itemBuilder: (_, i) => _CityRow(
+                              name: isAr ? cities[i].ar : cities[i].en,
+                              selected: isCurrent(cities[i]),
+                              onTap: () => _pick(cities[i]),
+                            ),
+                          ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _CityRow extends StatelessWidget {
+  final String name;
+  final bool selected;
+  final VoidCallback onTap;
+  const _CityRow({required this.name, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        child: Row(children: [
+          Icon(selected ? Icons.location_on_rounded : Icons.location_on_outlined,
+              size: 22, color: selected ? AppColors.adaptive(context) : context.col.ink3),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(name,
+                style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 15,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: context.col.ink0)),
+          ),
+          if (selected)
+            Icon(Icons.check_rounded, size: 22, color: AppColors.adaptive(context)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _Message extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final String? action;
+  final VoidCallback? onAction;
+  const _Message({required this.icon, required this.text, this.action, this.onAction});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 44, color: context.col.ink4),
+          const SizedBox(height: 10),
+          Text(text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontFamilyFallback: const ['Tajawal'],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: context.col.ink2)),
+          if (action != null) ...[
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: onAction,
+              icon: const Icon(Icons.refresh_rounded, size: 18, color: AppColors.primary),
+              label: Text(action!,
+                  style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontFamilyFallback: const ['Tajawal'],
+                      fontWeight: FontWeight.w700,
+                      color: context.col.ink0)),
             ),
-          ]),
-        ),
+          ],
+        ]),
       ),
     );
   }

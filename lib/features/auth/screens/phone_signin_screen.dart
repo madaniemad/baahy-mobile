@@ -187,7 +187,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
             else
               Container(
                 decoration: BoxDecoration(
-                  color: context.col.bg,
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: context.col.border),
                 ),

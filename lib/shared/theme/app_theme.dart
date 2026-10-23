@@ -259,17 +259,18 @@ ThemeData buildAppTheme() {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       ),
     ),
+    // Text fields: clear background, outline only (Emad, 2026-10-23: no grey fill anywhere).
+    // The border is a state-resolved DEFAULT, not enabledBorder/focusedBorder: a field wrapped in its
+    // own box sets `border: InputBorder.none` and must stay borderless (a theme focusedBorder drew a
+    // second outline inside the phone box).
     inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: AppColors.surfaceSoft,
-      border: OutlineInputBorder(
+      filled: false,
+      border: WidgetStateInputBorder.resolveWith((states) => OutlineInputBorder(
         borderRadius: AppRadius.smBorder,
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: AppRadius.smBorder,
-        borderSide: const BorderSide(color: AppColors.borderStrong),
-      ),
+        borderSide: states.contains(WidgetState.focused)
+            ? const BorderSide(color: AppColors.primary, width: 1.5)
+            : const BorderSide(color: AppColors.border),
+      )),
       hintStyle: const TextStyle(color: AppColors.ink3, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     ),
@@ -347,16 +348,13 @@ ThemeData buildDarkTheme() {
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: d.surfaceSoft,
-      border: OutlineInputBorder(
+      filled: false,
+      border: WidgetStateInputBorder.resolveWith((states) => OutlineInputBorder(
         borderRadius: AppRadius.smBorder,
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: AppRadius.smBorder,
-        borderSide: BorderSide(color: d.borderStrong),
-      ),
+        borderSide: states.contains(WidgetState.focused)
+            ? const BorderSide(color: AppColors.primaryDim, width: 1.5)
+            : BorderSide(color: d.border),
+      )),
       hintStyle: TextStyle(color: d.ink3, fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     ),

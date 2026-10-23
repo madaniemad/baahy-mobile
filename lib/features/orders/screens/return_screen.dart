@@ -875,7 +875,7 @@ class _StepReason extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: isAr ? 'صف المشكلة بمزيد من التفصيل...' : 'Describe the issue in more detail...',
                   hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13, color: context.col.ink3),
-                  filled: true, fillColor: context.col.bg,
+                  filled: false, // outline only, no grey fill (Emad, 2026-10-23)
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: context.col.border)),

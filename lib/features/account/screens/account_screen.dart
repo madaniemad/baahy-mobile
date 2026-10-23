@@ -1230,8 +1230,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             decoration: InputDecoration(
               hintText: context.s.fullNameHint,
               hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink3),
-              filled: true,
-              fillColor: context.col.bg,
+              filled: false, // outline only, no grey fill (Emad, 2026-10-23)
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: context.col.border)),

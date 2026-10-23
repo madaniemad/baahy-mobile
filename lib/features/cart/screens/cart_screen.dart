@@ -856,7 +856,7 @@ class _CouponSectionState extends ConsumerState<_CouponSection> {
                     hintText: context.s.couponHint,
                     hintStyle: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
                       color: context.col.ink3),
-                    filled: true, fillColor: context.col.bg,
+                    filled: false, // outline only, no grey fill (Emad, 2026-10-23)
                     errorText: _error,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),

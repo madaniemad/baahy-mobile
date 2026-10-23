@@ -118,9 +118,9 @@ class _UsernameSetupScreenState extends ConsumerState<UsernameSetupScreen> {
               prefixStyle: TextStyle(color: context.col.ink2, fontSize: 16, fontWeight: FontWeight.w600),
               hintText: 'username',
               hintStyle: TextStyle(color: context.col.ink4),
-              filled: true,
-              fillColor: context.col.surfaceSoft,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              filled: false, // outline only, no grey fill (Emad, 2026-10-23)
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.col.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.col.border)),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: _errorColor, width: 1.5),

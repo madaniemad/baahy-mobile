@@ -492,7 +492,7 @@ class _CityPickerSheetState extends ConsumerState<_CityPickerSheet> {
 
         Container(
           decoration: BoxDecoration(
-            color: context.col.surfaceSoft,
+            color: Colors.transparent, // outline only (Emad, 2026-10-23)
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.col.border),
           ),
