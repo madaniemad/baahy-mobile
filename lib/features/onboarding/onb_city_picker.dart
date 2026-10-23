@@ -28,7 +28,7 @@ const _ink = Color(0xFF14181A);            // values (city, selected language)
 const _muted = Color(0xFF6B7578);          // labels and helper lines
 const _teal = Color(0xFF1FD7E2);           // brand tiffany — button and icons only
 const _line = Color(0xFFE4E7E7);           // field borders (app border token)
-const _tint = Color(0xFFE6FAFB);           // selected language
+const _tint = Color(0xFFF4F5F6);           // selected language: the light grey `fill` of baahyShops/baahyDriver (Emad, 2026-10-23, final)
 
 class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
   bool _detecting = true;
