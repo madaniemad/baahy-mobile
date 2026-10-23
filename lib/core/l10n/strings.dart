@@ -27,17 +27,13 @@ class AppStrings {
   String get enterPhone     => isAr ? 'أدخل رقم هاتفك'            : 'Enter your phone number';
   // OTP goes WhatsApp first, SMS if it can't be delivered there — say so, or people wait for an SMS.
   String get phoneSub       => isAr ? 'سنرسل لك رمزاً من 6 أرقام عبر واتساب، أو برسالة نصية إن لم يصل.' : 'We\'ll send a 6-digit code on WhatsApp, or by SMS if it doesn\'t arrive.';
-  // What a signed-in customer gets (phone sign-in page). Amounts come from /app-config.
-  String get signedInGets   => isAr ? 'بعد تسجيل الدخول تحصل على:' : 'Once you sign in, you get:';
-  String benefitWelcome(String amount) => isAr ? 'رصيد ترحيبي $amount د.ل في محفظتك' : '$amount LYD welcome credit in your wallet';
-  String benefitCashback(String from, String to, String minOrder) => isAr
-      ? 'كاش باك من $from% حتى $to% على طلباتك من $minOrder د.ل'
-      : '$from% to $to% cashback on orders from $minOrder LYD';
-  String benefitInvite(String amount) => isAr ? 'ادعُ أصدقاءك واكسب $amount د.ل عن كل صديق يكمل أول طلب' : 'Invite friends: earn $amount LYD for each one who completes a first order';
-  String get benefitTracking => isAr ? 'تتبّع طلباتك لحظة بلحظة'            : 'Track your orders live';
-  String get benefitReturns  => isAr ? 'طلب الإرجاع بسهولة من التطبيق'      : 'Easy returns from the app';
-  String get benefitSaved    => isAr ? 'احفظ مفضلاتك وعناوينك لطلب أسرع'    : 'Save favourites and addresses for faster checkout';
-  String get benefitAi       => isAr ? 'مساعد التسوق baahyAi'               : 'baahyAi shopping assistant';
+  // Account perks on the phone sign-in page — short, and true for new AND returning customers
+  // (Emad, 2026-10-23: the long "once you sign in" list was messy). Amounts from /app-config.
+  String get accountPerks   => isAr ? 'مزايا حسابك'                : 'Your account perks';
+  String perkWelcome(String a)   => isAr ? '$a د.ل رصيد ترحيبي'     : '$a LYD welcome credit';
+  String perkFirstOrder(String p) => isAr ? 'خصم $p لأول طلب'        : '$p off your first order';
+  String perkCashback(String p)  => isAr ? 'كاش باك حتى $p%'         : 'Up to $p% cashback';
+  String perkInvite(String a)    => isAr ? '$a د.ل لكل صديق تدعوه'  : '$a LYD per friend you invite';
   String inviteRewardLine(String amount, String minOrder) => isAr
       ? 'بهذا الكود يكسب صديقك $amount د.ل بعد توصيل أول طلب لك ($minOrder د.ل فأكثر).'
       : 'With this code your friend earns $amount LYD once your first order ($minOrder LYD or more) is delivered.';

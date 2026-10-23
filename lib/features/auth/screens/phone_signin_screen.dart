@@ -314,31 +314,36 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
             const SizedBox(height: 28),
             Divider(height: 1, color: context.col.border),
             const SizedBox(height: 20),
-            // What signing in gets you — plain rows, not tappable-looking tiles. Every line is
-            // driven by the live config and hidden when that reward is switched off.
-            Text(context.s.signedInGets,
-              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: font,
-                fontSize: 14, fontWeight: FontWeight.w800, color: context.col.ink0)),
-            const SizedBox(height: 14),
-            ...[
-              if (cfg.welcomeBonusAmount > 0)
-                (Icons.account_balance_wallet_outlined, context.s.benefitWelcome(amt(cfg.welcomeBonusAmount))),
-              if ((context.isAr ? cfg.firstOrderOfferAr : cfg.firstOrderOfferEn)?.isNotEmpty == true)
-                (Icons.local_offer_outlined, (context.isAr ? cfg.firstOrderOfferAr : cfg.firstOrderOfferEn)!),
-              if (cfg.cashbackRate > 0)
-                (Icons.savings_outlined, context.s.benefitCashback(amt(cfg.cashbackRate),
-                    amt(cfg.tierPlatinumCashback > cfg.cashbackRate ? cfg.tierPlatinumCashback : cfg.cashbackRate),
-                    amt(cfg.cashbackMinOrder))),
-              if (cfg.referralGiverAmount > 0)
-                (Icons.card_giftcard_outlined, context.s.benefitInvite(amt(cfg.referralGiverAmount))),
-              (Icons.local_shipping_outlined, context.s.benefitTracking),
-              (Icons.assignment_return_outlined, context.s.benefitReturns),
-              (Icons.favorite_border_rounded, context.s.benefitSaved),
-              if (cfg.aiEnabled) (Icons.auto_awesome_outlined, context.s.benefitAi),
-            ].map((b) => Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: _BenefitRow(icon: b.$1, label: b.$2),
+            // Account perks — four short items in two columns, no tinted tiles. True for new and
+            // returning customers alike; each hides itself when that reward is switched off.
+            Builder(builder: (context) {
+              final offer = context.isAr ? cfg.firstOrderOfferAr : cfg.firstOrderOfferEn;
+              final pct = RegExp(r'\d+(\.\d+)?\s*%').firstMatch(offer ?? '')?.group(0)?.replaceAll(' ', '');
+              final topCashback = cfg.tierPlatinumCashback > cfg.cashbackRate
+                  ? cfg.tierPlatinumCashback : cfg.cashbackRate;
+              final perks = <(IconData, String)>[
+                if (cfg.welcomeBonusAmount > 0)
+                  (Icons.account_balance_wallet_outlined, context.s.perkWelcome(amt(cfg.welcomeBonusAmount))),
+                if (pct != null) (Icons.local_offer_outlined, context.s.perkFirstOrder(pct)),
+                if (topCashback > 0) (Icons.savings_outlined, context.s.perkCashback(amt(topCashback))),
+                if (cfg.referralGiverAmount > 0)
+                  (Icons.card_giftcard_outlined, context.s.perkInvite(amt(cfg.referralGiverAmount))),
+              ];
+              if (perks.isEmpty) return const SizedBox.shrink();
+              return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(context.s.accountPerks,
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: font,
+                    fontSize: 13.5, fontWeight: FontWeight.w800, color: context.col.ink0)),
+                const SizedBox(height: 12),
+                LayoutBuilder(builder: (_, box) => Wrap(
+                  runSpacing: 12,
+                  children: [
+                    for (final p in perks)
+                      SizedBox(width: box.maxWidth / 2, child: _BenefitRow(icon: p.$1, label: p.$2)),
+                  ],
                 )),
+              ]);
+            }),
           ]),
         ),
       ),
@@ -354,14 +359,14 @@ class _BenefitRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(icon, color: AppColors.primary, size: 20),
-      const SizedBox(width: 12),
+      Icon(icon, color: AppColors.primary, size: 18),
+      const SizedBox(width: 8),
       Expanded(
         child: Padding(
           padding: const EdgeInsets.only(top: 1),
           child: Text(label,
             style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
-              fontSize: 13.5, fontWeight: FontWeight.w500,
+              fontSize: 12.5, fontWeight: FontWeight.w500,
               color: context.col.ink1, height: 1.4)),
         ),
       ),
