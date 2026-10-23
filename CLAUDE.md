@@ -70,7 +70,7 @@ All from `lib/shared/theme/app_theme.dart`:
 - **Search screen + «ابحث في» chips**: white + grey border (`AppColors.tealChip*`). Never mint, never black/dark selected states.
 - `AppColors.ink0–ink4` — text hierarchy (ink0 = primary text, ink3 = placeholder)
 - `AppColors.bg` — `#FAFBFC` page background
-- `AppColors.surfaceSoft` — `#F6F7F7` search boxes, input backgrounds
+- `AppColors.surfaceSoft` — `#F6F7F7` soft surfaces. **NOT for text fields** (Emad, 2026-10-23): every input is a clear background with an outline only; the theme default border is a state-resolved outline (grey / tiffany when focused). A field inside its own box sets `border: InputBorder.none`.
 - `AppColors.danger` — `#E2553F` red (errors, OOS, cancelled)
 - `AppColors.success` — `#1F8A5B` green (delivered, in-stock)
 - `AppColors.gold` — `#D4A82E` star ratings
