@@ -169,9 +169,13 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
           SafeArea(bottom: false, child: Padding(
             padding: EdgeInsets.fromLTRB(24, 0, 24, botPad + 16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Expanded(child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              // Controls sit low, just above the button, with the empty space on top
+              // (Emad, 2026-10-23). Still scrolls on short screens.
+              Expanded(child: LayoutBuilder(builder: (context, box) => SingleChildScrollView(child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: box.maxHeight),
+                child: Column(mainAxisAlignment: MainAxisAlignment.end, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 // No logo (Emad, 2026-10-23): the splash just showed it.
-                const SizedBox(height: 48),
+                const SizedBox(height: 24),
 
                 _Label(t.language),
                 const SizedBox(height: 12),
@@ -182,11 +186,14 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
                 const SizedBox(height: 12),
                 _CityRow(city: cityLabel, placeholder: t.choose, action: cityLabel.isEmpty ? null : t.change, onTap: _openSheet),
                 const SizedBox(height: 12),
-                _Helper(
+                // Fixed height: the note changes as detection runs, and with the column
+                // bottom-aligned a growing note would push everything above it up.
+                SizedBox(height: 44, child: Align(alignment: AlignmentDirectional.topStart, child: _Helper(
                   t: t, detecting: _detecting, manual: _manual, hasCity: _cityAr.isNotEmpty,
                   denied: _denied, inService: _inService, onEnable: _enableLocation,
-                ),
-              ]))),
+                ))),
+                const SizedBox(height: 16),
+              ]))))),
               _Cta(label: t.start, onTap: _start),
             ]),
           )),
