@@ -114,7 +114,7 @@ class AppColors {
 
   // Chips, pills and tabs are NEUTRAL (Emad, 2026-10-23: no mint/green tabs anywhere): white with
   // the grey card border and dark text, like the «الأقسام» chips. Selected = light grey fill
-  // (#F4F5F6, the onboarding language highlight) with a dark outline. Dark mode keeps the outline look.
+  // (#F4F5F6, the onboarding language highlight) with only the very light card border (Emad: the dark outline looked bad).
   static bool _dark(BuildContext c) => Theme.of(c).brightness == Brightness.dark;
   static BaahyColors _col(BuildContext c) => Theme.of(c).extension<BaahyColors>()!;
   static Color tealChipBg(BuildContext c) => _col(c).surface;
@@ -122,7 +122,7 @@ class AppColors {
   static Color tealChipText(BuildContext c) => _col(c).ink1;
   static Color chipSelectedBg(BuildContext c) =>
       _dark(c) ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF4F5F6);
-  static Color chipSelectedBorder(BuildContext c) => _col(c).ink0;
+  static Color chipSelectedBorder(BuildContext c) => _col(c).border;
   static Color chipSelectedText(BuildContext c) => _col(c).ink0;
 
   // Returns brightness-appropriate primary: muted on dark, full on light

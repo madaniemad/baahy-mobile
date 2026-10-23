@@ -66,7 +66,7 @@ All from `lib/shared/theme/app_theme.dart`:
 **Colors:**
 - `AppColors.primary` — `#1FD7E2` tiffany (buttons, CTAs)
 - `AppColors.teal` / `teal600` / `teal700` — tiffany shades (`#1FD7E2` / `#16BEC8` / `#0E98A1`) for small accents only: links, spinners, accent bars, icons. **Was mint green `#4ECDC4` until 2026-10-23; Emad: no green anywhere.**
-- **Chips / pills / tabs are neutral** (2026-10-23): `AppColors.tealChipBg/Border/Text` = white + grey border + dark text; selected = `AppColors.chipSelectedBg/Border/Text` (light grey `#F4F5F6` fill, dark outline). Never tint a chip mint/teal.
+- **Chips / pills / tabs are neutral** (2026-10-23): `AppColors.tealChipBg/Border/Text` = white + grey border + dark text; selected = `AppColors.chipSelectedBg/Border/Text` (light grey `#F4F5F6` fill, only the very light card border — never a dark outline). Never tint a chip mint/teal.
 - `AppColors.ink0–ink4` — text hierarchy (ink0 = primary text, ink3 = placeholder)
 - `AppColors.bg` — `#FAFBFC` page background
 - `AppColors.surfaceSoft` — `#F6F7F7` search boxes, input backgrounds
