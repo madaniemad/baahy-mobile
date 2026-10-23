@@ -269,9 +269,10 @@ class _FilterChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 18),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            // Shop-page category carousel: the standard `_Tab` style.
+            // Shop-page category carousel: grey outline, empty; selected = solid tiffany.
             color: AppColors.catTabBg(context, selected),
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.catTabBorder(context, selected)),
           ),
           child: Text(
             label,

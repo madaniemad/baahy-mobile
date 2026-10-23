@@ -66,8 +66,8 @@ All from `lib/shared/theme/app_theme.dart`:
 **Colors:**
 - `AppColors.primary` — `#1FD7E2` tiffany (buttons, CTAs)
 - `AppColors.teal` / `teal600` / `teal700` — tiffany shades (`#1FD7E2` / `#16BEC8` / `#0E98A1`) for small accents only: links, spinners, accent bars, icons. **Was mint green `#4ECDC4` until 2026-10-23; Emad: no green anywhere.**
-- **Shop-page category tab carousels** (Emad, 2026-10-23 — copied from the products-page subcategory `_Tab`): unselected = `surfaceSoft` fill, no outline, `ink1` w500; selected = solid tiffany (`AppColors.adaptive`), white w700; radius 20. Helpers `AppColors.catTabBg/catTabText(context, selected)`. Used ONLY by `_Tab` (search results subcategories), the store-list tabs (`stores_tab.dart`) and the store page category row (`vendor_store_screen.dart` `_CatChip`).
-- **Search screen, search-result chips and filter sheets keep their own style** (Emad: "leave them as they were"): white + grey border (`AppColors.tealChip*`); selected filter chips = light grey `#F4F5F6` fill + very light border (`chipSelected*`). Never mint, never a dark outline.
+- **Category tab carousels on shop pages** (store list `stores_tab.dart`, store page `_CatChip`) and **filter sheet chips** share one look (Emad, 2026-10-23): unselected = empty (surface) with the grey card border; selected = solid tiffany (`AppColors.adaptive`) + white text. Helpers `AppColors.catTabBg/catTabBorder/catTabText(context, selected)` and `chipSelected*`. Brand/store/rating chips used black for selected — now tiffany. Price fields in both filter sheets: clear background, outline only. The products-page subcategory `_Tab` keeps its soft grey fill.
+- **Search screen + «ابحث في» chips**: white + grey border (`AppColors.tealChip*`). Never mint, never black/dark selected states.
 - `AppColors.ink0–ink4` — text hierarchy (ink0 = primary text, ink3 = placeholder)
 - `AppColors.bg` — `#FAFBFC` page background
 - `AppColors.surfaceSoft` — `#F6F7F7` search boxes, input backgrounds

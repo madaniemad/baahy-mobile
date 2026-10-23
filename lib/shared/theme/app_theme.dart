@@ -115,21 +115,22 @@ class AppColors {
   // Chips, pills and tabs are NEUTRAL (Emad, 2026-10-23: no mint/green tabs anywhere): white with
   // the grey card border and dark text, like the «الأقسام» chips. Selected = light grey fill
   // (#F4F5F6, the onboarding language highlight) with only the very light card border (Emad: the dark outline looked bad).
-  static bool _dark(BuildContext c) => Theme.of(c).brightness == Brightness.dark;
   static BaahyColors _col(BuildContext c) => Theme.of(c).extension<BaahyColors>()!;
   static Color tealChipBg(BuildContext c) => _col(c).surface;
   static Color tealChipBorder(BuildContext c) => _col(c).border;
   static Color tealChipText(BuildContext c) => _col(c).ink1;
-  static Color chipSelectedBg(BuildContext c) =>
-      _dark(c) ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFF4F5F6);
-  static Color chipSelectedBorder(BuildContext c) => _col(c).border;
-  static Color chipSelectedText(BuildContext c) => _col(c).ink0;
+  // Selected filter chips (store filter sheet) = solid tiffany + white, like the search filter sheet.
+  static Color chipSelectedBg(BuildContext c) => adaptive(c);
+  static Color chipSelectedBorder(BuildContext c) => adaptive(c);
+  static Color chipSelectedText(BuildContext c) => Colors.white;
 
-  // Category tab CAROUSELS on shop pages only (Emad, 2026-10-23: the products-page `_Tab` is the
-  // standard for these): unselected = surfaceSoft fill, no outline, ink1 w500; selected = solid
-  // tiffany, white w700. Search/filter chips keep their own style above — don't use these there.
+  // Shop-page category tab carousels (store list + store page), same as the filter sheets
+  // (Emad, 2026-10-23): unselected = empty (surface) with the grey card border; selected = solid
+  // tiffany with white text. No mint, no black.
   static Color catTabBg(BuildContext c, bool selected) =>
-      selected ? adaptive(c) : _col(c).surfaceSoft;
+      selected ? adaptive(c) : _col(c).surface;
+  static Color catTabBorder(BuildContext c, bool selected) =>
+      selected ? adaptive(c) : _col(c).border;
   static Color catTabText(BuildContext c, bool selected) =>
       selected ? Colors.white : _col(c).ink1;
 

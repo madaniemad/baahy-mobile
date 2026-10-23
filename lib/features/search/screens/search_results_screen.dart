@@ -1217,7 +1217,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                               shape: BoxShape.circle,
                                               border: Border.all(
                                                   color: sel
-                                                      ? context.col.ink0
+                                                      ? AppColors.adaptive(context)
                                                       : context.col.border,
                                                   width: sel ? 2.5 : 1.5)),
                                           child: sel
@@ -1304,12 +1304,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                         horizontal: 12, vertical: 7),
                                     decoration: BoxDecoration(
                                         color: sel
-                                            ? context.col.ink0
+                                            ? AppColors.adaptive(context)
                                             : context.col.surface,
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
                                             color: sel
-                                                ? context.col.ink0
+                                                ? AppColors.adaptive(context)
                                                 : context.col.border,
                                             width: 1.5)),
                                     child: Text(b,
@@ -1317,7 +1317,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
                                             color: sel
-                                                ? context.col.bg
+                                                ? Colors.white
                                                 : context.col.ink1)),
                                   ),
                                 );
@@ -1434,12 +1434,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                     horizontal: 14, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: selected
-                                      ? context.col.ink0
+                                      ? AppColors.adaptive(context)
                                       : context.col.surface,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                       color: selected
-                                          ? context.col.ink0
+                                          ? AppColors.adaptive(context)
                                           : context.col.border,
                                       width: 1.5),
                                 ),
@@ -1449,7 +1449,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                       Icon(Icons.star_rounded,
                                           size: 14,
                                           color: selected
-                                              ? context.col.bg
+                                              ? Colors.white
                                               : AppColors.warn),
                                       const SizedBox(width: 4),
                                       Text(
@@ -1458,7 +1458,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
                                               color: selected
-                                                  ? context.col.bg
+                                                  ? Colors.white
                                                   : context.col.ink1)),
                                     ]),
                               ),
@@ -1502,12 +1502,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                     horizontal: 12, vertical: 7),
                                 decoration: BoxDecoration(
                                     color: sel
-                                        ? context.col.ink0
+                                        ? AppColors.adaptive(context)
                                         : context.col.surface,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                         color: sel
-                                            ? context.col.ink0
+                                            ? AppColors.adaptive(context)
                                             : context.col.border,
                                         width: 1.5)),
                                 child: Text(v.name,
@@ -1515,7 +1515,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                         color: sel
-                                            ? context.col.bg
+                                            ? Colors.white
                                             : context.col.ink1)),
                               ),
                             );
@@ -1680,8 +1680,8 @@ class _PriceField extends StatelessWidget {
             color: context.col.ink3,
             fontFamily: 'Manrope',
             fontFamilyFallback: ['Tajawal']),
-        filled: true,
-        fillColor: context.col.surfaceSoft,
+        // Clear background, outline only (Emad, 2026-10-23).
+        filled: false,
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: context.col.border)),

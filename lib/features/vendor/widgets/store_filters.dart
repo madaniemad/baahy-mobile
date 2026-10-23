@@ -184,6 +184,7 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
           style: _font.copyWith(fontSize: 14, color: context.col.ink0),
           decoration: InputDecoration(
             isDense: true,
+            filled: false, // clear background, outline only (Emad, 2026-10-23)
             hintText: hint,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 12),

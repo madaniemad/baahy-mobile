@@ -497,9 +497,10 @@ class _CatChip extends StatelessWidget {
           margin: const EdgeInsetsDirectional.only(end: 8),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
-            // Shop-page category carousel: the standard `_Tab` style.
+            // Shop-page category carousel: grey outline, empty; selected = solid tiffany.
             color: AppColors.catTabBg(context, selected),
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.catTabBorder(context, selected)),
           ),
           child: Text(label,
               style: TextStyle(
