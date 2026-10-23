@@ -381,6 +381,25 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
     }
   }
 
+  // Sort = a bottom sheet in the filter sheet's style (Emad, 2026-10-23: the plain popup menu
+  // "looks bad"). Tapping a row applies it and closes.
+  void _openSort() async {
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: context.col.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+      builder: (_) => _SortSheet(
+        options: [if (_hasTextQuery) _relevanceSort, ..._sortOptions],
+        selected: _sort,
+      ),
+    );
+    if (picked != null && picked != _sort && mounted) {
+      _sort = picked;
+      _fetch(reset: true);
+    }
+  }
+
   void _openFilters() async {
     final result = await showModalBottomSheet<_FilterState>(
       context: context,
@@ -481,24 +500,9 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                 ),
             ],
           ),
-          PopupMenuButton<String>(
+          IconButton(
             icon: Icon(Icons.sort, color: context.col.ink0),
-            onSelected: (v) {
-              _sort = v;
-              _fetch(reset: true);
-            },
-            itemBuilder: (_) => [
-              if (_hasTextQuery) _relevanceSort,
-              ..._sortOptions,
-            ]
-                .map((opt) => PopupMenuItem(
-                    value: opt.$1,
-                    child: Text(context.tr(opt.$2, opt.$3),
-                        style: TextStyle(
-                            fontWeight: _sort == opt.$1
-                                ? FontWeight.w700
-                                : FontWeight.normal))))
-                .toList(),
+            onPressed: _openSort,
           ),
         ],
       ),
@@ -611,6 +615,83 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                     ]),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Sort sheet ────────────────────────────────────────────────────────────────
+
+class _SortSheet extends StatelessWidget {
+  final List<(String, String, String)> options;
+  final String selected;
+  const _SortSheet({required this.options, required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Center(
+              child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: context.col.border,
+                      borderRadius: BorderRadius.circular(2)))),
+          const SizedBox(height: 14),
+          Row(children: [
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: context.col.surfaceSoft,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Icon(Icons.close_rounded,
+                    size: 18, color: context.col.ink1),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(context.s.sortBy,
+                style: const TextStyle(
+                    fontFamily: 'Manrope',
+                    fontFamilyFallback: ['Tajawal'],
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800)),
+          ]),
+          const SizedBox(height: 8),
+          for (var i = 0; i < options.length; i++) ...[
+            if (i > 0) Divider(height: 1, color: context.col.border),
+            InkWell(
+              onTap: () => Navigator.of(context).pop(options[i].$1),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Row(children: [
+                  Expanded(
+                    child: Text(context.tr(options[i].$2, options[i].$3),
+                        style: TextStyle(
+                          fontFamily: 'Manrope',
+                          fontFamilyFallback: const ['Tajawal'],
+                          fontSize: 15,
+                          fontWeight: options[i].$1 == selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: context.col.ink0,
+                        )),
+                  ),
+                  if (options[i].$1 == selected)
+                    Icon(Icons.check_rounded,
+                        size: 22, color: AppColors.adaptive(context)),
+                ]),
+              ),
+            ),
+          ],
+        ]),
       ),
     );
   }
