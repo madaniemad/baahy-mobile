@@ -59,21 +59,60 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
           style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink0, fontSize: 15),
         ),
       ),
-      body: searchState.loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : searchState.results.isEmpty
-              ? Center(
-                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(Icons.search, size: 56, color: context.col.ink3),
-                    const SizedBox(height: 12),
-                    Text(context.tr('ابحث عن صديق بالاسم المستخدم', 'Search by username'),
-                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink2, fontSize: 14)),
-                  ]),
-                )
-              : ListView.builder(
-                  itemCount: searchState.results.length,
-                  itemBuilder: (_, i) => _SearchResultTile(friend: searchState.results[i]),
-                ),
+      body: Column(children: [
+        // Small inline progress; the previous results stay visible underneath.
+        SizedBox(
+          height: 2,
+          child: searchState.loading
+              ? const LinearProgressIndicator(minHeight: 2, color: AppColors.primary, backgroundColor: Colors.transparent)
+              : null,
+        ),
+        Expanded(child: _body(context, searchState)),
+      ]),
+    );
+  }
+
+  Widget _body(BuildContext context, UserSearchState searchState) {
+    final textStyle = TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink2, fontSize: 14);
+    if (searchState.results.isNotEmpty) {
+      return ListView.builder(
+        itemCount: searchState.results.length,
+        itemBuilder: (_, i) => _SearchResultTile(friend: searchState.results[i]),
+      );
+    }
+    if (searchState.loading) {
+      return const Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)));
+    }
+    if (searchState.error) {
+      return Center(
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.wifi_off_rounded, size: 48, color: context.col.ink3),
+          const SizedBox(height: 12),
+          Text(context.tr('تعذر البحث، تحقق من اتصالك', "Couldn't search — check your connection"), style: textStyle),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => ref.read(userSearchProvider.notifier).retry(),
+            child: Text(context.s.retry),
+          ),
+        ]),
+      );
+    }
+    if (searchState.query.isNotEmpty) {
+      return Center(
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.person_search_outlined, size: 56, color: context.col.ink3),
+          const SizedBox(height: 12),
+          Text(context.tr('لا يوجد مستخدم باسم «@${searchState.query}»', 'No users found for “@${searchState.query}”'),
+            textAlign: TextAlign.center, style: textStyle),
+        ]),
+      );
+    }
+    return Center(
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(Icons.search, size: 56, color: context.col.ink3),
+        const SizedBox(height: 12),
+        Text(context.tr('ابحث عن صديق بالاسم المستخدم', 'Search by username'), style: textStyle),
+      ]),
     );
   }
 }

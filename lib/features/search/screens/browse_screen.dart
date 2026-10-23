@@ -15,17 +15,15 @@ const _kGap = 10.0;
 /// Both tabs' search bars use this exact height so the page below does not jump when switching tabs.
 const _kSearchBarH = 44.0;
 
+// Errors propagate (no `catch → []`): an empty list with nothing loading used to
+// spin forever. The screen shows an error + Retry and invalidates this.
 final _browseCategoriesProvider = FutureProvider<List<Category>>((ref) async {
-  try {
-    final res = await ApiClient.instance.dio.get('/categories');
-    final list = (res.data?['data'] as List?)
-            ?.map((c) => Category.fromJson(c as Map<String, dynamic>))
-            .toList() ??
-        [];
-    return list;
-  } catch (_) {
-    return [];
-  }
+  final res = await ApiClient.instance.dio.get('/categories');
+  final list = (res.data?['data'] as List?)
+          ?.map((c) => Category.fromJson(c as Map<String, dynamic>))
+          .toList() ??
+      [];
+  return list;
 });
 
 class BrowseScreen extends ConsumerStatefulWidget {
@@ -240,11 +238,42 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                           ),
                         ),
 
-                        if (categories.isEmpty)
+                        if (categories.isEmpty && categoriesAsync.isLoading)
                           const SliverFillRemaining(
                             child: Center(
                               child: CircularProgressIndicator(
                                   color: AppColors.teal),
+                            ),
+                          )
+                        else if (categories.isEmpty)
+                          // Failed (or came back empty) and home has none cached either.
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.wifi_off_rounded,
+                                      size: 48, color: context.col.ink4),
+                                  const SizedBox(height: 10),
+                                  Text(context.s.loadError,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: context.col.ink1,
+                                        fontFamily: 'Manrope',
+                                        fontFamilyFallback: const ['Tajawal'],
+                                      )),
+                                  const SizedBox(height: 12),
+                                  OutlinedButton.icon(
+                                    onPressed: () => ref
+                                        .invalidate(_browseCategoriesProvider),
+                                    icon: const Icon(Icons.refresh_rounded,
+                                        size: 18),
+                                    label: Text(context.s.retry),
+                                  ),
+                                ],
+                              ),
                             ),
                           )
                         else

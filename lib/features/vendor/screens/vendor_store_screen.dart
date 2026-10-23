@@ -38,6 +38,10 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
   Timer? _searchDebounce;
   StoreFilters _filters = const StoreFilters();
   int _reqSeq = 0; // newest products request wins; older responses are dropped
+  // Failure is not "no products": page 1 shows an error + Retry, a failed next page a retry row.
+  bool _loadError = false;
+  bool _loadMoreError = false;
+  String _shownQuery = ''; // the search the current results answer
   int _reviewsCount = 0;
 
   @override
@@ -116,10 +120,17 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
         setState(() {
           _loading = true;
           _loadingMore = false;
+          _loadError = false;
+          _loadMoreError = false;
         });
     } else {
       if (_loadingMore) return;
-      if (mounted) setState(() => _loadingMore = true);
+      if (mounted) {
+        setState(() {
+          _loadingMore = true;
+          _loadMoreError = false;
+        });
+      }
     }
     try {
       final res =
@@ -152,6 +163,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
           else
             _products = [..._products, ...list];
           _page = page;
+          _shownQuery = q;
           // Stop when a short page arrives (no more) or we've reached the total.
           _hasMore = list.length == _perPage && _products.length < total;
           _loading = false;
@@ -163,7 +175,12 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
       // A superseded request must not touch the newer one's state.
       if (mounted && seq == _reqSeq) {
         setState(() {
-          if (page == 1) _products = [];
+          if (page == 1) {
+            _products = [];
+            _loadError = true;
+          } else {
+            _loadMoreError = true; // keep what is already loaded
+          }
           _loading = false;
           _loadingMore = false;
         });
@@ -212,6 +229,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
               n.metrics.pixels >= n.metrics.maxScrollExtent - 600 &&
               _hasMore &&
               !_loadingMore &&
+              !_loadMoreError &&
               !_loading) {
             _loadProducts(_page + 1);
           }
@@ -387,12 +405,31 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                       child: Center(
                           child: CircularProgressIndicator(
                               color: AppColors.primary))))
+            else if (_loadError)
+              SliverToBoxAdapter(
+                  child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(children: [
+                        Text(context.s.loadError,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: context.col.ink2)),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: () => _loadProducts(1),
+                          icon: const Icon(Icons.refresh_rounded, size: 18),
+                          label: Text(context.s.retry),
+                        ),
+                      ])))
             else if (_products.isEmpty)
               SliverToBoxAdapter(
                   child: Center(
                       child: Padding(
                           padding: const EdgeInsets.all(32),
-                          child: Text(context.s.noProductsNow,
+                          child: Text(
+                              _shownQuery.isNotEmpty
+                                  ? context.s.noResultsForQuery(_shownQuery)
+                                  : context.s.noProductsNow,
+                              textAlign: TextAlign.center,
                               style: TextStyle(color: context.col.ink3)))))
             else
               SliverPadding(
@@ -421,6 +458,20 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                           padding: EdgeInsets.all(16),
                           child: CircularProgressIndicator(
                               color: AppColors.primary))),
+                ),
+              )
+            else if (_loadMoreError)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 60),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Text(context.s.loadMoreFailed,
+                        style: TextStyle(color: context.col.ink2, fontSize: 13)),
+                    TextButton(
+                      onPressed: () => _loadProducts(_page + 1),
+                      child: Text(context.s.retry),
+                    ),
+                  ]),
                 ),
               )
             else

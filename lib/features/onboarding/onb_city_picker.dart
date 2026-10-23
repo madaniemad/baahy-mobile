@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../../core/providers/shipping_provider.dart';
 import '../../core/providers/address_provider.dart';
+import '../../core/utils/arabic_text.dart';
 import '../../core/utils/l10n.dart';
 import 'onb_theme.dart';
 
@@ -136,7 +137,15 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
 
   void _openSheet() {
     FocusScope.of(context).unfocus();
+    // Rates failed earlier: the sheet shows the built-in list meanwhile, but try again.
+    if (ref.read(shippingRatesProvider).hasError) ref.invalidate(shippingRatesProvider);
     setState(() => _sheet = true);
+  }
+
+  // Closing (x or the scrim) also clears the search, so the sheet reopens on the full list.
+  void _closeSheet() {
+    FocusScope.of(context).unfocus();
+    setState(() { _sheet = false; _q = ''; _searchCtl.clear(); });
   }
 
   // Picking fills the row and closes the sheet; the user still taps Start shopping,
@@ -210,13 +219,13 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
           )),
 
           // ── city sheet ──
-          if (_sheet) Positioned.fill(child: GestureDetector(onTap: () => setState(() => _sheet = false), child: Container(color: const Color(0x33000000)))),
+          if (_sheet) Positioned.fill(child: GestureDetector(onTap: _closeSheet, child: Container(color: const Color(0x33000000)))),
           AnimatedSlide(
             duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic,
             offset: _sheet ? Offset.zero : const Offset(0, 1.25),
             child: Align(alignment: Alignment.bottomCenter, child: _ManualSheet(
               t: t, isAr: isAr, query: _q, controller: _searchCtl, cities: _cities(), showAll: _showAll,
-              onClose: () => setState(() => _sheet = false), onQuery: (v) => setState(() => _q = v),
+              onClose: _closeSheet, onQuery: (v) => setState(() => _q = v),
               onPick: _pickManual, onToggleAll: () => setState(() => _showAll = !_showAll))),
           ),
         ]),
@@ -381,9 +390,12 @@ class _ManualSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = showAll ? cities : cities.take(6).toList();
-    final q = query.trim().toLowerCase();
-    final filtered = base.where((c) => c.ar.contains(query.trim()) || c.en.toLowerCase().contains(q)).toList();
+    // A search covers EVERY city; "show all" only expands the unfiltered list.
+    // Normalised both sides: «مصراته» finds «مصراتة», «اجدابيا» finds «أجدابيا».
+    final searching = normalizeArabic(query).isNotEmpty;
+    final filtered = searching
+        ? cities.where((c) => matchesArabic(c.ar, query) || matchesArabic(c.en, query)).toList()
+        : (showAll ? cities : cities.take(6).toList());
     return Directionality(
       textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
       child: Container(
@@ -414,9 +426,16 @@ class _ManualSheet extends StatelessWidget {
                   hintText: t.search, hintStyle: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15, fontWeight: FontWeight.w500, color: Color(0xFF9AA39F)),
                 ),
               )),
+              if (query.isNotEmpty)
+                GestureDetector(
+                  onTap: () { controller.clear(); onQuery(''); },
+                  behavior: HitTestBehavior.opaque,
+                  child: const Padding(padding: EdgeInsetsDirectional.only(start: 8), child: Icon(Icons.close, color: Color(0xFF9AA39F), size: 18)),
+                ),
             ]),
           ),
-          Align(alignment: AlignmentDirectional.centerStart, child: Padding(
+          if (searching) const SizedBox(height: 8),
+          if (!searching) Align(alignment: AlignmentDirectional.centerStart, child: Padding(
             padding: const EdgeInsets.fromLTRB(2, 14, 2, 4),
             child: Text(t.mainCities, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF9AA39F))))),
           Flexible(child: filtered.isEmpty
@@ -433,7 +452,7 @@ class _ManualSheet extends StatelessWidget {
                     ]),
                   ));
                 })),
-          if (query.trim().isEmpty) GestureDetector(onTap: onToggleAll, child: Padding(
+          if (!searching) GestureDetector(onTap: onToggleAll, child: Padding(
             padding: const EdgeInsets.fromLTRB(2, 14, 2, 2),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(showAll ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: _teal, size: 20),

@@ -137,6 +137,10 @@ final _filterOptionsProvider =
   }
 });
 
+// 'relevance' is never sent: with no sort param the server ranks a text search by
+// relevance. Offered (and the default) only when there is a text query.
+const _relevanceSort = ('relevance', 'الأنسب', 'Best match');
+
 final _sortOptions = [
   ('latest', 'الأحدث', 'Newest'),
   ('popular', 'الأكثر مبيعاً', 'Best selling'),
@@ -251,13 +255,21 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   bool _loadingMore = false;
   int _page = 1;
   bool _hasMore = true;
+  // Page-1 failure shows an error with Retry; a failed next page keeps what is loaded.
+  bool _loadError = false;
+  bool _loadMoreError = false;
+  int _reqSeq = 0; // newest request wins; a reset drops older (and in-flight next-page) responses
   late String _sort;
   late _FilterState _filters;
+
+  bool get _hasTextQuery => widget.query.trim().isNotEmpty;
 
   @override
   void initState() {
     super.initState();
-    _sort = widget.initialSort ?? 'random';
+    // A text search defaults to relevance; plain browsing (category, brand, deals) keeps random.
+    _sort = widget.initialSort ??
+        (_hasTextQuery ? _relevanceSort.$1 : 'random');
     _filters = _FilterState(
       categoryId: widget.categoryId,
       maxPrice: widget.maxPrice,
@@ -286,22 +298,32 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   void _onScroll() {
     if (_scrollCtrl.position.pixels >
         _scrollCtrl.position.maxScrollExtent - 200) {
-      if (!_loadingMore && _hasMore) _fetch();
+      // After a failed page, wait for the Retry tap instead of re-firing on every scroll tick.
+      if (!_loadingMore && _hasMore && !_loadMoreError && !_loading) _fetch();
     }
   }
 
   Future<void> _fetch({bool reset = false}) async {
     if (reset) {
+      ++_reqSeq; // anything still in flight (incl. a next page) is now stale
       setState(() {
         _loading = true;
+        _loadingMore = false;
+        _loadError = false;
+        _loadMoreError = false;
         _page = 1;
         _hasMore = true;
         _products = [];
       });
     } else {
       if (_loadingMore || !_hasMore) return;
-      setState(() => _loadingMore = true);
+      setState(() {
+        _loadingMore = true;
+        _loadMoreError = false;
+      });
     }
+    final seq = _reqSeq;
+    final page = _page;
 
     try {
       final res =
@@ -311,8 +333,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
           'category_id': _filters.categoryId
         else if (widget.categoryId != null)
           'category_id': widget.categoryId,
-        'sort': _sort,
-        'page': _page,
+        if (_sort != _relevanceSort.$1) 'sort': _sort,
+        'page': page,
         'per_page': 20,
         if (_filters.minPrice != null) 'min_price': _filters.minPrice,
         if (_filters.maxPrice != null) 'max_price': _filters.maxPrice,
@@ -326,7 +348,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             ? {'attribute_value_ids[]': _filters.attributeValueIds.toList()}
             : {},
       });
-      if (!mounted) return;
+      // A newer query / filter / category superseded this request: drop it.
+      if (!mounted || seq != _reqSeq) return;
       final data = res.data['data'];
       final newProducts =
           (data['data'] as List).map((p) => Product.fromJson(p)).toList();
@@ -339,14 +362,19 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                   (c) => _SuggestedCategory.fromJson(c as Map<String, dynamic>))
               .toList();
         }
-        _page++;
+        _page = page + 1;
         _hasMore = data['current_page'] < data['last_page'];
         _loading = false;
         _loadingMore = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || seq != _reqSeq) return;
       setState(() {
+        if (reset) {
+          _loadError = true;
+        } else {
+          _loadMoreError = true;
+        }
         _loading = false;
         _loadingMore = false;
       });
@@ -422,7 +450,11 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
         elevation: 0,
         title: Text(
           widget.pageTitle ??
-              (widget.query.isNotEmpty ? widget.query : context.s.products),
+              (widget.query.isNotEmpty
+                  ? widget.query
+                  : (widget.initialBrand?.isNotEmpty == true
+                      ? widget.initialBrand!
+                      : context.s.products)),
           style: const TextStyle(
               fontFamily: 'Manrope',
               fontFamilyFallback: ['Tajawal'],
@@ -455,7 +487,10 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
               _sort = v;
               _fetch(reset: true);
             },
-            itemBuilder: (_) => _sortOptions
+            itemBuilder: (_) => [
+              if (_hasTextQuery) _relevanceSort,
+              ..._sortOptions,
+            ]
                 .map((opt) => PopupMenuItem(
                     value: opt.$1,
                     child: Text(context.tr(opt.$2, opt.$3),
@@ -496,6 +531,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
             child: _loading
                 ? const Center(
                     child: CircularProgressIndicator(color: AppColors.primary))
+                : _loadError
+                    ? _ErrorState(onRetry: () => _fetch(reset: true))
                 : _products.isEmpty
                     ? Center(
                         child: Column(
@@ -537,7 +574,8 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                           ],
                         ),
                       )
-                    : LayoutBuilder(builder: (_, box) {
+                    : Column(children: [
+                      Expanded(child: LayoutBuilder(builder: (_, box) {
                         final cols = productGridColumns(box.maxWidth);
                         final colW = productColumnWidth(
                           maxWidth: box.maxWidth,
@@ -566,9 +604,90 @@ class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
                             return ProductCard(product: _products[i]);
                           },
                         );
-                      }),
+                      })),
+                      // A failed next page keeps the loaded results; retry from here.
+                      if (_loadMoreError)
+                        _LoadMoreRetry(onRetry: () => _fetch()),
+                    ]),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Error states ──────────────────────────────────────────────────────────────
+
+/// Page 1 failed (offline, timeout, 5xx) — not the same as "no results".
+class _ErrorState extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _ErrorState({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wifi_off_rounded, size: 56, color: context.col.ink4),
+            const SizedBox(height: 12),
+            Text(context.s.loadError,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: context.col.ink1)),
+            const SizedBox(height: 6),
+            Text(context.s.checkInternet,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 13,
+                    color: context.col.ink3)),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: Text(context.s.retry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A small row under the grid when the next page failed.
+class _LoadMoreRetry extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _LoadMoreRetry({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: context.col.surface,
+      padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+      child: SafeArea(
+        top: false,
+        child: Row(children: [
+          Icon(Icons.error_outline_rounded, size: 18, color: context.col.ink3),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(context.s.loadMoreFailed,
+                style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontFamilyFallback: const ['Tajawal'],
+                    fontSize: 13,
+                    color: context.col.ink2)),
+          ),
+          TextButton(onPressed: onRetry, child: Text(context.s.retry)),
+        ]),
       ),
     );
   }

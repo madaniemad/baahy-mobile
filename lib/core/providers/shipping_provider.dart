@@ -9,6 +9,9 @@ const _shippingCacheKey = 'shipping_cities_v1';
 const _shippingCacheTtl = Duration(minutes: 5);
 
 // Shipping rates with 5-minute disk cache — refreshes automatically without app restart.
+// A failed load is an ERROR, not an empty list: `catch → []` was cached for the whole
+// session and read as "no cities". Readers using `valueOrNull ?? []` are unaffected;
+// screens that list cities show an error and `ref.invalidate(shippingRatesProvider)`.
 final shippingRatesProvider = FutureProvider<List<ShippingRate>>((ref) async {
   try {
     final cached = await CacheService.instance.get(_shippingCacheKey, maxAge: _shippingCacheTtl);
@@ -23,7 +26,7 @@ final shippingRatesProvider = FutureProvider<List<ShippingRate>>((ref) async {
     return rawList.map((j) => ShippingRate.fromJson(j as Map<String, dynamic>)).toList();
   } catch (e, st) {
     Sentry.captureException(e, stackTrace: st);
-    return [];
+    rethrow;
   }
 });
 

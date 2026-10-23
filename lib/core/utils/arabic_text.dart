@@ -5,7 +5,7 @@
 /// - strips tashkeel (U+064B-U+0652) and tatweel (U+0640)
 /// - unifies alef forms أ إ آ ٱ -> ا
 /// - ة -> ه, ى -> ي, ؤ -> و, ئ -> ي
-/// - maps Arabic-Indic digits ٠-٩ to 0-9
+/// - maps Arabic-Indic digits ٠-٩ and Persian digits ۰-۹ to 0-9
 String normalizeArabic(String s) {
   if (s.isEmpty) return s;
   final buf = StringBuffer();
@@ -13,6 +13,11 @@ String normalizeArabic(String s) {
     if ((r >= 0x064B && r <= 0x0652) || r == 0x0640) continue;
     if (r >= 0x0660 && r <= 0x0669) {
       buf.writeCharCode(0x30 + (r - 0x0660));
+      continue;
+    }
+    // Persian / Urdu keyboards type ۰-۹ (U+06F0-U+06F9), not the Arabic-Indic set.
+    if (r >= 0x06F0 && r <= 0x06F9) {
+      buf.writeCharCode(0x30 + (r - 0x06F0));
       continue;
     }
     switch (r) {

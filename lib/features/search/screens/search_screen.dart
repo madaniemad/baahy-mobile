@@ -9,35 +9,52 @@ import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/home_provider.dart';
+import '../../../core/utils/arabic_text.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../core/services/analytics_service.dart';
 import '../../../shared/theme/app_theme.dart';
+
+/// Trimmed, inner whitespace collapsed — what we send, key suggestions on and store.
+String _cleanQuery(String q) => q.trim().replaceAll(RegExp(r'\s+'), ' ');
 
 // ── Recent searches persistence ───────────────────────────────────────────────
 class _RecentSearches {
   static const _key = 'recent_searches_v1';
   static const _max = 8;
 
+  /// Newest first, max [_max]; «Nike», «nike » and «احذيه»/«أحذية» are one entry
+  /// (case-insensitive + Arabic-normalised), the newest spelling kept.
+  static List<String> _dedupe(Iterable<String> items) {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final raw in items) {
+      final q = _cleanQuery(raw);
+      if (q.isEmpty || !seen.add(normalizeArabic(q))) continue;
+      out.add(q);
+      if (out.length == _max) break;
+    }
+    return out;
+  }
+
   static Future<List<String>> load() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList(_key) ?? [];
+    return _dedupe(prefs.getStringList(_key) ?? const []);
   }
 
   static Future<void> add(String q) async {
-    final trimmed = q.trim();
-    if (trimmed.isEmpty) return;
+    final clean = _cleanQuery(q);
+    if (clean.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
-    final list = (prefs.getStringList(_key) ?? []).toList();
-    list.remove(trimmed);
-    list.insert(0, trimmed);
-    if (list.length > _max) list.removeRange(_max, list.length);
+    final list = _dedupe([clean, ...?prefs.getStringList(_key)]);
     await prefs.setStringList(_key, list);
   }
 
   static Future<void> remove(String q) async {
     final prefs = await SharedPreferences.getInstance();
-    final list = (prefs.getStringList(_key) ?? []).toList();
-    list.remove(q);
+    final key = normalizeArabic(q);
+    final list = (prefs.getStringList(_key) ?? [])
+        .where((s) => normalizeArabic(s) != key)
+        .toList();
     await prefs.setStringList(_key, list);
   }
 
@@ -65,26 +82,49 @@ class _Suggestion {
     this.image,
     this.productId,
   });
-  factory _Suggestion.fromJson(Map<String, dynamic> j) => _Suggestion(
-    type: j['type'] as String? ?? 'product',
-    text: j['text_en'] as String? ?? j['text'] as String,
-    textAr: j['text_ar'] as String?,
-    q: j['q'] as String? ?? j['text'] as String,
-    categoryId: j['category_id'] as int?,
-    image: j['image'] as String?,
-    productId: j['product_id'] as int?,
-  );
+  static String? _str(dynamic v) {
+    final s = v?.toString().trim();
+    return (s == null || s.isEmpty) ? null : s;
+  }
+
+  static int? _int(dynamic v) => v is num ? v.toInt() : int.tryParse('${v ?? ''}');
+
+  // Defensive: a row missing `text` (or with an id sent as a string) must not
+  // throw and blank the whole list.
+  factory _Suggestion.fromJson(Map<String, dynamic> j) {
+    final text = _str(j['text_en']) ?? _str(j['text']) ?? _str(j['text_ar']) ?? _str(j['q']) ?? '';
+    return _Suggestion(
+      type: _str(j['type']) ?? 'product',
+      text: text,
+      textAr: _str(j['text_ar']),
+      q: _str(j['q']) ?? _str(j['text']) ?? text,
+      categoryId: _int(j['category_id']),
+      image: _str(j['image']),
+      productId: _int(j['product_id']),
+    );
+  }
 }
 
+// autoDispose: a failed fetch is not cached for the session — retyping the query
+// asks again.
 final _searchSuggestionsProvider =
-    FutureProvider.family<List<_Suggestion>, String>((ref, q) async {
+    FutureProvider.autoDispose.family<List<_Suggestion>, String>((ref, q) async {
   if (q.length < 2) return [];
   final res = await ApiClient.instance.dio
       .get('/search-suggestions', queryParameters: {'q': q});
-  return (res.data as List?)
-          ?.map((s) => _Suggestion.fromJson(s as Map<String, dynamic>))
-          .toList() ??
-      [];
+  final raw = res.data;
+  final list = raw is List
+      ? raw
+      : (raw is Map && raw['data'] is List ? raw['data'] as List : const []);
+  final out = <_Suggestion>[];
+  for (final item in list) {
+    if (item is! Map) continue;
+    try {
+      final s = _Suggestion.fromJson(Map<String, dynamic>.from(item));
+      if (s.text.isNotEmpty) out.add(s);
+    } catch (_) {/* skip one bad row, keep the rest */}
+  }
+  return out;
 });
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -126,17 +166,28 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void _onChanged(String v) {
     setState(() => _query = v);
     _debounce?.cancel();
+    // Only surrounding / repeated spaces changed: same suggestions, no refetch.
+    if (_cleanQuery(v) == _debouncedQuery) return;
     _debounce = Timer(const Duration(milliseconds: 300), () {
-      if (mounted) setState(() => _debouncedQuery = v);
+      if (mounted) setState(() => _debouncedQuery = _cleanQuery(v));
     });
   }
 
   void _search(String q) {
-    if (q.trim().isEmpty) return;
+    final clean = _cleanQuery(q);
+    if (clean.isEmpty) return;
     _focus.unfocus();
-    Analytics.instance.search(q.trim());
-    _RecentSearches.add(q.trim()).then((_) => _loadRecents());
-    safePush(context, '/search/results?q=${Uri.encodeComponent(q.trim())}');
+    Analytics.instance.search(clean);
+    _RecentSearches.add(clean).then((_) => _loadRecents());
+    safePush(context, '/search/results?q=${Uri.encodeComponent(clean)}');
+  }
+
+  // A category chip opens the category itself, not a text search for its name,
+  // and is not a "recent search".
+  void _openCategory(int id, String name) {
+    _focus.unfocus();
+    safePush(context, '/search/results?q=&category=$id',
+        extra: <String, dynamic>{'title': name});
   }
 
   void _onSuggestionTap(_Suggestion s) {
@@ -145,7 +196,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (s.productId != null) {
       safePush(context, '/product/${s.productId}');
     } else if (s.type == 'brand') {
-      safePush(context, '/search/results?q=${Uri.encodeComponent(s.q)}&brand=${Uri.encodeComponent(s.q)}');
+      // Brand filter only — also sending the name as `search` dropped products
+      // whose title doesn't repeat the brand. The results title falls back to it.
+      safePush(context, '/search/results?q=&brand=${Uri.encodeComponent(s.q)}');
     } else if (s.categoryId != null) {
       safePush(context, '/search/results?q=${Uri.encodeComponent(s.q)}&category=${s.categoryId}');
     } else {
@@ -155,9 +208,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hasQuery = _debouncedQuery.trim().length >= 2;
+    final hasQuery = _debouncedQuery.length >= 2;
     final suggestionsAsync = hasQuery
-        ? ref.watch(_searchSuggestionsProvider(_debouncedQuery.trim()))
+        ? ref.watch(_searchSuggestionsProvider(_debouncedQuery))
         : const AsyncValue<List<_Suggestion>>.data([]);
 
     final config = ref.watch(appConfigProvider);
@@ -222,6 +275,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       if (_query.isNotEmpty)
                         GestureDetector(
                           onTap: () {
+                            _debounce?.cancel();
                             _ctrl.clear();
                             setState(() {
                               _query = '';
@@ -252,20 +306,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             Expanded(
               child: hasQuery
                   ? _LiveSuggestions(
-                      query: _debouncedQuery.trim(),
+                      query: _debouncedQuery,
                       suggestionsAsync: suggestionsAsync,
                       onTap: _onSuggestionTap,
+                      onSearch: _search,
                     )
                   : _EmptyState(
                       // baahy AI is for signed-in users only.
                       aiEnabled: config.aiEnabled && ref.watch(authProvider).isLoggedIn,
                       trending: config.trendingSearches,
                       categories: categories
-                          .map((c) => context.isAr ? c.nameAr : c.name)
                           .take(8)
+                          .map((c) => (id: c.id, name: context.isAr ? c.nameAr : c.name))
                           .toList(),
                       recentSearches: _recentSearches,
                       onSearch: _search,
+                      onCategory: _openCategory,
                       onRemoveRecent: (q) {
                         _RecentSearches.remove(q).then((_) => _loadRecents());
                       },
@@ -286,10 +342,25 @@ class _LiveSuggestions extends StatelessWidget {
   final String query;
   final AsyncValue<List<_Suggestion>> suggestionsAsync;
   final void Function(_Suggestion) onTap;
+  final void Function(String) onSearch;
   const _LiveSuggestions(
       {required this.query,
       required this.suggestionsAsync,
-      required this.onTap});
+      required this.onTap,
+      required this.onSearch});
+
+  /// No suggestions (or the request failed): one row that runs the search
+  /// itself, instead of a blank area.
+  Widget _searchForRow(BuildContext context) => ListView(children: [
+        _SuggestionRow(
+          icon: Icons.search_rounded,
+          iconColor: context.col.ink3,
+          text: context.s.searchForQuery(query),
+          query: query,
+          onTap: () => onSearch(query),
+        ),
+        Divider(height: 1, color: context.col.border, indent: 64),
+      ]);
 
   IconData _iconFor(String type) {
     switch (type) {
@@ -335,9 +406,9 @@ class _LiveSuggestions extends StatelessWidget {
       loading: () => const Center(
           child: CircularProgressIndicator(
               color: AppColors.teal, strokeWidth: 2)),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, __) => _searchForRow(context),
       data: (suggestions) {
-        if (suggestions.isEmpty) return const SizedBox.shrink();
+        if (suggestions.isEmpty) return _searchForRow(context);
 
         // Group by type preserving order: category → brand → product
         final groups = <String, List<_Suggestion>>{};
@@ -484,9 +555,10 @@ class _SuggestionRow extends StatelessWidget {
 class _EmptyState extends StatelessWidget {
   final bool aiEnabled;
   final List<String> trending;
-  final List<String> categories;
+  final List<({int id, String name})> categories;
   final List<String> recentSearches;
   final void Function(String) onSearch;
+  final void Function(int id, String name) onCategory;
   final void Function(String) onRemoveRecent;
   final VoidCallback onClearRecents;
 
@@ -496,6 +568,7 @@ class _EmptyState extends StatelessWidget {
     required this.categories,
     required this.recentSearches,
     required this.onSearch,
+    required this.onCategory,
     required this.onRemoveRecent,
     required this.onClearRecents,
   });
@@ -621,7 +694,7 @@ class _EmptyState extends StatelessWidget {
               runSpacing: 8,
               children: categories
                   .map((c) => GestureDetector(
-                        onTap: () => onSearch(c),
+                        onTap: () => onCategory(c.id, c.name),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 8),
@@ -630,7 +703,7 @@ class _EmptyState extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: context.col.border),
                           ),
-                          child: Text(c,
+                          child: Text(c.name,
                               style: const TextStyle(
                                   fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                                   fontSize: 13,

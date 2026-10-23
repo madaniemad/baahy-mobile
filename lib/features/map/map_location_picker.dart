@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import '../../core/api/api_client.dart';
+import '../../core/utils/arabic_text.dart';
 import '../../core/utils/l10n.dart';
 import '../../shared/theme/app_theme.dart';
 
@@ -252,6 +253,9 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   List<Map<String, dynamic>> _suggestions = [];
   bool   _loadingSuggestions = false;
   Timer? _debounce;
+  int    _suggestSeq = 0;          // newest search wins; older Nominatim answers are dropped
+  bool   _suggestFailed = false;   // last search errored (vs. answered with nothing)
+  String _suggestQuery = '';       // the query the current suggestions answer
 
   @override
   void initState() {
@@ -290,32 +294,50 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   void _onSearchChanged(String q) {
     _debounce?.cancel();
     if (q.trim().isEmpty) {
-      setState(() { _suggestions = []; _loadingSuggestions = false; });
+      ++_suggestSeq; // an answer still in flight must not refill the cleared list
+      setState(() { _suggestions = []; _loadingSuggestions = false; _suggestFailed = false; _suggestQuery = ''; });
       return;
     }
     setState(() => _loadingSuggestions = true);
     _debounce = Timer(const Duration(milliseconds: 400), () => _fetchSuggestions(q.trim()));
   }
 
+  /// Closing the search (x) or picking a result: stop the pending debounce and
+  /// drop whatever is still in flight.
+  void _resetSearch() {
+    _debounce?.cancel();
+    ++_suggestSeq;
+    _searchCtrl.clear();
+    _suggestions = [];
+    _loadingSuggestions = false;
+    _suggestFailed = false;
+    _suggestQuery = '';
+  }
+
   Future<void> _fetchSuggestions(String q) async {
+    final seq = ++_suggestSeq;
     try {
       final url = Uri.parse(
         'https://nominatim.openstreetmap.org/search'
         '?q=${Uri.encodeComponent(q)}'
-        '&format=json&limit=6&accept-language=ar&addressdetails=1',
+        // Libya only: "طرابلس" otherwise answers Tripoli, Lebanon too.
+        '&format=json&limit=6&accept-language=ar&addressdetails=1&countrycodes=ly',
       );
       final res = await http
           .get(url, headers: {'User-Agent': 'baahy-app/1.0'})
           .timeout(const Duration(seconds: 8));
-      if (!mounted) return;
+      // A slower answer to an older query must not overwrite a newer one.
+      if (!mounted || seq != _suggestSeq) return;
       if (res.statusCode == 200) {
-        final list = (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
-        setState(() { _suggestions = list; _loadingSuggestions = false; });
+        final list = (jsonDecode(res.body) as List).whereType<Map<String, dynamic>>().toList();
+        setState(() { _suggestions = list; _loadingSuggestions = false; _suggestFailed = false; _suggestQuery = q; });
       } else {
-        setState(() { _suggestions = []; _loadingSuggestions = false; });
+        setState(() { _suggestions = []; _loadingSuggestions = false; _suggestFailed = true; _suggestQuery = q; });
       }
     } catch (_) {
-      if (mounted) setState(() { _suggestions = []; _loadingSuggestions = false; });
+      if (mounted && seq == _suggestSeq) {
+        setState(() { _suggestions = []; _loadingSuggestions = false; _suggestFailed = true; _suggestQuery = q; });
+      }
     }
   }
 
@@ -324,7 +346,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
     final lng  = double.tryParse(item['lon'] as String? ?? '');
     final name = item['display_name'] as String? ?? '';
     FocusScope.of(context).unfocus();
-    setState(() { _searching = false; _searchCtrl.clear(); _suggestions = []; });
+    setState(() { _searching = false; _resetSearch(); });
     if (lat == null || lng == null) return;
     final ll = LatLng(lat, lng);
     _ctrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, _addressZoom));
@@ -640,8 +662,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                       if (_searching) {
                         setState(() {
                           _searching = false;
-                          _suggestions = [];
-                          _searchCtrl.clear();
+                          _resetSearch();
                         });
                         FocusScope.of(context).unfocus();
                       } else {
@@ -699,6 +720,16 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                                       child: CircularProgressIndicator(
                                           strokeWidth: 1.5,
                                           color: AppColors.primary),
+                                    )
+                                  else if (_searchCtrl.text.isNotEmpty)
+                                    GestureDetector(
+                                      onTap: () { _searchCtrl.clear(); _onSearchChanged(''); },
+                                      behavior: HitTestBehavior.opaque,
+                                      child: Padding(
+                                        padding: const EdgeInsetsDirectional.only(start: 6),
+                                        child: Icon(Icons.close_rounded,
+                                            size: 18, color: context.col.ink3),
+                                      ),
                                     ),
                                 ]),
                               )
@@ -729,6 +760,44 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                     ),
                   ),
                 ]),
+
+                // Searched and got nothing back (or the request failed): say so
+                // rather than silently showing no dropdown.
+                if (_searching && _suggestions.isEmpty && !_loadingSuggestions &&
+                    _suggestQuery.isNotEmpty && _searchCtrl.text.trim().isNotEmpty)
+                  Container(
+                    margin: const EdgeInsetsDirectional.only(top: 6, start: 54),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 12, offset: const Offset(0, 4))],
+                    ),
+                    child: Row(children: [
+                      Icon(_suggestFailed ? Icons.wifi_off_rounded : Icons.search_off_rounded,
+                          color: context.col.ink3, size: 16),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _suggestFailed
+                              ? context.tr('تعذر البحث، تحقق من اتصالك', "Couldn't search — check your connection")
+                              : context.tr('لا توجد نتائج، جرّب اسماً آخر أو حرّك الخريطة',
+                                  'No results — try another name or move the map'),
+                          style: TextStyle(fontSize: 12.5, color: context.col.ink2),
+                        ),
+                      ),
+                      if (_suggestFailed)
+                        GestureDetector(
+                          onTap: () => _onSearchChanged(_searchCtrl.text),
+                          child: Text(context.s.retry,
+                              style: const TextStyle(
+                                  fontSize: 12.5, fontWeight: FontWeight.w700,
+                                  color: AppColors.primary)),
+                        ),
+                    ]),
+                  ),
 
                 // Suggestions dropdown
                 if (_searching && _suggestions.isNotEmpty)
@@ -1100,17 +1169,17 @@ class _AreaListSheet extends StatefulWidget {
 /// The areas, searchable — 40+ names is too many to scroll for one (2026-10-18).
 class _AreaListSheetState extends State<_AreaListSheet> {
   String _q = '';
+  final _ctrl = TextEditingController();
 
-  static String _fold(String s) => s
-      .replaceAll(RegExp('[أإآ]'), 'ا').replaceAll('ة', 'ه').replaceAll('ى', 'ي')
-      .replaceAll(RegExp(r'\s+'), ' ').trim().toLowerCase();
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
-    final q = _fold(_q);
-    final shown = widget.areas.where((a) => q.isEmpty
-        || _fold((a['name_ar'] ?? '').toString()).contains(q)
-        || _fold((a['name_en'] ?? '').toString()).contains(q)).toList();
+    // The shared normaliser: also folds ؤ/ئ, tashkeel and Arabic/Persian digits.
+    final shown = widget.areas.where((a) =>
+        matchesArabic((a['name_ar'] ?? '').toString(), _q)
+        || matchesArabic((a['name_en'] ?? '').toString(), _q)).toList();
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -1121,11 +1190,18 @@ class _AreaListSheetState extends State<_AreaListSheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
             child: TextField(
+              controller: _ctrl,
               autofocus: true,
               onChanged: (v) => setState(() => _q = v),
               decoration: InputDecoration(
                 hintText: context.tr('ابحث عن منطقتك', 'Search your area'),
                 prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _q.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        onPressed: () => setState(() { _ctrl.clear(); _q = ''; }),
+                      ),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 isDense: true,
               ),

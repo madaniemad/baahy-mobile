@@ -79,6 +79,8 @@ class _CityScreenState extends ConsumerState<CityScreen>
     final isAr      = ref.watch(localeProvider).languageCode == 'ar';
     final ratesAsync = ref.watch(shippingRatesProvider);
     final loading   = ratesAsync.isLoading;
+    // Load failed (offline / server) — not the same as "no city matches".
+    final failed    = !loading && ratesAsync.hasError;
     final rates     = ratesAsync.valueOrNull ?? const [];
     final allCities = rates.map((r) => CityEntry(ar: r.cityAr, en: r.city)).toList();
     final filtered  = _filterCities(allCities);
@@ -221,7 +223,25 @@ class _CityScreenState extends ConsumerState<CityScreen>
                                     child: Center(child: CircularProgressIndicator(
                                       color: _teal, strokeWidth: 2.5)),
                                   )
-                                : filtered.isEmpty
+                                : failed
+                                    ? Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                          Text(isAr ? 'تعذر تحميل المدن' : "Couldn't load the cities",
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                                              color: _navy, fontWeight: FontWeight.w700)),
+                                          const SizedBox(height: 8),
+                                          TextButton.icon(
+                                            onPressed: () => ref.invalidate(shippingRatesProvider),
+                                            icon: const Icon(Icons.refresh_rounded, size: 18, color: _teal),
+                                            label: Text(isAr ? 'إعادة المحاولة' : 'Retry',
+                                              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+                                                color: _navy, fontWeight: FontWeight.w800)),
+                                          ),
+                                        ]),
+                                      )
+                                    : filtered.isEmpty
                                     ? Padding(
                                         padding: const EdgeInsets.symmetric(vertical: 24),
                                         child: Text(isAr ? 'لا توجد نتائج' : 'No results',

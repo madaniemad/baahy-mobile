@@ -203,6 +203,9 @@ class AppStrings {
   String get loadError      => isAr ? 'تعذر التحميل'           : 'Failed to load';
   String get all            => isAr ? 'الكل'                   : 'All';
   String get products       => isAr ? 'المنتجات'               : 'Products';
+  String get loadMoreFailed => isAr ? 'تعذر تحميل المزيد'      : "Couldn't load more";
+  String searchForQuery(String q)    => isAr ? 'ابحث عن «$q»'          : 'Search for “$q”';
+  String noResultsForQuery(String q) => isAr ? 'لا توجد نتائج لبحثك «$q»' : 'No results for “$q”';
 
   // ── Account ─────────────────────────────────────────────────────────────────
   String get myAccount      => isAr ? 'حسابي'                  : 'My Account';

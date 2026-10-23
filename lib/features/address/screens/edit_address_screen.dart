@@ -37,6 +37,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
   int? _areaId;
   String? _areaName;
   bool _loading = false;
+  bool _mapOpen = false; // a double tap must not stack two map pickers
   final _phoneFocus = FocusNode();
   final _notesFocus = FocusNode();
 
@@ -89,12 +90,14 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
   }
 
   Future<void> _openMapPicker() async {
+    if (_mapOpen) return;
     final initial = (_lat != null && _lng != null)
         ? LatLng(_lat!, _lng!)
         : null;
+    _mapOpen = true;
     final result = await Navigator.of(context).push<MapPickResult>(
       MaterialPageRoute(builder: (_) => MapLocationPicker(initial: initial)),
-    );
+    ).whenComplete(() => _mapOpen = false);
     if (result == null || !mounted) return;
     setState(() {
       _city = result.city;
@@ -115,12 +118,14 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
   }
 
   Future<void> _pickCitySheet() async {
-    final rates = ref.read(shippingRatesProvider).valueOrNull ?? [];
+    // An earlier failed load is retried; the sheet watches the provider itself, so it
+    // fills in (or shows the error + Retry) instead of spinning on an empty snapshot.
+    if (ref.read(shippingRatesProvider).hasError) ref.invalidate(shippingRatesProvider);
     final picked = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _CityPickerSheet(current: _city, rates: rates),
+      builder: (_) => _CityPickerSheet(current: _city),
     );
     if (!mounted) return;
     // Clear residual keyboard focus from the sheet's search field (iOS keyboard bug)
@@ -174,11 +179,10 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       }
       if (mounted) context.pop();
     } catch (e) {
+      if (!mounted) return;
       setState(() => _loading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_extractError(e))));
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_extractError(e))));
     }
   }
 
@@ -441,21 +445,20 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
 
 // ── City picker bottom sheet ──────────────────────────────────────────────────
 
-class _CityPickerSheet extends StatefulWidget {
+class _CityPickerSheet extends ConsumerStatefulWidget {
   final String? current;
-  final List<ShippingRate> rates;
-  const _CityPickerSheet({this.current, required this.rates});
+  const _CityPickerSheet({this.current});
   @override
-  State<_CityPickerSheet> createState() => _CityPickerSheetState();
+  ConsumerState<_CityPickerSheet> createState() => _CityPickerSheetState();
 }
 
-class _CityPickerSheetState extends State<_CityPickerSheet> {
+class _CityPickerSheetState extends ConsumerState<_CityPickerSheet> {
   String _query = '';
   final _ctrl = TextEditingController();
 
-  List<ShippingRate> get _filtered => _query.isEmpty
-      ? widget.rates
-      : widget.rates.where((r) =>
+  List<ShippingRate> _filtered(List<ShippingRate> rates) => _query.isEmpty
+      ? rates
+      : rates.where((r) =>
           matchesArabic(r.cityAr, _query) || matchesArabic(r.city, _query)).toList();
 
   @override
@@ -464,6 +467,9 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
+    final ratesAsync = ref.watch(shippingRatesProvider);
+    final rates = ratesAsync.valueOrNull ?? const <ShippingRate>[];
+    final filtered = _filtered(rates);
     return Container(
       decoration: BoxDecoration(
         color: context.col.surface,
@@ -510,9 +516,28 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
         ),
         const SizedBox(height: 12),
 
-        if (widget.rates.isEmpty)
+        if (rates.isEmpty && ratesAsync.isLoading)
           Expanded(child: Center(
             child: CircularProgressIndicator(color: AppColors.primary),
+          ))
+        else if (rates.isEmpty)
+          // Failed to load (or none came back) — say so, with Retry, instead of spinning.
+          Expanded(child: Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(context.s.loadError,
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.col.ink1)),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => ref.invalidate(shippingRatesProvider),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(context.s.retry),
+              ),
+            ]),
+          ))
+        else if (filtered.isEmpty)
+          Expanded(child: Center(
+            child: Text(context.s.noResultsFound,
+              style: TextStyle(fontSize: 14, color: context.col.ink3)),
           ))
         else
           Expanded(
@@ -523,9 +548,9 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
                 mainAxisSpacing: 8,
                 childAspectRatio: 2.4,
               ),
-              itemCount: _filtered.length,
+              itemCount: filtered.length,
               itemBuilder: (_, i) {
-                final r = _filtered[i];
+                final r = filtered[i];
                 final selected = r.cityAr == widget.current;
                 return GestureDetector(
                   onTap: () => Navigator.of(context).pop(r.cityAr),
