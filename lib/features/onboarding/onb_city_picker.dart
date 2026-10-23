@@ -170,21 +170,21 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
             padding: EdgeInsets.fromLTRB(24, 0, 24, botPad + 16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Expanded(child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                const SizedBox(height: 56),
+                const SizedBox(height: 64),
                 // Official wordmark in brand tiffany (the splash's white wordmark,
                 // filled #1FD7E2). Not logo.png: that is the older lettering.
-                Center(child: Image.asset('assets/images/logo_wordmark.png', height: 46)),
-                const SizedBox(height: 56),
+                Center(child: Image.asset('assets/images/logo_wordmark.png', height: 52)),
+                const SizedBox(height: 72),
 
                 _Label(t.language),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _LangSegment(isAr: isAr, onSelect: (ar) { if (ar != isAr) ref.read(localeProvider.notifier).toggle(); }),
-                const SizedBox(height: 28),
+                const SizedBox(height: 40),
 
                 _Label(t.deliverTo),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _CityRow(city: cityLabel, placeholder: t.choose, action: cityLabel.isEmpty ? null : t.change, onTap: _openSheet),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _Helper(
                   t: t, detecting: _detecting, manual: _manual, hasCity: _cityAr.isNotEmpty,
                   denied: _denied, inService: _inService, onEnable: _enableLocation,
@@ -216,7 +216,7 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
   }
 }
 
-const _labelStyle = TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13, fontWeight: FontWeight.w500, color: _muted);
+const _labelStyle = TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15, fontWeight: FontWeight.w500, color: _muted);
 
 class _Label extends StatelessWidget {
   final String text;
@@ -235,18 +235,18 @@ class _LangSegment extends StatelessWidget {
       onTap: onTap, behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.all(3),
+        margin: const EdgeInsets.all(4),
         alignment: Alignment.center,
         // Fade to a clear tint, not Colors.transparent (clear BLACK): lerping to that
         // flashes grey mid-animation.
-        decoration: BoxDecoration(color: selected ? _tint : _tint.withValues(alpha: 0), borderRadius: BorderRadius.circular(9)),
-        child: Text(s, style: TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 14.5,
+        decoration: BoxDecoration(color: selected ? _tint : _tint.withValues(alpha: 0), borderRadius: BorderRadius.circular(10)),
+        child: Text(s, style: TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 17.5,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: selected ? _ink : _muted)),
       ),
     ));
     // Arabic first in reading order either way: the row follows the screen direction.
     return Container(
-      height: 48,
+      height: 64,
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: _line)),
       child: Row(children: [
         option('العربية', isAr, () => onSelect(true)),
@@ -267,20 +267,20 @@ class _CityRow extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap, behavior: HitTestBehavior.opaque,
     child: Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      height: 68,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: _line)),
       child: Row(children: [
-        const Icon(Icons.location_on_outlined, color: _teal, size: 21),
-        const SizedBox(width: 10),
+        const Icon(Icons.location_on_outlined, color: _teal, size: 26),
+        const SizedBox(width: 12),
         Expanded(child: Text(city.isEmpty ? placeholder : city, maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15.5,
+          style: TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 18,
               fontWeight: city.isEmpty ? FontWeight.w500 : FontWeight.w700, color: city.isEmpty ? _muted : _ink))),
         if (action != null)
           // Grey, not tiffany (Emad, 2026-10-23): the link is secondary to the city.
-          Text(action!, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13.5, fontWeight: FontWeight.w600, color: _muted))
+          Text(action!, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15, fontWeight: FontWeight.w600, color: _muted))
         else
-          const Icon(Icons.keyboard_arrow_down_rounded, color: _muted, size: 22),
+          const Icon(Icons.keyboard_arrow_down_rounded, color: _muted, size: 26),
       ]),
     ),
   );
@@ -295,7 +295,7 @@ class _Helper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 12.5, fontWeight: FontWeight.w500, color: _muted, height: 1.4);
+    const style = TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13.5, fontWeight: FontWeight.w500, color: _muted, height: 1.4);
     if (manual) return const SizedBox(height: 18);
     if (detecting) {
       return Row(children: [
@@ -325,9 +325,9 @@ class _Cta extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
     child: Container(
-      height: 52, width: double.infinity, alignment: Alignment.center,
+      height: 56, width: double.infinity, alignment: Alignment.center,
       decoration: BoxDecoration(color: _teal, borderRadius: BorderRadius.circular(12)),
-      child: Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15.5, fontWeight: FontWeight.w700, color: Colors.white)),
+      child: Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 16.5, fontWeight: FontWeight.w700, color: Colors.white)),
     ),
   );
 }
