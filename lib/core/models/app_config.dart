@@ -76,6 +76,13 @@ class AppConfig {
   final String seasonalLabelAr;
   final String seasonalLabelEn;
 
+  // The first-order offer, for guests: /coupons/welcome needs a signed-in user, so
+  // app-config carries the copy a brand-new customer would get. Null = none live.
+  final String? firstOrderOfferAr;
+  final String? firstOrderOfferEn;
+  final String firstOrderOfferSubAr;
+  final String firstOrderOfferSubEn;
+
   // Per-tier benefits (ordered: bronze, silver, gold, platinum)
   final List<double> tierCashbacks;
   final List<double> tierShippingThresholds;
@@ -112,6 +119,10 @@ class AppConfig {
     this.seasonalEndsAt,
     this.seasonalLabelAr = 'كاش باك مضاعف',
     this.seasonalLabelEn = 'Double cashback',
+    this.firstOrderOfferAr,
+    this.firstOrderOfferEn,
+    this.firstOrderOfferSubAr = '',
+    this.firstOrderOfferSubEn = '',
     this.tierCashbacks = const [2.0, 3.0, 4.0, 6.0],
     this.tierShippingThresholds = const [150.0, 120.0, 100.0, 80.0],
     this.tierReturnDays = const [1, 3, 7, 14],
@@ -196,6 +207,7 @@ class AppConfig {
     final referral  = j['referral']  as Map<String, dynamic>?;
     final rewards   = j['rewards']   as Map<String, dynamic>?;
     final milRaw    = rewards?['milestones'] as List?;
+    final offer     = j['first_order_offer'] as Map<String, dynamic>?;
 
     // Per-tier cashback rates (keys from backend: cashback_rate, tier_silver_cashback, etc.)
     final bronzeCb = _d(rewards?['cashback_rate']          ?? defaults.tierCashbacks[0]);
@@ -250,6 +262,10 @@ class AppConfig {
       seasonalEndsAt: (j['seasonal'] as Map<String, dynamic>?)?['ends_at'] as String?,
       seasonalLabelAr: (j['seasonal'] as Map<String, dynamic>?)?['label_ar'] as String? ?? 'كاش باك مضاعف',
       seasonalLabelEn: (j['seasonal'] as Map<String, dynamic>?)?['label_en'] as String? ?? 'Double cashback',
+      firstOrderOfferAr: offer?['headline_ar'] as String?,
+      firstOrderOfferEn: offer?['headline_en'] as String?,
+      firstOrderOfferSubAr: offer?['sub_ar'] as String? ?? '',
+      firstOrderOfferSubEn: offer?['sub_en'] as String? ?? '',
       tierCashbacks: [bronzeCb, silverCb, goldCb, platCb],
       tierShippingThresholds: [bronzeSh, silverSh, goldSh, platSh],
       tierReturnDays: [bronzeRd, silverRd, goldRd, platRd],

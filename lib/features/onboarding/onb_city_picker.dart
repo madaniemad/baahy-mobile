@@ -9,9 +9,11 @@ import '../../core/providers/address_provider.dart';
 import '../../core/utils/l10n.dart';
 import 'onb_theme.dart';
 
-/// Screen 01 — language + city. No map: the city is auto-detected in the
-/// background (GPS → reverse-geocode) and shown for the user to confirm, or they
-/// pick manually. Outside Libya → a message asks them to choose manually.
+/// The whole onboarding (2026-10-23, Noon/Amazon style): language + delivery city
+/// on one screen, then "Start shopping" goes straight to home. The city is
+/// auto-detected in the background (GPS → reverse-geocode) and pre-filled; tapping
+/// the city row opens the search sheet. Outside Libya / location denied → the row
+/// stays empty with a one-line reason, and the button opens the sheet.
 class OnbCityPicker extends ConsumerStatefulWidget {
   final VoidCallback onContinue;
   const OnbCityPicker({super.key, required this.onContinue});
@@ -21,17 +23,18 @@ class OnbCityPicker extends ConsumerStatefulWidget {
 }
 
 // palette for this screen
-const _navy = Onb.navy;                    // card text
-const _ink = Color(0xFF161719);            // main titles — black
-const _muted = Color(0xFF4B4E54);          // secondary text — dark grey
-const _teal = Color(0xFF1FD7E2);           // brand tiffany
-const _boxBg = Color(0xFFF0F6F7);          // inner tint
-const _cardShadow = [BoxShadow(color: Color(0x12023A42), blurRadius: 22, offset: Offset(0, 8))];
+const _navy = Onb.navy;                    // sheet text
+const _ink = Color(0xFF14181A);            // values (city, selected language)
+const _muted = Color(0xFF6B7578);          // labels and helper lines
+const _teal = Color(0xFF1FD7E2);           // brand tiffany — button and icons only
+const _line = Color(0xFFE4E7E7);           // field borders (app border token)
+const _tint = Color(0xFFE6FAFB);           // selected language
 
 class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
   bool _detecting = true;
   bool _denied = false;
   bool _inService = true;
+  bool _manual = false;                    // picked from the sheet, not detected
   String _cityAr = '';
 
   bool _sheet = false;
@@ -61,14 +64,14 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
       if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
       if (!mounted) return;
       if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
-        setState(() { _detecting = false; _denied = true; });
+        if (!_manual) setState(() { _detecting = false; _denied = true; });
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high, timeLimit: const Duration(seconds: 12));
       await _reverseGeocode(pos.latitude, pos.longitude);
     } catch (_) {
-      if (mounted) setState(() { _detecting = false; _denied = true; });
+      if (mounted && !_manual) setState(() { _detecting = false; _denied = true; });
     }
   }
 
@@ -83,16 +86,16 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
         final addr = data['address'] as Map<String, dynamic>? ?? {};
         final cc = (addr['country_code'] as String?)?.toLowerCase() ?? '';
         final inLibya = cc.isEmpty || cc == 'ly';
-        if (mounted) setState(() {
+        if (mounted && !_manual) setState(() {
           _inService = inLibya;
           _cityAr = inLibya ? _serviceable(_matchCity(addr, lat, lng)) : '';
           _detecting = false;
         });
       } else {
-        if (mounted) setState(() { _inService = true; _cityAr = _serviceable(_nearestCity(lat, lng)); _detecting = false; });
+        if (mounted && !_manual) setState(() { _inService = true; _cityAr = _serviceable(_nearestCity(lat, lng)); _detecting = false; });
       }
     } catch (_) {
-      if (mounted) setState(() { _inService = true; _cityAr = _serviceable(_nearestCity(lat, lng)); _detecting = false; });
+      if (mounted && !_manual) setState(() { _inService = true; _cityAr = _serviceable(_nearestCity(lat, lng)); _detecting = false; });
     }
   }
 
@@ -123,16 +126,27 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
     return detected;
   }
 
-  void _confirm() {
-    if (_cityAr.isEmpty) return;
+  // No city yet (still detecting, denied, outside Libya) → the button opens the
+  // sheet instead of sitting disabled.
+  void _start() {
+    if (_cityAr.isEmpty) { _openSheet(); return; }
     ref.read(cityProvider.notifier).setCity(_cityAr);
     widget.onContinue();
   }
 
+  void _openSheet() {
+    FocusScope.of(context).unfocus();
+    setState(() => _sheet = true);
+  }
+
+  // Picking fills the row and closes the sheet; the user still taps Start shopping,
+  // so they can switch language after choosing.
   void _pickManual(({String ar, String en}) c) {
-    ref.read(cityProvider.notifier).setCity(c.ar);
-    setState(() { _sheet = false; _q = ''; _searchCtl.clear(); });
-    widget.onContinue();
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _manual = true; _cityAr = c.ar; _detecting = false; _denied = false; _inService = true;
+      _sheet = false; _q = ''; _searchCtl.clear();
+    });
   }
 
   Future<void> _enableLocation() async {
@@ -145,43 +159,42 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
     final isAr = ref.watch(localeProvider).languageCode == 'ar';
     final t = _CityStr(isAr);
     final cityLabel = _cityAr.isNotEmpty ? (isAr ? _cityAr : _cityEn(_cityAr)) : '';
+    final botPad = MediaQuery.of(context).padding.bottom;
 
     return Directionality(
       textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(color: Colors.white),
+      child: ColoredBox(
+        color: Colors.white,
         child: Stack(children: [
-          SafeArea(child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(30, 20, 30, 18),
+          SafeArea(bottom: false, child: Padding(
+            padding: EdgeInsets.fromLTRB(24, 0, 24, botPad + 16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              // ── language ──
-              Text(t.langTitle, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15, fontWeight: FontWeight.w800, color: _ink)),
-              const SizedBox(height: 3),
-              Text(t.langSub, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 11.5, fontWeight: FontWeight.w600, color: _muted)),
-              const SizedBox(height: 14),
-              FractionallySizedBox(widthFactor: 0.72, child: _LangSegment(isAr: isAr, onSelect: (ar) { if (ar != isAr) ref.read(localeProvider.notifier).toggle(); })),
-              const SizedBox(height: 52),
+              Expanded(child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                const SizedBox(height: 8),
+                // logo.png is a square canvas with the wordmark centred, so its own
+                // whitespace gives the top breathing room.
+                Center(child: Image.asset('assets/images/logo.png', height: 150)),
+                const SizedBox(height: 8),
 
-              // ── city ──
-              Text(t.title, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 24, fontWeight: FontWeight.w800, color: _navy)),
-              const SizedBox(height: 8),
-              Text(t.sub, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 12.5, fontWeight: FontWeight.w500, color: _muted, height: 1.45)),
-              const SizedBox(height: 26),
+                _Label(t.language),
+                const SizedBox(height: 8),
+                _LangSegment(isAr: isAr, onSelect: (ar) { if (ar != isAr) ref.read(localeProvider.notifier).toggle(); }),
+                const SizedBox(height: 28),
 
-              if (_detecting) ...[ _DetectingRow(t: t), const SizedBox(height: 12) ],
-
-              _CityCard(
-                t: t, city: cityLabel, detecting: _detecting, denied: _denied, inService: _inService,
-                onConfirm: _confirm, onManual: () => setState(() => _sheet = true), onEnable: _enableLocation,
-              ),
-              const SizedBox(height: 20),
-              _OrDivider(t: t),
-              const SizedBox(height: 14),
-              _ManualButton(label: t.manual, onTap: () => setState(() => _sheet = true)),
+                _Label(t.deliverTo),
+                const SizedBox(height: 8),
+                _CityRow(city: cityLabel, placeholder: t.choose, action: cityLabel.isEmpty ? null : t.change, onTap: _openSheet),
+                const SizedBox(height: 8),
+                _Helper(
+                  t: t, detecting: _detecting, manual: _manual, hasCity: _cityAr.isNotEmpty,
+                  denied: _denied, inService: _inService, onEnable: _enableLocation,
+                ),
+              ]))),
+              _Cta(label: t.start, onTap: _start),
             ]),
           )),
 
-          // ── manual sheet ──
+          // ── city sheet ──
           if (_sheet) Positioned.fill(child: GestureDetector(onTap: () => setState(() => _sheet = false), child: Container(color: const Color(0x33000000)))),
           AnimatedSlide(
             duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic,
@@ -203,193 +216,135 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
   }
 }
 
+const _labelStyle = TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13, fontWeight: FontWeight.w500, color: _muted);
+
+class _Label extends StatelessWidget {
+  final String text;
+  const _Label(this.text);
+  @override
+  Widget build(BuildContext context) => Text(text, style: _labelStyle);
+}
+
 // ============================================================ language segment
 class _LangSegment extends StatelessWidget {
   final bool isAr; final ValueChanged<bool> onSelect;
   const _LangSegment({required this.isAr, required this.onSelect});
   @override
   Widget build(BuildContext context) {
-    Widget label(String s, bool selected, VoidCallback onTap) => Expanded(child: GestureDetector(
+    Widget option(String s, bool selected, VoidCallback onTap) => Expanded(child: GestureDetector(
       onTap: onTap, behavior: HitTestBehavior.opaque,
-      child: Center(child: Text(s, style: TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13,
-          fontWeight: FontWeight.w800, color: selected ? Colors.white : _teal))),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.all(3),
+        alignment: Alignment.center,
+        // Fade to a clear tint, not Colors.transparent (clear BLACK): lerping to that
+        // flashes grey mid-animation.
+        decoration: BoxDecoration(color: selected ? _tint : _tint.withValues(alpha: 0), borderRadius: BorderRadius.circular(9)),
+        child: Text(s, style: TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 14.5,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: selected ? _ink : _muted)),
+      ),
     ));
-    return SizedBox(height: 42, child: Stack(children: [
-      // teal outline track
-      Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _teal.withValues(alpha: 0.55), width: 1.5),
-      ))),
-      // selected teal pill (inset so the outline track shows around it)
-      AnimatedAlign(
-        duration: const Duration(milliseconds: 200), curve: Curves.easeOut,
-        alignment: isAr ? Alignment.centerLeft : Alignment.centerRight,
-        child: FractionallySizedBox(widthFactor: 0.53, heightFactor: 1.0,
-          child: Container(margin: const EdgeInsets.all(3.5), decoration: BoxDecoration(
-            color: _teal, borderRadius: BorderRadius.circular(999),
-            boxShadow: [BoxShadow(color: _teal.withValues(alpha: 0.35), blurRadius: 8, offset: const Offset(0, 3))],
-          ))),
-      ),
-      // labels
-      Directionality(textDirection: TextDirection.ltr, child: Row(children: [
-        label('العربية', isAr, () => onSelect(true)),
-        label('English', !isAr, () => onSelect(false)),
-      ])),
-    ]));
+    // Arabic first in reading order either way: the row follows the screen direction.
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: _line)),
+      child: Row(children: [
+        option('العربية', isAr, () => onSelect(true)),
+        option('English', !isAr, () => onSelect(false)),
+      ]),
+    );
   }
 }
 
-class _DetectingRow extends StatelessWidget {
-  final _CityStr t;
-  const _DetectingRow({required this.t});
-  @override
-  Widget build(BuildContext context) => Column(children: [
-    Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-      const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: _navy)),
-      const SizedBox(width: 9),
-      Text(t.locating, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13, fontWeight: FontWeight.w700, color: _navy)),
-    ]),
-    const SizedBox(height: 3),
-    Text(t.locatingSub, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 11.5, fontWeight: FontWeight.w500, color: _muted)),
-  ]);
-}
+// ============================================================ city row
+class _CityRow extends StatelessWidget {
+  final String city, placeholder;
+  final String? action;
+  final VoidCallback onTap;
+  const _CityRow({required this.city, required this.placeholder, required this.action, required this.onTap});
 
-// ============================================================ city card
-class _CityCard extends StatelessWidget {
-  final _CityStr t; final String city;
-  final bool detecting, denied, inService;
-  final VoidCallback onConfirm, onManual, onEnable;
-  const _CityCard({required this.t, required this.city, required this.detecting, required this.denied, required this.inService, required this.onConfirm, required this.onManual, required this.onEnable});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: const Color(0xFFEDF1F2)), boxShadow: _cardShadow),
-    padding: const EdgeInsets.fromLTRB(15, 18, 15, 18),
-    child: _inner(),
-  );
-
-  Widget _inner() {
-    if (!detecting && (denied || !inService)) {
-      final title = !inService ? t.outTitle : t.deniedTitle;
-      final sub = !inService ? t.outSub : t.deniedSub;
-      return Column(children: [
-        Container(width: 44, height: 44, decoration: const BoxDecoration(color: Color(0xFFFDECEC), shape: BoxShape.circle),
-            child: const Icon(Icons.location_off_rounded, color: Onb.couponRed, size: 22)),
-        const SizedBox(height: 10),
-        Text(title, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15, fontWeight: FontWeight.w800, color: _navy)),
-        const SizedBox(height: 4),
-        Text(sub, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 12, fontWeight: FontWeight.w500, color: _muted, height: 1.4)),
-        const SizedBox(height: 14),
-        _Cta(label: t.chooseCity, onTap: onManual),
-        if (denied) ...[
-          const SizedBox(height: 9),
-          GestureDetector(onTap: onEnable, child: Text(t.enableLoc, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13, fontWeight: FontWeight.w700, color: _teal))),
-        ],
-      ]);
-    }
-
-    final ready = !detecting && city.isNotEmpty;
-    return Column(children: [
-      Container(width: 36, height: 36, decoration: const BoxDecoration(color: Onb.iconTile, shape: BoxShape.circle),
-          child: ready
-            ? const Icon(Icons.check_rounded, color: _teal, size: 20)
-            : const Padding(padding: EdgeInsets.all(10), child: CircularProgressIndicator(strokeWidth: 2, color: _teal))),
-      const SizedBox(height: 7),
-      Text(t.currentCity, textAlign: TextAlign.center, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 12, fontWeight: FontWeight.w800, color: _navy)),
-      const SizedBox(height: 10),
-      // inner city box — text right, pin left
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(color: _boxBg, borderRadius: BorderRadius.circular(18)),
-        child: Row(children: [
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            ready
-              ? Text(city, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 17, fontWeight: FontWeight.w800, color: _navy))
-              : Container(width: 100, height: 18, decoration: BoxDecoration(color: const Color(0xFFE3EAEB), borderRadius: BorderRadius.circular(6))),
-            const SizedBox(height: 1),
-            Text(t.autoDetected, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 11, fontWeight: FontWeight.w500, color: _muted)),
-          ])),
-          const SizedBox(width: 9),
-          const Icon(Icons.location_on, color: _teal, size: 19),
-        ]),
-      ),
-      const SizedBox(height: 12),
-      _Cta(label: t.confirmCity, onTap: onConfirm, disabled: !ready),
-    ]);
-  }
-}
-
-class _OrDivider extends StatelessWidget {
-  final _CityStr t;
-  const _OrDivider({required this.t});
-  @override
-  Widget build(BuildContext context) => Row(children: [
-    Expanded(child: Container(height: 1, color: _navy.withValues(alpha: 0.12))),
-    Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text(t.or, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13, fontWeight: FontWeight.w600, color: _muted))),
-    Expanded(child: Container(height: 1, color: _navy.withValues(alpha: 0.12))),
-  ]);
-}
-
-class _ManualButton extends StatelessWidget {
-  final String label; final VoidCallback onTap;
-  const _ManualButton({required this.label, required this.onTap});
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap, behavior: HitTestBehavior.opaque,
     child: Container(
-      height: 52, alignment: Alignment.center,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: _teal, width: 1.6)),
-      child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-        Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 14.5, fontWeight: FontWeight.w700, color: _teal)),
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: _line)),
+      child: Row(children: [
+        const Icon(Icons.location_on_outlined, color: _teal, size: 21),
         const SizedBox(width: 10),
-        const Icon(Icons.search, color: _teal, size: 20),
+        Expanded(child: Text(city.isEmpty ? placeholder : city, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15.5,
+              fontWeight: city.isEmpty ? FontWeight.w500 : FontWeight.w700, color: city.isEmpty ? _muted : _ink))),
+        if (action != null)
+          Text(action!, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 13.5, fontWeight: FontWeight.w600, color: _teal))
+        else
+          const Icon(Icons.keyboard_arrow_down_rounded, color: _muted, size: 22),
       ]),
     ),
   );
 }
 
-// Static primary button — no pulse/scale animation (kept calm so it doesn't
-// distract first-time users during onboarding).
-class _Cta extends StatelessWidget {
-  final String label; final VoidCallback onTap; final bool disabled;
-  const _Cta({required this.label, required this.onTap, this.disabled = false});
+// One quiet line under the city row: what we know about the location.
+class _Helper extends StatelessWidget {
+  final _CityStr t;
+  final bool detecting, manual, hasCity, denied, inService;
+  final VoidCallback onEnable;
+  const _Helper({required this.t, required this.detecting, required this.manual, required this.hasCity, required this.denied, required this.inService, required this.onEnable});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: disabled ? null : onTap,
-      child: Opacity(opacity: disabled ? 0.5 : 1, child: Container(
-        height: 46, width: double.infinity, alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: _teal, borderRadius: BorderRadius.circular(18),
-          boxShadow: disabled ? null : [BoxShadow(color: _teal.withValues(alpha: 0.38), blurRadius: 16, offset: const Offset(0, 6))]),
-        child: Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
-      )),
-    );
+    const style = TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 12.5, fontWeight: FontWeight.w500, color: _muted, height: 1.4);
+    if (manual) return const SizedBox(height: 18);
+    if (detecting) {
+      return Row(children: [
+        const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 1.6, color: _muted)),
+        const SizedBox(width: 8),
+        Text(t.locating, style: style),
+      ]);
+    }
+    if (!inService) return Text(t.outside, style: style);
+    if (denied) {
+      return Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+        Text('${t.denied} ', style: style),
+        GestureDetector(onTap: onEnable, child: Text(t.enableLoc, style: style.copyWith(color: _teal, fontWeight: FontWeight.w600))),
+      ]);
+    }
+    if (hasCity) return Text(t.detected, style: style);
+    return const SizedBox(height: 18);
   }
+}
+
+// Primary button — flat brand tiffany, no shadow.
+class _Cta extends StatelessWidget {
+  final String label; final VoidCallback onTap;
+  const _Cta({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      height: 52, width: double.infinity, alignment: Alignment.center,
+      decoration: BoxDecoration(color: _teal, borderRadius: BorderRadius.circular(12)),
+      child: Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 15.5, fontWeight: FontWeight.w700, color: Colors.white)),
+    ),
+  );
 }
 
 // ============================================================ strings
 class _CityStr {
   final bool ar;
   _CityStr(this.ar);
-  String get langTitle => ar ? 'اختر لغتك المفضلة' : 'Choose your preferred language';
-  String get langSub => ar ? 'Choose your preferred language' : 'اختر لغتك المفضلة';
-  String get title => ar ? 'اختر مدينتك' : 'Choose your city';
-  String get sub => ar ? 'لعرض المنتجات ومعلومات التوصيل المناسبة لك' : 'To show the right products and delivery info for you';
-  String get locating => ar ? 'جاري تحديد موقعك بدقة…' : 'Pinpointing your location…';
-  String get locatingSub => ar ? 'يتم ذلك في الخلفية' : 'This happens in the background';
-  String get currentCity => ar ? 'مدينتك الحالية' : 'Your current city';
-  String get autoDetected => ar ? 'تم تحديدها تلقائياً' : 'Detected automatically';
-  String get confirmCity => ar ? 'أكّد مدينتك' : 'Confirm your city';
-  String get or => ar ? 'أو' : 'or';
-  String get manual => ar ? 'اختر المدينة يدوياً' : 'Choose city manually';
-  String get outTitle => ar ? 'خارج نطاق التوصيل' : 'Outside our service area';
-  String get outSub => ar ? 'لا نخدم موقعك الحالي — اختر مدينتك من القائمة' : "We don't serve your location — pick your city from the list";
-  String get deniedTitle => ar ? 'تعذّر تحديد موقعك' : "Couldn't detect your location";
-  String get deniedSub => ar ? 'اختر مدينتك من القائمة، أو فعّل صلاحية الموقع' : 'Pick your city from the list, or enable location access';
-  String get enableLoc => ar ? 'فعّل صلاحية الموقع' : 'Enable location access';
-  String get chooseCity => ar ? 'اختر المدينة يدوياً' : 'Choose city manually';
+  String get language => ar ? 'اللغة' : 'Language';
+  String get deliverTo => ar ? 'التوصيل إلى' : 'Deliver to';
+  String get choose => ar ? 'اختر مدينتك' : 'Choose your city';
+  String get change => ar ? 'تغيير' : 'Change';
+  String get start => ar ? 'ابدأ التسوق' : 'Start shopping';
+  String get locating => ar ? 'جاري تحديد موقعك…' : 'Finding your location…';
+  String get detected => ar ? 'تم تحديدها من موقعك' : 'Based on your location';
+  String get outside => ar ? 'لا نوصّل لموقعك الحالي، اختر مدينتك من القائمة' : "We don't deliver to your current location. Choose your city from the list";
+  String get denied => ar ? 'تعذّر تحديد موقعك.' : "Couldn't find your location.";
+  String get enableLoc => ar ? 'فعّل الموقع' : 'Turn on location';
   String get sheetTitle => ar ? 'اختر المدينة' : 'Choose city';
   String get search => ar ? 'ابحث عن مدينة' : 'Search for a city';
   String get mainCities => ar ? 'المدن الرئيسية' : 'Main cities';

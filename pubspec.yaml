@@ -108,8 +108,6 @@ flutter:
   assets:
     - assets/images/
     - assets/images/payment/
-    - assets/onboarding/
-    - assets/onboarding/full/
 
   fonts:
     # Bottom-nav icons — 5 glyphs subset from Material Symbols Outlined
