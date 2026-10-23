@@ -497,19 +497,17 @@ class _CatChip extends StatelessWidget {
           margin: const EdgeInsetsDirectional.only(end: 8),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary : context.col.surface,
+            // Shop-page category carousel: the standard `_Tab` style.
+            color: AppColors.catTabBg(context, selected),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-                color: selected ? AppColors.primary : context.col.border,
-                width: selected ? 0 : 1),
           ),
           child: Text(label,
               style: TextStyle(
                   fontFamily: 'Manrope',
                   fontFamilyFallback: ['Tajawal'],
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : context.col.ink1)),
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: AppColors.catTabText(context, selected))),
         ),
       );
 }

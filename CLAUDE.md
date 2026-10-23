@@ -66,7 +66,8 @@ All from `lib/shared/theme/app_theme.dart`:
 **Colors:**
 - `AppColors.primary` — `#1FD7E2` tiffany (buttons, CTAs)
 - `AppColors.teal` / `teal600` / `teal700` — tiffany shades (`#1FD7E2` / `#16BEC8` / `#0E98A1`) for small accents only: links, spinners, accent bars, icons. **Was mint green `#4ECDC4` until 2026-10-23; Emad: no green anywhere.**
-- **Tabs / chips / pills — ONE standard** (Emad, 2026-10-23, copied from the search-results subcategory `_Tab`): unselected = `surfaceSoft` fill, no outline, `ink1` text w500; selected = solid tiffany `AppColors.adaptive` fill, white text w700; radius 20. Use `AppColors.tealChipBg/Border/Text` (unselected) and `chipSelectedBg/Border/Text` (selected). No mint, no dark or tiffany outlines, no grey-outline chips.
+- **Shop-page category tab carousels** (Emad, 2026-10-23 — copied from the products-page subcategory `_Tab`): unselected = `surfaceSoft` fill, no outline, `ink1` w500; selected = solid tiffany (`AppColors.adaptive`), white w700; radius 20. Helpers `AppColors.catTabBg/catTabText(context, selected)`. Used ONLY by `_Tab` (search results subcategories), the store-list tabs (`stores_tab.dart`) and the store page category row (`vendor_store_screen.dart` `_CatChip`).
+- **Search screen, search-result chips and filter sheets keep their own style** (Emad: "leave them as they were"): white + grey border (`AppColors.tealChip*`); selected filter chips = light grey `#F4F5F6` fill + very light border (`chipSelected*`). Never mint, never a dark outline.
 - `AppColors.ink0–ink4` — text hierarchy (ink0 = primary text, ink3 = placeholder)
 - `AppColors.bg` — `#FAFBFC` page background
 - `AppColors.surfaceSoft` — `#F6F7F7` search boxes, input backgrounds
@@ -277,7 +278,7 @@ Required keys already present:
 - **SKU/code search**: typing a hyphenated code like "V162-1WCL1006" returns the actual product with thumbnail in suggestions; tapping goes directly to product detail
 - **Brand phonetics**: "انكر"→Anker, "نايك"→NIKE, "شانيل"→Chanel, etc. — resolved in backend before searching
 - **Arabic plural stems**: "ساعات"→"ساعة", "حقائب"→"حقيبة" etc. — resolved in backend for both suggestions and results
-- **Trending now**: horizontal pills carousel (standard tab style: `surfaceSoft` fill, no outline — `tealChip*` helpers); tapping runs text search
+- **Trending now**: horizontal pills carousel (white, grey border, dark text — `tealChip*` helpers); tapping runs text search
 - **Recent searches**: persisted to SharedPreferences under `recent_searches_v1`; max 8 entries
 - **Routing**: brand → `/search/results?q=X&brand=X`; category → `?q=X&category=ID`; product → `/product/:id`; else → `?q=X`
 

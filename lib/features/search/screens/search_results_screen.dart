@@ -1256,7 +1256,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
                                                 color: sel
-                                                    ? Colors.white
+                                                    ? const Color(0xFFF0F0F0)
                                                     : context.col.ink1)),
                                       ),
                                     );
@@ -1575,18 +1575,18 @@ class _CatChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.adaptive(context) : AppColors.tealChipBg(context),
-          borderRadius: BorderRadius.circular(20),
+          color: selected ? AppColors.adaptive(context) : context.col.surface,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
               color:
-                  selected ? AppColors.adaptive(context) : AppColors.tealChipBorder(context),
+                  selected ? AppColors.adaptive(context) : context.col.border,
               width: 1.5),
         ),
         child: Text(label,
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected ? Colors.white : context.col.ink1,
+              color: selected ? const Color(0xFFF0F0F0) : context.col.ink1,
             )),
       ),
     );
@@ -1632,9 +1632,11 @@ class _CategoryChipsRow extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
-                    // Standard tab style (unselected), like `_Tab` (Emad, 2026-10-23).
-                    color: AppColors.tealChipBg(context),
+                    // White + grey outline, like the «الأقسام» chips on the
+                    // search screen (Emad, 2026-10-23: not the old mint teal).
+                    color: context.col.surface,
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: context.col.border),
                   ),
                   child: Text(
                     '$label  ${cat.productCount}',

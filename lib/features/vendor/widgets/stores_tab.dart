@@ -269,25 +269,16 @@ class _FilterChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 18),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected
-                ? AppColors.chipSelectedBg(context)
-                : AppColors.tealChipBg(context),
+            // Shop-page category carousel: the standard `_Tab` style.
+            color: AppColors.catTabBg(context, selected),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected
-                  ? AppColors.chipSelectedBorder(context)
-                  : AppColors.tealChipBorder(context),
-              width: selected ? 1.4 : 1,
-            ),
           ),
           child: Text(
             label,
             style: TextStyle(
               fontSize: 13,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              color: selected
-                  ? AppColors.chipSelectedText(context)
-                  : context.col.ink1,
+              color: AppColors.catTabText(context, selected),
               fontFamily: 'Manrope',
               fontFamilyFallback: const ['Tajawal'],
             ),
