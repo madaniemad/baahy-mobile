@@ -1,7 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/deep_link_service.dart';
 import '../../../core/utils/l10n.dart';
@@ -23,8 +26,15 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
   String? _error;
   bool _showRefField = false;
   bool _refLocked = false; // code came from a referral link/clipboard → shown but not editable
+  final _phoneFocus = FocusNode();
+  late final TapGestureRecognizer _termsTap = TapGestureRecognizer()
+    ..onTap = () => safePush(context, '/terms');
+  late final TapGestureRecognizer _privacyTap = TapGestureRecognizer()
+    ..onTap = () => safePush(context, '/privacy');
 
-  bool get _valid => _ctrl.text.replaceAll(RegExp(r'\D'), '').length >= 9;
+  /// The 9 national digits (the field formats them as "91 234 5678").
+  String get _digits => _ctrl.text.replaceAll(RegExp(r'\D'), '');
+  bool get _valid => _digits.length == 9;
 
   @override
   void initState() {
@@ -35,12 +45,17 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
         setState(() { _showRefField = true; _refLocked = true; });
       }
     });
+    _phoneFocus.addListener(() { if (mounted) setState(() {}); });
+    _refCtrl.addListener(() { if (mounted) setState(() {}); });
   }
 
   @override
   void dispose() {
     _ctrl.dispose();
     _refCtrl.dispose();
+    _phoneFocus.dispose();
+    _termsTap.dispose();
+    _privacyTap.dispose();
     super.dispose();
   }
 
@@ -48,7 +63,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
     if (!_valid) return;
     setState(() { _loading = true; _error = null; });
     try {
-      final phone = '+218 ${_ctrl.text.trim()}';
+      final phone = '+218 $_digits';
       final ref2 = _refCtrl.text.trim();
       final channel = await ref.read(authProvider.notifier).requestOtp(phone);
       if (mounted) await safePush(context, '/otp',
@@ -93,6 +108,18 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cfg = ref.watch(appConfigProvider);
+    String amt(num v) => v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(1);
+    final hasRef = _refCtrl.text.trim().isNotEmpty;
+    final borderColor = _error != null
+        ? AppColors.danger
+        : (_phoneFocus.hasFocus ? AppColors.primary : context.col.border);
+    const font = ['Tajawal'];
+
+    // Redesigned 2026-10-23 (Emad): one phone box (+218 inside), WhatsApp named, the button right
+    // under the field, plain benefit rows instead of tinted tiles, tappable terms, and the invite
+    // code says what it actually does. The 20 LYD welcome credit is for EVERY new account — it is
+    // not presented as the invite code's reward (see the referral rules).
     return Scaffold(
       backgroundColor: context.col.surface,
       appBar: AppBar(
@@ -101,52 +128,44 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
           onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
           icon: Icon(Icons.arrow_back, color: context.col.ink0)),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-            const SizedBox(height: 4),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(context.s.enterPhone,
-              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: font,
                 fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
             const SizedBox(height: 8),
             Text(context.s.phoneSub,
-              style: TextStyle(fontSize: 14.5, color: context.col.ink2, height: 1.5)),
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: font,
+                fontSize: 14.5, color: context.col.ink2, height: 1.5)),
             const SizedBox(height: 24),
 
-            // Phone input — always LTR so country code stays on the left
+            // One box: +218 + number (a flag emoji renders as two boxes in our fonts). Always LTR so the code stays on the left.
             Directionality(
               textDirection: TextDirection.ltr,
-              child: Row(children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.col.borderStrong),
-                  ),
-                  child: const Text('+218',
-                    style: TextStyle(fontFamily: 'PlusJakartaSans',
-                      fontSize: 18, fontWeight: FontWeight.w600)),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: borderColor, width: _phoneFocus.hasFocus ? 1.5 : 1),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _error != null ? AppColors.danger : context.col.borderStrong),
-                    ),
+                child: Row(children: [
+                  const SizedBox(width: 16),
+                  const Text('+218',
+                    style: TextStyle(fontFamily: 'PlusJakartaSans', fontSize: 18, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 12),
+                  Container(width: 1, height: 26, color: context.col.border),
+                  Expanded(
                     child: TextField(
                       controller: _ctrl,
+                      focusNode: _phoneFocus,
                       autofocus: true,
                       keyboardType: TextInputType.phone,
                       textDirection: TextDirection.ltr,
+                      inputFormatters: [_LibyanPhoneFormatter()],
                       onChanged: (_) => setState(() => _error = null),
                       style: const TextStyle(fontFamily: 'PlusJakartaSans',
                         fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 0.5),
@@ -154,19 +173,18 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                         hintText: '91 234 5678',
                         hintStyle: TextStyle(color: context.col.ink4, fontWeight: FontWeight.w400),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                       ),
                       onSubmitted: (_) => _send(),
                     ),
                   ),
-                ),
-              ]),
+                ]),
+              ),
             ),
 
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(_error!,
-                style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+              Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
             ],
 
             const SizedBox(height: 14),
@@ -179,12 +197,12 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   Flexible(
                     child: Text(context.tr('لديك كود دعوة؟', 'Have an invite code?'),
                       maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
+                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: font, fontSize: 13,
                         color: context.col.ink3, fontWeight: FontWeight.w600)),
                   ),
                 ]),
               )
-            else
+            else ...[
               Container(
                 decoration: BoxDecoration(
                   color: Colors.transparent,
@@ -203,7 +221,7 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   decoration: InputDecoration(
                     hintText: context.tr('كود الدعوة', 'Invite code'),
                     hintStyle: TextStyle(
-                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
+                      fontFamily: 'Manrope', fontFamilyFallback: font, fontSize: 13,
                       color: context.col.ink4, fontWeight: FontWeight.w400,
                       letterSpacing: 0),
                     prefixIcon: Icon(Icons.card_giftcard_outlined,
@@ -233,106 +251,153 @@ class _PhoneSignInScreenState extends ConsumerState<PhoneSignInScreen> {
                   ),
                 ),
               ),
+              // What the code does — the inviter's reward, never the newcomer's (that is the
+              // welcome credit every new account gets).
+              if (hasRef && cfg.referralGiverAmount > 0) ...[
+                const SizedBox(height: 8),
+                Text(context.s.inviteRewardLine(
+                      amt(cfg.referralGiverAmount), amt(cfg.referralMinOrder)),
+                  style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: font,
+                    fontSize: 12.5, color: context.col.ink2, height: 1.5)),
+              ],
+            ],
 
-            const SizedBox(height: 22),
-            // Value section (merged in from the removed landing screen) — the reasons to sign in.
-            Text(context.s.authSub,
-              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                fontSize: 14, color: context.col.ink2, height: 1.5)),
-            const SizedBox(height: 12),
-            Row(children: [
-              _BenefitCard(icon: Icons.card_giftcard_outlined, label: context.s.authBenefit1),
-              const SizedBox(width: 10),
-              _BenefitCard(icon: Icons.inventory_2_outlined,   label: context.s.authBenefit2),
-              const SizedBox(width: 10),
-              _BenefitCard(icon: Icons.favorite_border_rounded, label: context.s.authBenefit3),
-            ]),
-            const SizedBox(height: 8),
-
-                ],
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: (_valid && !_loading) ? _send : null,
+                icon: _loading
+                    ? const SizedBox(width: 18, height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
+                label: Text(context.s.sendCode,
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: font,
+                    fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ),
-          ),
-          Container(
-            // Pinned action bar with a hairline top divider so it always reads as
-            // a separate bar and never appears to overlap the content above it.
-            decoration: BoxDecoration(
-              color: context.col.surface,
-              border: Border(top: BorderSide(color: context.col.border)),
-            ),
-            // Do NOT add viewInsets.bottom here: this block is in the Scaffold
-            // body, and Scaffold.resizeToAvoidBottomInset (default true) has
-            // already shrunk the body by the keyboard height. Adding it again
-            // double-counts the keyboard — it shoved this block up by a whole
-            // keyboard-height and pushed the title/phone field off-screen.
-            // (Invisible on the Simulator, whose software keyboard is off by
-            // default, so viewInsets.bottom was always 0 there.)
-            padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: (_valid && !_loading) ? _send : null,
-                  icon: _loading
-                      ? const SizedBox(width: 18, height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black87))
-                      : const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
-                  label: Text(context.s.sendCode,
-                    style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                      fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            // No "أو / continue as guest" here: once the user is in the
+            // sign-in/sign-up flow they must complete one of the two.
+            const SizedBox(height: 14),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(Icons.lock_outline_rounded, size: 12, color: context.col.ink3),
+              ),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: font,
+                      fontSize: 11.5, color: context.col.ink3, height: 1.5),
+                    children: [
+                      TextSpan(text: context.s.termsLead),
+                      TextSpan(text: context.s.termsLink, recognizer: _termsTap,
+                        style: TextStyle(color: AppColors.adaptive(context), fontWeight: FontWeight.w700)),
+                      TextSpan(text: context.s.termsAnd),
+                      TextSpan(text: context.s.privacyLink, recognizer: _privacyTap,
+                        style: TextStyle(color: AppColors.adaptive(context), fontWeight: FontWeight.w700)),
+                      const TextSpan(text: '.'),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              // No "أو / continue as guest" here: once the user is in the
-              // sign-in/sign-up flow they must complete one of the two.
-              const SizedBox(height: 16),
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.lock_outline_rounded, size: 12, color: context.col.ink3),
-                const SizedBox(width: 5),
-                Flexible(child: Text(
-                  context.s.termsAgreement,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: context.col.ink3, height: 1.5))),
-              ]),
             ]),
-          ),
-        ],
+
+            const SizedBox(height: 28),
+            Divider(height: 1, color: context.col.border),
+            const SizedBox(height: 20),
+            // What signing in gets you — plain rows, not tappable-looking tiles. Every line is
+            // driven by the live config and hidden when that reward is switched off.
+            Text(context.s.signedInGets,
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: font,
+                fontSize: 14, fontWeight: FontWeight.w800, color: context.col.ink0)),
+            const SizedBox(height: 14),
+            ...[
+              if (cfg.welcomeBonusAmount > 0)
+                (Icons.account_balance_wallet_outlined, context.s.benefitWelcome(amt(cfg.welcomeBonusAmount))),
+              if ((context.isAr ? cfg.firstOrderOfferAr : cfg.firstOrderOfferEn)?.isNotEmpty == true)
+                (Icons.local_offer_outlined, (context.isAr ? cfg.firstOrderOfferAr : cfg.firstOrderOfferEn)!),
+              if (cfg.cashbackRate > 0)
+                (Icons.savings_outlined, context.s.benefitCashback(amt(cfg.cashbackRate),
+                    amt(cfg.tierPlatinumCashback > cfg.cashbackRate ? cfg.tierPlatinumCashback : cfg.cashbackRate),
+                    amt(cfg.cashbackMinOrder))),
+              if (cfg.referralGiverAmount > 0)
+                (Icons.card_giftcard_outlined, context.s.benefitInvite(amt(cfg.referralGiverAmount))),
+              (Icons.local_shipping_outlined, context.s.benefitTracking),
+              (Icons.assignment_return_outlined, context.s.benefitReturns),
+              (Icons.favorite_border_rounded, context.s.benefitSaved),
+              if (cfg.aiEnabled) (Icons.auto_awesome_outlined, context.s.benefitAi),
+            ].map((b) => Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: _BenefitRow(icon: b.$1, label: b.$2),
+                )),
+          ]),
+        ),
       ),
     );
   }
 }
 
-class _BenefitCard extends StatelessWidget {
+class _BenefitRow extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _BenefitCard({required this.icon, required this.label});
+  const _BenefitRow({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(icon, color: AppColors.primary, size: 20),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Text(label,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+              fontSize: 13.5, fontWeight: FontWeight.w500,
+              color: context.col.ink1, height: 1.4)),
         ),
-        child: Column(children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(height: 10),
-          Text(label,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-              fontSize: 11.5, fontWeight: FontWeight.w600,
-              color: context.col.ink1, height: 1.3)),
-        ]),
       ),
-    );
+    ]);
+  }
+}
+
+/// Libyan mobile number: Arabic/Persian digits → Latin, a pasted +218 / 00218 / leading 0
+/// dropped, 9 digits max, shown as "91 234 5678".
+class _LibyanPhoneFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final buf = StringBuffer();
+    for (final r in newValue.text.runes) {
+      if (r >= 0x0660 && r <= 0x0669) {
+        buf.writeCharCode(0x30 + r - 0x0660);
+      } else if (r >= 0x06F0 && r <= 0x06F9) {
+        buf.writeCharCode(0x30 + r - 0x06F0);
+      } else if (r >= 0x30 && r <= 0x39) {
+        buf.writeCharCode(r);
+      }
+    }
+    var d = buf.toString();
+    if (d.startsWith('00218')) {
+      d = d.substring(5);
+    } else if (d.startsWith('218') && d.length > 9) {
+      d = d.substring(3);
+    }
+    if (d.startsWith('0')) d = d.substring(1);
+    if (d.length > 9) d = d.substring(0, 9);
+    final out = StringBuffer();
+    for (var i = 0; i < d.length; i++) {
+      if (i == 2 || i == 5) out.write(' ');
+      out.write(d[i]);
+    }
+    final text = out.toString();
+    return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
   }
 }
