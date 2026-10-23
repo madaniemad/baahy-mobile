@@ -60,14 +60,16 @@ class _UpdateCard extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(22),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
             child: Container(
               decoration: BoxDecoration(
-                // Translucent so the blur reads as glass; opaque enough that the
-                // text keeps its contrast over any page behind it.
-                color: col.surface.withValues(alpha: context.isDark ? 0.82 : 0.86),
+                // Real glass (Emad, 2026-10-23: at 86% it read as a white card).
+                // The page behind is already blurred and dimmed, so the text keeps
+                // its contrast at this strength.
+                color: (context.isDark ? Colors.black : Colors.white)
+                    .withValues(alpha: context.isDark ? 0.35 : 0.42),
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: col.border.withValues(alpha: 0.6)),
+                border: Border.all(color: Colors.white.withValues(alpha: context.isDark ? 0.18 : 0.55)),
               ),
               padding: const EdgeInsets.fromLTRB(24, 30, 24, 20),
               child: Column(
