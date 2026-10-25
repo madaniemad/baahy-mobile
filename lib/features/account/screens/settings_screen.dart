@@ -54,14 +54,16 @@ class SettingsScreen extends ConsumerWidget {
                 ref.read(localeProvider.notifier).toggle();
               },
             ),
+            // Three choices, not a light/dark flip: a flip had no way back to following the phone
+            // (Emad, 2026-10-25: default as the phone, and changeable in the app).
             _SettingsRow(
               icon: isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
               label: isAr ? 'المظهر' : 'Appearance',
               trailing: Text(
-                isDark ? (isAr ? 'داكن' : 'Dark') : (isAr ? 'فاتح' : 'Light'),
+                _modeLabel(ref.watch(themeModeProvider), isAr),
                 style: TextStyle(fontSize: 13, color: context.col.ink2),
               ),
-              onTap: () => ref.read(themeModeProvider.notifier).toggle(),
+              onTap: () => _pickAppearance(context, ref, isAr),
             ),
             _SettingsRow(
               icon: Icons.notifications_outlined,
@@ -260,6 +262,46 @@ class _Section extends StatelessWidget {
       ],
     ]),
   );
+}
+
+String _modeLabel(ThemeMode mode, bool isAr) => switch (mode) {
+  ThemeMode.light => isAr ? 'فاتح' : 'Light',
+  ThemeMode.dark => isAr ? 'داكن' : 'Dark',
+  ThemeMode.system => isAr ? 'حسب الهاتف' : 'Same as phone',
+};
+
+Future<void> _pickAppearance(BuildContext context, WidgetRef ref, bool isAr) async {
+  final current = ref.read(themeModeProvider);
+  final picked = await showModalBottomSheet<ThemeMode>(
+    context: context,
+    backgroundColor: context.col.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+    builder: (ctx) => SafeArea(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const SizedBox(height: 8),
+        Container(width: 40, height: 4,
+          decoration: BoxDecoration(color: ctx.col.border,
+            borderRadius: BorderRadius.circular(2))),
+        const SizedBox(height: 12),
+        for (final (mode, icon) in const [
+          (ThemeMode.system, Icons.brightness_auto_outlined),
+          (ThemeMode.light, Icons.light_mode_outlined),
+          (ThemeMode.dark, Icons.dark_mode_outlined),
+        ])
+          ListTile(
+            leading: Icon(icon, color: ctx.col.ink1),
+            title: Text(_modeLabel(mode, isAr),
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                fontWeight: FontWeight.w600, color: ctx.col.ink0)),
+            trailing: mode == current ? const Icon(Icons.check, color: AppColors.primary) : null,
+            onTap: () => Navigator.pop(ctx, mode),
+          ),
+        const SizedBox(height: 8),
+      ]),
+    ),
+  );
+  if (picked != null) await ref.read(themeModeProvider.notifier).setMode(picked);
 }
 
 class _SettingsRow extends StatelessWidget {
