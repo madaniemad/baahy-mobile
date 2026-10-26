@@ -36,7 +36,9 @@ final _ordersCountsProvider = FutureProvider.autoDispose<({int active, int total
     return (active: active, total: total);
   } catch (e, st) {
     Sentry.captureException(e, stackTrace: st);
-    return (active: 0, total: 0);
+    // Unknown, not zero: a failed request (e.g. Cloudflare challenging the API, 2026-10-26)
+    // showed a customer with a paid order "0 orders". The tiles show "—" instead.
+    rethrow;
   }
 });
 
