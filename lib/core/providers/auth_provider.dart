@@ -26,6 +26,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _init();
   }
 
+  /// Every report to Sentry carries the signed-in account, so "my order is not in the app"
+  /// can be matched to the errors that customer's phone hit (2026-10-26).
+  @override
+  set state(AuthState value) {
+    super.state = value;
+    final id = value.user?.id;
+    Sentry.configureScope((s) => s.setUser(id == null ? null : SentryUser(id: '$id')));
+  }
+
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
 
