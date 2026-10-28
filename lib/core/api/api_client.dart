@@ -127,11 +127,14 @@ class ApiClient {
         };
         final opts = error.requestOptions;
         final isRead = const {'GET', 'HEAD'}.contains(opts.method.toUpperCase());
-        final retryable = neverArrived.contains(error.type) ||
+        // The server's firewall refused this phone's IP before Laravel saw the request, so even a
+        // POST is safe to send again — by the proxy, which the firewall does not block.
+        final blocked = _firewallBlock(error);
+        final retryable = neverArrived.contains(error.type) || blocked ||
             (isRead && (readFailures.contains(error.type) || _notOurAnswer(error)));
         if (retryable) {
-          // 1. One straight retry — most of these are transient.
-          if (opts.extra['retried'] != true) {
+          // 1. One straight retry — most of these are transient (a firewall block is not).
+          if (opts.extra['retried'] != true && !blocked) {
             opts.extra['retried'] = true;
             await Future<void>.delayed(const Duration(milliseconds: 600));
             try {
@@ -152,6 +155,9 @@ class ApiClient {
             } catch (_) {/* both roads failed — report the original error */}
           }
           _reportUnreachable(error);
+          // Never show the firewall's own English text ("Access denied by Imunify360…") to a
+          // customer: without a message, every screen falls back to its own "try again".
+          if (blocked) error.response?.data = null;
         }
 
         if (error.response?.statusCode == 401) {
@@ -181,6 +187,17 @@ class ApiClient {
     final type = r.headers.value('content-type') ?? '';
     final gateway = code == 502 || code == 503 || code == 504 || (code >= 520 && code <= 530);
     return gateway || ((code == 403 || code == 429) && !type.contains('json'));
+  }
+
+  /// Imunify360, the firewall on the Cloudways server, greylists an IP and then refuses every
+  /// app request from it with "Access denied by Imunify360 bot-protection" — before Laravel runs.
+  /// Libyan mobile data puts many customers behind one shared IP, so one flagged IP locks out
+  /// people who did nothing (2026-10-28: a customer could not get a sign-in code). The proxy
+  /// reaches the server from Vercel's IPs, so it is not affected.
+  static bool _firewallBlock(DioException e) {
+    final d = e.response?.data;
+    final text = d is String ? d : (d is Map ? '${d['message'] ?? ''}' : '');
+    return text.contains('Imunify360');
   }
 
   static const _kRoutePref = 'api_route_proxy_until';
