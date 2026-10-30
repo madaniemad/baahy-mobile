@@ -443,6 +443,9 @@ class AppStrings {
   String get stepShipped       => isAr ? 'في الطريق'              : 'On the Way';
   String get stepDelivered     => isAr ? 'تم التسليم'             : 'Delivered';
   String get deliveryPromise   => isAr ? 'طلبك في الطريق إليك'    : 'Your order is on the way';
+  // Baahy's own driver while he has the order (GET /orders/{id} → delivery_driver).
+  String driverOnTheWay(String name) => isAr ? 'مندوب التوصيل $name في الطريق إليك' : '$name is on the way';
+  String get driverHasOrder    => isAr ? 'يحمل طلبك الآن'         : 'Your Baahy driver has your order';
   String get cartUpdateTitle   => isAr ? 'تحديث السلة'            : 'Cart Update';
   String get itemsUnavailable  => isAr ? 'المنتجات التالية نفدت من المخزون:' : 'The following items are sold out:';
   String get priceChangedItems => isAr ? 'تغير سعر المنتجات التالية:' : 'Prices changed for the following items:';

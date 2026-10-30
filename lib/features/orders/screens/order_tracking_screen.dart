@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -407,6 +408,12 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
         // Hero ETA card for active orders
         if (isActive) ...[
           _HeroCard(order: order),
+          const SizedBox(height: 14),
+        ],
+
+        // Who is bringing it — only while Baahy's own driver has the order (server decides).
+        if (order.deliveryDriver != null) ...[
+          _DriverCard(driver: order.deliveryDriver!),
           const SizedBox(height: 14),
         ],
 
@@ -862,6 +869,64 @@ class _HeroCard extends StatelessWidget {
               fontSize: 15, fontWeight: FontWeight.w800)),
           Text(info.subtitle,
             style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink3, fontSize: 12)),
+        ])),
+      ]),
+    );
+  }
+}
+
+class _DriverCard extends StatelessWidget {
+  final DeliveryDriver driver;
+  const _DriverCard({required this.driver});
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 48.0;
+    final fallback = Container(
+      width: size, height: size,
+      decoration: BoxDecoration(color: context.col.surfaceSoft, shape: BoxShape.circle),
+      child: Icon(Icons.person_outline_rounded, size: 26, color: context.col.ink3),
+    );
+    final photo = driver.photoUrl;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: context.col.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.col.border),
+      ),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.6), width: 1.5),
+          ),
+          child: ClipOval(
+            child: photo == null
+                ? fallback
+                : CachedNetworkImage(
+                    imageUrl: photo,
+                    width: size, height: size,
+                    fit: BoxFit.cover,
+                    memCacheWidth: 160,
+                    placeholder: (_, __) => fallback,
+                    errorWidget: (_, __, ___) => fallback,
+                  ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(context.s.driverOnTheWay(driver.name),
+            textAlign: TextAlign.start,
+            maxLines: 2, overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], color: context.col.ink0,
+              fontSize: 14.5, fontWeight: FontWeight.w700, height: 1.35)),
+          const SizedBox(height: 2),
+          Text(context.s.driverHasOrder,
+            textAlign: TextAlign.start,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], color: context.col.ink3,
+              fontSize: 12)),
         ])),
       ]),
     );

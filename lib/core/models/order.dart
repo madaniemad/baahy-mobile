@@ -58,6 +58,9 @@ class Order {
   final double doorstepDeduction;
   /// Items refused at the door, with the quantity refused.
   final List<DoorstepRejectionLine> doorstepRejections;
+  /// Baahy's own driver, only while he has picked the order up or is out delivering it
+  /// (`GET orders/{id}` only; null for courier deliveries and before the trip starts).
+  final DeliveryDriver? deliveryDriver;
 
   const Order({
     required this.id,
@@ -84,6 +87,7 @@ class Order {
     this.amountDue,
     this.doorstepDeduction = 0,
     this.doorstepRejections = const [],
+    this.deliveryDriver,
   });
 
   List<OrderItem> get allItems =>
@@ -123,7 +127,26 @@ class Order {
     amountDue: j['amount_due'] != null ? _d(j['amount_due']) : null,
     doorstepDeduction: _d(j['doorstep_deduction'] ?? 0),
     doorstepRejections: DoorstepRejectionLine.parseAll(j['doorstep_rejections'], j['items'], vendorGroups),
+    deliveryDriver: DeliveryDriver.tryParse(j['delivery_driver']),
   );
+}
+
+/// The driver bringing the order: first name and photo only. The phone is deliberately not sent.
+class DeliveryDriver {
+  final String name;
+  final String? photoUrl;
+  const DeliveryDriver({required this.name, this.photoUrl});
+
+  static DeliveryDriver? tryParse(dynamic raw) {
+    if (raw is! Map) return null;
+    final name = (raw['name'] ?? '').toString().trim();
+    if (name.isEmpty) return null;
+    final photo = raw['photo_url']?.toString().trim();
+    return DeliveryDriver(
+      name: name,
+      photoUrl: photo != null && photo.startsWith('http') ? photo : null,
+    );
+  }
 }
 
 /// One item refused at the door. The server sends `doorstep_rejections` keyed by order_item_id
