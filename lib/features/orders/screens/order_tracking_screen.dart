@@ -411,8 +411,9 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           const SizedBox(height: 14),
         ],
 
-        // Who is bringing it — only while Baahy's own driver has the order (server decides).
-        if (order.deliveryDriver != null) ...[
+        // Who is bringing it — only while Baahy's own driver has the order (server decides), and
+        // never on a delivered/cancelled order shown from a stale copy.
+        if (isActive && order.deliveryDriver != null) ...[
           _DriverCard(driver: order.deliveryDriver!),
           const SizedBox(height: 14),
         ],
