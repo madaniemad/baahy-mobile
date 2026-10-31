@@ -21,7 +21,7 @@ class OnbNotifications extends ConsumerStatefulWidget {
 const _ink = Color(0xFF14181A);
 const _muted = Color(0xFF6B7578);
 const _teal = Color(0xFF1FD7E2);
-const _bell = Color(0xFFD0D5D7);            // very light grey: bell and list icons (Emad, 2026-11-01)
+const _bell = Color(0xFFD0D5D7);            // very light grey list icons (Emad, 2026-11-01)
 
 class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
   bool _busy = false;
@@ -62,8 +62,8 @@ class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Expanded(child: SingleChildScrollView(child: Column(children: [
                 const SizedBox(height: 150),
-                // Centred, very light grey bell (Emad, 2026-11-01).
-                const Icon(Icons.notifications_active_outlined, color: _bell, size: 64),
+                // Centred tiffany bell; the list icons stay very light grey (Emad, 2026-11-01).
+                const Icon(Icons.notifications_active_outlined, color: _teal, size: 64),
                 const SizedBox(height: 20),
                 Text(tr('خلّيك على اطّلاع أول بأول', 'Stay up to date'),
                   textAlign: TextAlign.center,
