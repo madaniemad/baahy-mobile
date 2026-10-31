@@ -946,7 +946,9 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       // itself when the gateway redirects to the baahy:// return deep link.
       final title = _paymentId == 'tadawel'
           ? tr('الدفع عبر تداول', 'Pay with Tadawul')
-          : tr('الدفع بالبطاقة المصرفية', 'Pay by bank card');
+          : _paymentId == 'lypay'
+              ? tr('شحن بتحويل مصرفي', 'Top up by bank transfer')
+              : tr('الدفع بالبطاقة المصرفية', 'Pay by bank card');
       await Navigator.of(context).push<Uri?>(
         MaterialPageRoute(builder: (_) => PaymentWebViewScreen(url: url, title: title)),
       );
