@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../core/utils/l10n.dart';
 
@@ -72,6 +74,50 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
         },
       ))
       ..loadRequest(Uri.parse(widget.url));
+
+    // Android's WebView ignores <input type="file"> unless the app supplies a chooser, so
+    // "Choose file" on the bank-transfer top-up page did nothing and almost no top-up ever
+    // arrived with a slip (1 of ~25, 2026-10-31). iOS's WKWebView has its own chooser.
+    final platform = _ctrl.platform;
+    if (platform is AndroidWebViewController) {
+      platform.setOnShowFileSelector(_pickFile);
+    }
+  }
+
+  Future<List<String>> _pickFile(FileSelectorParams params) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: context.col.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(height: 8),
+          Container(width: 40, height: 4,
+            decoration: BoxDecoration(color: ctx.col.border, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 12),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined),
+            title: Text(ctx.tr('اختيار من المعرض', 'Choose from gallery'),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+            onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+          ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt_outlined),
+            title: Text(ctx.tr('التقاط صورة', 'Take photo'),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+            onTap: () => Navigator.pop(ctx, ImageSource.camera),
+          ),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+    // An empty list cancels the chooser; the page's input stays usable for another try.
+    if (source == null) return [];
+    final img = await ImagePicker().pickImage(
+      source: source, maxWidth: 2000, maxHeight: 2000, imageQuality: 85);
+    return img == null ? [] : [Uri.file(img.path).toString()];
   }
 
   @override
