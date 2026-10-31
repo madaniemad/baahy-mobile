@@ -76,13 +76,16 @@ class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
                   style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback,
                       fontSize: 15.5, fontWeight: FontWeight.w500, color: _muted, height: 1.5)),
                 const SizedBox(height: 32),
-                // A plain list, not cards (Emad, 2026-11-01).
-                _Point(icon: Icons.inventory_2_outlined,
-                    text: tr('تأكيد طلبك وكل تحديث على حالته', 'Your order confirmed, and every update on it')),
-                _Point(icon: Icons.local_shipping_outlined,
-                    text: tr('لما يكون طلبك في الطريق إليك', 'When your order is on its way to you')),
-                _Point(icon: Icons.local_offer_outlined,
-                    text: tr('العروض والتخفيضات اللي تهمك', 'Offers and discounts that matter to you')),
+                // A plain list, not cards, centred as one block under the title so the icons
+                // still line up (Emad, 2026-11-01).
+                IntrinsicWidth(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  _Point(icon: Icons.inventory_2_outlined,
+                      text: tr('تأكيد طلبك وكل تحديث على حالته', 'Your order confirmed, and every update on it')),
+                  _Point(icon: Icons.local_shipping_outlined,
+                      text: tr('لما يكون طلبك في الطريق إليك', 'When your order is on its way to you')),
+                  _Point(icon: Icons.local_offer_outlined,
+                      text: tr('العروض والتخفيضات اللي تهمك', 'Offers and discounts that matter to you')),
+                ])),
               ]))),
               GestureDetector(
                 onTap: _continue,
