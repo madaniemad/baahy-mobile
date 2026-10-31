@@ -20,14 +20,8 @@ class Onb {
   static const fieldBg = Color(0xFFF4F6F7);
   static const iconTile = Color(0xFFE1F6F8); // teal-tint tile
 
-  // CTA — a soft tiffany gradient, light to brand, with a soft tiffany glow (Emad, 2026-11-01:
-  // "gradient, fancy looking"). Shades of the brand tiffany only.
-  static const ctaGradient = LinearGradient(
-    begin: AlignmentDirectional.topStart, end: AlignmentDirectional.bottomEnd,
-    // Never darker than the brand tiffany (a deep #0FB0BF end read as too dark on one side).
-    colors: [Color(0xFF6BEAF1), Color(0xFF1FD7E2)],
-  );
-  static const ctaGlow = [BoxShadow(color: Color(0x551FD7E2), blurRadius: 18, offset: Offset(0, 8))];
+  // CTA — brand tiffany #1FD7E2 (flat, per brand spec)
+  static const ctaGradient = LinearGradient(colors: [Color(0xFF1FD7E2), Color(0xFF1FD7E2)]);
 
   // City-picker background (punchy radial). RadialGradient approximates
   // radial-gradient(125% 55% at 50% 2%, #47E1EA 0%, #1FD7E2 48%, #1AC6D2 100%)

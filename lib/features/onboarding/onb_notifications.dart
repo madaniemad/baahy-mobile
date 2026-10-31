@@ -91,7 +91,7 @@ class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
                 onTap: _continue,
                 child: Container(
                   height: 56, width: double.infinity, alignment: Alignment.center,
-                  decoration: BoxDecoration(gradient: Onb.ctaGradient, boxShadow: Onb.ctaGlow, borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(color: _teal, borderRadius: BorderRadius.circular(12)),
                   child: _busy
                       ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
                       : Text(tr('متابعة', 'Continue'), style: const TextStyle(fontFamily: Onb.font,
