@@ -17,7 +17,9 @@ import 'onb_theme.dart';
 /// stays empty with a one-line reason, and the button opens the sheet.
 class OnbCityPicker extends ConsumerStatefulWidget {
   final VoidCallback onContinue;
-  const OnbCityPicker({super.key, required this.onContinue});
+  /// Another onboarding step follows (notifications): the button reads «التالي».
+  final bool hasNext;
+  const OnbCityPicker({super.key, required this.onContinue, this.hasNext = false});
 
   @override
   ConsumerState<OnbCityPicker> createState() => _OnbCityPickerState();
@@ -28,7 +30,7 @@ const _navy = Onb.navy;                    // sheet text
 const _ink = Color(0xFF14181A);            // values (city, selected language)
 const _muted = Color(0xFF6B7578);          // labels and helper lines
 const _teal = Color(0xFF1FD7E2);           // brand tiffany — button and icons only
-const _line = Color(0xFFE4E7E7);           // field borders (app border token)
+const _line = Color(0xFFD3D8D9);           // field borders — a shade darker than the app token (Emad, 2026-10-31)
 const _tint = Color(0xFFF4F5F6);           // selected language: the light grey `fill` of baahyShops/baahyDriver (Emad, 2026-10-23, final)
 
 class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
@@ -214,7 +216,7 @@ class _OnbCityPickerState extends ConsumerState<OnbCityPicker> {
                   denied: _denied, inService: _inService, onEnable: _enableLocation,
                 ))),
               ]))),
-              _Cta(label: t.start, onTap: _start),
+              _Cta(label: widget.hasNext ? t.next : t.start, onTap: _start),
             ]),
           )),
 
@@ -365,6 +367,7 @@ class _CityStr {
   String get choose => ar ? 'اختر مدينتك' : 'Choose your city';
   String get change => ar ? 'تغيير' : 'Change';
   String get start => ar ? 'ابدأ التسوق' : 'Start shopping';
+  String get next => ar ? 'التالي' : 'Next';
   String get locating => ar ? 'جاري تحديد موقعك…' : 'Finding your location…';
   String get detected => ar ? 'تم تحديدها من موقعك' : 'Based on your location';
   String get outside => ar ? 'لا نوصّل لموقعك الحالي، اختر مدينتك من القائمة' : "We don't deliver to your current location. Choose your city from the list";

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -187,6 +188,22 @@ class PushNotificationService {
     }
   }
 
+  /// Whether the phone has never been asked — the only state in which the system
+  /// dialog can still appear (onboarding's notifications step shows only then).
+  ///
+  /// Android has no "not asked yet": Firebase reports only authorized or denied, and a
+  /// fresh install on Android 13+ reads as denied. There, anything short of authorized
+  /// is worth asking — the system itself stops showing the dialog after two refusals.
+  Future<bool> canStillAsk() async {
+    try {
+      final s = await _fcm.getNotificationSettings();
+      if (Platform.isAndroid) return s.authorizationStatus != AuthorizationStatus.authorized;
+      return s.authorizationStatus == AuthorizationStatus.notDetermined;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Call this after onboarding completes or after first order/login.
   //
   // Returns the resulting authorization status so the UI can react — in
@@ -200,18 +217,22 @@ class PushNotificationService {
       final current = await _fcm.getNotificationSettings();
       if (current.authorizationStatus == AuthorizationStatus.authorized ||
           current.authorizationStatus == AuthorizationStatus.provisional) {
-        await _uploadToken();
+        unawaited(_uploadToken()); // the caller moves on as soon as she answers; the token can take ~15s on iOS
         return current.authorizationStatus;
       }
-      // Already denied — iOS won't re-prompt; the caller opens Settings.
-      if (current.authorizationStatus == AuthorizationStatus.denied) {
+      // Already denied — iOS won't re-prompt; the caller opens Settings. NOT on Android:
+      // there "denied" is also what a fresh Android 13+ install reports before it has ever
+      // been asked, so returning here meant newer Android phones were never asked at all
+      // (2026-10-31: 179 Android tokens against 417 iPhone). Android stops showing the
+      // dialog by itself after two refusals.
+      if (current.authorizationStatus == AuthorizationStatus.denied && !Platform.isAndroid) {
         return AuthorizationStatus.denied;
       }
       // notDetermined -> this shows the system dialog.
       final settings = await _fcm.requestPermission(
         alert: true, badge: true, sound: true, provisional: false);
       if (settings.authorizationStatus != AuthorizationStatus.denied) {
-        await _uploadToken();
+        unawaited(_uploadToken()); // the caller moves on as soon as she answers; the token can take ~15s on iOS
       }
       return settings.authorizationStatus;
     } catch (e, st) {
