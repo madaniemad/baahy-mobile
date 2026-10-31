@@ -21,7 +21,7 @@ class OnbNotifications extends ConsumerStatefulWidget {
 const _ink = Color(0xFF14181A);
 const _muted = Color(0xFF6B7578);
 const _teal = Color(0xFF1FD7E2);
-const _line = Color(0xFFD3D8D9);           // same outline as the setup screen
+const _bell = Color(0xFFC4C9CB);
 
 class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
   bool _busy = false;
@@ -60,27 +60,27 @@ class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
           SafeArea(bottom: false, child: Padding(
             padding: EdgeInsets.fromLTRB(24, 0, 24, botPad + 16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Expanded(child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Expanded(child: SingleChildScrollView(child: Column(children: [
                 const SizedBox(height: 150),
-                Align(alignment: AlignmentDirectional.centerStart, child: Container(
-                  width: 72, height: 72,
-                  decoration: BoxDecoration(color: Onb.iconTile, borderRadius: BorderRadius.circular(18)),
-                  child: const Icon(Icons.notifications_active_outlined, color: _teal, size: 38),
-                )),
-                const SizedBox(height: 24),
-                Text(tr('خلّيك على اطّلاع بطلبك', 'Stay on top of your order'),
+                // Centred, light grey bell (Emad, 2026-11-01).
+                const Icon(Icons.notifications_active_outlined, color: _bell, size: 64),
+                const SizedBox(height: 20),
+                Text(tr('خلّيك على اطّلاع أول بأول', 'Stay up to date'),
+                  textAlign: TextAlign.center,
                   style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback,
                       fontSize: 24, fontWeight: FontWeight.w700, color: _ink, height: 1.3)),
                 const SizedBox(height: 10),
-                Text(tr('فعّل الإشعارات لنبلغك بكل جديد أول بأول.',
+                Text(tr('فعّل الإشعارات لنبلغك بكل جديد.',
                         'Turn on notifications and we\'ll keep you posted.'),
+                  textAlign: TextAlign.center,
                   style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback,
                       fontSize: 15.5, fontWeight: FontWeight.w500, color: _muted, height: 1.5)),
-                const SizedBox(height: 28),
+                const SizedBox(height: 32),
+                // A plain list, not cards (Emad, 2026-11-01).
                 _Point(icon: Icons.inventory_2_outlined,
                     text: tr('تأكيد طلبك وكل تحديث على حالته', 'Your order confirmed, and every update on it')),
                 _Point(icon: Icons.local_shipping_outlined,
-                    text: tr('لما يكون مندوب التوصيل في الطريق إليك', 'When your delivery is on its way to you')),
+                    text: tr('لما يكون طلبك في الطريق إليك', 'When your order is on its way to you')),
                 _Point(icon: Icons.local_offer_outlined,
                     text: tr('العروض والتخفيضات اللي تهمك', 'Offers and discounts that matter to you')),
               ]))),
@@ -109,15 +109,13 @@ class _Point extends StatelessWidget {
   const _Point({required this.icon, required this.text});
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 12),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: _line)),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 10),
     child: Row(children: [
       Icon(icon, color: _teal, size: 24),
       const SizedBox(width: 14),
       Expanded(child: Text(text, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback,
-          fontSize: 15, fontWeight: FontWeight.w500, color: _ink, height: 1.4))),
+          fontSize: 15.5, fontWeight: FontWeight.w500, color: _ink, height: 1.4))),
     ]),
   );
 }
