@@ -53,7 +53,12 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
           : OnbCityPicker(
               key: const ValueKey('city'),
               hasNext: _askNotifications,
-              onContinue: () => _askNotifications ? setState(() => _onNotifications = true) : _finish(),
+              // Asked again on the tap: the check started in initState may not have answered yet (audit 2026-10-31).
+              onContinue: () async {
+                final ask = _askNotifications || await PushNotificationService.instance.canStillAsk();
+                if (!mounted) return;
+                ask ? setState(() => _onNotifications = true) : _finish();
+              },
             ),
     ),
   );

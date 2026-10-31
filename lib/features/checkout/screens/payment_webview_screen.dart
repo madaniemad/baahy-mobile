@@ -84,7 +84,21 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
     }
   }
 
+  /// Never throws (audit 2026-10-31): a throw leaves the WebView waiting forever and the file
+  /// field dead until the page is reopened — e.g. camera access refused.
   Future<List<String>> _pickFile(FileSelectorParams params) async {
+    try {
+      return await _pickFileOnce();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr(
+            'تعذّر فتح الكاميرا أو المعرض — تحقّق من أذونات التطبيق', 'Could not open the camera or gallery — check the app permissions'))));
+      }
+      return [];
+    }
+  }
+
+  Future<List<String>> _pickFileOnce() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       useRootNavigator: true,

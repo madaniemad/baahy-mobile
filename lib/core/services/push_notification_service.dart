@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -194,10 +195,15 @@ class PushNotificationService {
   /// Android has no "not asked yet": Firebase reports only authorized or denied, and a
   /// fresh install on Android 13+ reads as denied. There, anything short of authorized
   /// is worth asking — the system itself stops showing the dialog after two refusals.
+  static const _kAndroidAsks = 'notif_android_asks';
+
   Future<bool> canStillAsk() async {
     try {
       final s = await _fcm.getNotificationSettings();
-      if (Platform.isAndroid) return s.authorizationStatus != AuthorizationStatus.authorized;
+      if (Platform.isAndroid) {
+        if (s.authorizationStatus == AuthorizationStatus.authorized) return false;
+        return ((await SharedPreferences.getInstance()).getInt(_kAndroidAsks) ?? 0) < 2;
+      }
       return s.authorizationStatus == AuthorizationStatus.notDetermined;
     } catch (_) {
       return false;
@@ -227,6 +233,14 @@ class PushNotificationService {
       // dialog by itself after two refusals.
       if (current.authorizationStatus == AuthorizationStatus.denied && !Platform.isAndroid) {
         return AuthorizationStatus.denied;
+      }
+      // Android: at most twice per install (audit 2026-10-31). A swiped-away dialog is not a
+      // refusal to Android, so without this a customer who said no was asked at every order.
+      if (Platform.isAndroid && current.authorizationStatus == AuthorizationStatus.denied) {
+        final prefs = await SharedPreferences.getInstance();
+        final asked = prefs.getInt(_kAndroidAsks) ?? 0;
+        if (asked >= 2) return AuthorizationStatus.denied;
+        await prefs.setInt(_kAndroidAsks, asked + 1);
       }
       // notDetermined -> this shows the system dialog.
       final settings = await _fcm.requestPermission(
