@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-/// The 5 bottom-nav icons, subset from Material Symbols Outlined.
+/// The 5 bottom-nav icons (+ the onboarding bell), subset from Material Symbols Outlined.
 ///
 /// The full `material_symbols_icons` package ships THREE ~11 MB variable fonts
 /// (32 MB) for its thousands of glyphs. Flutter's release icon tree-shaker
@@ -14,7 +14,7 @@ import 'package:flutter/widgets.dart';
 /// tab still works. Regenerate with:
 ///
 ///   python3 -m fontTools.subset <MaterialSymbolsOutlined.ttf> \
-///     --unicodes=e9b2,e87e,e9b0,e8cc,f0d3 --output-file=BaahyNavIcons.ttf \
+///     --unicodes=e9b2,e87e,e9b0,e8cc,f0d3,e7f7 --output-file=BaahyNavIcons.ttf \
 ///     --no-hinting --desubroutinize
 class NavIcons {
   const NavIcons._();
@@ -26,4 +26,6 @@ class NavIcons {
   static const IconData grid_view     = IconData(0xe9b0, fontFamily: _family);
   static const IconData shopping_cart = IconData(0xe8cc, fontFamily: _family);
   static const IconData person        = IconData(0xf0d3, fontFamily: _family);
+  // Onboarding notification step's bell, drawn thin with `weight:` (Emad, 2026-11-01).
+  static const IconData notifications_active = IconData(0xe7f7, fontFamily: _family);
 }

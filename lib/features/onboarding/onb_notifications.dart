@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/push_notification_service.dart';
 import '../../core/utils/l10n.dart';
+import '../../shared/widgets/nav_icons.dart';
 import 'onb_theme.dart';
 
 /// Onboarding's last step (Emad, 2026-10-31): why notifications matter, and one button.
@@ -63,7 +64,8 @@ class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
               Expanded(child: SingleChildScrollView(child: Column(children: [
                 const SizedBox(height: 150),
                 // Centred tiffany bell; the list icons stay very light grey (Emad, 2026-11-01).
-                const Icon(Icons.notifications_active_outlined, color: _teal, size: 64),
+                // Thin stroke: the variable Material Symbols bell at weight 200.
+                const Icon(NavIcons.notifications_active, color: _teal, size: 68, weight: 200),
                 const SizedBox(height: 20),
                 Text(tr('خلّيك على اطّلاع أول بأول', 'Stay up to date'),
                   textAlign: TextAlign.center,
