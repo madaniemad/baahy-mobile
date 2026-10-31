@@ -352,7 +352,7 @@ class _Cta extends StatelessWidget {
     onTap: onTap,
     child: Container(
       height: 56, width: double.infinity, alignment: Alignment.center,
-      decoration: BoxDecoration(color: _teal, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(gradient: Onb.ctaGradient, boxShadow: Onb.ctaGlow, borderRadius: BorderRadius.circular(12)),
       child: Text(label, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback, fontSize: 19, fontWeight: FontWeight.w700, color: Colors.white)),
     ),
   );
