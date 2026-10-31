@@ -21,7 +21,7 @@ class OnbNotifications extends ConsumerStatefulWidget {
 const _ink = Color(0xFF14181A);
 const _muted = Color(0xFF6B7578);
 const _teal = Color(0xFF1FD7E2);
-const _bell = Color(0xFFC4C9CB);
+const _bell = Color(0xFFD0D5D7);            // very light grey: bell and list icons (Emad, 2026-11-01)
 
 class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
   bool _busy = false;
@@ -62,7 +62,7 @@ class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Expanded(child: SingleChildScrollView(child: Column(children: [
                 const SizedBox(height: 150),
-                // Centred, light grey bell (Emad, 2026-11-01).
+                // Centred, very light grey bell (Emad, 2026-11-01).
                 const Icon(Icons.notifications_active_outlined, color: _bell, size: 64),
                 const SizedBox(height: 20),
                 Text(tr('خلّيك على اطّلاع أول بأول', 'Stay up to date'),
@@ -83,6 +83,16 @@ class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
                       text: tr('تأكيد طلبك وكل تحديث على حالته', 'Your order confirmed, and every update on it')),
                   _Point(icon: Icons.local_shipping_outlined,
                       text: tr('لما يكون طلبك في الطريق إليك', 'When your order is on its way to you')),
+                  // Each point is a notification the server really sends (returns/refund, wallet
+                  // credit templates; cart_low_stock and favourite_vendor_* rules), 2026-11-01.
+                  _Point(icon: Icons.assignment_return_outlined,
+                      text: tr('تحديثات الإرجاع والمبالغ المستردة', 'Return updates and refunds')),
+                  _Point(icon: Icons.account_balance_wallet_outlined,
+                      text: tr('الكاش باك والمكافآت اللي تنضاف لمحفظتك', 'Cashback and rewards added to your wallet')),
+                  _Point(icon: Icons.shopping_cart_outlined,
+                      text: tr('لما منتج في سلتك قرب يخلص', 'When an item in your cart is about to sell out')),
+                  _Point(icon: Icons.storefront_outlined,
+                      text: tr('الجديد والعروض من متاجرك المفضلة', 'New arrivals and sales from your favourite stores')),
                   _Point(icon: Icons.local_offer_outlined,
                       text: tr('العروض والتخفيضات اللي تهمك', 'Offers and discounts that matter to you')),
                 ])),
@@ -113,9 +123,9 @@ class _Point extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10),
+    padding: const EdgeInsets.symmetric(vertical: 9),
     child: Row(children: [
-      Icon(icon, color: _teal, size: 24),
+      Icon(icon, color: _bell, size: 24),
       const SizedBox(width: 14),
       Expanded(child: Text(text, style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback,
           fontSize: 15.5, fontWeight: FontWeight.w500, color: _ink, height: 1.4))),
