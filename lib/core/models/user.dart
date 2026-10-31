@@ -28,6 +28,9 @@ class User {
   final bool orderingBlocked;
   /// Why ordering is restricted, when staff gave a reason. Null when none.
   final String? orderingBlockReason;
+  /// Offers and deals pushes (Settings switch). Order and account notices ignore it. Absent from
+  /// older servers, which means on.
+  final bool marketingPush;
 
   const User({
     required this.id,
@@ -48,9 +51,10 @@ class User {
     this.codBlocked = false,
     this.orderingBlocked = false,
     this.orderingBlockReason,
+    this.marketingPush = true,
   });
 
-  User copyWith({String? avatar}) => User(
+  User copyWith({String? avatar, bool? marketingPush}) => User(
     id: id, name: name, phone: phone, email: email,
     avatar: avatar ?? this.avatar,
     city: city, walletBalance: walletBalance, loyaltyPoints: loyaltyPoints,
@@ -59,6 +63,7 @@ class User {
     privacyReviews: privacyReviews, privacyTier: privacyTier,
     codBlocked: codBlocked,
     orderingBlocked: orderingBlocked, orderingBlockReason: orderingBlockReason,
+    marketingPush: marketingPush ?? this.marketingPush,
   );
 
   /// This user with ordering restricted — used when the server refuses an order before the
@@ -72,6 +77,7 @@ class User {
     codBlocked: codBlocked,
     orderingBlocked: true,
     orderingBlockReason: (reason != null && reason.trim().isNotEmpty) ? reason.trim() : orderingBlockReason,
+    marketingPush: marketingPush,
   );
 
   factory User.fromJson(Map<String, dynamic> j) => User(
@@ -93,6 +99,7 @@ class User {
     codBlocked:       j['cod_blocked'] == true,
     orderingBlocked:  j['ordering_blocked'] == true || j['ordering_blocked'] == 1,
     orderingBlockReason: _reasonOrNull(j['ordering_block_reason']),
+    marketingPush:    j['marketing_push'] != false && j['marketing_push'] != 0,
   );
 }
 

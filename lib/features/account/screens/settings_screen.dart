@@ -71,6 +71,21 @@ class SettingsScreen extends ConsumerWidget {
               trailing: Icon(Icons.arrow_forward_ios, size: 14, color: context.col.ink3),
               onTap: () => safePush(context, '/notifications'),
             ),
+            // Offers and deals pushes only: order and account notices always come (Apple 4.5.4 —
+            // promotional pushes need an in-app opt-out). Saved on the account, not the phone.
+            if (ref.watch(authProvider).isLoggedIn)
+              _SettingsRow(
+                icon: Icons.local_offer_outlined,
+                label: isAr ? 'إشعارات العروض والتخفيضات' : 'Offers & deals notifications',
+                trailing: Switch(
+                  value: ref.watch(authProvider).user?.marketingPush ?? true,
+                  onChanged: (v) => _setMarketingPush(context, ref, v, isAr),
+                  activeColor: AppColors.primary,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onTap: () => _setMarketingPush(context, ref,
+                    !(ref.read(authProvider).user?.marketingPush ?? true), isAr),
+              ),
           ]),
           const SizedBox(height: 12),
 
@@ -269,6 +284,19 @@ String _modeLabel(ThemeMode mode, bool isAr) => switch (mode) {
   ThemeMode.dark => isAr ? 'داكن' : 'Dark',
   ThemeMode.system => isAr ? 'حسب الهاتف' : 'Same as phone',
 };
+
+Future<void> _setMarketingPush(BuildContext context, WidgetRef ref, bool on, bool isAr) async {
+  final messenger = ScaffoldMessenger.of(context);
+  try {
+    await ref.read(authProvider.notifier).setMarketingPush(on);
+  } catch (_) {
+    messenger.showSnackBar(SnackBar(
+      content: Text(isAr ? 'تعذّر الحفظ، حاول مرة أخرى' : 'Could not save, please try again',
+        style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
+      duration: const Duration(seconds: 2),
+    ));
+  }
+}
 
 Future<void> _pickAppearance(BuildContext context, WidgetRef ref, bool isAr) async {
   final current = ref.read(themeModeProvider);

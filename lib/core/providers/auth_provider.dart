@@ -124,6 +124,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = AuthState(user: User.fromJson(userJson));
   }
 
+  /// Offers and deals pushes on/off. Shown at once; put back if the server refuses.
+  Future<void> setMarketingPush(bool on) async {
+    final before = state.user;
+    if (before == null) return;
+    state = state.copyWith(user: before.copyWith(marketingPush: on));
+    try {
+      final res = await _api.dio.put('/auth/profile', data: {'marketing_push': on});
+      final userJson = res.data['user'] as Map<String, dynamic>;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kCachedUser, jsonEncode(userJson));
+      state = state.copyWith(user: User.fromJson(userJson));
+    } catch (_) {
+      if (state.user?.id == before.id) state = state.copyWith(user: state.user!.copyWith(marketingPush: before.marketingPush));
+      rethrow;
+    }
+  }
+
   Future<void> logout() async {
     // Send this phone's push token so the server drops it with the sign-in: the phone must stop
     // getting this account's pushes (the server also drops tokens registered under this sign-in).
