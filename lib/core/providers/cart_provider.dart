@@ -237,6 +237,12 @@ class CartNotifier extends StateNotifier<CartState> {
 
   Future<void> add(Product product,
       {ProductVariation? variation, int qty = 1}) async {
+    // An option of another product never rides along (2026-11-01, order 113542268: a TV with a dress size).
+    if (variation != null &&
+        (product.productType == 'simple' ||
+            (product.variations.isNotEmpty && !product.variations.any((v) => v.id == variation!.id)))) {
+      variation = null;
+    }
     final key =
         variation != null ? '${product.id}_${variation.id}' : '${product.id}';
     final items = List<CartItem>.from(state.items);

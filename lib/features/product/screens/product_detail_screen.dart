@@ -209,6 +209,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   Future<void> _addToCart(Product product, {bool goToCart = false}) async {
     if (!product.purchasable) return; // not for sale; the buy bar says so
+    // Never an option of another product (see the reset in build).
+    if (_selectedVariation != null && !product.variations.any((v) => v.id == _selectedVariation!.id)) {
+      setState(() { _selectedVariation = null; _selections.clear(); });
+    }
     if ((product.variations.isNotEmpty || product.productType == 'variable') &&
         _selectedVariation == null) {
       _notice(_chooseOptionsMessage(product));
@@ -327,6 +331,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           // next build, which scheduled the callback again: a rebuild loop on every variable product.
           if (_initForId != product.id) {
             _initForId = product.id;
+            // A new product on the same screen starts with nothing chosen (2026-11-01): the size kept
+            // from a dress was added to cart with a TV, and order 113542268 sold a 7,592 TV for 224.
+            _selectedVariation = null;
+            _selections.clear();
+            _qty = 1;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
               ref.read(recentlyViewedProvider.notifier).add(product);
