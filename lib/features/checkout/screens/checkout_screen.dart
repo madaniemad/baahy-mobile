@@ -2992,6 +2992,27 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                     ]),
                   ),
                 )),
+            // Unpaid transfers are cancelled after 60 minutes (backend orders:cancel-unpaid-transfers,
+            // Emad 2026-11-01).
+            if (_paymentMethod == 'lypay')
+              Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0x1FF59E0B),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0x66F59E0B)),
+                ),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Icon(Icons.schedule_outlined, size: 18, color: Color(0xFFB45309)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(
+                    context.tr('يجب تحويل المبلغ خلال 60 دقيقة، وإلا سيُلغى الطلب تلقائياً من النظام.',
+                        'The payment must be transferred within 60 minutes, otherwise the order will be cancelled automatically by the system.'),
+                    style: TextStyle(fontSize: 12.5, height: 1.5, fontWeight: FontWeight.w600,
+                        color: context.isDark ? const Color(0xFFFBBF24) : const Color(0xFF92400E)))),
+                ]),
+              ),
           ],
 
           const SizedBox(height: 8),

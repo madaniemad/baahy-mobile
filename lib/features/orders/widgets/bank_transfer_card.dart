@@ -155,6 +155,14 @@ class _BankTransferCardState extends State<BankTransferCard> {
               ' to one of the accounts below, then upload your receipt. We’ll confirm your order once payment is received.')),
           ],
         )),
+        // Unpaid transfers are cancelled after 60 minutes (Emad, 2026-11-01).
+        if (!_uploaded) ...[
+          const SizedBox(height: 8),
+          Text(context.tr('يجب تحويل المبلغ خلال 60 دقيقة، وإلا سيُلغى الطلب تلقائياً من النظام.',
+              'The payment must be transferred within 60 minutes, otherwise the order will be cancelled automatically by the system.'),
+            style: TextStyle(fontSize: 13, height: 1.5, fontWeight: FontWeight.w700, color: ink,
+              fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'])),
+        ],
         const SizedBox(height: 14),
 
         if (_loading)
