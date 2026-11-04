@@ -759,4 +759,11 @@ Account Termination: We reserve the right to suspend any account that violates t
   String get orderingBlockedSupportText => isAr
       ? 'مرحباً، لا يمكنني إتمام الطلب من حسابي في تطبيق باهي، أرجو المساعدة.'
       : 'Hello, I cannot place an order from my Baahy app account. Could you please help?';
+
+  // ── Notifications-off reminder (2026-11-04: half the customers who order have them off) ──
+  String get notifOffOrderTitle => isAr ? 'فعّل الإشعارات لتعرف متى يصل طلبك'   : 'Turn on notifications to know when your order arrives';
+  String get notifOffOrderSub   => isAr ? 'نبلغك عند كل تحديث: التأكيد، الشحن، والتوصيل.' : 'We tell you at every step: confirmed, shipped, delivered.';
+  String get notifOffHomeTitle  => isAr ? 'الإشعارات مقفلة'                    : 'Notifications are off';
+  String get notifOffHomeSub    => isAr ? 'فعّلها حتى لا تفوتك تحديثات طلباتك.' : "Turn them on so you never miss an update on your orders.";
+  String get notifTurnOn        => isAr ? 'تفعيل'                              : 'Turn on';
 }

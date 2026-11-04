@@ -9,6 +9,7 @@ import '../providers/cart_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../providers/app_config_provider.dart';
 import '../api/api_client.dart';
+import '../services/push_notification_service.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../core/utils/l10n.dart';
 import '../../shared/widgets/offline_banner.dart';
@@ -26,7 +27,10 @@ class _AppLifecycleRefreshState extends ConsumerState<_AppLifecycleRefresh>
   void dispose() { WidgetsBinding.instance.removeObserver(this); super.dispose(); }
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) ref.read(appConfigProvider.notifier).refresh();
+    if (state == AppLifecycleState.resumed) {
+      ref.read(appConfigProvider.notifier).refresh();
+      PushNotificationService.instance.onResume();
+    }
     if (state == AppLifecycleState.paused) _syncCart();
   }
 

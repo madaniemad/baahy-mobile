@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
+import 'package:app_settings/app_settings.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -179,14 +180,50 @@ class PushNotificationService {
   Future<void> _uploadTokenIfPermitted() async {
     try {
       final settings = await _fcm.getNotificationSettings();
-      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-          settings.authorizationStatus == AuthorizationStatus.provisional) {
+      _wasOn = settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+      if (_wasOn == true) {
         final token = await _getFcmToken();
         if (token != null) await _sendTokenToServer(token);
       }
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
     }
+  }
+
+  /// Whether notifications reach this phone right now.
+  Future<bool> notificationsEnabled() async {
+    try {
+      final s = (await _fcm.getNotificationSettings()).authorizationStatus;
+      return s == AuthorizationStatus.authorized || s == AuthorizationStatus.provisional;
+    } catch (_) {
+      return true; // unknown: never nag on a guess
+    }
+  }
+
+  /// The reminder's button (2026-11-04: half the customers who order have notifications off).
+  /// The system dialog while the phone still shows it; after that only the app's notification
+  /// settings can turn them on, so go there.
+  Future<void> enableFromReminder() async {
+    if (await canStillAsk()) {
+      await requestPermissionIfNeeded();
+      return;
+    }
+    try {
+      await AppSettings.openAppSettings(type: AppSettingsType.notification);
+    } catch (e, st) {
+      Sentry.captureException(e, stackTrace: st);
+    }
+  }
+
+  bool? _wasOn;
+
+  /// Back in the app: a customer who just switched notifications on in Settings is registered
+  /// now, not at the next cold start. Uploads only on an off → on change.
+  Future<void> onResume() async {
+    final on = await notificationsEnabled();
+    if (on && _wasOn == false) unawaited(_uploadToken());
+    _wasOn = on;
   }
 
   /// Whether the phone has never been asked — the only state in which the system

@@ -18,6 +18,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../widgets/bank_transfer_card.dart';
+import '../../notifications/widgets/notifications_reminder.dart';
 import '../widgets/order_help.dart';
 import '../widgets/return_request_card.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -410,6 +411,9 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           _HeroCard(order: order),
           const SizedBox(height: 14),
         ],
+
+        // Notifications off while the order is on its way: the updates promised above reach nobody.
+        if (isActive && order.status != 'pending_payment') const NotificationsReminder.order(),
 
         // Who is bringing it — only while Baahy's own driver has the order (server decides), and
         // never on a delivered/cancelled order shown from a stale copy.

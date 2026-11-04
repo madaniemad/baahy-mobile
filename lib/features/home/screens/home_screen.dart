@@ -28,6 +28,7 @@ import '../../vendor/widgets/stores_tab.dart' show storesProvider;
 import '../../vendor/widgets/sell_banner.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/providers/tier_provider.dart';
+import '../../notifications/widgets/notifications_reminder.dart';
 import '../../../core/models/tier_status.dart';
 import '../../../core/providers/welcome_coupon_provider.dart';
 import '../../../core/services/version_gate.dart';
@@ -216,6 +217,11 @@ class HomeScreen extends ConsumerWidget {
 
               // First-order welcome coupon banner (new users only)
               const SliverToBoxAdapter(child: _WelcomeCouponBanner()),
+
+              // Notifications off: at most once a week (signed in — a guest's phone is only
+              // registered after sign-in anyway).
+              if (ref.watch(authProvider).isLoggedIn)
+                const SliverToBoxAdapter(child: NotificationsReminder.home()),
 
               // Hero banner slider (real data from /api/content/banners)
               SliverToBoxAdapter(
