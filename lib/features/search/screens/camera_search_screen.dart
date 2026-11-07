@@ -197,7 +197,7 @@ class _CameraSearchScreenState extends State<CameraSearchScreen>
       _scanAnim.stop();
       final isLimit = e.response?.data?['error'] == 'limit_hit';
       _setError(isLimit
-          ? (context.isAr ? 'تجاوزت الحد اليومي (10 بحوث بالصور)' : 'Daily limit reached (10 searches)')
+          ? (context.isAr ? 'تجاوزت الحد اليومي (10 عمليات بحث بالصور)' : 'Daily limit reached (10 searches)')
           : (context.isAr ? 'حدث خطأ. تحقق من الاتصال.' : 'Error. Check your connection.'));
     }
   }

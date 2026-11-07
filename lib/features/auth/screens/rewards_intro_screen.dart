@@ -185,7 +185,7 @@ class _RewardsIntroScreenState extends ConsumerState<RewardsIntroScreen>
             ),
           ),
           const SizedBox(height: 40),
-          Text(isAr ? 'اختار مدينتك' : 'Choose Your City',
+          Text(isAr ? 'اختر مدينتك' : 'Choose Your City',
             textAlign: TextAlign.center,
             style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 26,
               fontWeight: FontWeight.w900, color: Colors.white,

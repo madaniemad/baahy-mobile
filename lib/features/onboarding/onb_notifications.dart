@@ -67,7 +67,7 @@ class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
                 // Thin stroke: the variable Material Symbols bell at weight 200.
                 const Icon(NavIcons.notifications_active, color: _teal, size: 68, weight: 200),
                 const SizedBox(height: 20),
-                Text(tr('خلّيك على اطّلاع أول بأول', 'Stay up to date'),
+                Text(tr('ابقَ على اطّلاع أولاً بأول', 'Stay up to date'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontFamily: Onb.font, fontFamilyFallback: Onb.fontFallback,
                       fontSize: 24, fontWeight: FontWeight.w700, color: _ink, height: 1.3)),
@@ -84,19 +84,19 @@ class _OnbNotificationsState extends ConsumerState<OnbNotifications> {
                   _Point(icon: Icons.inventory_2_outlined,
                       text: tr('تأكيد طلبك وكل تحديث على حالته', 'Your order confirmed, and every update on it')),
                   _Point(icon: Icons.local_shipping_outlined,
-                      text: tr('لما يكون طلبك في الطريق إليك', 'When your order is on its way to you')),
+                      text: tr('عندما يكون طلبك في الطريق إليك', 'When your order is on its way to you')),
                   // Each point is a notification the server really sends (returns/refund, wallet
                   // credit templates; cart_low_stock and favourite_vendor_* rules), 2026-11-01.
                   _Point(icon: Icons.assignment_return_outlined,
                       text: tr('تحديثات الإرجاع والمبالغ المستردة', 'Return updates and refunds')),
                   _Point(icon: Icons.account_balance_wallet_outlined,
-                      text: tr('الكاش باك والمكافآت اللي تنضاف لمحفظتك', 'Cashback and rewards added to your wallet')),
+                      text: tr('الكاش باك والمكافآت التي تُضاف إلى محفظتك', 'Cashback and rewards added to your wallet')),
                   _Point(icon: Icons.shopping_cart_outlined,
-                      text: tr('لما منتج في سلتك قرب يخلص', 'When an item in your cart is about to sell out')),
+                      text: tr('عندما يوشك منتج في سلتك على النفاد', 'When an item in your cart is about to sell out')),
                   _Point(icon: Icons.storefront_outlined,
                       text: tr('الجديد والعروض من متاجرك المفضلة', 'New arrivals and sales from your favourite stores')),
                   _Point(icon: Icons.local_offer_outlined,
-                      text: tr('العروض والتخفيضات اللي تهمك', 'Offers and discounts that matter to you')),
+                      text: tr('العروض والتخفيضات التي تهمّك', 'Offers and discounts that matter to you')),
                 ])),
               ]))),
               GestureDetector(

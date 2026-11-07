@@ -821,7 +821,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
   // cash-on-delivery and wallet) so admin renames/toggles and new gateways appear here without
   // an app rebuild. Descriptions fall back to a per-gateway default when the admin left one blank.
   static const _descById = {
-    'mobicash': ('ادفع بكارت موبيكاش', 'Pay with a Mobicash card'),
+    'mobicash': ('ادفع ببطاقة موبيكاش', 'Pay with a Mobicash card'),
     'tadawel':  ('دفع إلكتروني عبر تداول', 'Online payment via Tadawul'),
     'moamlat':  ('دفع إلكتروني بالبطاقة المصرفية', 'Online payment by bank card'),
     'paypal':   ('ادفع بحساب PayPal', 'Pay with your PayPal account'),
@@ -838,7 +838,7 @@ class _TopUpSheetState extends ConsumerState<_TopUpSheet> {
       return [(
         id: 'mobicash',
         label: isAr ? 'موبيكاش' : 'Mobicash',
-        desc: isAr ? 'ادفع بكارت موبيكاش' : 'Pay with a Mobicash card',
+        desc: isAr ? 'ادفع ببطاقة موبيكاش' : 'Pay with a Mobicash card',
       )];
     }
     return pm.map((m) {

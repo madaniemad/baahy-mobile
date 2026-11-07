@@ -419,7 +419,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (_smallFirstOrder(cart)) {
       final m = fmtPrice(_bonusMinFirstOrder!);
       return isAr
-          ? 'رصيد المكافأة يُستخدم في طلبك الأول إذا كان فوق $m د.ل'
+          ? 'يُستخدم رصيد المكافأة في طلبك الأول إذا تجاوزت قيمته $m د.ل'
           : 'Bonus credit can be used on your first order above $m LD';
     }
     final isReorder = ref.read(reorderSessionProvider) != null;
@@ -2170,7 +2170,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                       'الدفع عند الاستلام غير متاح — المجموع يتجاوز 5,000 د.ل',
                                       'Cash on delivery is unavailable — total exceeds 5,000 ${context.s.lydUnit}')
                                   : context.tr(
-                                      'الدفع عند الاستلام غير متاح — الطلب يتجاوز 20 منتج',
+                                      'الدفع عند الاستلام غير متاح — الطلب يتجاوز 20 منتجاً',
                                       'Cash on delivery is unavailable — order exceeds 20 items'),
                               style: const TextStyle(
                                   fontSize: 11.5, color: AppColors.danger),

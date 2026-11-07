@@ -837,7 +837,7 @@ class _StepReason extends StatelessWidget {
                       accountNumberCtrl.text.trim().isEmpty)
                     Text(
                       isAr
-                          ? 'أكملي بيانات الحساب لإرسال الطلب.'
+                          ? 'أكمل بيانات الحساب لإرسال الطلب.'
                           : 'Fill in the account details to submit.',
                       style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                         fontSize: 12, color: context.col.ink2)),

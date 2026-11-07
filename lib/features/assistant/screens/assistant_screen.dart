@@ -514,11 +514,11 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
   List<_SuggestionData> _buildSuggestions(BuildContext context) => [
     _SuggestionData(
         Icons.local_shipping_outlined,
-        context.tr('وين طلبي؟', 'Where is my order?'),
+        context.tr('أين طلبي؟', 'Where is my order?'),
         context.tr('تتبع حالة طلبك', 'Track your order status'),
         AppColors.primary.withValues(alpha: 0.08),
         AppColors.primary,
-        context.tr('وين طلبي؟', 'Where is my order?')),
+        context.tr('أين طلبي؟', 'Where is my order?')),
     _SuggestionData(
         Icons.assignment_return_outlined,
         context.tr('سياسة الإرجاع', 'Return policy'),
@@ -553,7 +553,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
         context.tr('أخبرني لمن وما المناسبة', 'Tell me who it\'s for and the occasion'),
         const Color(0xFFEDE7F6),
         const Color(0xFF7B1FA2),
-        context.tr('ساعدني أختار هدية مناسبة', 'Help me choose a suitable gift')),
+        context.tr('ساعدني في اختيار هدية مناسبة', 'Help me choose a suitable gift')),
   ];
 
   @override
@@ -569,9 +569,9 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
         // ── Greeting ──
         Text(
           firstName.isNotEmpty
-              ? context.tr('أهلين $firstName، كيف أقدر أساعدك؟',
+              ? context.tr('مرحباً $firstName، كيف يمكنني مساعدتك؟',
                   'Hi $firstName, how can I help you?')
-              : context.tr('كيف أقدر أساعدك؟', 'How can I help you?'),
+              : context.tr('كيف يمكنني مساعدتك؟', 'How can I help you?'),
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,

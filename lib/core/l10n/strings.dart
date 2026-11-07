@@ -14,7 +14,7 @@ class AppStrings {
   String get navAccount     => isAr ? 'حسابي'      : 'Account';
 
   // ── Auth ────────────────────────────────────────────────────────────────────
-  String get authHi         => isAr ? 'أهلين'                    : 'Hello';
+  String get authHi         => isAr ? 'مرحباً'                   : 'Hello';
   String get authTitle      => isAr ? 'سجّل دخولك إلى باهي'     : 'Sign in to Baahy';
   String get authSub        => isAr ? 'احفظ مفضلاتك، تابع طلباتك، واكسب مكافآت مع كل طلب.' : 'Save favourites, track orders, and earn rewards with every purchase.';
   String get authBenefit1   => isAr ? 'مكافآت وكاش باك'          : 'Rewards & Cashback';
@@ -231,7 +231,7 @@ class AppStrings {
   String get myProfile      => isAr ? 'ملفي الشخصي'            : 'My Profile';
   String get myAddresses    => isAr ? 'عناويني'                : 'My Addresses';
   String get myWallet       => isAr ? 'محفظتي'                 : 'My Wallet';
-  String get inviteFriends  => isAr ? 'أدعُ أصدقاء'            : 'Invite Friends';
+  String get inviteFriends  => isAr ? 'ادعُ أصدقاءك'           : 'Invite Friends';
   String get notifications  => isAr ? 'الإشعارات'              : 'Notifications';
   String get language       => isAr ? 'اللغة'                  : 'Language';
   String get switchLang     => isAr ? 'English'                : 'العربية';
@@ -252,7 +252,7 @@ class AppStrings {
   String get priceDrops     => isAr ? 'تخفيضات الأسعار'        : 'Price Drops';
   String get priceDropBanner=> isAr ? 'انخفض سعره — أضفه قبل نفاد الكمية' : 'dropped in price — add before it sells out';
   String priceDropSavings(int count, String saved) => isAr
-      ? '$count منتجات انخفضت سعرها  •  وفر حتى $saved'
+      ? '$count منتجات انخفضت أسعارها  •  وفّر حتى $saved'
       : '$count items on sale  •  Save up to $saved';
   String get choose         => isAr ? 'اختر'                   : 'Pick';
   String get add            => isAr ? 'أضف'                    : 'Add';
@@ -303,7 +303,7 @@ class AppStrings {
   String get change         => isAr ? 'تغيير'                  : 'Change';
 
   // ── Home extras ──────────────────────────────────────────────────────────────
-  String get shopByBrand       => isAr ? 'تسوق حسب البراند'    : 'Shop by Brand';
+  String get shopByBrand       => isAr ? 'تسوّق حسب الماركة'   : 'Shop by Brand';
   String get welcomeBaahy      => isAr ? 'أهلاً بك في باهي'    : 'Welcome to Baahy';
   String get discoverProducts  => isAr ? 'اكتشف آلاف المنتجات من متاجر ليبيا' : 'Discover thousands of products from Libya\'s stores';
   String get baahyPromise      => isAr ? 'وعد باهي'             : 'Baahy Promise';
@@ -714,7 +714,7 @@ Account Termination: We reserve the right to suspend any account that violates t
       ? 'تم استلام دفعتك وهي قيد المراجعة. سيتواصل معك فريق الدعم قريباً — لا تُعِد الدفع.'
       : 'We received your payment and it is under review. Our support team will contact you soon — please do not pay again.';
   String get paymentStillChecking => isAr
-      ? 'لم يصلنا تأكيد الدفع بعد. إذا دفعت، سيتأكد طلبك تلقائياً — لا تدفع مرة ثانية.'
+      ? 'لم يصلنا تأكيد الدفع بعد. إذا كنت قد دفعت، فسيُؤكَّد طلبك تلقائياً — لا تدفع مرة أخرى.'
       : 'We have not received the payment confirmation yet. If you paid, your order will be confirmed automatically — do not pay again.';
   String get paymentConfirmedOrder => isAr ? 'تم تأكيد دفعتك وطلبك'        : 'Your payment and order are confirmed';
   String get pricesUpdatedNotice  => isAr
@@ -736,7 +736,7 @@ Account Termination: We reserve the right to suspend any account that violates t
   String get cancelOrder          => isAr ? 'إلغاء الطلب'                  : 'Cancel order';
   String get cancelOrderQ         => isAr ? 'هل تريد إلغاء هذا الطلب؟'     : 'Cancel this order?';
   String get cancelOrderPaidNote  => isAr
-      ? 'ما دفعته من المحفظة يرجع لمحفظتك فوراً، وما دفعته إلكترونياً يتواصل معك فريق الدعم لإرجاعه.'
+      ? 'يُعاد ما دفعته من المحفظة إلى محفظتك فوراً، أما ما دفعته إلكترونياً فسيتواصل معك فريق الدعم لإعادته.'
       : 'Wallet money goes straight back to your wallet; for an online payment our support team will contact you to refund it.';
   String get keepOrder            => isAr ? 'لا، أبقِ الطلب'               : 'No, keep it';
   String get yesCancelOrder       => isAr ? 'نعم، ألغِ الطلب'              : 'Yes, cancel it';
@@ -763,7 +763,7 @@ Account Termination: We reserve the right to suspend any account that violates t
   // ── Notifications-off reminder (2026-11-04: half the customers who order have them off) ──
   String get notifOffOrderTitle => isAr ? 'فعّل الإشعارات لتعرف متى يصل طلبك'   : 'Turn on notifications to know when your order arrives';
   String get notifOffOrderSub   => isAr ? 'نبلغك عند كل تحديث: التأكيد، الشحن، والتوصيل.' : 'We tell you at every step: confirmed, shipped, delivered.';
-  String get notifOffHomeTitle  => isAr ? 'الإشعارات مقفلة'                    : 'Notifications are off';
+  String get notifOffHomeTitle  => isAr ? 'الإشعارات معطّلة'                  : 'Notifications are off';
   String get notifOffHomeSub    => isAr ? 'فعّلها حتى لا تفوتك تحديثات طلباتك.' : "Turn them on so you never miss an update on your orders.";
   String get notifTurnOn        => isAr ? 'تفعيل'                              : 'Turn on';
 }
