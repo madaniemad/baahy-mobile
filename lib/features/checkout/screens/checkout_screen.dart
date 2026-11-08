@@ -27,6 +27,7 @@ import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../core/services/analytics_service.dart';
+import '../../notifications/widgets/checkout_notifications_prompt.dart';
 
 const _kLastPaymentKey = 'baahy_last_payment';
 
@@ -145,6 +146,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         setState(() => _itemsExpanded = true);
       }
       _applyPendingAutoOffer();
+      // Notifications off: centre pop-up, once per app session (Emad, 2026-11-08).
+      maybeShowCheckoutNotificationsPrompt(context);
     });
   }
 

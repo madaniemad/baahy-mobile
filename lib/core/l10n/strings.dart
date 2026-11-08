@@ -766,4 +766,11 @@ Account Termination: We reserve the right to suspend any account that violates t
   String get notifOffHomeTitle  => isAr ? 'الإشعارات معطّلة'                  : 'Notifications are off';
   String get notifOffHomeSub    => isAr ? 'فعّلها حتى لا تفوتك تحديثات طلباتك.' : "Turn them on so you never miss an update on your orders.";
   String get notifTurnOn        => isAr ? 'تفعيل'                              : 'Turn on';
+  // Checkout pop-up (Emad, 2026-11-08). «متابعة» when the phone can still ask (Apple 5.1.1: no
+  // "Allow" and no way out before the system question); otherwise it opens Settings and may be closed.
+  String get notifPopTitle      => isAr ? 'فعّل الإشعارات'                     : 'Turn on notifications';
+  String get notifPopBody       => isAr ? 'لتصلك تحديثات طلبك أولاً بأول: التأكيد، والشحن، والتوصيل.' : 'Get every update on your order: confirmed, shipped, delivered.';
+  String get notifPopContinue   => isAr ? 'متابعة'                             : 'Continue';
+  String get notifPopSettings   => isAr ? 'فتح الإعدادات'                      : 'Open settings';
+  String get notifPopNotNow     => isAr ? 'ليس الآن'                           : 'Not now';
 }
