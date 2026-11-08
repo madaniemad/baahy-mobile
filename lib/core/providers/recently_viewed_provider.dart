@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../api/api_client.dart';
 import '../models/product.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -33,6 +35,44 @@ class RecentlyViewedNotifier extends StateNotifier<List<Product>> {
       if (products.isNotEmpty && mounted) state = products;
     } catch (e, st) {
       Sentry.captureException(e, stackTrace: st);
+    }
+    await refreshFromServer();
+  }
+
+  /// The row shows copies saved on the phone, so a product that went draft, sold out or whose shop
+  /// closed stayed in it, at its old price (Emad, 2026-11-08). Ask the server for the saved ids: it
+  /// returns only products a customer can buy now. Missing ones leave the row, the rest take the
+  /// current price. On any network error the row is left as it is.
+  Future<void> refreshFromServer() async {
+    final asked = state.map((p) => p.id).toSet();
+    if (asked.isEmpty) return;
+    try {
+      final res = await ApiClient.instance.dio.get('/products',
+          queryParameters: {'ids[]': asked.map((id) => id.toString()).toList()});
+      // { data: { data: [...] } }, like Reorder reads it.
+      final node = res.data is Map ? res.data['data'] : null;
+      final raw = node is List ? node : (node is Map ? node['data'] : null);
+      if (raw is! List) return;
+      final fresh = <int, Product>{};
+      for (final j in raw) {
+        try {
+          final p = Product.fromJson(j as Map<String, dynamic>);
+          fresh[p.id] = p;
+        } catch (e, st) {
+          Sentry.captureException(e, stackTrace: st);
+        }
+      }
+      if (!mounted) return;
+      // A product viewed while the request was out was not asked about: keep it as it is.
+      final updated = [
+        for (final p in state)
+          if (!asked.contains(p.id)) p else if (fresh[p.id] != null) fresh[p.id]!,
+      ];
+      state = updated;
+      await _persist(updated);
+    } catch (e, st) {
+      // Offline or a server error: keep what is saved rather than emptying the row.
+      if (e is! DioException) Sentry.captureException(e, stackTrace: st);
     }
   }
 

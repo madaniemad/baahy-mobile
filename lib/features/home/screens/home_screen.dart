@@ -124,7 +124,10 @@ class HomeScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(_activeOrderProvider);
           ref.invalidate(storesProvider(null));
-          await ref.read(homeProvider.notifier).fetch();
+          await Future.wait([
+            ref.read(homeProvider.notifier).fetch(),
+            ref.read(recentlyViewedProvider.notifier).refreshFromServer(),
+          ]);
         },
         child: CustomScrollView(
           slivers: [
