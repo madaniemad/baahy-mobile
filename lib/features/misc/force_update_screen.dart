@@ -178,6 +178,10 @@ class ForceUpdateScreen extends ConsumerWidget {
 ///
 /// The whole page behind is blurred, not just the card, so the app is visibly
 /// still there but plainly out of reach.
+/// True once the popup is up. It cannot be dismissed, so it stays true: the launch check
+/// and the resume check must never stack a second one on top.
+bool forceUpdateDialogOpen = false;
+
 Future<void> showForceUpdateDialog(
   BuildContext context, {
   required bool isAr,
@@ -185,6 +189,8 @@ Future<void> showForceUpdateDialog(
   required String messageEn,
   required String storeUrl,
 }) {
+  if (forceUpdateDialogOpen) return Future.value();
+  forceUpdateDialogOpen = true;
   return showDialog<void>(
     context: context,
     barrierDismissible: false,

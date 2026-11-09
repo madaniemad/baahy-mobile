@@ -10,6 +10,8 @@ import '../providers/wishlist_provider.dart';
 import '../providers/app_config_provider.dart';
 import '../api/api_client.dart';
 import '../services/push_notification_service.dart';
+import '../services/version_gate.dart';
+import '../../features/misc/force_update_screen.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../core/utils/l10n.dart';
 import '../../shared/widgets/offline_banner.dart';
@@ -30,8 +32,28 @@ class _AppLifecycleRefreshState extends ConsumerState<_AppLifecycleRefresh>
     if (state == AppLifecycleState.resumed) {
       ref.read(appConfigProvider.notifier).refresh();
       PushNotificationService.instance.onResume();
+      _checkForceUpdate();
     }
     if (state == AppLifecycleState.paused) _syncCart();
+  }
+
+  /// The launch check only ran at a cold start, so someone who keeps the app in the background
+  /// never saw a raised min_version until they killed it (Emad, 2026-11-09). Re-ask on
+  /// resume, at most every 10 minutes; fail-open like the launch check.
+  static DateTime? _lastGateCheck;
+  Future<void> _checkForceUpdate() async {
+    if (forceUpdateDialogOpen) return;
+    final now = DateTime.now();
+    if (_lastGateCheck != null && now.difference(_lastGateCheck!) < const Duration(minutes: 10)) return;
+    _lastGateCheck = now;
+    final gate = await VersionGate.check();
+    if (!gate.forceUpdate || !mounted) return;
+    ref.read(pendingForceUpdateProvider.notifier).state = gate;
+    showForceUpdateDialog(context,
+        isAr: ref.read(localeProvider).languageCode == 'ar',
+        messageAr: gate.messageAr,
+        messageEn: gate.messageEn,
+        storeUrl: gate.storeUrl);
   }
 
   Future<void> _syncCart() async {
