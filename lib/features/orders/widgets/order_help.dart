@@ -431,14 +431,17 @@ class HelpRequestsCard extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(r['details'].toString(), style: TextStyle(fontSize: 12.5, color: context.col.ink2)),
                 ],
-                if ((r['staff_reply'] ?? '').toString().isNotEmpty) ...[
+                // Every message from Baahy, oldest first (2026-11-10); older servers send only staff_reply.
+                for (final body in (r['messages'] is List && (r['messages'] as List).isNotEmpty)
+                    ? [for (final m in r['messages'] as List) if (m is Map && (m['body'] ?? '').toString().isNotEmpty) m['body'].toString()]
+                    : [if ((r['staff_reply'] ?? '').toString().isNotEmpty) r['staff_reply'].toString()]) ...[
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.07), borderRadius: BorderRadius.circular(10)),
-                    child: Text('${context.tr('ردّ باهي', 'Baahy')}: ${r['staff_reply']}',
+                    child: Text('${context.tr('ردّ باهي', 'Baahy')}: $body',
                         style: TextStyle(fontSize: 12.5, height: 1.45, color: context.col.ink0)),
                   ),
                 ],
