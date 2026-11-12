@@ -320,7 +320,9 @@ class _StoreCard extends ConsumerWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: AspectRatio(
-                aspectRatio: 2.6,
+                // 3:1 = the shape store banners are designed at (1920×640), so the whole banner shows.
+                // 2.6 cut ~7% off each side and NYX's lettering (Emad 2026-11-13).
+                aspectRatio: 3.0,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
