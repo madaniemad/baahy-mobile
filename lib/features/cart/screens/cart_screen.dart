@@ -1,3 +1,4 @@
+import '../../../shared/widgets/product_badges.dart';
 import '../../../core/utils/delivery.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -926,6 +927,8 @@ class _CartItemCard extends ConsumerWidget {
                 Text(name, maxLines: 2, overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5,
                     color: context.col.ink0)),
+                if (item.product.isCopy)
+                  const Padding(padding: EdgeInsets.only(top: 4), child: CopyTag()),
                 Builder(builder: (_) {
                   // Try item.variation first, then fall back to product.variations lookup
                   List<dynamic>? attrs = item.variation?.attributes.isNotEmpty == true

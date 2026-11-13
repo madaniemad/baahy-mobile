@@ -20,6 +20,7 @@ import '../../../core/providers/recently_viewed_provider.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/product_badges.dart';
 import '../../../shared/widgets/product_card.dart';
 import '../../../shared/widgets/optimized_network_image.dart';
 import '../../../shared/widgets/baahy_plus_badge.dart';
@@ -657,6 +658,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
                                           color: AppColors.primary)),
+                                ),
+                              if (product.isCopy)
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 6, bottom: 2),
+                                  child: CopyTag(scale: 1.15),
                                 ),
                               const SizedBox(height: 6),
                               Text(name,

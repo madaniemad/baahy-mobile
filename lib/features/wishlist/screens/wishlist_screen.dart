@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:baahy_customer/core/services/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/product_badges.dart';
 import '../../../shared/widgets/optimized_network_image.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/providers/cart_provider.dart';
@@ -242,6 +243,8 @@ class _WishlistCard extends ConsumerWidget {
                     Text(name,
                         maxLines: 2, overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.3)),
+                    if (product.isCopy)
+                      const Padding(padding: EdgeInsets.only(top: 4), child: CopyTag()),
                     const SizedBox(height: 6),
                     // Price
                     Row(children: [

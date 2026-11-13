@@ -165,6 +165,13 @@ class ProductCard extends ConsumerWidget {
                       ),
                     ),
                   ),
+                if (product.isCopy)
+                  Positioned(
+                    bottom: 8,
+                    left: isAr ? null : 8,
+                    right: isAr ? 8 : null,
+                    child: const CopyTag(),
+                  ),
                 if (!product.inStock)
                   Positioned.fill(
                     child: ClipRRect(
