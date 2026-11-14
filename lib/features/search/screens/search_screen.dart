@@ -9,6 +9,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/app_config_provider.dart';
 import '../../../core/providers/home_provider.dart';
+import '../../../core/providers/campaign_provider.dart';
+import '../../../core/models/campaign.dart';
+import '../../campaign/widgets/campaign_widgets.dart';
 import '../../../core/utils/arabic_text.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../core/services/analytics_service.dart';
@@ -315,6 +318,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       // baahy AI is for signed-in users only.
                       aiEnabled: config.aiEnabled && ref.watch(authProvider).isLoggedIn,
                       trending: config.trendingSearches,
+                      campaign: ref.watch(currentCampaignProvider),
                       categories: categories
                           .take(8)
                           .map((c) => (id: c.id, name: context.isAr ? c.nameAr : c.name))
@@ -555,6 +559,8 @@ class _SuggestionRow extends StatelessWidget {
 class _EmptyState extends StatelessWidget {
   final bool aiEnabled;
   final List<String> trending;
+  /// The running campaign: its «عروض …» chip leads the trending chips.
+  final Campaign? campaign;
   final List<({int id, String name})> categories;
   final List<String> recentSearches;
   final void Function(String) onSearch;
@@ -565,6 +571,7 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState({
     required this.aiEnabled,
     required this.trending,
+    this.campaign,
     required this.categories,
     required this.recentSearches,
     required this.onSearch,
@@ -638,7 +645,7 @@ class _EmptyState extends StatelessWidget {
           ],
 
           // ── Trending ──────────────────────────────────────────────────
-          if (trending.isNotEmpty) ...[
+          if (trending.isNotEmpty || campaign != null) ...[
             Row(children: [
               Icon(Icons.local_fire_department_rounded,
                   size: 14, color: AppColors.teal),
@@ -655,9 +662,12 @@ class _EmptyState extends StatelessWidget {
               height: 36,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: trending.length,
+                itemCount: trending.length + (campaign != null ? 1 : 0),
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (ctx, i) => GestureDetector(
+                itemBuilder: (ctx, j) {
+                  if (campaign != null && j == 0) return CampaignSearchChip(campaign: campaign!);
+                  final i = campaign != null ? j - 1 : j;
+                  return GestureDetector(
                   onTap: () => onSearch(trending[i]),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
@@ -674,7 +684,8 @@ class _EmptyState extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                             color: AppColors.tealChipText(context))),
                   ),
-                ),
+                );
+                },
               ),
             ),
           ],

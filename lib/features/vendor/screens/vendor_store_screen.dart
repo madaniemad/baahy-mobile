@@ -12,6 +12,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../../core/utils/responsive.dart';
 import '../widgets/store_filters.dart';
 import '../../../shared/widgets/store_logo_placeholder.dart';
+import '../../campaign/widgets/campaign_widgets.dart';
 
 class VendorStoreScreen extends ConsumerStatefulWidget {
   final int vendorId;
@@ -279,6 +280,9 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                 ],
               ),
             ),
+
+            // ── «مشارك في …»: the store has products in the running campaign ──
+            SliverToBoxAdapter(child: CampaignStoreStrip(vendorId: widget.vendorId)),
 
             // ── Search this store + filters ──
             SliverToBoxAdapter(

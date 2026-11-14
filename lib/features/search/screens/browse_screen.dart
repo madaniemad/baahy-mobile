@@ -9,6 +9,7 @@ import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../vendor/widgets/stores_tab.dart';
+import '../../campaign/widgets/campaign_widgets.dart';
 
 const _kCols = 3;
 const _kGap = 10.0;
@@ -236,6 +237,12 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                               ),
                             ),
                           ),
+                        ),
+
+                        // ── First row: the running campaign (nothing when none) ──
+                        const SliverPadding(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          sliver: SliverToBoxAdapter(child: CampaignBrowseTile()),
                         ),
 
                         if (categories.isEmpty && categoriesAsync.isLoading)

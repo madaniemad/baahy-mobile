@@ -41,6 +41,8 @@ import '../../features/account/screens/return_policy_screen.dart';
 import '../../features/account/screens/faq_screen.dart';
 import '../../features/account/screens/contact_screen.dart';
 import '../../features/vendor/screens/vendor_store_screen.dart';
+import '../../features/campaign/screens/campaign_screen.dart';
+import '../models/campaign.dart';
 import '../../features/assistant/screens/assistant_screen.dart';
 import '../../features/rewards/screens/rewards_hub_screen.dart';
 import '../../features/friends/screens/friends_screen.dart';
@@ -89,6 +91,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       if (segs.length >= 2 && segs[0] == 'products') {
         return '/product/${segs[1]}';
+      }
+      // Campaign offers links: https://baahy.com/offers/<slug> (the web page) and baahy://offers/<slug>
+      // open the in-app campaign page; the store / category filters carry over.
+      final offersSlug = uri.host == 'offers'
+          ? (segs.isNotEmpty ? segs.first : null)
+          : (segs.length >= 2 && segs[0] == 'offers' ? segs[1] : null);
+      if (offersSlug != null && offersSlug.isNotEmpty) {
+        return campaignRoute(offersSlug,
+            vendorId: int.tryParse(uri.queryParameters['vendor'] ?? ''),
+            categoryId: int.tryParse(uri.queryParameters['category'] ?? ''));
       }
       // '/chat' is here too: baahy AI is signed-in only, and gating it at the
       // router means a deep link can't bypass the hidden entry points.
@@ -212,6 +224,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/terms',         builder: (_, __) => const PolicyScreen(type: PolicyType.terms)),
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/faq',           builder: (_, __) => const FaqScreen()),
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/contact',       builder: (_, __) => const ContactScreen()),
+      // Campaign page (Baahy Friday and later ones): ?vendor= / ?category= pre-filter the grid.
+      GoRoute(parentNavigatorKey: _rootNavKey, path: '/campaign/:slug', builder: (ctx, state) {
+        final slug = state.pathParameters['slug'] ?? '';
+        final q = state.uri.queryParameters;
+        return slug.isEmpty
+            ? _badLink(ctx)
+            : CampaignScreen(
+                slug: slug,
+                initialVendorId: int.tryParse(q['vendor'] ?? ''),
+                initialCategoryId: int.tryParse(q['category'] ?? ''),
+              );
+      }),
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/vendors/:id', builder: (ctx, state) {
         final id = int.tryParse(state.pathParameters['id'] ?? '');
         return id == null ? _badLink(ctx) : VendorStoreScreen(vendorId: id);

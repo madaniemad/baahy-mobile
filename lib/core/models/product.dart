@@ -1,4 +1,6 @@
 import '../api/api_client.dart';
+import '../debug/fake_campaign.dart';
+import 'campaign.dart';
 // Re-exported so the product-detail `part` files (which cannot import) can use the shared size/label helpers.
 export '../utils/size_order.dart';
 
@@ -38,6 +40,8 @@ class Product {
   /// False when the server says this product is not for sale (product detail's `purchasable`).
   /// Absent on list endpoints and older responses, so it defaults to true.
   final bool purchasable;
+  /// Set while the product is on campaign price (e.g. Baahy Friday): drives the fixed campaign tag.
+  final ProductCampaign? campaign;
 
   const Product({
     required this.id,
@@ -69,6 +73,7 @@ class Product {
     this.badges = const [],
     this.createdAt,
     this.purchasable = true,
+    this.campaign,
   });
 
   /// True for products created within the last 14 days.
@@ -124,6 +129,8 @@ class Product {
     // Kept so a saved cart still shows Copy / كوبي after a restart (Emad 2026-11-13).
     if (badges.isNotEmpty) 'badges': badges,
     if (!purchasable) 'purchasable': false,
+    // Kept so cached lists still show the campaign tag; a debug fake tag is never written to disk.
+    if (campaign != null && !kFakeCampaign) 'campaign': campaign!.toJson(),
     if (shipsAfter != null) 'ships_after': '${shipsAfter!.year}-${shipsAfter!.month.toString().padLeft(2, '0')}-${shipsAfter!.day.toString().padLeft(2, '0')}',
   };
 
@@ -175,6 +182,7 @@ class Product {
     createdAt: _parseDate(j['created_at']),
     shipsAfter: _parseDate(j['ships_after']),
     purchasable: j['purchasable'] != false && j['purchasable'] != 0,
+    campaign: ProductCampaign.tryParse(j['campaign']) ?? (kFakeCampaign ? fakeProductCampaign(j) : null),
   );
 
   static DateTime? _parseDate(dynamic raw) {

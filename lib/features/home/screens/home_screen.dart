@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/providers/home_provider.dart';
+import '../../../core/providers/campaign_provider.dart';
+import '../../campaign/widgets/campaign_widgets.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/notifications_provider.dart';
 import '../../../core/providers/recently_viewed_provider.dart';
@@ -127,6 +129,7 @@ class HomeScreen extends ConsumerWidget {
           await Future.wait([
             ref.read(homeProvider.notifier).fetch(),
             ref.read(recentlyViewedProvider.notifier).refreshFromServer(),
+            ref.read(campaignProvider.notifier).refresh(),
           ]);
         },
         child: CustomScrollView(
@@ -203,6 +206,10 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            // ── Running campaign (Baahy Friday …): first thing under the search bar ──
+            // Renders nothing while no campaign is running.
+            const SliverToBoxAdapter(child: CampaignHomeStrip()),
+
             // ── Seasonal cashback banner ────────────────────────────────────
             if (config.seasonalEnabled)
               SliverToBoxAdapter(

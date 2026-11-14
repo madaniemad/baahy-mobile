@@ -773,4 +773,27 @@ Account Termination: We reserve the right to suspend any account that violates t
   String get notifPopContinue   => isAr ? 'متابعة'                             : 'Continue';
   String get notifPopSettings   => isAr ? 'فتح الإعدادات'                      : 'Open settings';
   String get notifPopNotNow     => isAr ? 'ليس الآن'                           : 'Not now';
+
+  // ── Campaigns (Baahy Friday and any later one; names/colours come from the API) ──
+  String get campaignShopDeals      => isAr ? 'تسوّق العروض'              : 'Shop the deals';
+  String campaignOffersChip(String n) => isAr ? 'عروض $n'                : '$n deals';
+  String campaignTakingPart(String n) => isAr ? 'مشارك في $n'            : 'Taking part in $n';
+  String get campaignSeeStoreDeals  => isAr ? 'شاهد عروض المتجر'          : 'See this store\'s deals';
+  String get campaignEndsIn         => isAr ? 'ينتهي خلال'                : 'Ends in';
+  String get campaignDays           => isAr ? 'يوم'                       : 'days';
+  String get campaignHours          => isAr ? 'ساعة'                      : 'hrs';
+  String get campaignMinutes        => isAr ? 'دقيقة'                     : 'min';
+  String get campaignSeconds        => isAr ? 'ثانية'                     : 'sec';
+  String campaignDaysN(int n)       => isAr ? '$n يوم'                    : (n == 1 ? '1 day' : '$n days');
+  String get campaignStores         => isAr ? 'المتاجر المشاركة'          : 'Stores taking part';
+  String get campaignSortDiscount   => isAr ? 'الأكبر خصماً'              : 'Biggest discount';
+  String get campaignSortPriceAsc   => isAr ? 'الأقل سعراً'               : 'Lowest price';
+  String get campaignSortPriceDesc  => isAr ? 'الأعلى سعراً'              : 'Highest price';
+  String get campaignSortNewest     => isAr ? 'الأحدث'                    : 'Newest';
+  String get campaignEmpty          => isAr ? 'لا توجد عروض هنا حالياً'   : 'No deals here right now';
+  String get campaignEmptySub       => isAr ? 'جرّب متجراً أو قسماً آخر.'  : 'Try another store or category.';
+  String get campaignShowAll        => isAr ? 'عرض كل العروض'             : 'Show all deals';
+  String get campaignEnded          => isAr ? 'انتهت هذه العروض'          : 'These deals have ended';
+  String get campaignEndedSub       => isAr ? 'تابع الصفحة الرئيسية لتعرف العروض القادمة.' : 'Keep an eye on the home page for the next deals.';
+  String get backToHome             => isAr ? 'العودة للرئيسية'           : 'Back to home';
 }

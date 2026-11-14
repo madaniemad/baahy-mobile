@@ -10,6 +10,8 @@ import 'package:go_router/go_router.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
+import '../models/campaign.dart' show campaignSlugFromPath;
+import '../models/campaign.dart' as campaign_model;
 
 // Top-level handler — must be a top-level function (not a closure or class method).
 @pragma('vm:entry-point')
@@ -44,7 +46,44 @@ class NotificationTarget {
     if (s == null) return null;
     final u = Uri.tryParse(s);
     if (u == null || u.host.isEmpty || (u.scheme != 'https' && u.scheme != 'http')) return null;
+    // A baahy.com/offers/<slug> link opens the in-app campaign page (see [campaignRoute]).
+    if (_isBaahyHost(u.host) && campaignSlugFromPath(u) != null) return null;
     return u;
+  }
+
+  static bool _isBaahyHost(String h) =>
+      h == 'baahy.com' || h == 'www.baahy.com' || h == 'baahy-web.vercel.app';
+
+  /// A campaign push: `route: /campaign/<slug>`, `type: campaign` with `slug`, or a
+  /// baahy.com/offers/<slug> `link`. Null when the push is not about a campaign.
+  static String? campaignRoute(Map<String, dynamic> d) {
+    final route = _val(d, 'route');
+    if (route != null) {
+      final u = Uri.tryParse(route);
+      if (u != null && u.host.isEmpty && campaignSlugFromPath(u) != null) {
+        final q = u.queryParameters;
+        return campaign_model.campaignRoute(campaignSlugFromPath(u)!,
+            vendorId: int.tryParse(q['vendor'] ?? ''),
+            categoryId: int.tryParse(q['category'] ?? ''));
+      }
+    }
+    final slug = _val(d, 'campaign') ?? _val(d, 'campaign_slug') ??
+        (_val(d, 'type') == 'campaign' ? _val(d, 'slug') : null);
+    if (slug != null) {
+      return campaign_model.campaignRoute(slug,
+          vendorId: int.tryParse(_val(d, 'vendor_id') ?? ''));
+    }
+    final l = _val(d, 'link');
+    final u = l == null ? null : Uri.tryParse(l);
+    if (u != null && _isBaahyHost(u.host)) {
+      final s = campaignSlugFromPath(u);
+      if (s != null) {
+        return campaign_model.campaignRoute(s,
+            vendorId: int.tryParse(u.queryParameters['vendor'] ?? ''),
+            categoryId: int.tryParse(u.queryParameters['category'] ?? ''));
+      }
+    }
+    return null;
   }
 
   static bool isOrderType(String? t) =>
@@ -70,6 +109,9 @@ class NotificationTarget {
   /// Types whose destination must be the same from a push and from the bell, checked by both
   /// before their own fallbacks (audit 2026-10-19). Null = not one of these types.
   static String? typedRoute(String? type, Map<String, dynamic> d) {
+    // Campaign pushes (Baahy Friday …) open the campaign page, from a push and from the bell.
+    final campaign = campaignRoute(d);
+    if (campaign != null) return campaign;
     switch (type) {
       // Cart / checkout abandonment reminders. abandoned_offer carries a coupon; the server has
       // never sent `abandoned_cart` (the bell looked for it), it sends cart_abandoned.

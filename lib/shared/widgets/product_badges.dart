@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../core/models/campaign.dart';
 import '../../core/models/product.dart';
 import '../../core/utils/l10n.dart';
+import '../../core/utils/navigation.dart';
 import 'baahy_plus_badge.dart';
 
 /// Promo badges a product can carry.
@@ -103,6 +105,45 @@ class CopyTag extends StatelessWidget {
           fontSize: 10 * scale,
           fontWeight: FontWeight.w700,
           height: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+/// The campaign a product is on (e.g. «الجمعة الباهية»), in the campaign's own colours. Like
+/// [CopyTag] it is fixed on the photo, never part of the rolling ticker. Tapping it opens the
+/// campaign page.
+class CampaignTag extends StatelessWidget {
+  final ProductCampaign campaign;
+  final double scale;
+  final double maxWidth;
+  const CampaignTag({super.key, required this.campaign, this.scale = 1.0, this.maxWidth = 120});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => safePush(context, campaignRoute(campaign.slug)),
+      child: Container(
+        constraints: BoxConstraints(maxWidth: maxWidth * scale),
+        padding: EdgeInsets.symmetric(horizontal: 7 * scale, vertical: 2 * scale),
+        decoration: BoxDecoration(
+          color: campaign.bg,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          campaign.name(context.isAr),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontFamilyFallback: const ['Tajawal'],
+            color: campaign.fg,
+            fontSize: 10 * scale,
+            fontWeight: FontWeight.w800,
+            height: 1.2,
+          ),
         ),
       ),
     );

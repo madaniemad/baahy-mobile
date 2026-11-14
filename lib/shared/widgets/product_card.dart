@@ -172,6 +172,13 @@ class ProductCard extends ConsumerWidget {
                     right: isAr ? 8 : null,
                     child: const CopyTag(),
                   ),
+                // The campaign tag sits on the other bottom corner, so it never covers Copy.
+                if (product.campaign != null)
+                  PositionedDirectional(
+                    bottom: 8,
+                    end: 8,
+                    child: CampaignTag(campaign: product.campaign!, maxWidth: 96),
+                  ),
                 if (!product.inStock)
                   Positioned.fill(
                     child: ClipRRect(

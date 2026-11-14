@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/campaign.dart';
 import 'navigation.dart';
 
 /// Parses the web-canonical button_link format and navigates to the
@@ -18,6 +19,8 @@ import 'navigation.dart';
 ///   /cart                                → cart
 ///   /wishlist                            → wishlist
 ///   /rewards                             → loyalty rewards hub
+///   /offers/baahyfriday-2026             → campaign page (also /campaign/<slug>;
+///                                          ?vendor= / ?category= pre-filter it)
 ///   https://...                          → open in browser
 class BannerLink {
   BannerLink._();
@@ -58,6 +61,15 @@ class BannerLink {
     final vendorMatch = RegExp(r'^/vendors/(\d+)$').firstMatch(path);
     if (vendorMatch != null) {
       safePush(context, '/vendors/${vendorMatch.group(1)}');
+      return;
+    }
+
+    // /offers/<slug> (the web campaign page) or /campaign/<slug> — the in-app campaign page
+    final campaignSlug = campaignSlugFromPath(uri);
+    if (campaignSlug != null) {
+      safePush(context, campaignRoute(campaignSlug,
+          vendorId: int.tryParse(q['vendor'] ?? ''),
+          categoryId: int.tryParse(q['category'] ?? '')));
       return;
     }
 
