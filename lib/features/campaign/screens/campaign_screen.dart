@@ -371,35 +371,48 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = campaign;
     final isAr = context.isAr;
+    // Compact (Emad 2026-11-14): logo beside the name, the countdown in one row under it, so the
+    // stores and products start high on the screen.
     return Container(
       color: c.bg,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-      child: Column(children: [
-        CampaignLogo(campaign: c, height: 120),
-        const SizedBox(height: 10),
-        Text(c.name(isAr),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontFamily: _font,
-                fontFamilyFallback: _fallback,
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                height: 1.2,
-                color: c.fg)),
-        if (c.headline(isAr).isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(c.headline(isAr),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontFamily: _font,
-                  fontFamilyFallback: _fallback,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: c.fg.withValues(alpha: 0.85))),
-        ],
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          CampaignLogo(campaign: c, height: 64),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(c.name(isAr),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontFamily: _font,
+                      fontFamilyFallback: _fallback,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                      color: c.fg)),
+              if (c.headline(isAr).isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(c.headline(isAr),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontFamily: _font,
+                        fontFamilyFallback: _fallback,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: c.fg.withValues(alpha: 0.85))),
+              ],
+            ]),
+          ),
+        ]),
         if (c.showCountdown && c.endsAt != null) ...[
-          const SizedBox(height: 14),
-          FittedBox(fit: BoxFit.scaleDown, child: CampaignCountdown(campaign: c)),
+          const SizedBox(height: 10),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: FittedBox(fit: BoxFit.scaleDown, child: CampaignCountdown(campaign: c, compact: true)),
+          ),
         ],
       ]),
     );
