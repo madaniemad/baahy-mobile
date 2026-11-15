@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../../../core/utils/delivery.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -111,6 +112,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   String? _shownPreview; // staff preview key of the member switched to (preview links only)
   Product? _lastProduct;
   int get _id => _shownId ?? widget.id;
+  String? get _previewKey => _shownId == null ? widget.preview : _shownPreview;
+  // The family rows must never stay stale while a page is open (Emad 2026-11-15: a family changed
+  // after the page loaded, and the screen kept showing the old answer). Re-asked when the page opens
+  // (another screen may still hold an old answer for this product) and every 30 s after.
+  Timer? _familyRefresh;
+  void _refreshFamily() {
+    if (mounted) ref.invalidate(_productFamilyProvider((_id, _previewKey)));
+  }
 
   void _switchTo(int id, String? preview) {
     if (id == _id) return;
@@ -132,6 +141,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshFamily());
+    _familyRefresh =
+        Timer.periodic(const Duration(seconds: 30), (_) => _refreshFamily());
     _scrollController = ScrollController()
       ..addListener(() {
         if (!_lazyTriggered && _scrollController.offset > 500) {
@@ -142,6 +154,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   @override
   void dispose() {
+    _familyRefresh?.cancel();
     _scrollController.dispose();
     _pageController.dispose();
     _imageIndex.dispose();
@@ -285,7 +298,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isAr = context.isAr;
-    final previewKey = _shownId == null ? widget.preview : _shownPreview;
+    final previewKey = _previewKey;
     final productAsync = ref.watch(_productDetailProvider((_id, previewKey)));
     // Switching family member: keep showing the last product until the next one arrives.
     final switching =
