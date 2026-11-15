@@ -340,6 +340,73 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return null;
   }
 
+  /// `422 items_unavailable` (WAMA live check at checkout, 2026-11-15): the seller no longer has some
+  /// items. Take them out of the cart, say which (and the sizes in stock now), then go back to the cart.
+  /// False for any other error.
+  Future<bool> _onItemsUnavailable(Object e, {String? pendingRef}) async {
+    if (e is! DioException) return false;
+    final d = e.response?.data;
+    if (e.response?.statusCode != 422 || d is! Map || d['code'] != 'items_unavailable' || d['items'] is! List) return false;
+    if (pendingRef != null) PendingCheckoutService.instance.clear(pendingRef);
+    final items = (d['items'] as List).whereType<Map>().toList();
+    final cart = ref.read(cartProvider.notifier);
+    for (final it in items) {
+      final pid = it['product_id'];
+      final vid = it['variation_id'];
+      await cart.remove(vid != null ? '${pid}_$vid' : '$pid');
+    }
+    if (!mounted) return true;
+    setState(() => _loading = false);
+    final isAr = context.isAr;
+    final message = (isAr ? d['message'] : (d['message_en'] ?? d['message']))?.toString() ?? '';
+    await showDialog<void>(
+      context: context,
+      builder: (dCtx) => AlertDialog(
+        title: Text(message, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final it in items) ...[
+                Text(
+                  '${(isAr ? it['name'] : (it['name_en'] ?? it['name'])) ?? ''}'
+                  '${it['size'] != null ? (isAr ? ' · المقاس ${it['size']}' : ' · size ${it['size']}') : ''}'
+                  '${it['status'] == 'gone' ? (isAr ? ' — لم يعد متوفراً' : ' — no longer available') : (isAr ? ' — نفد هذا المقاس' : ' — this size sold out')}',
+                  style: const TextStyle(fontSize: 13.5),
+                ),
+                if (it['options'] is List && (it['options'] as List).isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    (isAr ? 'مقاسات متوفرة الآن: ' : 'Sizes in stock now: ') +
+                        (it['options'] as List).whereType<Map>().map((o) => o['size'].toString()).join(isAr ? '، ' : ', '),
+                    style: TextStyle(fontSize: 12.5, color: Theme.of(dCtx).hintColor),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(dCtx).pop();
+                      context.push('/product/${it['product_id']}');
+                    },
+                    child: Text(isAr ? 'اختر مقاساً آخر' : 'Choose another size'),
+                  ),
+                ],
+                const SizedBox(height: 10),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dCtx).pop(),
+            child: Text(isAr ? 'العودة إلى السلة' : 'Back to cart'),
+          ),
+        ],
+      ),
+    );
+    if (mounted) context.go('/cart');
+    return true;
+  }
+
   /// Staff restricted this account from ordering: known from the profile, or from a refusal here.
   bool get _orderingBlocked =>
       _restriction != null || ref.read(currentUserProvider)?.orderingBlocked == true;
@@ -784,6 +851,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       // Only a request that got NO answer keeps its key for the retry.
       if (e is DioException && e.response != null) _idemKey = null;
       if (_onAccountRestricted(e)) return;
+      if (await _onItemsUnavailable(e)) return;
       if (!mounted) return;
       setState(() => _loading = false);
       if (mounted) {
@@ -887,6 +955,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     } catch (e) {
       if (_onAccountRestricted(e, pendingRef: pendingRef)) return;
+      if (await _onItemsUnavailable(e, pendingRef: pendingRef)) return;
       if (mounted) {
         setState(() => _loading = false);
         String msg = context.tr(
@@ -1020,6 +1089,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     } catch (e) {
       if (_onAccountRestricted(e, pendingRef: pendingRef)) return;
+      if (await _onItemsUnavailable(e, pendingRef: pendingRef)) return;
       if (mounted) {
         setState(() => _loading = false);
         String msg =
