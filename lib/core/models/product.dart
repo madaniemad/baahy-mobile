@@ -1,6 +1,8 @@
 import '../api/api_client.dart';
 import '../debug/fake_campaign.dart';
 import 'campaign.dart';
+import 'product_family.dart';
+export 'product_family.dart';
 // Re-exported so the product-detail `part` files (which cannot import) can use the shared size/label helpers.
 export '../utils/size_order.dart';
 
@@ -42,6 +44,9 @@ class Product {
   final bool purchasable;
   /// Set while the product is on campaign price (e.g. Baahy Friday): drives the fixed campaign tag.
   final ProductCampaign? campaign;
+  /// The same item in other colours / capacities / models: separate products shown as options
+  /// (product detail only). Not variations.
+  final ProductFamily? family;
 
   const Product({
     required this.id,
@@ -74,6 +79,7 @@ class Product {
     this.createdAt,
     this.purchasable = true,
     this.campaign,
+    this.family,
   });
 
   /// True for products created within the last 14 days.
@@ -183,6 +189,7 @@ class Product {
     shipsAfter: _parseDate(j['ships_after']),
     purchasable: j['purchasable'] != false && j['purchasable'] != 0,
     campaign: ProductCampaign.tryParse(j['campaign']) ?? (kFakeCampaign ? fakeProductCampaign(j) : null),
+    family: ProductFamily.tryParse(j['family']),
   );
 
   static DateTime? _parseDate(dynamic raw) {

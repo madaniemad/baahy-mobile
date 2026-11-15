@@ -840,6 +840,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Product family (2026-11-15): the same item in other colours /
+                              // capacities / models, each its own product; a tap opens it.
+                              if (product.family != null) ...[
+                                _FamilyOptions(family: product.family!),
+                                const SizedBox(height: 4),
+                                Divider(height: 1, color: context.col.border),
+                                const SizedBox(height: 12),
+                              ],
                               if (product.variations.isEmpty &&
                                   product.productAttributes.isNotEmpty) ...[
                                 _ProductAttributesDisplay(product: product),

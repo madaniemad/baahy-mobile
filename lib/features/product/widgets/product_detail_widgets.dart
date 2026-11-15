@@ -1199,6 +1199,162 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
 
 // ── Out-of-stock diagonal line painter ───────────────────────────────────────
 
+// ── Product family options ───────────────────────────────────────────────────
+// The same item in other colours / capacities / models (2026-11-15). Looks like the size picker,
+// but every option is a separate product: a tap opens that product's page in place of this one.
+// Colour rows show the member's photo; the others are chips (with the price when prices differ).
+// The current product is highlighted; a sold-out member is greyed and crossed, still openable.
+
+class _FamilyOptions extends StatelessWidget {
+  final ProductFamily family;
+  const _FamilyOptions({required this.family});
+
+  void _open(BuildContext context, ProductFamilyOption o) {
+    if (o.selected) return;
+    context.pushReplacement('/product/${o.productId}');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = context.isAr;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: family.axes.map((axis) {
+        final chosen = axis.selected(isAr);
+        final showPrice = !axis.isSwatch &&
+            axis.options.map((o) => o.currentPrice).toSet().length > 1;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Text(axis.label(isAr),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                const SizedBox(width: 8),
+                if (chosen != null && chosen.isNotEmpty)
+                  Flexible(
+                    child: Text(chosen,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 13, color: context.col.ink2)),
+                  ),
+              ]),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: axis.options.map((o) {
+                  final soldOut = !o.inStock;
+                  final label = o.value(isAr);
+                  if (axis.isSwatch) {
+                    final url = Product.resolveImageUrl(o.image);
+                    return Semantics(
+                      button: true,
+                      selected: o.selected,
+                      label: soldOut ? '$label — ${context.s.outOfStock}' : label,
+                      child: GestureDetector(
+                        onTap: () => _open(context, o),
+                        child: Tooltip(
+                          message: label,
+                          child: Opacity(
+                            opacity: soldOut ? 0.45 : 1,
+                            child: Container(
+                              width: 52,
+                              height: 52,
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color: o.selected ? AppColors.primary : context.col.border,
+                                    width: o.selected ? 2 : 1),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(9),
+                                child: Stack(fit: StackFit.expand, children: [
+                                  if (url != null)
+                                    OptimizedNetworkImage(
+                                        url: url,
+                                        fit: BoxFit.cover,
+                                        memCacheWidth: 160,
+                                        variantWidth: 400,
+                                        error: Container(color: context.col.surfaceSoft))
+                                  else
+                                    Container(
+                                      color: context.col.surfaceSoft,
+                                      alignment: Alignment.center,
+                                      child: Text(label,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(fontSize: 9)),
+                                    ),
+                                  if (soldOut) CustomPaint(painter: _OutOfStockPainter()),
+                                ]),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  return Semantics(
+                    button: true,
+                    selected: o.selected,
+                    label: soldOut ? '$label — ${context.s.outOfStock}' : label,
+                    child: GestureDetector(
+                      onTap: () => _open(context, o),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: o.selected
+                                  ? AppColors.adaptive(context)
+                                  : soldOut
+                                      ? context.col.surfaceSoft
+                                      : context.col.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: o.selected ? AppColors.adaptive(context) : context.col.border,
+                                  width: o.selected ? 1.5 : 1),
+                            ),
+                            child: Column(mainAxisSize: MainAxisSize.min, children: [
+                              Text(label,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                      color: o.selected
+                                          ? Colors.white
+                                          : soldOut
+                                              ? context.col.ink3
+                                              : context.col.ink0)),
+                              if (showPrice)
+                                Text('${fmtPrice(o.currentPrice)} ${context.s.lydUnit}',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: o.selected ? Colors.white70 : context.col.ink2)),
+                            ]),
+                          ),
+                          if (soldOut)
+                            Positioned.fill(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: CustomPaint(painter: _OutOfStockPainter()),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
 class _OutOfStockPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
