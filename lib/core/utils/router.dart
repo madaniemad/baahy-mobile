@@ -86,11 +86,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       // The in-app route is /product/:id (singular), so only the OTHER spellings
       // are rewritten; matching 'product' too would redirect onto itself.
       final segs = uri.pathSegments;
+      // The staff preview key (?preview=…) rides along; nothing else in the query is used.
+      final pv = uri.queryParameters['preview'];
+      final pq = (pv != null && pv.isNotEmpty) ? '?preview=${Uri.encodeQueryComponent(pv)}' : '';
       if ((uri.host == 'product' || uri.host == 'products') && segs.isNotEmpty) {
-        return '/product/${segs.first}';
+        return '/product/${segs.first}$pq';
       }
       if (segs.length >= 2 && segs[0] == 'products') {
-        return '/product/${segs[1]}';
+        return '/product/${segs[1]}$pq';
       }
       // Campaign offers links: https://baahy.com/offers/<slug> (the web page) and baahy://offers/<slug>
       // open the in-app campaign page; the store / category filters carry over.
@@ -182,7 +185,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/search/camera', builder: (_, __) => const CameraSearchScreen()),
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/product/:id', builder: (ctx, state) {
         final id = int.tryParse(state.pathParameters['id'] ?? '');
-        return id == null ? _badLink(ctx) : ProductDetailScreen(id: id);
+        return id == null
+            ? _badLink(ctx)
+            : ProductDetailScreen(id: id, preview: state.uri.queryParameters['preview']);
       }),
       GoRoute(parentNavigatorKey: _rootNavKey, path: '/product/:id/reviews', builder: (ctx, state) {
         final id = int.tryParse(state.pathParameters['id'] ?? '');

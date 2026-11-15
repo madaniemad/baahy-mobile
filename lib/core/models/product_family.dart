@@ -65,6 +65,8 @@ class ProductFamilyOption {
   final double currentPrice;
   final bool inStock;
   final bool selected;
+  /// Staff preview only: this member's own preview key, so switching inside a preview keeps working.
+  final String? preview;
   const ProductFamilyOption({
     required this.valueAr,
     required this.valueEn,
@@ -73,6 +75,7 @@ class ProductFamilyOption {
     required this.currentPrice,
     required this.inStock,
     required this.selected,
+    this.preview,
   });
 
   String value(bool isAr) => isAr ? valueAr : (valueEn.isNotEmpty ? valueEn : valueAr);
@@ -87,5 +90,6 @@ class ProductFamilyOption {
         currentPrice: _d(j['current_price']),
         inStock: j['in_stock'] == true || j['in_stock'] == 1,
         selected: j['selected'] == true,
+        preview: j['preview']?.toString(),
       );
 }

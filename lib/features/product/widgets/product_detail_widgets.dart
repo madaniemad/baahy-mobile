@@ -1208,12 +1208,12 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
 class _FamilyOptions extends StatelessWidget {
   final ProductFamily family;
   /// Shows that member on the same screen (no page flip, Emad 2026-11-15).
-  final ValueChanged<int> onSelect;
+  final void Function(int id, String? preview) onSelect;
   const _FamilyOptions({required this.family, required this.onSelect});
 
   void _open(BuildContext context, ProductFamilyOption o) {
     if (o.selected) return;
-    onSelect(o.productId);
+    onSelect(o.productId, o.preview);
   }
 
   @override

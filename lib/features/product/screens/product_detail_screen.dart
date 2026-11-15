@@ -29,10 +29,22 @@ import '../../../core/utils/responsive.dart';
 
 part '../widgets/product_detail_widgets.dart';
 
+// Keyed by (product id, staff preview key). The preview key comes from the admin «عرض في الموقع» link
+// opened on the phone (baahy://product/123?preview=…): an unpublished product, shown, never sold.
 final _productDetailProvider =
-    FutureProvider.autoDispose.family<Product, int>((ref, id) async {
-  final res = await ApiClient.instance.dio.get('/products/$id');
+    FutureProvider.autoDispose.family<Product, (int, String?)>((ref, key) async {
+  final res = await ApiClient.instance.dio.get('/products/${key.$1}',
+      queryParameters: key.$2 != null ? {'preview': key.$2} : null);
   return Product.fromJson(res.data['data']);
+});
+
+// Product family rows, fresh (GET /products/{id}/family, 15 s cache): every member's page shows the
+// same options even while the product itself is cached (Emad 2026-11-15). Null = no family.
+final _productFamilyProvider = FutureProvider.autoDispose
+    .family<ProductFamily?, (int, String?)>((ref, key) async {
+  final res = await ApiClient.instance.dio.get('/products/${key.$1}/family',
+      queryParameters: key.$2 != null ? {'preview': key.$2} : null);
+  return ProductFamily.tryParse(res.data['data']);
 });
 
 final _relatedProductsProvider = FutureProvider.autoDispose
@@ -78,7 +90,9 @@ String _descText(Product p, bool isAr) {
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final int id;
-  const ProductDetailScreen({required this.id, super.key});
+  /// Staff preview key from an admin link; only for the product the screen opened with.
+  final String? preview;
+  const ProductDetailScreen({required this.id, this.preview, super.key});
 
   @override
   ConsumerState<ProductDetailScreen> createState() =>
@@ -94,12 +108,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   // THIS screen (Emad: no page flip). _shownId is the product on screen; while the next one loads the
   // previous one stays visible with a thin progress line, and the photo cross-fades.
   int? _shownId;
+  String? _shownPreview; // staff preview key of the member switched to (preview links only)
   Product? _lastProduct;
   int get _id => _shownId ?? widget.id;
 
-  void _switchTo(int id) {
+  void _switchTo(int id, String? preview) {
     if (id == _id) return;
-    setState(() => _shownId = id);
+    setState(() {
+      _shownId = id;
+      _shownPreview = preview;
+    });
   }
   late final ScrollController _scrollController;
   bool _lazyTriggered = false;
@@ -267,7 +285,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isAr = context.isAr;
-    final productAsync = ref.watch(_productDetailProvider(_id));
+    final previewKey = _shownId == null ? widget.preview : _shownPreview;
+    final productAsync = ref.watch(_productDetailProvider((_id, previewKey)));
     // Switching family member: keep showing the last product until the next one arrives.
     final switching =
         productAsync.isLoading && _lastProduct != null && _lastProduct!.id != _id;
@@ -381,6 +400,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           }
 
           if (!switching) _lastProduct = product;
+          // Fresh family rows; the copy inside the product is the first paint.
+          final familyAsync =
+              ref.watch(_productFamilyProvider((product.id, previewKey)));
+          final family =
+              familyAsync.hasValue ? familyAsync.value : product.family;
           final name = isAr ? product.nameAr : product.name;
           final inWishlist = ref.watch(wishlistProvider.select((s) => s.contains(product.id)));
           // Use selected variation price, or cheapest in-stock variation, or product price
@@ -873,8 +897,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             children: [
                               // Product family (2026-11-15): the same item in other colours /
                               // capacities / models, each its own product; a tap opens it.
-                              if (product.family != null) ...[
-                                _FamilyOptions(family: product.family!, onSelect: _switchTo),
+                              if (family != null) ...[
+                                _FamilyOptions(family: family, onSelect: _switchTo),
                                 const SizedBox(height: 4),
                                 Divider(height: 1, color: context.col.border),
                                 const SizedBox(height: 12),
