@@ -279,13 +279,17 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                     setS(() { sending = true; error = null; });
                     final thanks = context.s.reviewThanks;
                     final fallbackError = context.s.orderError;
+                    final isAr = Localizations.localeOf(context).languageCode == 'ar';
                     try {
-                      await ApiClient.instance.dio.post('/reviews', data: {
+                      // Stars alone are published at once; a comment waits for review (2026-11-15). The server says which.
+                      final res = await ApiClient.instance.dio.post('/reviews', data: {
                         'product_id': item.productId,
                         'rating': rating,
                         if (commentCtrl.text.trim().isNotEmpty) 'comment': commentCtrl.text.trim(),
                       });
-                      if (sheetCtx.mounted) Navigator.of(sheetCtx).pop(thanks);
+                      final d = res.data is Map ? res.data as Map : const {};
+                      final said = (isAr ? d['message'] : (d['message_en'] ?? d['message']))?.toString();
+                      if (sheetCtx.mounted) Navigator.of(sheetCtx).pop(said ?? thanks);
                     } catch (e) {
                       String msg = fallbackError;
                       if (e is DioException) {

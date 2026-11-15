@@ -384,8 +384,10 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
   Future<void> _submit() async {
     if (_rating == 0) return;
     setState(() => _loading = true);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     try {
-      await ApiClient.instance.dio.post(
+      // Stars alone are published at once; a comment waits for review (2026-11-15). The server says which.
+      final res = await ApiClient.instance.dio.post(
         '/reviews',
         data: {
           'product_id': widget.productId,
@@ -398,7 +400,7 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.s.reviewSent),
+            content: Text(((res.data is Map ? (isAr ? res.data['message'] : (res.data['message_en'] ?? res.data['message'])) : null) ?? context.s.reviewSent).toString()),
             backgroundColor: AppColors.success,
           ));
       }
@@ -408,9 +410,10 @@ class _WriteReviewSheetState extends State<_WriteReviewSheet> {
       // The server only lets buyers review (403 with its own message); show that, not a generic failure.
       var msg = context.s.requestFailed;
       if (e is DioException && e.response?.statusCode == 403) {
-        final m = e.response?.data is Map ? e.response?.data['message'] : null;
+        final d = e.response?.data is Map ? e.response?.data as Map : const {};
+        final m = isAr ? d['message'] : (d['message_en'] ?? d['message']);
         msg = m?.toString() ??
-            context.tr('يمكنك التقييم بعد شراء المنتج', 'You can review a product after buying it');
+            context.tr('يمكنك تقييم المنتج بعد استلامه.', 'You can review this product once you have received it.');
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }

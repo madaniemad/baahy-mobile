@@ -745,7 +745,7 @@ Account Termination: We reserve the right to suspend any account that violates t
   String get reviewHint           => isAr ? 'اكتب رأيك في المنتج (اختياري)' : 'Tell others what you think (optional)';
   String get submitReview         => isAr ? 'إرسال التقييم'                : 'Submit review';
   String get chooseStars          => isAr ? 'اختر عدد النجوم'              : 'Choose a star rating';
-  String get reviewThanks         => isAr ? 'شكراً! سيظهر تقييمك بعد المراجعة.' : 'Thank you! Your review will appear after it is checked.';
+  String get reviewThanks         => isAr ? 'شكراً لتقييمك.' : 'Thank you for your review.';
 
   // ── Account restricted from ordering (2026-10-19) ───────────────────────────
   String get orderingBlockedTitle => isAr
