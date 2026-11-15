@@ -130,6 +130,18 @@ class NotificationTarget {
       case 'delivery_attempt_failed':
         final oid = _val(d, 'order_id');
         return oid != null ? '/orders/$oid' : '/orders';
+      // Push review 2026-11-16. Offers open the on-sale list; product pushes open the product they name;
+      // the gift / win-back offers open the home page. These used to fall through to the notifications list.
+      case 'welcome_incentive_reminder':
+      case 'weekly_offers':
+        return '/search/results?q=&on_sale=1';
+      case 'first_order_product':
+      case 'order_cross_sell':
+        final pid = _val(d, 'product_id');
+        return pid != null ? '/product/$pid' : '/home';
+      case 'second_order_gift':
+      case 'welcome_back_offer':
+        return '/home';
       // Wishlist alerts are about one product; the wishlist only when none is named.
       case 'wishlist_price_drop':
       case 'wishlist_back_in_stock':
