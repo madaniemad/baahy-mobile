@@ -1201,17 +1201,19 @@ class _YouMayAlsoLikeState extends ConsumerState<_YouMayAlsoLike> {
 
 // ── Product family options ───────────────────────────────────────────────────
 // The same item in other colours / capacities / models (2026-11-15). Looks like the size picker,
-// but every option is a separate product: a tap opens that product's page in place of this one.
+// but every option is a separate product: a tap shows that product on this same screen.
 // Colour rows show the member's photo; the others are chips (with the price when prices differ).
 // The current product is highlighted; a sold-out member is greyed and crossed, still openable.
 
 class _FamilyOptions extends StatelessWidget {
   final ProductFamily family;
-  const _FamilyOptions({required this.family});
+  /// Shows that member on the same screen (no page flip, Emad 2026-11-15).
+  final ValueChanged<int> onSelect;
+  const _FamilyOptions({required this.family, required this.onSelect});
 
   void _open(BuildContext context, ProductFamilyOption o) {
     if (o.selected) return;
-    context.pushReplacement('/product/${o.productId}');
+    onSelect(o.productId);
   }
 
   @override

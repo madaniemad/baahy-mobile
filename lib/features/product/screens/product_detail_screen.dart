@@ -89,7 +89,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   // ValueNotifier (not setState) so a swipe only rebuilds the dots / thumbnail
   // highlight, not the whole page.
   final ValueNotifier<int> _imageIndex = ValueNotifier<int>(0);
-  late final PageController _pageController;
+  late PageController _pageController;
+  // Product family (2026-11-15): choosing another colour / capacity / size swaps the product shown on
+  // THIS screen (Emad: no page flip). _shownId is the product on screen; while the next one loads the
+  // previous one stays visible with a thin progress line, and the photo cross-fades.
+  int? _shownId;
+  Product? _lastProduct;
+  int get _id => _shownId ?? widget.id;
+
+  void _switchTo(int id) {
+    if (id == _id) return;
+    setState(() => _shownId = id);
+  }
   late final ScrollController _scrollController;
   bool _lazyTriggered = false;
   bool _viewLogged = false;
@@ -256,11 +267,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isAr = context.isAr;
-    final productAsync = ref.watch(_productDetailProvider(widget.id));
+    final productAsync = ref.watch(_productDetailProvider(_id));
+    // Switching family member: keep showing the last product until the next one arrives.
+    final switching =
+        productAsync.isLoading && _lastProduct != null && _lastProduct!.id != _id;
 
     return Scaffold(
       backgroundColor: context.col.bg,
-      body: productAsync.when(
+      body: Stack(children: [
+       IgnorePointer(
+        // No taps on the previous product (add to cart, sizes) while the chosen one loads.
+        ignoring: switching,
+        child: (switching ? AsyncValue<Product>.data(_lastProduct!) : productAsync).when(
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.primary)),
         error: (err, __) {
@@ -270,7 +288,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             _goneHandled = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
-              ref.read(recentlyViewedProvider.notifier).remove(widget.id);
+              ref.read(recentlyViewedProvider.notifier).remove(_id);
             });
           }
           return Scaffold(
@@ -331,7 +349,16 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           // Scheduled on every build, this callback's setState (via _trySelectVariation) triggered the
           // next build, which scheduled the callback again: a rebuild loop on every variable product.
           if (_initForId != product.id) {
+            final swapped = _initForId != null;
             _initForId = product.id;
+            // Another family member on the same screen: its photos start at the first one, on a fresh
+            // controller (the old gallery is still fading out on the old one, disposed after).
+            if (swapped) {
+              final old = _pageController;
+              _pageController = PageController();
+              _imageIndex.value = 0;
+              Future.delayed(const Duration(milliseconds: 600), old.dispose);
+            }
             // A new product on the same screen starts with nothing chosen (2026-11-01): the size kept
             // from a dress was added to cart with a TV, and order 113542268 sold a 7,592 TV for 224.
             _selectedVariation = null;
@@ -353,6 +380,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             });
           }
 
+          if (!switching) _lastProduct = product;
           final name = isAr ? product.nameAr : product.name;
           final inWishlist = ref.watch(wishlistProvider.select((s) => s.contains(product.id)));
           // Use selected variation price, or cheapest in-stock variation, or product price
@@ -433,7 +461,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     flexibleSpace: FlexibleSpaceBar(
                       background: Stack(
                         children: [
-                          Padding(
+                          AnimatedSwitcher(
+                           duration: const Duration(milliseconds: 280),
+                           child: Padding(
+                              key: ValueKey(product.id),
                               padding: EdgeInsets.only(
                                   top: MediaQuery.of(context).padding.top),
                               child: PageView.builder(
@@ -476,7 +507,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                                   size: 56,
                                                   color: context.col.ink4))));
                                 },
-                              )),
+                              ))),
                           if (product.images.length > 1)
                             Positioned(
                               bottom: 12,
@@ -843,7 +874,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                               // Product family (2026-11-15): the same item in other colours /
                               // capacities / models, each its own product; a tap opens it.
                               if (product.family != null) ...[
-                                _FamilyOptions(family: product.family!),
+                                _FamilyOptions(family: product.family!, onSelect: _switchTo),
                                 const SizedBox(height: 4),
                                 Divider(height: 1, color: context.col.border),
                                 const SizedBox(height: 12),
@@ -1245,6 +1276,19 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           );
         },
       ),
+       ),
+        // The chosen colour / size is loading: a thin line, the page stays as it is.
+        if (switching)
+          Positioned(
+            top: MediaQuery.of(context).padding.top,
+            left: 0,
+            right: 0,
+            child: const LinearProgressIndicator(
+                minHeight: 2,
+                color: AppColors.primary,
+                backgroundColor: Colors.transparent),
+          ),
+      ]),
     );
   }
 }
