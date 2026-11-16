@@ -246,7 +246,6 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
   }
 
   Widget _buildPage(BuildContext context, Campaign c) {
-    final isAr = context.isAr;
     final darkIcons = c.bg.computeLuminance() > 0.5;
     final width = MediaQuery.sizeOf(context).width;
     final cols = productGridColumns(width - 24);
@@ -268,9 +267,13 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
               expandedHeight: _Header.height(c),
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.pin,
-                background: Container(
+                background: ColoredBox(
                   color: c.bg,
-                  child: SafeArea(bottom: false, child: _Header(campaign: c)),
+                  child: Stack(children: [
+                    // The printed sale texture of the entry cards (Emad, 2026-11-16).
+                    Positioned.fill(child: CampaignSalePattern(campaign: c)),
+                    SafeArea(bottom: false, child: _Header(campaign: c)),
+                  ]),
                 ),
               ),
               backgroundColor: c.bg,
@@ -289,13 +292,7 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
               title: AnimatedOpacity(
                 opacity: _showTitle ? 1 : 0,
                 duration: const Duration(milliseconds: 150),
-                child: Text(c.name(isAr),
-                    style: TextStyle(
-                        fontFamily: _font,
-                        fontFamilyFallback: _fallback,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: c.fg)),
+                child: CampaignNameText(campaign: c, fontSize: 17),
               ),
             ),
 
@@ -493,17 +490,7 @@ class _Header extends StatelessWidget {
           const SizedBox(width: 10),
           Flexible(
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: [
-              Text(c.name(isAr),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontFamily: _font,
-                      fontFamilyFallback: _fallback,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      height: 1.2,
-                      color: c.fg)),
+              CampaignNameText(campaign: c, fontSize: 22, textAlign: TextAlign.center),
               if (c.headline(isAr).isNotEmpty)
                 Text(c.headline(isAr),
                     maxLines: 1,
@@ -513,8 +500,8 @@ class _Header extends StatelessWidget {
                         fontFamily: _font,
                         fontFamilyFallback: _fallback,
                         fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: c.fg.withValues(alpha: 0.85))),
+                        fontWeight: FontWeight.w700,
+                        color: c.fg)),
             ]),
           ),
         ]),

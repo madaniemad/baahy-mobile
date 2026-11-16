@@ -6,12 +6,22 @@ import '../../../shared/widgets/optimized_network_image.dart';
 import '../../../core/providers/wishlist_provider.dart';
 import '../../../core/providers/cart_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/campaign_provider.dart';
 import '../../../core/models/product.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+
+/// While a campaign runs Wishlist is not in the bottom bar; it is opened from the Home top-bar heart
+/// as a tab, with nothing to pop. Give it a back arrow to Home then (Emad, 2026-11-16). When pushed
+/// (e.g. from Account) the AppBar's own back arrow shows as usual.
+Widget? _campaignBack(BuildContext context, WidgetRef ref) {
+  final live = ref.watch(currentCampaignProvider.select((c) => c != null && !c.hasEnded));
+  if (!live || context.canPop()) return null;
+  return BackButton(onPressed: () => context.go('/home'));
+}
 
 String _decodeHtml(String s) => s
     .replaceAll('&amp;', '&')
@@ -38,6 +48,7 @@ class WishlistScreen extends ConsumerWidget {
       return Scaffold(
         backgroundColor: context.col.bg,
         appBar: AppBar(
+          leading: _campaignBack(context, ref),
           title: Text(context.s.wishlistTitle,
               style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
           backgroundColor: context.col.surface,
@@ -75,6 +86,7 @@ class WishlistScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: context.col.bg,
       appBar: AppBar(
+        leading: _campaignBack(context, ref),
         backgroundColor: context.col.surface,
         elevation: 0,
         title: Text('${context.s.wishlistTitle} ($displayCount)',

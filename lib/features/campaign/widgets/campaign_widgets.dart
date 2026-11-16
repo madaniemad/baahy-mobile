@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +6,6 @@ import '../../../core/models/campaign.dart';
 import '../../../core/providers/campaign_provider.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
-import '../../../shared/theme/app_theme.dart';
 
 const _font = 'Manrope';
 const _fallback = ['Tajawal'];
@@ -203,11 +201,11 @@ class CampaignBrowseTile extends ConsumerWidget {
   }
 }
 
-/// The campaign's entry card (Home strip, Categories first row). Emad, 2026-11-16: "more exciting,
-/// add discount and sale/offer badges": the real top discount on a starburst sticker, a «عروض» tag on
-/// the logo, faint sale icons behind, and a light sweep of shine every few seconds (off when the
-/// phone asks for reduced motion). The discount is the server's `max_discount`, never a made-up one;
-/// without it the sticker shows a % sign.
+/// The campaign's entry card (Home strip, Categories first row). After Emad's 2026-11-16 review:
+/// no discount badge; the campaign colour carries a faint printed pattern of sale motifs
+/// ([CampaignSalePattern]) and the name is in the campaign's yellow with a dark outline
+/// ([CampaignNameText]). A light sweep of shine every few seconds (still when the phone asks for
+/// reduced motion).
 class CampaignPromoCard extends StatefulWidget {
   final Campaign campaign;
   /// Categories row: one line, no countdown or button.
@@ -220,14 +218,14 @@ class CampaignPromoCard extends StatefulWidget {
 
 class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTickerProviderStateMixin {
   late final AnimationController _anim =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 3200));
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 3600));
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (MediaQuery.disableAnimationsOf(context)) {
       _anim.stop();
-      _anim.value = 0.6; // shine out of view, sticker at rest
+      _anim.value = 0.6; // shine out of view
     } else if (!_anim.isAnimating) {
       _anim.repeat();
     }
@@ -245,66 +243,36 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
     final compact = widget.compact;
     final isAr = context.isAr;
     final s = context.s;
-    final dark = Color.lerp(c.bg, Colors.black, 0.16)!;
-    final sticker = compact ? 60.0 : 78.0;
-
-    final pillText = c.maxDiscount > 0
-        ? s.campaignUpToOff(c.maxDiscount)
-        : (c.headline(isAr).isNotEmpty ? c.headline(isAr) : s.campaignShopDeals);
+    final headline = c.headline(isAr).isNotEmpty ? c.headline(isAr) : s.campaignShopDeals;
 
     final texts = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-      Text(c.name(isAr),
-          maxLines: 1,
+      CampaignNameText(campaign: c, fontSize: compact ? 19 : 23),
+      const SizedBox(height: 3),
+      Text(headline,
+          maxLines: compact ? 1 : 2,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
               fontFamily: _font,
               fontFamilyFallback: _fallback,
-              fontSize: compact ? 16 : 19,
-              fontWeight: FontWeight.w900,
-              height: 1.2,
+              fontSize: compact ? 12.5 : 13.5,
+              fontWeight: FontWeight.w700,
               color: c.fg)),
-      SizedBox(height: compact ? 4 : 6),
-      // The discount line: dark pill, the badge colour for the words.
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-        decoration: BoxDecoration(color: c.fg, borderRadius: BorderRadius.circular(8)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.local_fire_department_rounded, size: compact ? 13 : 15, color: c.accent),
-          const SizedBox(width: 3),
-          Flexible(
-            child: Text(pillText,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontFamily: _font,
-                    fontFamilyFallback: _fallback,
-                    fontSize: compact ? 12 : 13.5,
-                    fontWeight: FontWeight.w800,
-                    height: 1.25,
-                    color: c.accent)),
-          ),
-        ]),
-      ),
-      if (!compact && c.maxDiscount > 0 && c.headline(isAr).isNotEmpty) ...[
-        const SizedBox(height: 5),
-        Text(c.headline(isAr),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-                fontFamily: _font,
-                fontFamilyFallback: _fallback,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                color: c.fg.withValues(alpha: 0.85))),
-      ],
     ]);
 
-    final topRow = Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-      _LogoWithTag(campaign: c, height: compact ? 54 : 66),
-      const SizedBox(width: 10),
+    final topRow = Row(children: [
+      CampaignLogo(campaign: c, height: compact ? 56 : 68),
+      const SizedBox(width: 12),
       Expanded(child: texts),
-      const SizedBox(width: 6),
-      _DiscountSticker(campaign: c, size: sticker, anim: _anim),
+      if (compact) ...[
+        const SizedBox(width: 8),
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(color: c.fg, shape: BoxShape.circle),
+          // chevron_right mirrors in RTL: "forward" in both languages.
+          child: Icon(Icons.chevron_right_rounded, size: 20, color: c.accent),
+        ),
+      ],
     ]);
 
     final content = compact
@@ -332,7 +300,6 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
                           fontWeight: FontWeight.w800,
                           color: c.accent)),
                   const SizedBox(width: 4),
-                  // chevron_right mirrors in RTL: "forward" in both languages.
                   Icon(Icons.chevron_right_rounded, size: 18, color: c.accent),
                 ]),
               ),
@@ -346,16 +313,10 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
         onTap: () => safePush(context, c.route()),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: AlignmentDirectional.topStart,
-                end: AlignmentDirectional.bottomEnd,
-                colors: [c.bg, dark],
-              ),
-            ),
+          child: ColoredBox(
+            color: c.bg,
             child: Stack(children: [
-              Positioned.fill(child: _SaleBackdrop(color: c.fg)),
+              Positioned.fill(child: CampaignSalePattern(campaign: c)),
               Positioned.fill(child: IgnorePointer(child: _Shine(anim: _anim))),
               Padding(
                 padding: EdgeInsets.fromLTRB(12, compact ? 10 : 12, 12, compact ? 10 : 12),
@@ -369,170 +330,97 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
   }
 }
 
-/// The campaign logo with a small tilted «عروض» tag on its bottom corner (the top carries the
-/// sticker's own «تخفيضات» label).
-class _LogoWithTag extends StatelessWidget {
+/// The campaign name in the campaign's badge colour (yellow for Baahy Friday) with a thin dark
+/// outline and a soft shadow, so it reads on the light campaign colour.
+class CampaignNameText extends StatelessWidget {
   final Campaign campaign;
-  final double height;
-  const _LogoWithTag({required this.campaign, required this.height});
+  final double fontSize;
+  final TextAlign textAlign;
+  const CampaignNameText({super.key, required this.campaign, required this.fontSize, this.textAlign = TextAlign.start});
 
   @override
   Widget build(BuildContext context) {
     final c = campaign;
-    return SizedBox(
-      height: height + 8,
-      child: Stack(clipBehavior: Clip.none, alignment: Alignment.bottomCenter, children: [
-        CampaignLogo(campaign: c, height: height),
-        PositionedDirectional(
-          bottom: 0,
-          start: -6,
-          child: Transform.rotate(
-            angle: -0.2,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-              decoration: BoxDecoration(
-                color: AppColors.danger,
-                borderRadius: BorderRadius.circular(6),
-                boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 3, offset: Offset(0, 1))],
-              ),
-              child: Text(context.s.campaignDealsBadge,
-                  style: const TextStyle(
-                      fontFamily: _font,
-                      fontFamilyFallback: _fallback,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      height: 1.2,
-                      color: Colors.white)),
-            ),
-          ),
-        ),
-      ]),
-    );
-  }
-}
-
-/// The starburst sticker: «حتى / 81%» on the badge colour, with a gentle wobble.
-class _DiscountSticker extends StatelessWidget {
-  final Campaign campaign;
-  final double size;
-  final Animation<double> anim;
-  const _DiscountSticker({required this.campaign, required this.size, required this.anim});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = campaign;
-    final hasPct = c.maxDiscount > 0;
-    final face = SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(
-        painter: _StarburstPainter(fill: c.accent, stroke: c.fg),
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.all(size * 0.2),
-            child: FittedBox(
-              child: hasPct
-                  ? Column(mainAxisSize: MainAxisSize.min, children: [
-                      Text(context.s.campaignUpTo,
-                          style: TextStyle(
-                              fontFamily: _font,
-                              fontFamilyFallback: _fallback,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              height: 1.0,
-                              color: c.fg)),
-                      Text('${c.maxDiscount}%',
-                          textDirection: TextDirection.ltr,
-                          style: TextStyle(
-                              fontFamily: 'PlusJakartaSans',
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              height: 1.05,
-                              color: c.fg)),
-                    ])
-                  : Icon(Icons.percent_rounded, size: 30, color: c.fg),
-            ),
-          ),
-        ),
-      ),
-    );
-    return AnimatedBuilder(
-      animation: anim,
-      builder: (_, child) {
-        final t = anim.value * 2 * math.pi;
-        return Transform.rotate(
-          angle: math.sin(t) * 0.07,
-          child: Transform.scale(scale: 1 + 0.04 * math.sin(t * 2).abs(), child: child),
+    final name = c.name(context.isAr);
+    TextStyle base() => TextStyle(
+          fontFamily: _font,
+          fontFamilyFallback: _fallback,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w900,
+          height: 1.25,
         );
-      },
-      child: face,
-    );
-  }
-}
-
-class _StarburstPainter extends CustomPainter {
-  final Color fill;
-  final Color stroke;
-  _StarburstPainter({required this.fill, required this.stroke});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const spikes = 16;
-    final c = size.center(Offset.zero);
-    final outer = size.shortestSide / 2 - 2;
-    final inner = outer * 0.8;
-    final path = Path();
-    for (var i = 0; i < spikes * 2; i++) {
-      final r = i.isEven ? outer : inner;
-      final a = -math.pi / 2 + i * math.pi / spikes;
-      final p = c + Offset(math.cos(a) * r, math.sin(a) * r);
-      i == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
-    }
-    path.close();
-    canvas.drawShadow(path, const Color(0x66000000), 3, false);
-    canvas.drawPath(path, Paint()..color = fill);
-    canvas.drawPath(
-        path,
-        Paint()
-          ..color = stroke
+    Text t(TextStyle st) => Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: textAlign, style: st);
+    return Stack(children: [
+      // Outline: the same text stroked in the dark text colour underneath.
+      t(base().copyWith(
+        foreground: Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
-          ..strokeJoin = StrokeJoin.round);
+          ..strokeWidth = fontSize * 0.16
+          ..strokeJoin = StrokeJoin.round
+          ..color = c.fg,
+        shadows: const [Shadow(color: Color(0x40000000), blurRadius: 4, offset: Offset(0, 2))],
+      )),
+      t(base().copyWith(color: c.accent)),
+    ]);
   }
-
-  @override
-  bool shouldRepaint(_StarburstPainter old) => old.fill != fill || old.stroke != stroke;
 }
 
-/// Faint sale icons scattered behind the content.
-class _SaleBackdrop extends StatelessWidget {
-  final Color color;
-  const _SaleBackdrop({required this.color});
+/// A faint printed texture of sale motifs (%, price tags, «تخفيض», bags…) for the campaign colour:
+/// a staggered grid, each motif slightly turned, in the dark text colour at low opacity.
+class CampaignSalePattern extends StatelessWidget {
+  final Campaign campaign;
+  final double cell;
+  final double opacity;
+  const CampaignSalePattern({super.key, required this.campaign, this.cell = 54, this.opacity = 0.11});
 
   static const _icons = [
-    (Icons.percent_rounded, 0.30, 0.10, 26.0, -0.3),
-    (Icons.local_offer_rounded, 0.55, 0.62, 30.0, 0.4),
-    (Icons.sell_outlined, 0.04, 0.70, 24.0, -0.5),
-    (Icons.percent_rounded, 0.72, 0.05, 20.0, 0.3),
-    (Icons.shopping_bag_outlined, 0.42, 0.85, 22.0, 0.15),
-    (Icons.auto_awesome_rounded, 0.62, 0.30, 16.0, 0.0),
+    Icons.percent_rounded,
+    Icons.local_offer_outlined,
+    null, // the word «تخفيض» / "SALE"
+    Icons.shopping_bag_outlined,
+    Icons.sell_outlined,
+    Icons.discount_outlined,
+    null,
+    Icons.local_mall_outlined,
   ];
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (_, box) {
-      return Stack(children: [
-        for (final (icon, x, y, size, turn) in _icons)
-          PositionedDirectional(
-            start: box.maxWidth * x,
-            top: box.maxHeight * y - size / 2,
-            child: Transform.rotate(
-              angle: turn,
-              child: Icon(icon, size: size, color: color.withValues(alpha: 0.08)),
-            ),
-          ),
-      ]);
-    });
+    final color = campaign.fg.withValues(alpha: opacity);
+    final word = context.isAr ? 'تخفيض' : 'SALE';
+    return IgnorePointer(
+      child: LayoutBuilder(builder: (_, box) {
+        final cols = (box.maxWidth / cell).ceil() + 1;
+        final rows = (box.maxHeight / (cell * 0.8)).ceil() + 1;
+        final items = <Widget>[];
+        for (var r = 0; r < rows; r++) {
+          for (var col = 0; col < cols; col++) {
+            final i = r * 7 + col * 3; // a fixed scatter, the same on every build
+            final icon = _icons[i % _icons.length];
+            final x = col * cell + (r.isOdd ? cell / 2 : 0) - 10;
+            final y = r * cell * 0.8 - 8;
+            final turn = ((i * 37) % 9 - 4) * 0.09;
+            items.add(Positioned(
+              left: x,
+              top: y,
+              child: Transform.rotate(
+                angle: turn,
+                child: icon == null
+                    ? Text(word,
+                        style: TextStyle(
+                            fontFamily: _font,
+                            fontFamilyFallback: _fallback,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            color: color))
+                    : Icon(icon, size: 20 + (i % 3) * 3, color: color),
+              ),
+            ));
+          }
+        }
+        return ClipRect(child: Stack(clipBehavior: Clip.hardEdge, children: items));
+      }),
+    );
   }
 }
 
@@ -546,7 +434,7 @@ class _Shine extends StatelessWidget {
     return AnimatedBuilder(
       animation: anim,
       builder: (_, __) {
-        final t = (anim.value / 0.45).clamp(0.0, 1.0); // sweep in the first 45%, then rest
+        final t = (anim.value / 0.4).clamp(0.0, 1.0); // sweep in the first 40%, then rest
         if (t <= 0 || t >= 1) return const SizedBox.shrink();
         return FractionalTranslation(
           translation: Offset(-1.2 + t * 2.4, 0),
@@ -556,7 +444,7 @@ class _Shine extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(colors: [
                   Color(0x00FFFFFF),
-                  Color(0x55FFFFFF),
+                  Color(0x44FFFFFF),
                   Color(0x00FFFFFF),
                 ], stops: [0.35, 0.5, 0.65]),
               ),

@@ -202,8 +202,8 @@ class MainShell extends ConsumerWidget {
   }
 }
 
-/// The raised centre slot while a campaign runs: the campaign sticker in a round badge that sits
-/// above the bar, opening the campaign page.
+/// The centre slot while a campaign runs: the campaign sticker exactly as it is (its own shape, no
+/// circle or background, Emad 2026-11-16), sitting a little above the bar, opening the campaign page.
 class _CampaignNavSlot extends StatelessWidget {
   final Campaign campaign;
   const _CampaignNavSlot({required this.campaign});
@@ -222,19 +222,8 @@ class _CampaignNavSlot extends StatelessWidget {
           maxHeight: 96,
           alignment: Alignment.bottomCenter,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Container(
-              width: 70,
-              height: 70,
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: c.bg,
-                shape: BoxShape.circle,
-                border: Border.all(color: context.col.surface, width: 3),
-                boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 8, offset: Offset(0, 2))],
-              ),
-              child: Center(child: CampaignLogo(campaign: c, height: 50)),
-            ),
+            padding: const EdgeInsets.only(bottom: 4),
+            child: CampaignLogo(campaign: c, height: 72),
           ),
         ),
       ),
