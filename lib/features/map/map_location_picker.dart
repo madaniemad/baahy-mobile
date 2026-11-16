@@ -480,10 +480,14 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
       .replaceAll(RegExp(r'\s+'), ' ');
 
   String _matchCity(Map<String, dynamic> addr, String display, LatLng ll) {
-    // Most specific first: a suburb tells us more than a region does.
+    // Most specific first: a suburb tells us more than a region does — and a town or village more
+    // than the city around it. A pin in Tajura reverse-geocodes as town تاجوراء inside city طرابلس;
+    // with `city` checked first it priced and paid as Tripoli (order 113542357, 2026-11-16), while
+    // Tajura is its own city (own fee, prepaid). A Tripoli town like حي الأندلس is no city in our
+    // list, so it falls through to طرابلس as before.
     final candidates = [
       addr['suburb'], addr['neighbourhood'], addr['quarter'],
-      addr['city'], addr['town'], addr['village'],
+      addr['village'], addr['town'], addr['city'],
       addr['county'], addr['state_district'], addr['state'],
     ].whereType<String>().map(_norm).where((s) => s.isNotEmpty).toList();
 
