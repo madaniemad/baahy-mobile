@@ -495,9 +495,10 @@ class _Header extends StatelessWidget {
               CampaignTitleText(
                   campaign: c,
                   text: c.headline(isAr).isNotEmpty ? c.headline(isAr) : c.name(isAr),
-                  fontSize: 20,
+                  fontSize: 19,
                   maxLines: 2,
-                  textAlign: TextAlign.center),
+                  textAlign: TextAlign.center,
+                  display: true),
               if (campaignDateLine(c, isAr).isNotEmpty)
                 Text(campaignDateLine(c, isAr),
                     maxLines: 1,

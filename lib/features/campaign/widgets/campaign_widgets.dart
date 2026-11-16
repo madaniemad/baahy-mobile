@@ -250,7 +250,7 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
 
     final texts = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
       // Emad, 2026-11-16: the logo is the hero; a bigger headline, the dates smaller under it.
-      CampaignTitleText(campaign: c, text: headline, fontSize: compact ? 19 : 23, maxLines: 2),
+      CampaignTitleText(campaign: c, text: headline, fontSize: compact ? 18 : 22, maxLines: 2, display: true),
       if (dates.isNotEmpty) ...[
         const SizedBox(height: 3),
         Text(dates,
@@ -344,6 +344,9 @@ class CampaignTitleText extends StatelessWidget {
   final double fontSize;
   final int maxLines;
   final TextAlign textAlign;
+  /// The campaign headline's display face (Marhey, matching the sticker lettering); the name in the
+  /// collapsed page header keeps the app font.
+  final bool display;
   const CampaignTitleText({
     super.key,
     required this.campaign,
@@ -351,19 +354,28 @@ class CampaignTitleText extends StatelessWidget {
     required this.fontSize,
     this.maxLines = 1,
     this.textAlign = TextAlign.start,
+    this.display = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = campaign;
     final name = text ?? c.name(context.isAr);
-    TextStyle base() => TextStyle(
-          fontFamily: _font,
-          fontFamilyFallback: _fallback,
-          fontSize: fontSize,
-          fontWeight: FontWeight.w900,
-          height: 1.25,
-        );
+    TextStyle base() => display
+        ? TextStyle(
+            fontFamily: 'Marhey',
+            fontFamilyFallback: const ['Manrope', 'Tajawal'],
+            fontSize: fontSize,
+            fontWeight: FontWeight.w700,
+            height: 1.3,
+          )
+        : TextStyle(
+            fontFamily: _font,
+            fontFamilyFallback: _fallback,
+            fontSize: fontSize,
+            fontWeight: FontWeight.w900,
+            height: 1.25,
+          );
     Text t(TextStyle st) => Text(name, maxLines: maxLines, overflow: TextOverflow.ellipsis, textAlign: textAlign, style: st);
     return Stack(children: [
       // Outline: the same text stroked in the dark text colour underneath.
