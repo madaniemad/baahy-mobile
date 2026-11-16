@@ -243,8 +243,7 @@ class HomeScreen extends ConsumerWidget {
               // Active order strip + rewards nudge carousel
               const SliverToBoxAdapter(child: _ActiveOrderStrip()),
 
-              // First-order welcome coupon banner (new users only)
-              const SliverToBoxAdapter(child: _WelcomeCouponBanner()),
+              // The first-order offer now rides in the strip above (2026-11-17), not as its own banner.
 
               // Notifications off: at most once a week (signed in — a guest's phone is only
               // registered after sign-in anyway).

@@ -230,7 +230,40 @@ class _ActiveOrderStripState extends ConsumerState<_ActiveOrderStrip> {
       }
     });
 
-    // Strip 2: referral — shown immediately from config (no API wait)
+    // Strip 2: the first-order offer (2026-11-17, Emad: one slider for all reward messages, not a
+    // separate fixed banner). Guests read it from app-config; signed-in customers from their welcome
+    // coupon (tap copies the code), exactly as the old banner did.
+    if (!ref.watch(authProvider).isLoggedIn) {
+      final offer = context.tr(config.firstOrderOfferAr ?? '', config.firstOrderOfferEn ?? '');
+      if (config.firstOrderOfferAr != null && offer.isNotEmpty) {
+        strips.add(_StripTile(
+          icon: Icons.confirmation_number_outlined,
+          label: offer,
+          sub: null,
+          onTap: () => safePush(context, '/signin'),
+          iconColor: AppColors.primary,
+        ));
+      }
+    } else {
+      final coupon = ref.watch(welcomeCouponProvider).valueOrNull;
+      if (coupon != null) {
+        strips.add(_StripTile(
+          icon: Icons.confirmation_number_outlined,
+          label: context.tr(coupon.headlineAr, coupon.headlineEn),
+          sub: coupon.code,
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: coupon.code));
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(context.tr('تم نسخ الكود', 'Code copied')),
+              duration: const Duration(seconds: 2),
+            ));
+          },
+          iconColor: AppColors.primary,
+        ));
+      }
+    }
+
+    // Strip 3: referral — shown immediately from config (no API wait)
     final referralAmt = config?.referralGiverAmount ?? 0;
     if (referralAmt > 0) {
       strips.add(_StripTile(
@@ -1990,114 +2023,4 @@ class _HomeSkeleton extends StatelessWidget {
   }
 }
 
-// ── Welcome coupon banner (first-order users only) ────────────────────────────
-
-final _welcomeBannerDismissedProvider = StateProvider<bool>((ref) => false);
-
-class _WelcomeCouponBanner extends ConsumerWidget {
-  const _WelcomeCouponBanner();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dismissed = ref.watch(_welcomeBannerDismissedProvider);
-    if (dismissed) return const SizedBox.shrink();
-    final auth = ref.watch(authProvider);
-    if (!auth.isLoggedIn) {
-      // Guests can't call /coupons/welcome, so the first-order copy comes from
-      // app-config (server-written, null when no first-order offer is live). This
-      // strip replaced the coupon slide in onboarding (2026-10-23).
-      final config = ref.watch(appConfigProvider);
-      final title = context.tr(config.firstOrderOfferAr ?? '', config.firstOrderOfferEn ?? '');
-      if (config.firstOrderOfferAr == null || title.isEmpty) return const SizedBox.shrink();
-      return _CouponStrip(
-        title: title,
-        sub: context.tr(config.firstOrderOfferSubAr, config.firstOrderOfferSubEn),
-        onTap: () => safePush(context, '/signin'),
-        onClose: () => ref.read(_welcomeBannerDismissedProvider.notifier).state = true,
-      );
-    }
-
-    final couponAsync = ref.watch(welcomeCouponProvider);
-    return couponAsync.when(
-      data: (coupon) {
-        if (coupon == null) return const SizedBox.shrink();
-        return _CouponStrip(
-          // Server-driven: which order the offer targets is a business
-          // decision, not an app string.
-          title: context.tr(coupon.headlineAr, coupon.headlineEn),
-          sub: context.tr('استخدم كود ${coupon.code} عند الدفع',
-                          'Use code ${coupon.code} at checkout'),
-          onTap: () {
-            Clipboard.setData(ClipboardData(text: coupon.code));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(context.tr('تم نسخ الكود', 'Code copied'), style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'])),
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          },
-          onClose: () => ref.read(_welcomeBannerDismissedProvider.notifier).state = true,
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-}
-
-class _CouponStrip extends StatelessWidget {
-  final String title, sub;
-  final VoidCallback onTap, onClose;
-  const _CouponStrip({required this.title, required this.sub, required this.onTap, required this.onClose});
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-    child: GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1BBFBC), Color(0xFF1FD7E2)],
-            begin: Alignment.centerRight,
-            end: Alignment.centerLeft,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(children: [
-          const Icon(Icons.confirmation_number_outlined, color: Colors.white, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13,
-                    fontWeight: FontWeight.w700, color: Colors.white),
-                ),
-                if (sub.isNotEmpty)
-                  Text(
-                    sub,
-                    style: const TextStyle(
-                      fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 11.5,
-                      color: Color(0xFF004D54)),
-                  ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 18),
-            onPressed: onClose,
-            padding: EdgeInsets.zero,
-            // 40x40 hit area; the 18pt glyph stays flush with the end edge.
-            alignment: AlignmentDirectional.centerEnd,
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-          ),
-        ]),
-      ),
-    ),
-  );
-}
+// The first-order welcome offer moved into the rewards strip (_ActiveOrderStrip), 2026-11-17.
