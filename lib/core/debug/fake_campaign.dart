@@ -56,5 +56,6 @@ ProductCampaign? fakeProductCampaign(Map<String, dynamic> productJson) {
     'name_en': 'Baahy Friday',
     'bg': '#1FD7E2',
     'fg': '#08122B',
+    'logo': 'https://baahy.com/lp/aljumaa-albahya/img/logo.webp',
   });
 }

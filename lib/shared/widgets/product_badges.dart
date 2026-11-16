@@ -1,4 +1,6 @@
 import 'dart:async';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../core/models/campaign.dart';
 import '../../core/models/product.dart';
@@ -111,41 +113,60 @@ class CopyTag extends StatelessWidget {
   }
 }
 
-/// The campaign a product is on (e.g. «الجمعة الباهية»), in the campaign's own colours. Like
-/// [CopyTag] it is fixed on the photo, never part of the rolling ticker. Tapping it opens the
-/// campaign page.
+/// The campaign a product is on (e.g. «الجمعة الباهية»). With a logo: the campaign's sticker on
+/// the photo (Emad, 2026-11-16), so shoppers spot campaign products while browsing; without one,
+/// or while the logo cannot load, a tag in the campaign's colours. Like [CopyTag] it is fixed on
+/// the photo, never part of the rolling ticker. Tapping it opens the campaign page.
 class CampaignTag extends StatelessWidget {
   final ProductCampaign campaign;
   final double scale;
   final double maxWidth;
-  const CampaignTag({super.key, required this.campaign, this.scale = 1.0, this.maxWidth = 120});
+  /// Width of the sticker logo (the logo is about 1.24 : 1).
+  final double logoWidth;
+  const CampaignTag({super.key, required this.campaign, this.scale = 1.0, this.maxWidth = 120, this.logoWidth = 54});
 
   @override
   Widget build(BuildContext context) {
+    final tag = Container(
+      constraints: BoxConstraints(maxWidth: maxWidth * scale),
+      padding: EdgeInsets.symmetric(horizontal: 7 * scale, vertical: 2 * scale),
+      decoration: BoxDecoration(
+        color: campaign.bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        campaign.name(context.isAr),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontFamily: 'Manrope',
+          fontFamilyFallback: const ['Tajawal'],
+          color: campaign.fg,
+          fontSize: 10 * scale,
+          fontWeight: FontWeight.w800,
+          height: 1.2,
+        ),
+      ),
+    );
+    final logo = campaign.logo;
+    final w = logoWidth * scale;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => safePush(context, campaignRoute(campaign.slug)),
-      child: Container(
-        constraints: BoxConstraints(maxWidth: maxWidth * scale),
-        padding: EdgeInsets.symmetric(horizontal: 7 * scale, vertical: 2 * scale),
-        decoration: BoxDecoration(
-          color: campaign.bg,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          campaign.name(context.isAr),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontFamily: 'Manrope',
-            fontFamilyFallback: const ['Tajawal'],
-            color: campaign.fg,
-            fontSize: 10 * scale,
-            fontWeight: FontWeight.w800,
-            height: 1.2,
-          ),
-        ),
-      ),
+      child: logo == null
+          ? tag
+          : Semantics(
+              label: campaign.name(context.isAr),
+              child: CachedNetworkImage(
+                imageUrl: logo,
+                width: w,
+                height: w / 1.24,
+                fit: BoxFit.contain,
+                memCacheWidth: (w * MediaQuery.devicePixelRatioOf(context)).round(),
+                placeholder: (_, __) => tag,
+                errorWidget: (_, __, ___) => tag,
+              ),
+            ),
     );
   }
 }

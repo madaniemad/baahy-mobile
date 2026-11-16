@@ -90,7 +90,7 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
 
   void _onScroll() {
     final pos = _scrollCtrl.position;
-    final show = pos.pixels > 150;
+    final show = pos.pixels > 56;
     if (show != _showTitle) setState(() => _showTitle = show);
     if (pos.pixels > pos.maxScrollExtent - 400) {
       // After a failed page, wait for the Retry tap instead of re-firing on every scroll tick.
@@ -214,8 +214,18 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
           controller: _scrollCtrl,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
+            // The header lives in the app bar itself (Emad, 2026-11-16: "too much empty space"): the
+            // logo row shares the back button's band, centred, and the bar collapses to the name.
             SliverAppBar(
               pinned: true,
+              expandedHeight: _Header.height(c),
+              flexibleSpace: FlexibleSpaceBar(
+                collapseMode: CollapseMode.pin,
+                background: Container(
+                  color: c.bg,
+                  child: SafeArea(bottom: false, child: _Header(campaign: c)),
+                ),
+              ),
               backgroundColor: c.bg,
               foregroundColor: c.fg,
               surfaceTintColor: Colors.transparent,
@@ -241,9 +251,6 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
                         color: c.fg)),
               ),
             ),
-
-            // ── Header: logo, name, headline, countdown ──
-            SliverToBoxAdapter(child: _Header(campaign: c)),
 
             // ── Stores taking part ──
             if (c.showStores)
@@ -367,24 +374,30 @@ class _Header extends StatelessWidget {
   final Campaign campaign;
   const _Header({required this.campaign});
 
+  static const double _logo = 58;
+
+  /// The expanded app bar height (status bar excluded): logo row, then the countdown.
+  static double height(Campaign c) => 8 + _logo + (c.showCountdown && c.endsAt != null ? 8 + 30 : 0) + 12;
+
   @override
   Widget build(BuildContext context) {
     final c = campaign;
     final isAr = context.isAr;
-    // Compact (Emad 2026-11-14): logo beside the name, the countdown in one row under it, so the
-    // stores and products start high on the screen.
-    return Container(
-      color: c.bg,
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 14),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(children: [
-          CampaignLogo(campaign: c, height: 64),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    // Centred (Emad 2026-11-16): logo and name/headline as one centred block in the back button's
+    // band, the countdown centred under them; nothing else, so the stores and products start high.
+    return Padding(
+      // Clear of the back button on either side.
+      padding: const EdgeInsets.fromLTRB(52, 8, 52, 12),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          CampaignLogo(campaign: c, height: _logo),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: [
               Text(c.name(isAr),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                       fontFamily: _font,
                       fontFamilyFallback: _fallback,
@@ -392,25 +405,24 @@ class _Header extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                       height: 1.2,
                       color: c.fg)),
-              if (c.headline(isAr).isNotEmpty) ...[
-                const SizedBox(height: 2),
+              if (c.headline(isAr).isNotEmpty)
                 Text(c.headline(isAr),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         fontFamily: _font,
                         fontFamilyFallback: _fallback,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         color: c.fg.withValues(alpha: 0.85))),
-              ],
             ]),
           ),
         ]),
         if (c.showCountdown && c.endsAt != null) ...[
-          const SizedBox(height: 10),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 30,
             child: FittedBox(fit: BoxFit.scaleDown, child: CampaignCountdown(campaign: c, compact: true)),
           ),
         ],

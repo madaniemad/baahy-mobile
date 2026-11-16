@@ -161,12 +161,16 @@ class ProductCampaign {
   final String nameEn;
   final Color bg;
   final Color fg;
+  /// The campaign's sticker logo (Emad, 2026-11-16: customers browsing must see at a glance which
+  /// products are in the campaign). Null → the coloured name tag.
+  final String? logo;
   const ProductCampaign({
     required this.slug,
     required this.nameAr,
     required this.nameEn,
     required this.bg,
     required this.fg,
+    this.logo,
   });
 
   String name(bool isAr) => isAr ? _or(nameAr, nameEn) : _or(nameEn, nameAr);
@@ -177,6 +181,7 @@ class ProductCampaign {
         'name_en': nameEn,
         'bg': colorToHex(bg),
         'fg': colorToHex(fg),
+        if (logo != null) 'logo': logo,
       };
 
   static ProductCampaign? tryParse(dynamic j) {
@@ -189,6 +194,7 @@ class ProductCampaign {
       nameEn: _s(j['name_en']),
       bg: parseHexColor(j['bg'], const Color(0xFF1FD7E2)),
       fg: parseHexColor(j['fg'], const Color(0xFF08122B)),
+      logo: _s(j['logo']).startsWith('http') ? _s(j['logo']) : null,
     );
   }
 }
