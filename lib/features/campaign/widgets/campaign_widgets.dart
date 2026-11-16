@@ -250,7 +250,7 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
 
     final texts = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
       // Emad, 2026-11-16: the logo is the hero; a bigger headline, the dates smaller under it.
-      CampaignTitleText(campaign: c, text: headline, fontSize: compact ? 18 : 22, maxLines: 2, display: true),
+      CampaignTitleText(campaign: c, text: headline, fontSize: compact ? 15 : 17, maxLines: 2, display: true),
       if (dates.isNotEmpty) ...[
         const SizedBox(height: 3),
         Text(dates,
@@ -336,16 +336,16 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
   }
 }
 
-/// A line in the campaign's badge colour (yellow for Baahy Friday). The headline ([display]) has a
-/// soft shadow only; the short name in the collapsed page bar keeps a thin dark outline. [text] defaults to the campaign name.
+/// A campaign text line. The headline ([display]) is El Messiri in the dark text colour; otherwise
+/// (the short name in the collapsed page bar) the badge colour with a thin dark outline. [text] defaults to the campaign name.
 class CampaignTitleText extends StatelessWidget {
   final Campaign campaign;
   final String? text;
   final double fontSize;
   final int maxLines;
   final TextAlign textAlign;
-  /// The campaign headline's display face (Marhey, matching the sticker lettering); the name in the
-  /// collapsed page header keeps the app font.
+  /// The campaign headline: El Messiri Bold in the campaign's dark text colour, no outline (Emad's
+  /// pick, 2026-11-17); the name in the collapsed page header keeps the app font and yellow.
   final bool display;
   const CampaignTitleText({
     super.key,
@@ -363,11 +363,11 @@ class CampaignTitleText extends StatelessWidget {
     final name = text ?? c.name(context.isAr);
     TextStyle base() => display
         ? TextStyle(
-            fontFamily: 'Marhey',
+            fontFamily: 'ElMessiri',
             fontFamilyFallback: const ['Manrope', 'Tajawal'],
             fontSize: fontSize,
             fontWeight: FontWeight.w700,
-            height: 1.3,
+            height: 1.25,
           )
         : TextStyle(
             fontFamily: _font,
@@ -377,13 +377,8 @@ class CampaignTitleText extends StatelessWidget {
             height: 1.25,
           );
     Text t(TextStyle st) => Text(name, maxLines: maxLines, overflow: TextOverflow.ellipsis, textAlign: textAlign, style: st);
-    // The headline: no outline (Emad, 2026-11-16), only a soft shadow so the yellow lifts off the
-    // campaign colour.
-    if (display) {
-      return t(base().copyWith(color: c.accent, shadows: [
-        Shadow(color: c.fg.withValues(alpha: 0.38), blurRadius: 5, offset: const Offset(0, 2)),
-      ]));
-    }
+    // The headline: dark, no outline or shadow (Emad, 2026-11-17).
+    if (display) return t(base().copyWith(color: c.fg));
     return Stack(children: [
       // Outline: the same text stroked in the dark text colour underneath.
       t(base().copyWith(

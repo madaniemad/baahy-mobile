@@ -114,12 +114,11 @@ flutter:
   fonts:
     # Bottom-nav icons — 5 glyphs subset from Material Symbols Outlined
     # (10 MB -> 14 KB). See lib/shared/widgets/nav_icons.dart.
-    # Campaign headline (Emad, 2026-11-16): Marhey Bold, matches the Baahy Friday sticker lettering.
-    # Static Bold cut from the Google Fonts variable font, subset to Arabic + basic Latin (OFL, see
-    # assets/fonts/Marhey-OFL.txt).
-    - family: Marhey
+    # Campaign headline (Emad's pick, 2026-11-17): El Messiri Bold. Static Bold cut from the Google
+    # Fonts variable font, subset to Arabic + basic Latin (OFL, see assets/fonts/ElMessiri-OFL.txt).
+    - family: ElMessiri
       fonts:
-        - asset: assets/fonts/Marhey-Bold.ttf
+        - asset: assets/fonts/ElMessiri-Bold.ttf
           weight: 700
     - family: BaahyNavIcons
       fonts:
