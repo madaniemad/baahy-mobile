@@ -470,11 +470,11 @@ class _Header extends StatelessWidget {
   final Campaign campaign;
   const _Header({required this.campaign});
 
-  static const double _logo = 58;
+  static const double _logo = 82;
 
   /// The expanded app bar height (status bar excluded): logo row, then the countdown.
   /// The text block (a 2-line headline + the dates) is a little taller than the logo.
-  static double height(Campaign c) => 8 + math.max(_logo, 72.0) + (c.showCountdown && c.endsAt != null ? 8 + 30 : 0) + 12;
+  static double height(Campaign c) => 4 + math.max(_logo, 72.0) + (c.showCountdown && c.endsAt != null ? 6 + 30 : 0) + 8;
 
   @override
   Widget build(BuildContext context) {
@@ -484,7 +484,7 @@ class _Header extends StatelessWidget {
     // band, the countdown centred under them; nothing else, so the stores and products start high.
     return Padding(
       // Clear of the back button on either side.
-      padding: const EdgeInsets.fromLTRB(52, 8, 52, 12),
+      padding: const EdgeInsets.fromLTRB(52, 4, 52, 8),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           CampaignLogo(campaign: c, height: _logo),
@@ -495,7 +495,7 @@ class _Header extends StatelessWidget {
               CampaignTitleText(
                   campaign: c,
                   text: c.headline(isAr).isNotEmpty ? c.headline(isAr) : c.name(isAr),
-                  fontSize: 16,
+                  fontSize: 20,
                   maxLines: 2,
                   textAlign: TextAlign.center),
               if (campaignDateLine(c, isAr).isNotEmpty)
@@ -506,14 +506,14 @@ class _Header extends StatelessWidget {
                     style: TextStyle(
                         fontFamily: _font,
                         fontFamilyFallback: _fallback,
-                        fontSize: 12.5,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: c.fg)),
             ]),
           ),
         ]),
         if (c.showCountdown && c.endsAt != null) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           SizedBox(
             height: 30,
             child: FittedBox(fit: BoxFit.scaleDown, child: CampaignCountdown(campaign: c, compact: true)),

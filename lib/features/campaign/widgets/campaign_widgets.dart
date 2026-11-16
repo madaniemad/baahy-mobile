@@ -249,7 +249,8 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
     final dates = campaignDateLine(c, isAr);
 
     final texts = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-      CampaignTitleText(campaign: c, text: headline, fontSize: compact ? 16 : 19, maxLines: 2),
+      // Emad, 2026-11-16: the logo is the hero; a bigger headline, the dates smaller under it.
+      CampaignTitleText(campaign: c, text: headline, fontSize: compact ? 19 : 23, maxLines: 2),
       if (dates.isNotEmpty) ...[
         const SizedBox(height: 3),
         Text(dates,
@@ -258,15 +259,15 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
           style: TextStyle(
               fontFamily: _font,
               fontFamilyFallback: _fallback,
-              fontSize: compact ? 12 : 13,
+              fontSize: compact ? 11 : 12,
               fontWeight: FontWeight.w700,
               color: c.fg)),
       ],
     ]);
 
     final topRow = Row(children: [
-      CampaignLogo(campaign: c, height: compact ? 56 : 68),
-      const SizedBox(width: 12),
+      CampaignLogo(campaign: c, height: compact ? 74 : 94),
+      const SizedBox(width: 10),
       Expanded(child: texts),
       if (compact) ...[
         const SizedBox(width: 8),
@@ -284,7 +285,7 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
         ? topRow
         : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             topRow,
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
             Row(children: [
               Expanded(
                 child: Align(
@@ -324,7 +325,7 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
               Positioned.fill(child: CampaignSalePattern(campaign: c)),
               Positioned.fill(child: IgnorePointer(child: _Shine(anim: _anim))),
               Padding(
-                padding: EdgeInsets.fromLTRB(12, compact ? 10 : 12, 12, compact ? 10 : 12),
+                padding: EdgeInsets.fromLTRB(12, compact ? 5 : 6, 12, compact ? 5 : 10),
                 child: content,
               ),
             ]),
