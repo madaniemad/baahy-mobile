@@ -221,23 +221,8 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
                   : CustomScrollView(
                       controller: _scrollCtrl,
                       slivers: [
-                        // ── "التصنيفات" header ─────────────────────────────────────────
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                            child: Text(
-                              isAr ? 'التصنيفات' : 'Categories',
-                              textAlign: TextAlign.start,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                color: context.col.ink0,
-                                fontFamily: 'Manrope',
-                                fontFamilyFallback: ['Tajawal'],
-                              ),
-                            ),
-                          ),
-                        ),
+                        // The tab bar already says «التصنيفات»; no second heading (Emad, 2026-11-17).
+                        const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
                         // ── First row: the running campaign (nothing when none) ──
                         const SliverPadding(
