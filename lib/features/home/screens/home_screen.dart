@@ -134,7 +134,18 @@ class HomeScreen extends ConsumerWidget {
         },
         child: CustomScrollView(
           slivers: [
-            SliverAppBar(
+            // A little less gap under the status bar (Emad, 2026-11-16): on phones with a notch or
+            // Dynamic Island the city and bell row moves 16pt up into the empty bottom of the
+            // status-bar area, clear of the clock and icons. Phones without one keep it as it was.
+            MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                padding: MediaQuery.paddingOf(context).copyWith(
+                  top: MediaQuery.paddingOf(context).top > 40
+                      ? MediaQuery.paddingOf(context).top - 16
+                      : MediaQuery.paddingOf(context).top,
+                ),
+              ),
+              child: SliverAppBar(
               pinned: true,
               automaticallyImplyLeading: false,
               backgroundColor:
@@ -205,6 +216,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+            ),
             ),
             // ── Running campaign (Baahy Friday …): first thing under the search bar ──
             // Renders nothing while no campaign is running.
