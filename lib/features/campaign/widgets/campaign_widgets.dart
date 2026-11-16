@@ -408,8 +408,8 @@ class CampaignTitleText extends StatelessWidget {
   }
 }
 
-/// A few faint sale motifs (%, a price tag, «تخفيض», a bag) at the edges of the campaign colour,
-/// kept clear of the text (Emad, 2026-11-16: the dense print was distracting; calm wins).
+/// A few faint sale icons (%, a price tag, a bag) at the edges of the campaign colour, kept clear
+/// of the text (Emad, 2026-11-16: calm wins; 2026-11-17: no «تخفيض» word in the print).
 class CampaignSalePattern extends StatelessWidget {
   final Campaign campaign;
   final double opacity;
@@ -419,7 +419,6 @@ class CampaignSalePattern extends StatelessWidget {
   static const _spots = [
     (Icons.percent_rounded, 0.02, 0.10, 26.0, -0.25),
     (Icons.local_offer_outlined, 0.30, 0.70, 26.0, 0.30),
-    (null, 0.52, 0.04, 14.0, -0.12),
     (Icons.shopping_bag_outlined, 0.72, 0.72, 24.0, 0.15),
     (Icons.percent_rounded, 0.93, 0.36, 22.0, 0.30),
   ];
@@ -427,7 +426,6 @@ class CampaignSalePattern extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = campaign.fg.withValues(alpha: opacity);
-    final word = context.isAr ? 'تخفيض' : 'SALE';
     return IgnorePointer(
       child: LayoutBuilder(builder: (_, box) {
         return ClipRect(
@@ -438,15 +436,7 @@ class CampaignSalePattern extends StatelessWidget {
                 top: box.maxHeight * y,
                 child: Transform.rotate(
                   angle: turn,
-                  child: icon == null
-                      ? Text(word,
-                          style: TextStyle(
-                              fontFamily: _font,
-                              fontFamilyFallback: _fallback,
-                              fontSize: size,
-                              fontWeight: FontWeight.w900,
-                              color: color))
-                      : Icon(icon, size: size, color: color),
+                  child: Icon(icon, size: size, color: color),
                 ),
               ),
           ]),

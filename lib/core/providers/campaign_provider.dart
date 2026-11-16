@@ -104,7 +104,9 @@ Future<List<CampaignStore>> _fakeStores() async {
         queryParameters: {'on_sale': '1', 'sort': 'discount', 'per_page': 100});
     for (final p in (res.data['data']['data'] as List)) {
       final v = Product.fromJson(p as Map<String, dynamic>).vendor;
-      if (v == null) continue;
+      // Sellers sold under Baahy's name come masked as «باهي»: skip them like the live API does, so
+      // the one Baahy store (vendor 19) is the only «باهي» circle.
+      if (v == null || v.anonymous) continue;
       final prev = out[v.id];
       out[v.id] = CampaignStore(
         id: v.id,
@@ -122,6 +124,7 @@ Future<List<CampaignStore>> _fakeStores() async {
       if (j is! Map) continue;
       final id = (j['id'] as num?)?.toInt();
       if (id == null || out.containsKey(id) || (j['logo'] ?? '').toString().isNotEmpty) continue;
+      if (j['anonymous'] == true || j['anonymous'] == 1) continue;
       out[id] = CampaignStore(
         id: id,
         name: '${j['store_name'] ?? ''}',
