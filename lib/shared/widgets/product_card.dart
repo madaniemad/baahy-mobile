@@ -165,14 +165,7 @@ class ProductCard extends ConsumerWidget {
                       ),
                     ),
                   ),
-                if (product.isCopy)
-                  Positioned(
-                    bottom: 8,
-                    left: isAr ? null : 8,
-                    right: isAr ? 8 : null,
-                    child: const CopyTag(),
-                  ),
-                // The campaign tag sits on the other bottom corner, so it never covers Copy.
+                // The campaign tag sits on the bottom end corner of the photo.
                 if (product.campaign != null)
                   PositionedDirectional(
                     bottom: 8,

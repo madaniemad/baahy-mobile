@@ -95,8 +95,6 @@ class Product {
 
   double get displayPrice => currentPrice ?? salePrice ?? price;
   bool get hasDiscount => salePrice != null && salePrice! < price;
-  /// The seller marked it a copy, not original (backend badge 'copy', Emad 2026-11-13).
-  bool get isCopy => badges.contains('copy');
   bool get fulfilledByBaahy {
     if (fulfillmentType == 'baahy') return true;
     if (fulfillmentType == 'vendor') return false;
@@ -132,7 +130,7 @@ class Product {
     'brand': brand,
     'fulfillment_type': fulfillmentType,
     'manage_stock': manageStock,
-    // Kept so a saved cart still shows Copy / كوبي after a restart (Emad 2026-11-13).
+    // Kept so a saved cart still shows the product's badges after a restart.
     if (badges.isNotEmpty) 'badges': badges,
     if (!purchasable) 'purchasable': false,
     // Kept so cached lists still show the campaign tag; a debug fake tag is never written to disk.

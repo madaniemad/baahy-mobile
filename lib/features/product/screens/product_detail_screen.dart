@@ -739,11 +739,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                           fontWeight: FontWeight.w700,
                                           color: AppColors.primary)),
                                 ),
-                              if (product.isCopy)
-                                const Padding(
-                                  padding: EdgeInsets.only(top: 6, bottom: 2),
-                                  child: CopyTag(scale: 1.15),
-                                ),
                               const SizedBox(height: 6),
                               Text(name,
                                   style: const TextStyle(

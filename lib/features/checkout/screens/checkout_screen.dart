@@ -4,7 +4,6 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../shared/widgets/product_badges.dart';
 import '../../../shared/widgets/optimized_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
@@ -2338,10 +2337,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                             style: const TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w600)),
-                                        if (item.product.isCopy)
-                                          const Padding(
-                                              padding: EdgeInsets.only(top: 3, bottom: 2),
-                                              child: CopyTag()),
                                         if (variationLabel != null &&
                                             variationLabel.isNotEmpty)
                                           Text(variationLabel,

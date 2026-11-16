@@ -85,37 +85,9 @@ const Map<ProductBadgeKind, _BadgeStyle> _styles = {
       Icons.auto_awesome_rounded, Color(0xFF14B8A6)),
 };
 
-/// "Copy / كوبي" (Emad 2026-11-13): the seller marked the product a copy, not
-/// original. Never part of the rolling ticker: it sits fixed on the photo so a
-/// customer cannot miss it. 'copy' is deliberately not mapped in [kindFromKey].
-class CopyTag extends StatelessWidget {
-  final double scale;
-  const CopyTag({super.key, this.scale = 1.0});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 7 * scale, vertical: 2 * scale),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1C22),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        context.tr('كوبي', 'Copy'),
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 10 * scale,
-          fontWeight: FontWeight.w700,
-          height: 1.2,
-        ),
-      ),
-    );
-  }
-}
-
 /// The campaign a product is on (e.g. «الجمعة الباهية»). With a logo: the campaign's sticker on
 /// the photo (Emad, 2026-11-16), so shoppers spot campaign products while browsing; without one,
-/// or while the logo cannot load, a tag in the campaign's colours. Like [CopyTag] it is fixed on
+/// or while the logo cannot load, a tag in the campaign's colours. It is fixed on
 /// the photo, never part of the rolling ticker. Tapping it opens the campaign page.
 class CampaignTag extends StatelessWidget {
   final ProductCampaign campaign;
