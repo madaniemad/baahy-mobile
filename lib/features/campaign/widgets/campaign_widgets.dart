@@ -104,10 +104,7 @@ class _CampaignCountdownState extends State<CampaignCountdown> {
           Container(
             width: box,
             padding: EdgeInsets.symmetric(vertical: widget.compact ? 3 : 4),
-            decoration: BoxDecoration(
-              color: c.fg,
-              borderRadius: BorderRadius.circular(8),
-            ),
+            decoration: campaignPillDecoration(c, radius: 8),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Text(parts[i].$1.toString().padLeft(2, '0'),
                   style: TextStyle(
@@ -115,7 +112,7 @@ class _CampaignCountdownState extends State<CampaignCountdown> {
                       fontSize: widget.compact ? 12.5 : 15,
                       fontWeight: FontWeight.w800,
                       height: 1.1,
-                      color: c.accent)),
+                      color: c.fg)),
               if (!widget.compact)
                 Text(parts[i].$2,
                     maxLines: 1,
@@ -125,7 +122,7 @@ class _CampaignCountdownState extends State<CampaignCountdown> {
                         fontSize: 8.5,
                         fontWeight: FontWeight.w600,
                         height: 1.2,
-                        color: c.bg)),
+                        color: c.fg)),
             ]),
           ),
         ],
@@ -134,22 +131,38 @@ class _CampaignCountdownState extends State<CampaignCountdown> {
   }
 }
 
+/// Campaign buttons and countdown pills (Emad, 2026-11-17: no black pills): the badge colour with a
+/// thin deeper-yellow edge so they hold their shape on the campaign colour; text in the dark colour.
+BoxDecoration campaignPillDecoration(Campaign c, {double radius = 12, BoxShape shape = BoxShape.rectangle}) =>
+    BoxDecoration(
+      color: c.accent,
+      shape: shape,
+      borderRadius: shape == BoxShape.circle ? null : BorderRadius.circular(radius),
+      border: Border.all(color: Color.lerp(c.accent, c.fg, 0.22)!, width: 1.2),
+    );
+
 extension on _CampaignCountdownState {
   /// One line for strips: «ينتهي خلال [13 يوم] [20:35:40]».
   Widget _compact(BuildContext context, Campaign c, Duration left) {
     String two(int n) => n.toString().padLeft(2, '0');
+    // Both pills share one fixed height and centre their text, so «10 يوم» (Arabic glyphs, taller
+    // metrics) and «23:44:55» (Latin digits) line up exactly (Emad, 2026-11-17). Yellow, not black.
     Widget pill(String text, {TextDirection? dir}) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-          decoration: BoxDecoration(color: c.fg, borderRadius: BorderRadius.circular(8)),
+          height: 26,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          alignment: Alignment.center,
+          decoration: campaignPillDecoration(c, radius: 8),
           child: Text(text,
               textDirection: dir,
+              textHeightBehavior: const TextHeightBehavior(
+                  applyHeightToFirstAscent: false, applyHeightToLastDescent: false),
               style: TextStyle(
                   fontFamily: 'PlusJakartaSans',
                   fontFamilyFallback: _fallback,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w800,
-                  height: 1.2,
-                  color: c.accent)),
+                  height: 1.0,
+                  color: c.fg)),
         );
     return Row(mainAxisSize: MainAxisSize.min, children: [
       Text(context.s.campaignEndsIn,
@@ -274,9 +287,9 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
         Container(
           width: 30,
           height: 30,
-          decoration: BoxDecoration(color: c.fg, shape: BoxShape.circle),
+          decoration: campaignPillDecoration(c, shape: BoxShape.circle),
           // chevron_right mirrors in RTL: "forward" in both languages.
-          child: Icon(Icons.chevron_right_rounded, size: 20, color: c.accent),
+          child: Icon(Icons.chevron_right_rounded, size: 20, color: c.fg),
         ),
       ],
     ]);
@@ -296,7 +309,7 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(color: c.fg, borderRadius: BorderRadius.circular(12)),
+                decoration: campaignPillDecoration(c),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Text(s.campaignShopDeals,
                       style: TextStyle(
@@ -304,9 +317,9 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
                           fontFamilyFallback: _fallback,
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: c.accent)),
+                          color: c.fg)),
                   const SizedBox(width: 4),
-                  Icon(Icons.chevron_right_rounded, size: 18, color: c.accent),
+                  Icon(Icons.chevron_right_rounded, size: 18, color: c.fg),
                 ]),
               ),
             ]),
