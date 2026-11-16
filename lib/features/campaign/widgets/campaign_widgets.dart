@@ -204,7 +204,7 @@ class CampaignBrowseTile extends ConsumerWidget {
 /// The campaign's entry card (Home strip, Categories first row). After Emad's 2026-11-16 review:
 /// no discount badge; the campaign colour carries a faint printed pattern of sale motifs
 /// ([CampaignSalePattern]) and the name is in the campaign's yellow with a dark outline
-/// ([CampaignNameText]). A light sweep of shine every few seconds (still when the phone asks for
+/// ([CampaignTitleText]). A light sweep of shine every few seconds (still when the phone asks for
 /// reduced motion).
 class CampaignPromoCard extends StatefulWidget {
   final Campaign campaign;
@@ -243,20 +243,25 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
     final compact = widget.compact;
     final isAr = context.isAr;
     final s = context.s;
+    // The logo already says the campaign's name (Emad, 2026-11-16): the yellow line is the headline
+    // (Marketing → Campaigns), and under it the campaign's dates, which are always true.
     final headline = c.headline(isAr).isNotEmpty ? c.headline(isAr) : s.campaignShopDeals;
+    final dates = campaignDateLine(c, isAr);
 
     final texts = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-      CampaignNameText(campaign: c, fontSize: compact ? 19 : 23),
-      const SizedBox(height: 3),
-      Text(headline,
-          maxLines: compact ? 1 : 2,
+      CampaignTitleText(campaign: c, text: headline, fontSize: compact ? 16 : 19, maxLines: 2),
+      if (dates.isNotEmpty) ...[
+        const SizedBox(height: 3),
+        Text(dates,
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
               fontFamily: _font,
               fontFamilyFallback: _fallback,
-              fontSize: compact ? 12.5 : 13.5,
+              fontSize: compact ? 12 : 13,
               fontWeight: FontWeight.w700,
               color: c.fg)),
+      ],
     ]);
 
     final topRow = Row(children: [
@@ -330,18 +335,27 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
   }
 }
 
-/// The campaign name in the campaign's badge colour (yellow for Baahy Friday) with a thin dark
-/// outline and a soft shadow, so it reads on the light campaign colour.
-class CampaignNameText extends StatelessWidget {
+/// A line in the campaign's badge colour (yellow for Baahy Friday) with a thin dark outline and a
+/// soft shadow, so it reads on the light campaign colour. [text] defaults to the campaign name.
+class CampaignTitleText extends StatelessWidget {
   final Campaign campaign;
+  final String? text;
   final double fontSize;
+  final int maxLines;
   final TextAlign textAlign;
-  const CampaignNameText({super.key, required this.campaign, required this.fontSize, this.textAlign = TextAlign.start});
+  const CampaignTitleText({
+    super.key,
+    required this.campaign,
+    this.text,
+    required this.fontSize,
+    this.maxLines = 1,
+    this.textAlign = TextAlign.start,
+  });
 
   @override
   Widget build(BuildContext context) {
     final c = campaign;
-    final name = c.name(context.isAr);
+    final name = text ?? c.name(context.isAr);
     TextStyle base() => TextStyle(
           fontFamily: _font,
           fontFamilyFallback: _fallback,
@@ -349,7 +363,7 @@ class CampaignNameText extends StatelessWidget {
           fontWeight: FontWeight.w900,
           height: 1.25,
         );
-    Text t(TextStyle st) => Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: textAlign, style: st);
+    Text t(TextStyle st) => Text(name, maxLines: maxLines, overflow: TextOverflow.ellipsis, textAlign: textAlign, style: st);
     return Stack(children: [
       // Outline: the same text stroked in the dark text colour underneath.
       t(base().copyWith(
@@ -365,23 +379,20 @@ class CampaignNameText extends StatelessWidget {
   }
 }
 
-/// A faint printed texture of sale motifs (%, price tags, «تخفيض», bags…) for the campaign colour:
-/// a staggered grid, each motif slightly turned, in the dark text colour at low opacity.
+/// A few faint sale motifs (%, a price tag, «تخفيض», a bag) at the edges of the campaign colour,
+/// kept clear of the text (Emad, 2026-11-16: the dense print was distracting; calm wins).
 class CampaignSalePattern extends StatelessWidget {
   final Campaign campaign;
-  final double cell;
   final double opacity;
-  const CampaignSalePattern({super.key, required this.campaign, this.cell = 54, this.opacity = 0.11});
+  const CampaignSalePattern({super.key, required this.campaign, this.opacity = 0.06});
 
-  static const _icons = [
-    Icons.percent_rounded,
-    Icons.local_offer_outlined,
-    null, // the word «تخفيض» / "SALE"
-    Icons.shopping_bag_outlined,
-    Icons.sell_outlined,
-    Icons.discount_outlined,
-    null,
-    Icons.local_mall_outlined,
+  // (motif, x as a fraction of the width from the start edge, y as a fraction of the height, size, turn)
+  static const _spots = [
+    (Icons.percent_rounded, 0.02, 0.10, 26.0, -0.25),
+    (Icons.local_offer_outlined, 0.30, 0.70, 26.0, 0.30),
+    (null, 0.52, 0.04, 14.0, -0.12),
+    (Icons.shopping_bag_outlined, 0.72, 0.72, 24.0, 0.15),
+    (Icons.percent_rounded, 0.93, 0.36, 22.0, 0.30),
   ];
 
   @override
@@ -390,38 +401,52 @@ class CampaignSalePattern extends StatelessWidget {
     final word = context.isAr ? 'تخفيض' : 'SALE';
     return IgnorePointer(
       child: LayoutBuilder(builder: (_, box) {
-        final cols = (box.maxWidth / cell).ceil() + 1;
-        final rows = (box.maxHeight / (cell * 0.8)).ceil() + 1;
-        final items = <Widget>[];
-        for (var r = 0; r < rows; r++) {
-          for (var col = 0; col < cols; col++) {
-            final i = r * 7 + col * 3; // a fixed scatter, the same on every build
-            final icon = _icons[i % _icons.length];
-            final x = col * cell + (r.isOdd ? cell / 2 : 0) - 10;
-            final y = r * cell * 0.8 - 8;
-            final turn = ((i * 37) % 9 - 4) * 0.09;
-            items.add(Positioned(
-              left: x,
-              top: y,
-              child: Transform.rotate(
-                angle: turn,
-                child: icon == null
-                    ? Text(word,
-                        style: TextStyle(
-                            fontFamily: _font,
-                            fontFamilyFallback: _fallback,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            color: color))
-                    : Icon(icon, size: 20 + (i % 3) * 3, color: color),
+        return ClipRect(
+          child: Stack(children: [
+            for (final (icon, x, y, size, turn) in _spots)
+              PositionedDirectional(
+                end: box.maxWidth * x,
+                top: box.maxHeight * y,
+                child: Transform.rotate(
+                  angle: turn,
+                  child: icon == null
+                      ? Text(word,
+                          style: TextStyle(
+                              fontFamily: _font,
+                              fontFamilyFallback: _fallback,
+                              fontSize: size,
+                              fontWeight: FontWeight.w900,
+                              color: color))
+                      : Icon(icon, size: size, color: color),
+                ),
               ),
-            ));
-          }
-        }
-        return ClipRect(child: Stack(clipBehavior: Clip.hardEdge, children: items));
+          ]),
+        );
       }),
     );
   }
+}
+
+/// The campaign's dates, true for any campaign: «من السبت 21 إلى الجمعة 27 نوفمبر» /
+/// "Sat 21 – Fri 27 November". Read from the API's own date (Tripoli), not the phone's time zone.
+String campaignDateLine(Campaign c, bool isAr) {
+  DateTime? d(String key) {
+    final raw = c.json[key]?.toString() ?? '';
+    return raw.length >= 10 ? DateTime.tryParse(raw.substring(0, 10)) : null;
+  }
+  final a = d('starts_at'), b = d('ends_at');
+  if (a == null || b == null) return '';
+  const daysAr = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+  const daysEn = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const monthsAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const monthsEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  final sameMonth = a.month == b.month && a.year == b.year;
+  if (isAr) {
+    final from = '${daysAr[a.weekday - 1]} ${a.day}${sameMonth ? '' : ' ${monthsAr[a.month - 1]}'}';
+    return 'من $from إلى ${daysAr[b.weekday - 1]} ${b.day} ${monthsAr[b.month - 1]}';
+  }
+  final from = '${daysEn[a.weekday - 1]} ${a.day}${sameMonth ? '' : ' ${monthsEn[a.month - 1]}'}';
+  return '$from – ${daysEn[b.weekday - 1]} ${b.day} ${monthsEn[b.month - 1]}';
 }
 
 /// A soft diagonal light that sweeps across once per cycle, then rests.

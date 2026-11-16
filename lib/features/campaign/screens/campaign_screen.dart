@@ -292,7 +292,7 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
               title: AnimatedOpacity(
                 opacity: _showTitle ? 1 : 0,
                 duration: const Duration(milliseconds: 150),
-                child: CampaignNameText(campaign: c, fontSize: 17),
+                child: CampaignTitleText(campaign: c, fontSize: 17),
               ),
             ),
 
@@ -473,7 +473,8 @@ class _Header extends StatelessWidget {
   static const double _logo = 58;
 
   /// The expanded app bar height (status bar excluded): logo row, then the countdown.
-  static double height(Campaign c) => 8 + _logo + (c.showCountdown && c.endsAt != null ? 8 + 30 : 0) + 12;
+  /// The text block (a 2-line headline + the dates) is a little taller than the logo.
+  static double height(Campaign c) => 8 + math.max(_logo, 72.0) + (c.showCountdown && c.endsAt != null ? 8 + 30 : 0) + 12;
 
   @override
   Widget build(BuildContext context) {
@@ -490,16 +491,22 @@ class _Header extends StatelessWidget {
           const SizedBox(width: 10),
           Flexible(
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: [
-              CampaignNameText(campaign: c, fontSize: 22, textAlign: TextAlign.center),
-              if (c.headline(isAr).isNotEmpty)
-                Text(c.headline(isAr),
+              // The logo says the name; the yellow line is the headline, then the dates (Emad, 2026-11-16).
+              CampaignTitleText(
+                  campaign: c,
+                  text: c.headline(isAr).isNotEmpty ? c.headline(isAr) : c.name(isAr),
+                  fontSize: 16,
+                  maxLines: 2,
+                  textAlign: TextAlign.center),
+              if (campaignDateLine(c, isAr).isNotEmpty)
+                Text(campaignDateLine(c, isAr),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontFamily: _font,
                         fontFamilyFallback: _fallback,
-                        fontSize: 13,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w700,
                         color: c.fg)),
             ]),
