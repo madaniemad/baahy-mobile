@@ -787,6 +787,9 @@ Account Termination: We reserve the right to suspend any account that violates t
   String campaignDaysN(int n)       => isAr ? '$n يوم'                    : (n == 1 ? '1 day' : '$n days');
   String get campaignStores         => isAr ? 'المتاجر المشاركة'          : 'Stores taking part';
   String get campaignCategories     => isAr ? 'تسوّق حسب القسم'           : 'Shop by category';
+  String campaignUpToOff(int n)     => isAr ? 'خصومات حتى $n%'            : 'Up to $n% off';
+  String get campaignUpTo           => isAr ? 'حتى'                       : 'Up to';
+  String get campaignDealsBadge     => isAr ? 'عروض'                      : 'Deals';
   String get campaignSortDiscount   => isAr ? 'الأكبر خصماً'              : 'Biggest discount';
   String get campaignSortPriceAsc   => isAr ? 'الأقل سعراً'               : 'Lowest price';
   String get campaignSortPriceDesc  => isAr ? 'الأعلى سعراً'              : 'Highest price';

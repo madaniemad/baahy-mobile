@@ -26,6 +26,8 @@ class Campaign {
   /// A between-products banner after every this many grid rows.
   final int bannerEveryRows;
   final List<CampaignBanner> banners;
+  /// The biggest real discount on campaign price right now, whole percent (0 = unknown / none).
+  final int maxDiscount;
   final int productsCount;
   final int storesCount;
   final List<CampaignChip> chips;
@@ -53,6 +55,7 @@ class Campaign {
     this.showBanners = false,
     this.bannerEveryRows = 4,
     this.banners = const [],
+    this.maxDiscount = 0,
     this.productsCount = 0,
     this.storesCount = 0,
     this.chips = const [],
@@ -108,6 +111,7 @@ class Campaign {
             .map(CampaignBanner.tryParse)
             .whereType<CampaignBanner>()
             .toList(),
+        maxDiscount: ((m['max_discount'] as num?)?.toInt() ?? 0).clamp(0, 95),
         productsCount: (m['products_count'] as num?)?.toInt() ?? 0,
         storesCount: (m['stores_count'] as num?)?.toInt() ?? 0,
         chips: (m['chips'] as List? ?? const [])

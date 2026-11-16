@@ -23,6 +23,8 @@ import '../../../core/utils/banner_link.dart';
 import '../../../core/utils/image_url.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
+import '../../../core/providers/wishlist_provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 import '../widgets/shop_by_store_section.dart';
@@ -180,7 +182,11 @@ class HomeScreen extends ConsumerWidget {
                 child: Row(children: [
                   const _CityLabel(),
                   const Spacer(),
-                  const _NotificationBell(),
+                  // While a campaign runs Wishlist leaves the bottom bar and takes the bell's place
+                  // (Emad, 2026-11-16); notifications stay in Account (bell + menu row with count).
+                  ref.watch(currentCampaignProvider.select((c) => c != null && !c.hasEnded))
+                      ? const _WishlistTopButton()
+                      : const _NotificationBell(),
                 ]),
               ),
               bottom: PreferredSize(

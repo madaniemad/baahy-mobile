@@ -8,6 +8,10 @@ import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../providers/app_config_provider.dart';
+import '../providers/campaign_provider.dart';
+import '../models/campaign.dart';
+import '../utils/navigation.dart';
+import '../../features/campaign/widgets/campaign_widgets.dart';
 import '../api/api_client.dart';
 import '../services/push_notification_service.dart';
 import '../services/version_gate.dart';
@@ -86,6 +90,11 @@ const _Tab _tabAccount  = (icon: NavIcons.person,        labelAr: 'حسابي', 
 
 const _tabs = [_tabHome, _tabWishlist, _tabBrowse, _tabCart, _tabAccount];
 
+/// While a campaign runs (Emad, 2026-11-16): Home, Categories, [campaign logo], Cart, Account.
+/// Wishlist leaves the bar for the Home top bar (in the bell's place); its branch and /wishlist
+/// links are unchanged. `null` marks the raised campaign slot, which opens the campaign page.
+const List<_Tab?> _campaignTabs = [_tabHome, _tabBrowse, null, _tabCart, _tabAccount];
+
 class MainShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
   const MainShell({required this.navigationShell, super.key});
@@ -93,8 +102,10 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentBranch = navigationShell.currentIndex;
-    const tabs = _tabs;
-    final currentTabIdx = tabs.indexWhere((t) => t.branchIdx == currentBranch);
+    final campaign = ref.watch(currentCampaignProvider);
+    final live = campaign != null && !campaign.hasEnded;
+    final List<_Tab?> tabs = live ? _campaignTabs : _tabs;
+    final currentTabIdx = tabs.indexWhere((t) => t?.branchIdx == currentBranch);
 
     final cartCount     = ref.watch(cartProvider.select((s) => s.count));
     // Count from the id set, not the product list. The set is the membership record and is
@@ -122,6 +133,7 @@ class MainShell extends ConsumerWidget {
             child: Row(
               children: List.generate(tabs.length, (i) {
                 final tab = tabs[i];
+                if (tab == null) return Expanded(child: _CampaignNavSlot(campaign: campaign!));
                 final isActive = i == currentTabIdx;
 
                 Widget icon = Icon(
@@ -182,6 +194,46 @@ class MainShell extends ConsumerWidget {
                   ),
                 );
               }),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The raised centre slot while a campaign runs: the campaign sticker in a round badge that sits
+/// above the bar, opening the campaign page.
+class _CampaignNavSlot extends StatelessWidget {
+  final Campaign campaign;
+  const _CampaignNavSlot({required this.campaign});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = campaign;
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    return Semantics(
+      button: true,
+      label: c.name(isAr),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => safePush(context, c.route()),
+        child: OverflowBox(
+          maxHeight: 96,
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Container(
+              width: 70,
+              height: 70,
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: c.bg,
+                shape: BoxShape.circle,
+                border: Border.all(color: context.col.surface, width: 3),
+                boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 8, offset: Offset(0, 2))],
+              ),
+              child: Center(child: CampaignLogo(campaign: c, height: 50)),
             ),
           ),
         ),

@@ -91,6 +91,49 @@ class _NotificationBell extends ConsumerWidget {
   }
 }
 
+/// The Wishlist heart in the Home top bar while a campaign runs, with its count, in the same
+/// 32×32 box as the bell (the toolbar is tight and clips anything outside it).
+class _WishlistTopButton extends ConsumerWidget {
+  const _WishlistTopButton();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(wishlistProvider.select((s) => s.length));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark ? context.col.ink0 : Colors.white;
+    return Semantics(
+      button: true,
+      label: context.s.navWishlist,
+      child: GestureDetector(
+        onTap: () => context.go('/wishlist'),
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          width: 32, height: 32,
+          child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
+            Icon(Icons.favorite_border_rounded, color: iconColor, size: 23),
+            if (count > 0)
+              Positioned(
+                top: 0, right: 0,
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 15),
+                  height: 15,
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.danger,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: isDark ? context.col.surface : Colors.white, width: 1.2),
+                  ),
+                  child: Text(count > 99 ? '99+' : '$count',
+                      style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w800, height: 1.1)),
+                ),
+              ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
 class _SearchHintText extends StatelessWidget {
   const _SearchHintText();
   @override

@@ -261,6 +261,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen>
             _MenuRow(
               icon: Icons.notifications_outlined,
               label: context.s.notifications,
+              // The unread count here too: while a campaign runs the Home bell gives way to Wishlist.
+              badge: unread > 0 ? (unread > 99 ? '99+' : '$unread') : null,
               onTap: () => safePush(context, '/notifications'),
             ),
             _MenuRow(

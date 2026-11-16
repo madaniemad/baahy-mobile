@@ -34,6 +34,7 @@ const Map<String, dynamic> kFakeCampaignJson = {
   'show_category_cards': true,
   'show_banners': true,
   'banner_every_rows': 3,
+  'max_discount': 81,
   'products_count': 120,
   'stores_count': 14,
   'chips': [
