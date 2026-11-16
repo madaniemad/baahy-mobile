@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +9,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/models/campaign.dart';
 import '../../../core/models/product.dart';
 import '../../../core/providers/campaign_provider.dart';
+import '../../../core/utils/banner_link.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -19,7 +22,8 @@ const _fallback = ['Tajawal'];
 /// The campaign page (`/campaign/:slug`, optional `?vendor=` / `?category=`).
 ///
 /// Header in the campaign colours (logo, name, headline, countdown), the stores taking part, the
-/// category chips, a sort control and the product grid. Everything comes from the API, so the page
+/// category cards (or chips), top banners, a sort control and the product grid with banners between
+/// its rows. Everything comes from the API, so the page
 /// serves any future campaign. Products are the normal `/products` listing with `campaign=<slug>`.
 class CampaignScreen extends ConsumerStatefulWidget {
   final String slug;
@@ -59,6 +63,8 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
   int? _vendorId;
   int? _categoryId;
   bool _showTitle = false;
+  /// The count + sort row, so a banner that filters the page can bring the grid into view.
+  final _gridTopKey = GlobalKey();
 
   @override
   void initState() {
@@ -174,6 +180,47 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
     _fetch(reset: true);
   }
 
+  /// The campaign filter a banner link points at, when it is this campaign's own page
+  /// (`/offers/<slug>?vendor=…|category=…`, also as a full baahy.com URL). Null otherwise.
+  ({int? vendor, int? category})? _sameCampaignFilter(String? link) {
+    final raw = link?.trim() ?? '';
+    if (raw.isEmpty) return null;
+    var uri = Uri.tryParse(raw);
+    if (uri == null) return null;
+    if (uri.hasScheme && !{'baahy.com', 'www.baahy.com', 'api.baahy.com'}.contains(uri.host)) return null;
+    if (campaignSlugFromPath(uri) != widget.slug) return null;
+    final q = uri.queryParameters;
+    return (vendor: int.tryParse(q['vendor'] ?? ''), category: int.tryParse(q['category'] ?? ''));
+  }
+
+  /// A banner for the filter already on screen would only repeat it.
+  bool _bannerIsCurrentView(CampaignBanner b) {
+    final f = _sameCampaignFilter(b.link);
+    if (f == null || (f.vendor == null && f.category == null)) return false;
+    return f.vendor == _vendorId && f.category == _categoryId;
+  }
+
+  void _openBanner(CampaignBanner b) {
+    final f = _sameCampaignFilter(b.link);
+    if (f == null) {
+      if (b.link != null) BannerLink.navigate(context, b.link);
+      return;
+    }
+    // This campaign's own offers for a store / category: filter in place, then show the grid.
+    setState(() {
+      _vendorId = f.vendor;
+      _categoryId = f.category;
+    });
+    _fetch(reset: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _gridTopKey.currentContext;
+      if (ctx != null && mounted) {
+        Scrollable.ensureVisible(ctx,
+            duration: const Duration(milliseconds: 300), curve: Curves.easeOut, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart);
+      }
+    });
+  }
+
   Future<void> _openSort() async {
     final picked = await showModalBottomSheet<String>(
       context: context,
@@ -263,8 +310,18 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
                 ),
               ),
 
+            // ── Category cards (photo + campaign logo). They replace the chips: the same categories
+            // and the same filter, so showing both would list every category twice.
+            if (c.showCategoryCards && c.chips.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _CategoryCards(
+                  campaign: c,
+                  selectedId: _categoryId,
+                  onSelect: _selectCategory,
+                ),
+              )
             // ── Category chips ──
-            if (c.showChips && c.chips.isNotEmpty)
+            else if (c.showChips && c.chips.isNotEmpty)
               SliverToBoxAdapter(
                 child: _ChipsRow(
                   chips: c.chips,
@@ -273,9 +330,19 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
                 ),
               ),
 
+            // ── Top banners (store / brand promotions) ──
+            if (c.showBanners && c.banners.any((b) => b.isTop && !_bannerIsCurrentView(b)))
+              SliverToBoxAdapter(
+                child: _TopBanners(
+                  banners: c.banners.where((b) => b.isTop && !_bannerIsCurrentView(b)).toList(),
+                  onTap: _openBanner,
+                ),
+              ),
+
             // ── Count + sort ──
             SliverToBoxAdapter(
               child: Padding(
+                key: _gridTopKey,
                 padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 4),
                 child: Row(children: [
                   Expanded(
@@ -331,23 +398,7 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
                 ),
               )
             else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-                sliver: SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                    (_, i) => i >= _products.length
-                        ? const ProductCardSkeleton()
-                        : ProductCard(product: _products[i]),
-                    childCount: _products.length + (_loadingMore ? cols : 0),
-                  ),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: cols,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    mainAxisExtent: productCellHeight(colW).ceilToDouble(),
-                  ),
-                ),
-              ),
+              ..._gridSlivers(c, cols, colW),
 
             if (_loadMoreError)
               SliverToBoxAdapter(
@@ -362,6 +413,54 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
               ),
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+extension on _CampaignScreenState {
+  /// The product grid in pieces, with a between-products banner after every
+  /// [Campaign.bannerEveryRows] full rows, each banner once, in the admin's order.
+  List<Widget> _gridSlivers(Campaign c, int cols, double colW) {
+    final banners = c.showBanners
+        ? c.banners.where((b) => !b.isTop && !_bannerIsCurrentView(b)).toList()
+        : const <CampaignBanner>[];
+    final chunk = math.max(1, c.bannerEveryRows) * cols;
+    final out = <Widget>[];
+    var start = 0;
+    var next = 0;
+    while (start < _products.length) {
+      final end = next < banners.length ? math.min(start + chunk, _products.length) : _products.length;
+      final last = end >= _products.length;
+      out.add(_gridPiece(start, end, cols, colW, skeletons: last && _loadingMore ? cols : 0, first: start == 0));
+      if (end - start == chunk && next < banners.length) {
+        final b = banners[next++];
+        out.add(SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 14, 12, 2),
+            child: _BannerTile(banner: b, onTap: () => _openBanner(b)),
+          ),
+        ));
+      }
+      start = end;
+    }
+    return out;
+  }
+
+  Widget _gridPiece(int start, int end, int cols, double colW, {required int skeletons, required bool first}) {
+    return SliverPadding(
+      padding: EdgeInsets.fromLTRB(12, first ? 4 : 12, 12, 0),
+      sliver: SliverGrid(
+        delegate: SliverChildBuilderDelegate(
+          (_, i) => start + i >= end ? const ProductCardSkeleton() : ProductCard(product: _products[start + i]),
+          childCount: end - start + skeletons,
+        ),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: cols,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          mainAxisExtent: productCellHeight(colW).ceilToDouble(),
         ),
       ),
     );
@@ -581,6 +680,324 @@ class _Initial extends StatelessWidget {
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: context.col.ink0)),
+    );
+  }
+}
+
+// ── Category cards ────────────────────────────────────────────────────────────
+
+/// One card per category (photo, name, offer count) with the campaign's sticker logo on it, the
+/// way product cards carry it. «الكل» is a card in the campaign colours.
+class _CategoryCards extends StatefulWidget {
+  final Campaign campaign;
+  final int? selectedId;
+  final ValueChanged<int?> onSelect;
+  const _CategoryCards({required this.campaign, required this.selectedId, required this.onSelect});
+
+  @override
+  State<_CategoryCards> createState() => _CategoryCardsState();
+}
+
+class _CategoryCardsState extends State<_CategoryCards> {
+  static const double _w = 104;
+  static const double _gap = 10;
+  final _row = ScrollController();
+
+  @override
+  void dispose() {
+    _row.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _revealSelected();
+  }
+
+  @override
+  void didUpdateWidget(_CategoryCards old) {
+    super.didUpdateWidget(old);
+    if (old.selectedId != widget.selectedId) _revealSelected();
+  }
+
+  /// A filter set from elsewhere (a banner, a link) may pick a card that is off-screen in the row:
+  /// centre it. Only this row moves, never the page.
+  void _revealSelected() {
+    final i = widget.campaign.chips.indexWhere((c) => c.id == widget.selectedId);
+    if (i < 0) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_row.hasClients) return;
+      final p = _row.position;
+      final card = 12 + (i + 1) * (_w + _gap); // after the side padding and «الكل»
+      final target = (card - (p.viewportDimension - _w) / 2).clamp(0.0, p.maxScrollExtent);
+      _row.animateTo(target, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAr = context.isAr;
+    final campaign = widget.campaign;
+    final selectedId = widget.selectedId;
+    final onSelect = widget.onSelect;
+    final chips = campaign.chips;
+    return Container(
+      color: context.col.surface,
+      padding: const EdgeInsets.only(top: 8, bottom: 12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(context.s.campaignCategories,
+              style: TextStyle(
+                  fontFamily: _font,
+                  fontFamilyFallback: _fallback,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: context.col.ink0)),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: _w + 44,
+          child: ListView.separated(
+            controller: _row,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: chips.length + 1,
+            separatorBuilder: (_, __) => const SizedBox(width: _gap),
+            itemBuilder: (_, i) {
+              if (i == 0) {
+                return _CategoryCard(
+                  width: _w,
+                  label: context.s.all,
+                  sub: campaign.productsCount > 0 ? context.s.resultsCountN(campaign.productsCount) : null,
+                  selected: selectedId == null,
+                  onTap: () => onSelect(null),
+                  photo: Container(
+                    color: campaign.bg,
+                    padding: const EdgeInsets.all(12),
+                    alignment: Alignment.center,
+                    child: CampaignLogo(campaign: campaign, height: 64),
+                  ),
+                );
+              }
+              final ch = chips[i - 1];
+              return _CategoryCard(
+                width: _w,
+                label: ch.label(isAr),
+                sub: ch.count > 0 ? context.s.resultsCountN(ch.count) : null,
+                selected: selectedId == ch.id,
+                onTap: () => onSelect(selectedId == ch.id ? null : ch.id),
+                sticker: campaign,
+                photo: ch.image == null
+                    ? Container(
+                        color: campaign.bg.withValues(alpha: 0.14),
+                        alignment: Alignment.center,
+                        child: Icon(Icons.local_offer_outlined, size: 30, color: context.col.ink3),
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: ch.image!,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 320,
+                        placeholder: (_, __) => ColoredBox(color: context.col.surfaceSoft),
+                        errorWidget: (_, __, ___) => ColoredBox(color: context.col.surfaceSoft),
+                      ),
+              );
+            },
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class _CategoryCard extends StatelessWidget {
+  final double width;
+  final String label;
+  final String? sub;
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget photo;
+  /// The campaign whose sticker logo sits on the photo's bottom corner (none on «الكل»).
+  final Campaign? sticker;
+  const _CategoryCard({
+    required this.width,
+    required this.label,
+    this.sub,
+    required this.selected,
+    required this.onTap,
+    required this.photo,
+    this.sticker,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: width,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          Container(
+            width: width,
+            height: width,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected ? AppColors.adaptive(context) : context.col.border,
+                width: selected ? 2.2 : 1,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(selected ? 9.8 : 11),
+              child: Stack(fit: StackFit.expand, children: [
+                photo,
+                if (sticker != null)
+                  PositionedDirectional(
+                    bottom: 4,
+                    end: 4,
+                    child: CampaignLogo(campaign: sticker!, height: 34),
+                  ),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontFamily: _font,
+                  fontFamilyFallback: _fallback,
+                  fontSize: 12.5,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: context.col.ink0)),
+          if (sub != null)
+            Text(sub!,
+                maxLines: 1,
+                style: TextStyle(
+                    fontFamily: _font,
+                    fontFamilyFallback: _fallback,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: context.col.ink3)),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Banners ───────────────────────────────────────────────────────────────────
+
+/// Banner images are 1920 × 700, like the home banners.
+const double _bannerRatio = 1920 / 700;
+
+class _BannerTile extends StatelessWidget {
+  final CampaignBanner banner;
+  final VoidCallback onTap;
+  const _BannerTile({required this.banner, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: banner.link != null,
+      label: banner.title.isEmpty ? null : banner.title,
+      child: GestureDetector(
+        onTap: banner.link == null ? null : onTap,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: AspectRatio(
+            aspectRatio: _bannerRatio,
+            child: CachedNetworkImage(
+              imageUrl: banner.imageFor(context.isAr),
+              fit: BoxFit.cover,
+              memCacheWidth: 1100,
+              placeholder: (_, __) => ColoredBox(color: context.col.surfaceSoft),
+              errorWidget: (_, __, ___) => ColoredBox(color: context.col.surfaceSoft),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The "top" banners under the categories: one full-width banner, or a slider that moves on by
+/// itself every 5 s when there are several.
+class _TopBanners extends StatefulWidget {
+  final List<CampaignBanner> banners;
+  final ValueChanged<CampaignBanner> onTap;
+  const _TopBanners({required this.banners, required this.onTap});
+
+  @override
+  State<_TopBanners> createState() => _TopBannersState();
+}
+
+class _TopBannersState extends State<_TopBanners> {
+  final _ctrl = PageController(viewportFraction: 0.92);
+  Timer? _timer;
+  int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.banners.length > 1) {
+      _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+        if (!_ctrl.hasClients) return;
+        _ctrl.animateToPage((_page + 1) % widget.banners.length,
+            duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final b = widget.banners;
+    if (b.length == 1) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+        child: _BannerTile(banner: b.first, onTap: () => widget.onTap(b.first)),
+      );
+    }
+    final w = MediaQuery.sizeOf(context).width;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(children: [
+        SizedBox(
+          height: (w * 0.92 - 8) / _bannerRatio,
+          child: PageView.builder(
+            controller: _ctrl,
+            itemCount: b.length,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemBuilder: (_, i) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: _BannerTile(banner: b[i], onTap: () => widget.onTap(b[i])),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          for (var i = 0; i < b.length; i++)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: i == _page ? 16 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: i == _page ? context.col.ink1 : context.col.border,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+        ]),
+      ]),
     );
   }
 }

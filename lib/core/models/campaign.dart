@@ -20,6 +20,12 @@ class Campaign {
   final bool showStores;
   final bool showChips;
   final bool showCountdown;
+  /// Category cards (photo + campaign logo) in place of the chips (2026-11-16).
+  final bool showCategoryCards;
+  final bool showBanners;
+  /// A between-products banner after every this many grid rows.
+  final int bannerEveryRows;
+  final List<CampaignBanner> banners;
   final int productsCount;
   final int storesCount;
   final List<CampaignChip> chips;
@@ -43,6 +49,10 @@ class Campaign {
     this.showStores = true,
     this.showChips = true,
     this.showCountdown = true,
+    this.showCategoryCards = false,
+    this.showBanners = false,
+    this.bannerEveryRows = 4,
+    this.banners = const [],
     this.productsCount = 0,
     this.storesCount = 0,
     this.chips = const [],
@@ -90,6 +100,14 @@ class Campaign {
         showStores: m['show_stores'] != false && m['show_stores'] != 0,
         showChips: m['show_chips'] != false && m['show_chips'] != 0,
         showCountdown: m['show_countdown'] != false && m['show_countdown'] != 0,
+        // Absent on an older server = off, so the page looks as it did.
+        showCategoryCards: m['show_category_cards'] == true || m['show_category_cards'] == 1,
+        showBanners: m['show_banners'] == true || m['show_banners'] == 1,
+        bannerEveryRows: ((m['banner_every_rows'] as num?)?.toInt() ?? 4).clamp(2, 20),
+        banners: (m['banners'] as List? ?? const [])
+            .map(CampaignBanner.tryParse)
+            .whereType<CampaignBanner>()
+            .toList(),
         productsCount: (m['products_count'] as num?)?.toInt() ?? 0,
         storesCount: (m['stores_count'] as num?)?.toInt() ?? 0,
         chips: (m['chips'] as List? ?? const [])
@@ -111,7 +129,9 @@ class CampaignChip {
   final String name;
   final String nameAr;
   final int count;
-  const CampaignChip({required this.id, required this.name, required this.nameAr, this.count = 0});
+  /// The card photo: the category's own image, else one of its campaign products.
+  final String? image;
+  const CampaignChip({required this.id, required this.name, required this.nameAr, this.count = 0, this.image});
 
   String label(bool isAr) => isAr ? _or(nameAr, name) : _or(name, nameAr);
 
@@ -124,6 +144,46 @@ class CampaignChip {
       name: _s(j['name']),
       nameAr: _s(j['name_ar']),
       count: (j['count'] as num?)?.toInt() ?? 0,
+      image: _s(j['image']).startsWith('http') ? _s(j['image']) : null,
+    );
+  }
+}
+
+/// A banner inside the campaign page (Marketing → Campaigns → Banners): mostly a store or brand
+/// promoting its offers within the campaign. [link] is the shared banner link format (BannerLink).
+class CampaignBanner {
+  final int id;
+  final String title;
+  final String image;
+  final String? imageEn;
+  final String? link;
+  /// `top` = under the categories, `grid` = between product rows.
+  final String placement;
+  const CampaignBanner({
+    required this.id,
+    this.title = '',
+    required this.image,
+    this.imageEn,
+    this.link,
+    this.placement = 'grid',
+  });
+
+  bool get isTop => placement == 'top';
+  String imageFor(bool isAr) => !isAr && imageEn != null ? imageEn! : image;
+
+  static CampaignBanner? tryParse(dynamic j) {
+    if (j is! Map) return null;
+    final image = _s(j['image']);
+    if (!image.startsWith('http')) return null;
+    final en = _s(j['image_en']);
+    final link = _s(j['link']);
+    return CampaignBanner(
+      id: (j['id'] as num?)?.toInt() ?? 0,
+      title: _s(j['title']),
+      image: image,
+      imageEn: en.startsWith('http') ? en : null,
+      link: link.isEmpty ? null : link,
+      placement: _s(j['placement']) == 'top' ? 'top' : 'grid',
     );
   }
 }

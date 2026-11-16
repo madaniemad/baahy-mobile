@@ -13,6 +13,8 @@ const bool kFakeCampaign = kDebugMode &&
     (String.fromEnvironment('FAKE_CAMPAIGN') == '1' ||
         String.fromEnvironment('FAKE_CAMPAIGN') == 'true');
 
+const String _img = 'https://api.baahy.com/api/storage';
+
 /// The sample `/campaigns/current` payload (Baahy Friday). The chips are real root categories so
 /// the chip filter can be tried against live products.
 const Map<String, dynamic> kFakeCampaignJson = {
@@ -29,15 +31,24 @@ const Map<String, dynamic> kFakeCampaignJson = {
   'show_stores': true,
   'show_chips': true,
   'show_countdown': true,
+  'show_category_cards': true,
+  'show_banners': true,
+  'banner_every_rows': 3,
   'products_count': 120,
   'stores_count': 14,
   'chips': [
-    {'id': 1, 'name': 'Women', 'name_ar': 'نساء', 'count': 40},
-    {'id': 25, 'name': 'Men', 'name_ar': 'رجال', 'count': 22},
-    {'id': 90, 'name': 'Electronics', 'name_ar': 'إلكترونيات', 'count': 18},
-    {'id': 64, 'name': 'Beauty', 'name_ar': 'الجمال', 'count': 15},
-    {'id': 61, 'name': 'Perfumes', 'name_ar': 'عطور', 'count': 12},
-    {'id': 119, 'name': 'Home', 'name_ar': 'البيت', 'count': 13},
+    {'id': 1, 'name': 'Women', 'name_ar': 'نساء', 'count': 40, 'image': '$_img/categories/f1b15a19694307ea.webp'},
+    {'id': 25, 'name': 'Men', 'name_ar': 'رجال', 'count': 22, 'image': '$_img/categories/039c9b19fd9d6c94.webp'},
+    {'id': 90, 'name': 'Electronics', 'name_ar': 'إلكترونيات', 'count': 18, 'image': '$_img/categories/6f674401e5504ec2.webp'},
+    {'id': 64, 'name': 'Beauty', 'name_ar': 'الجمال', 'count': 15, 'image': '$_img/categories/d7e81810a6b4ae69.webp'},
+    {'id': 61, 'name': 'Perfumes', 'name_ar': 'عطور', 'count': 12, 'image': '$_img/categories/36649a35eb9bdcf9.webp'},
+    {'id': 119, 'name': 'Home', 'name_ar': 'البيت', 'count': 13, 'image': '$_img/categories/1c46db6d4b2ddd2d.webp'},
+  ],
+  // Existing home banners stand in for the store/brand banners staff will upload.
+  'banners': [
+    {'id': 1, 'title': 'Electronics', 'image': '$_img/home-sections/db35de0f11bb7b4d.webp', 'link': '/offers/baahyfriday-2026?category=90', 'placement': 'top'},
+    {'id': 2, 'title': 'Accessories', 'image': '$_img/home-sections/e62ad5581effdbed.webp', 'link': '/products?category_id=21', 'placement': 'grid'},
+    {'id': 3, 'title': 'Electronics', 'image': '$_img/home-sections/db35de0f11bb7b4d.webp', 'link': '/offers/baahyfriday-2026?category=90', 'placement': 'grid'},
   ],
   'web_url': 'https://baahy.com/offers/baahyfriday-2026',
 };
