@@ -135,8 +135,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
     return (acct.isEmpty || acct == 'ليبيا' || acct == 'كل ليبيا') ? null : acct;
   }
 
-  static String _fold(String s) => s.trim().replaceAll(RegExp(r'[أإآ]'), 'ا').replaceAll('ة', 'ه').replaceAll('ى', 'ي');
-  static bool _sameCity(String a, String b) => _fold(a) == _fold(b);
+  static bool _sameCity(String a, String b) => sameDeliveryCity(a, b);
 
   /// «موقعك على الخريطة في تاجوراء» — change the city to the pin's, or move the pin. There is no
   /// third way: an address whose pin and city disagree prices and pays as the wrong city.

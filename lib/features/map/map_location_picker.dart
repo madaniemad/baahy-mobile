@@ -92,6 +92,21 @@ const _tripoliDistricts = <String>{
 String _resolveCity(String name) =>
     _tripoliDistricts.contains(name.trim()) ? 'طرابلس' : name.trim();
 
+/// Whether two city names are the same delivery city: districts fold into Tripoli, Latin spellings
+/// («Tripoli», «Janzour») into Arabic, hamza/taa marbuta/alef maqsura flattened (2026-11-16: the pin
+/// must be in the address's city, and old addresses carry any of these spellings).
+bool sameDeliveryCity(String a, String b) {
+  String key(String x) {
+    var c = x.trim();
+    final lower = c.toLowerCase();
+    if (lower.contains('tripoli')) return 'طرابلس';
+    c = _districtAr[lower] ?? c;
+    c = _resolveCity(c);
+    return c.replaceAll(RegExp(r'[أإآ]'), 'ا').replaceAll('ة', 'ه').replaceAll('ى', 'ي');
+  }
+  return key(a) == key(b);
+}
+
 /// Whether an address in [city] needs a confirmed map location — our own drivers deliver there.
 /// Same rule as the server's AreaResolver::pinRequired (a district counts as Tripoli; «Tripoli»
 /// in any case), so checkout never sends an order the server would refuse for a missing pin.
