@@ -25,7 +25,7 @@ const Map<String, dynamic> kFakeCampaignJson = {
   'headline_ar': 'أسبوع كامل من التخفيضات',
   'headline_en': 'A whole week of deals',
   'logo': 'https://baahy.com/lp/aljumaa-albahya/img/logo.webp',
-  'colors': {'bg': '#1FD7E2', 'fg': '#08122B', 'accent': '#FDF602'},
+  'colors': {'bg': '#1FD7E2', 'fg': '#08122B', 'accent': '#F2FF00'},
   'starts_at': '2026-11-21T00:00:00+02:00',
   'ends_at': '2026-11-27T23:59:59+02:00',
   'show_stores': true,

@@ -138,7 +138,8 @@ BoxDecoration campaignPillDecoration(Campaign c, {double radius = 12, BoxShape s
       color: c.accent,
       shape: shape,
       borderRadius: shape == BoxShape.circle ? null : BorderRadius.circular(radius),
-      border: Border.all(color: Color.lerp(c.accent, c.fg, 0.22)!, width: 1.2),
+      // A faint edge only: a darker one dulled the neon (Emad, 2026-11-17).
+      border: Border.all(color: Color.lerp(c.accent, c.fg, 0.08)!, width: 1),
     );
 
 extension on _CampaignCountdownState {
