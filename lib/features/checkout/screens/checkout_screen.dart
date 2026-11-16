@@ -582,8 +582,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // A pin in another city is another address: priced and routed as this one it would send the
     // driver to the wrong town. Edit the address instead (audit 2026-10-18).
     final addrCity = (addr['city'] ?? '').toString();
-    if (result.city.isNotEmpty && addrCity.isNotEmpty
-        && deliveryPinRequired(result.city) != deliveryPinRequired(addrCity)) {
+    // Any other city, not only Tripoli versus elsewhere (2026-11-16: the pin decides the city).
+    String fold(String x) => x.trim().replaceAll(RegExp(r'[أإآ]'), 'ا').replaceAll('ة', 'ه').replaceAll('ى', 'ي');
+    if (result.city.isNotEmpty && addrCity.isNotEmpty && fold(result.city) != fold(addrCity)) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(context.tr('الموقع الذي حددته خارج $addrCity — عدّل العنوان أو اختر عنواناً آخر',
               'The location you picked is outside $addrCity — edit the address or choose another one'))));
