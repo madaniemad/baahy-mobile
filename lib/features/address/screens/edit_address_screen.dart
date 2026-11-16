@@ -36,6 +36,10 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
   /// The area the customer confirmed with the pin (2026-10-18) — drivers see it.
   int? _areaId;
   String? _areaName;
+  /// The city the pin is really in (from the map), when the pin was set in this visit. The address
+  /// city must match it (2026-11-16, order 113542357: a Tajura pin saved as Tripoli priced and paid
+  /// as Tripoli). Unknown for an untouched saved address.
+  String? _pinCity;
   bool _loading = false;
   bool _mapOpen = false; // a double tap must not stack two map pickers
   final _phoneFocus = FocusNode();
@@ -72,6 +76,8 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
         if (_nameCtrl.text.isEmpty) _nameCtrl.text = user.name;
         if (_phoneCtrl.text.isEmpty) _phoneCtrl.text = user.phone;
       }
+      // The city starts as the account's city (shown, not asked); the pin confirms or questions it.
+      _city ??= _accountCity();
       // Auto-open map picker so the customer sets their pin first
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _openMapPicker();
@@ -99,8 +105,12 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       MaterialPageRoute(builder: (_) => MapLocationPicker(initial: initial)),
     ).whenComplete(() => _mapOpen = false);
     if (result == null || !mounted) return;
+    // The city shown, else the account city read now (it loads asynchronously, so at initState it
+    // may not be there yet).
+    final chosen = _city ?? _accountCity();
     setState(() {
-      _city = result.city;
+      _pinCity = result.city;
+      if (chosen == null || chosen.isEmpty || _sameCity(chosen, result.city)) _city = result.city;
       _lat  = result.lat;
       _lng  = result.lng;
       _areaId = result.areaId;
@@ -115,6 +125,52 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
             : result.address;
       }
     });
+    // The pin is in another city than the one shown: ask, never switch silently.
+    if (chosen != null && chosen.isNotEmpty && !_sameCity(chosen, result.city)) await _askCityFromPin(chosen);
+  }
+
+  /// The account's city (home header), or null while it is the «all Libya» default.
+  String? _accountCity() {
+    final acct = ref.read(cityProvider).trim();
+    return (acct.isEmpty || acct == 'ليبيا' || acct == 'كل ليبيا') ? null : acct;
+  }
+
+  static String _fold(String s) => s.trim().replaceAll(RegExp(r'[أإآ]'), 'ا').replaceAll('ة', 'ه').replaceAll('ى', 'ي');
+  static bool _sameCity(String a, String b) => _fold(a) == _fold(b);
+
+  /// «موقعك على الخريطة في تاجوراء» — change the city to the pin's, or move the pin. There is no
+  /// third way: an address whose pin and city disagree prices and pays as the wrong city.
+  Future<void> _askCityFromPin(String chosen) async {
+    final pin = _pinCity;
+    if (pin == null) return;
+    final change = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(color: ctx.col.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
+        padding: EdgeInsets.fromLTRB(20, 18, 20, 16 + MediaQuery.of(ctx).padding.bottom),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(ctx.tr('موقعك على الخريطة في ${_cityLabel(pin)}', 'Your map location is in ${_cityLabel(pin)}'),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ctx.col.ink0)),
+          const SizedBox(height: 8),
+          Text(ctx.tr('اخترت ${_cityLabel(chosen)}، لكن الدبوس في ${_cityLabel(pin)}. هل تريد تغيير المدينة إلى ${_cityLabel(pin)}؟',
+                  'You chose ${_cityLabel(chosen)}, but the pin is in ${_cityLabel(pin)}. Change the city to ${_cityLabel(pin)}?'),
+              style: TextStyle(fontSize: 14, height: 1.5, color: ctx.col.ink2)),
+          const SizedBox(height: 18),
+          AppButton(label: ctx.tr('نعم، تغيير إلى ${_cityLabel(pin)}', 'Yes, change to ${_cityLabel(pin)}'),
+              onTap: () => Navigator.of(ctx).pop(true)),
+          const SizedBox(height: 10),
+          AppButton(label: ctx.tr('لا، تحريك الدبوس', 'No, move the pin'), variant: AppButtonVariant.outline,
+              onTap: () => Navigator.of(ctx).pop(false)),
+        ]),
+      ),
+    );
+    if (!mounted) return;
+    if (change == true) {
+      setState(() => _city = pin);
+    } else if (change == false) {
+      _openMapPicker();
+    }
   }
 
   Future<void> _pickCitySheet() async {
@@ -130,7 +186,16 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
     if (!mounted) return;
     // Clear residual keyboard focus from the sheet's search field (iOS keyboard bug)
     FocusScope.of(context).unfocus();
-    if (picked != null) setState(() => _city = picked);
+    if (picked == null) return;
+    // A city the pin is not in: the pin decides, so moving it is the way to change the city.
+    if (_pinCity != null && !_sameCity(picked, _pinCity!)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr(
+          'الدبوس على الخريطة في ${_cityLabel(_pinCity!)}. لاختيار ${_cityLabel(picked)} حرّك الدبوس إلى داخلها.',
+          'The pin is in ${_cityLabel(_pinCity!)}. To choose ${_cityLabel(picked)}, move the pin there.'))));
+      _openMapPicker();
+      return;
+    }
+    setState(() => _city = picked);
   }
 
   /// The street field is pre-seeded as "<district> - "; if the customer never
@@ -139,6 +204,10 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       _streetCtrl.text.trim().replaceAll(RegExp(r'[\s\-،,]+$'), '').trim();
 
   Future<void> _save() async {
+    if (_city != null && _pinCity != null && !_sameCity(_city!, _pinCity!)) {
+      await _askCityFromPin(_city!);
+      return;
+    }
     if (_city == null || _street.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.s.selectCityAndStreet)));
