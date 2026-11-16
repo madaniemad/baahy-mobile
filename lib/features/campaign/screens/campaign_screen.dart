@@ -15,6 +15,7 @@ import '../../../core/utils/responsive.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/product_card.dart';
 import '../widgets/campaign_widgets.dart';
+import '../../vendor/widgets/store_filters.dart';
 
 const _font = 'Manrope';
 const _fallback = ['Tajawal'];
@@ -62,6 +63,10 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
   String _sort = 'discount';
   int? _vendorId;
   int? _categoryId;
+  /// The «تصفية» sheet's choices (price, brand, size/colour…); sort stays [_sort].
+  StoreFilters _filters = const StoreFilters();
+  /// A filter change is loading: the current products stay on screen (no jump) under a thin bar.
+  bool _refreshing = false;
   bool _showTitle = false;
   /// The count + sort row, so a banner that filters the page can bring the grid into view.
   final _gridTopKey = GlobalKey();
@@ -104,10 +109,23 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
     }
   }
 
-  Future<void> _fetch({bool reset = false}) async {
-    if (reset) {
+  /// [keep]: a filter change. The grid keeps its products until the new page arrives, so the page
+  /// does not shrink and jump; the header, stores and cards are never reloaded either way.
+  Future<void> _fetch({bool reset = false, bool keep = false}) async {
+    if (reset && keep && _products.isNotEmpty) {
       ++_reqSeq;
       setState(() {
+        _refreshing = true;
+        _loadingMore = false;
+        _loadError = false;
+        _loadMoreError = false;
+        _page = 1;
+        _hasMore = true;
+      });
+    } else if (reset) {
+      ++_reqSeq;
+      setState(() {
+        _refreshing = false;
         _loading = true;
         _loadingMore = false;
         _loadError = false;
@@ -134,6 +152,7 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
         'per_page': 20,
         if (_vendorId != null) 'vendor_ids[]': [_vendorId],
         if (_categoryId != null) 'category_id': _categoryId,
+        ..._filters.toQuery(),
       });
       if (!mounted || seq != _reqSeq) return;
       final data = res.data['data'];
@@ -145,6 +164,7 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
         _hasMore = (data['current_page'] as num? ?? 1) < (data['last_page'] as num? ?? 1);
         _loading = false;
         _loadingMore = false;
+        _refreshing = false;
       });
     } catch (_) {
       if (!mounted || seq != _reqSeq) return;
@@ -156,6 +176,7 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
         }
         _loading = false;
         _loadingMore = false;
+        _refreshing = false;
       });
     }
   }
@@ -219,6 +240,17 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
             duration: const Duration(milliseconds: 300), curve: Curves.easeOut, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart);
       }
     });
+  }
+
+  Future<void> _openFilters() async {
+    final picked = await showCampaignFilterSheet(context, _filters, scope: {
+      ...campaignProductsParams(widget.slug),
+      if (_vendorId != null) 'vendor_ids[]': [_vendorId],
+      if (_categoryId != null) 'category_id': _categoryId,
+    });
+    if (picked == null || !mounted) return;
+    setState(() => _filters = picked);
+    _fetch(reset: true, keep: true);
   }
 
   Future<void> _openSort() async {
@@ -352,6 +384,7 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
                             fontWeight: FontWeight.w600,
                             color: context.col.ink3)),
                   ),
+                  _FilterButton(count: _filters.activeCount, onTap: _openFilters),
                   TextButton.icon(
                     onPressed: _openSort,
                     icon: Icon(Icons.sort_rounded, size: 18, color: context.col.ink0),
@@ -371,6 +404,14 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
               ),
             ),
 
+            if (_refreshing)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: LinearProgressIndicator(minHeight: 2, color: AppColors.primary, backgroundColor: Colors.transparent),
+                ),
+              ),
+
             // ── Products ──
             if (_loading)
               const SliverToBoxAdapter(
@@ -384,11 +425,12 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
             else if (_products.isEmpty)
               SliverToBoxAdapter(
                 child: _EmptyBox(
-                  filtered: _vendorId != null || _categoryId != null,
+                  filtered: _vendorId != null || _categoryId != null || _filters.activeCount > 0,
                   onShowAll: () {
                     setState(() {
                       _vendorId = null;
                       _categoryId = null;
+                      _filters = const StoreFilters();
                     });
                     _fetch(reset: true);
                   },
@@ -1051,6 +1093,42 @@ class _Chip extends StatelessWidget {
                   color: AppColors.catTabText(context, selected))),
         ),
       );
+}
+
+/// «تصفية» next to the sort, with the number of filters on.
+class _FilterButton extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
+  const _FilterButton({required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: onTap,
+      icon: Icon(Icons.tune_rounded, size: 18, color: context.col.ink0),
+      label: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(context.s.campaignFilter,
+            style: TextStyle(
+                fontFamily: _font,
+                fontFamilyFallback: _fallback,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: context.col.ink0)),
+        if (count > 0) ...[
+          const SizedBox(width: 5),
+          Container(
+            constraints: const BoxConstraints(minWidth: 18),
+            height: 18,
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: AppColors.adaptive(context), borderRadius: BorderRadius.circular(9)),
+            child: Text('$count',
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white, height: 1.0)),
+          ),
+        ],
+      ]),
+    );
+  }
 }
 
 // ── Sort sheet (same look as the search results one) ──────────────────────────

@@ -34,6 +34,24 @@ class StoreFilters {
       minRating != null ||
       brands.isNotEmpty ||
       attributeValueIds.isNotEmpty;
+
+  /// How many narrowing filters are on (sort excluded), for a count on the button.
+  int get activeCount =>
+      ((minPrice != null || maxPrice != null) ? 1 : 0) +
+      (onSaleOnly ? 1 : 0) +
+      (minRating != null ? 1 : 0) +
+      brands.length +
+      attributeValueIds.length;
+
+  /// The `/products` query parameters for these filters (sort excluded).
+  Map<String, dynamic> toQuery() => {
+        if (minPrice != null) 'min_price': minPrice,
+        if (maxPrice != null) 'max_price': maxPrice,
+        if (onSaleOnly) 'on_sale': 1,
+        if (minRating != null) 'min_rating': minRating,
+        if (brands.isNotEmpty) 'brands[]': brands.toList(),
+        if (attributeValueIds.isNotEmpty) 'attribute_value_ids[]': attributeValueIds.toList(),
+      };
 }
 
 class _AttrValue {
@@ -70,14 +88,10 @@ Color? _parseHex(String raw) {
   return n == null ? null : Color(n);
 }
 
-Future<_StoreOptions> _loadOptions(int vendorId, int? categoryId) async {
+/// [scope] is the listing's own query (store, campaign, category…), so the options match the page.
+Future<_StoreOptions> _loadOptions(Map<String, dynamic> scope) async {
   final res = await ApiClient.instance.dio
-      .get('/products/filter-options', queryParameters: {
-    'vendor_id': vendorId,
-    // Same scope as the store's listing, which only shows products with a photo.
-    'has_image': 1,
-    if (categoryId != null) 'category_id': categoryId,
-  });
+      .get('/products/filter-options', queryParameters: scope);
   final data = res.data['data'] as Map;
   final types = <_AttrType>[];
   for (final t in (data['attribute_types'] as List? ?? [])) {
@@ -119,17 +133,42 @@ Future<StoreFilters?> showStoreFilterSheet(
     constraints: BoxConstraints(
       maxHeight: MediaQuery.sizeOf(context).height * 0.88,
     ),
-    builder: (_) => _StoreFilterSheet(
-        initial: initial, vendorId: vendorId, categoryId: categoryId),
+    builder: (_) => _StoreFilterSheet(initial: initial, scope: {
+      'vendor_id': vendorId,
+      // Same scope as the store's listing, which only shows products with a photo.
+      'has_image': 1,
+      if (categoryId != null) 'category_id': categoryId,
+    }),
+  );
+}
+
+/// The campaign page's «تصفية» sheet (2026-11-17): the same sheet without sort (the page has its
+/// own) or "deals only" (everything there is a deal). [scope] = the page's current product query
+/// (campaign + store + category), so only options the shopper can actually find are offered.
+Future<StoreFilters?> showCampaignFilterSheet(
+    BuildContext context, StoreFilters initial,
+    {required Map<String, dynamic> scope}) {
+  return showModalBottomSheet<StoreFilters>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: context.col.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    constraints: BoxConstraints(
+      maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+    ),
+    builder: (_) => _StoreFilterSheet(initial: initial, scope: scope, campaign: true),
   );
 }
 
 class _StoreFilterSheet extends StatefulWidget {
   final StoreFilters initial;
-  final int vendorId;
-  final int? categoryId;
+  final Map<String, dynamic> scope;
+  /// Campaign page: no sort or deals-only rows; «تصفية» / «مسح» labels.
+  final bool campaign;
   const _StoreFilterSheet(
-      {required this.initial, required this.vendorId, this.categoryId});
+      {required this.initial, required this.scope, this.campaign = false});
 
   @override
   State<_StoreFilterSheet> createState() => _StoreFilterSheetState();
@@ -142,7 +181,7 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
   late final Set<String> _brands = {...widget.initial.brands};
   late final Set<int> _attrIds = {...widget.initial.attributeValueIds};
   late final Future<_StoreOptions?> _options =
-      _loadOptions(widget.vendorId, widget.categoryId)
+      _loadOptions(widget.scope)
           .then<_StoreOptions?>((o) => o)
           .catchError((_) => null);
   late final TextEditingController _min = TextEditingController(
@@ -324,7 +363,7 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
                   children: [
                     Row(children: [
                       Expanded(
-                        child: Text(s.filters,
+                        child: Text(widget.campaign ? s.campaignFilter : s.filters,
                             style: _font.copyWith(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
@@ -333,11 +372,11 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
                       TextButton(
                         onPressed: () =>
                             Navigator.of(context).pop(const StoreFilters()),
-                        child: Text(s.resetFilters),
+                        child: Text(widget.campaign ? s.campaignClear : s.resetFilters),
                       ),
                     ]),
-                    _title(s.sortBy),
-                    Wrap(
+                    if (!widget.campaign) _title(s.sortBy),
+                    if (!widget.campaign) Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
@@ -367,7 +406,7 @@ class _StoreFilterSheetState extends State<_StoreFilterSheet> {
                       _priceField(_max, s.priceTo),
                     ]),
                     const SizedBox(height: 6),
-                    SwitchListTile(
+                    if (!widget.campaign) SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       activeThumbColor: AppColors.teal,
                       title: Text(s.dealsOnly,
