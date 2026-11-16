@@ -228,6 +228,9 @@ class ProductCampaign {
   /// The campaign's sticker logo (Emad, 2026-11-16: customers browsing must see at a glance which
   /// products are in the campaign). Null → the coloured name tag.
   final String? logo;
+  /// False while the campaign takes no cash on delivery (set per campaign in the admin,
+  /// Emad 2026-11-17): checkout then hides COD for a cart holding this product.
+  final bool cod;
   const ProductCampaign({
     required this.slug,
     required this.nameAr,
@@ -235,6 +238,7 @@ class ProductCampaign {
     required this.bg,
     required this.fg,
     this.logo,
+    this.cod = true,
   });
 
   String name(bool isAr) => isAr ? _or(nameAr, nameEn) : _or(nameEn, nameAr);
@@ -246,6 +250,7 @@ class ProductCampaign {
         'bg': colorToHex(bg),
         'fg': colorToHex(fg),
         if (logo != null) 'logo': logo,
+        'cod': cod,
       };
 
   static ProductCampaign? tryParse(dynamic j) {
@@ -259,6 +264,7 @@ class ProductCampaign {
       bg: parseHexColor(j['bg'], const Color(0xFF1FD7E2)),
       fg: parseHexColor(j['fg'], const Color(0xFF08122B)),
       logo: _s(j['logo']).startsWith('http') ? _s(j['logo']) : null,
+      cod: j['cod'] != false,
     );
   }
 }

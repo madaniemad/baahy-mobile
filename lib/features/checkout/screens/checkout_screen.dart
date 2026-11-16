@@ -1899,8 +1899,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         .toList();
     final codValueExceeded = effectiveTotal > 5000;
     final codItemsExceeded = effectiveItems.length > 20;
-    final codBlocked =
-        !_codAllowedForAddress || codValueExceeded || codItemsExceeded;
+    // A campaign that takes no cash on delivery (Baahy Friday): any of its products in the
+    // order means prepaid only. The server refuses it too (2026-11-17).
+    final campaignNoCod =
+        effectiveItems.where((i) => i.product.campaign?.cod == false).firstOrNull?.product.campaign;
+    final codBlocked = !_codAllowedForAddress ||
+        codValueExceeded ||
+        codItemsExceeded ||
+        campaignNoCod != null;
     final methods = codBlocked
         ? allMethods.where((m) => m.id != 'cash_on_delivery').toList()
         : allMethods;
@@ -2227,7 +2233,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ],
                       ),
                     ),
-                  ] else if (codValueExceeded || codItemsExceeded) ...[
+                  ] else if (codValueExceeded || codItemsExceeded || campaignNoCod != null) ...[
                     const SizedBox(height: 6),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -2238,7 +2244,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           const SizedBox(width: 5),
                           Expanded(
                             child: Text(
-                              codValueExceeded
+                              campaignNoCod != null && !codValueExceeded && !codItemsExceeded
+                                  ? context.tr(
+                                      'الدفع عند الاستلام غير متاح لمنتجات ${campaignNoCod.nameAr.isNotEmpty ? campaignNoCod.nameAr : 'الحملة'}',
+                                      'Cash on delivery is not available for ${campaignNoCod.nameEn.isNotEmpty ? campaignNoCod.nameEn : 'campaign'} products')
+                                  : codValueExceeded
                                   ? context.tr(
                                       'الدفع عند الاستلام غير متاح — المجموع يتجاوز 5,000 د.ل',
                                       'Cash on delivery is unavailable — total exceeds 5,000 ${context.s.lydUnit}')
