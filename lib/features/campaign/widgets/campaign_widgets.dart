@@ -336,8 +336,8 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
   }
 }
 
-/// A line in the campaign's badge colour (yellow for Baahy Friday) with a thin dark outline and a
-/// soft shadow, so it reads on the light campaign colour. [text] defaults to the campaign name.
+/// A line in the campaign's badge colour (yellow for Baahy Friday). The headline ([display]) has a
+/// soft shadow only; the short name in the collapsed page bar keeps a thin dark outline. [text] defaults to the campaign name.
 class CampaignTitleText extends StatelessWidget {
   final Campaign campaign;
   final String? text;
@@ -377,6 +377,13 @@ class CampaignTitleText extends StatelessWidget {
             height: 1.25,
           );
     Text t(TextStyle st) => Text(name, maxLines: maxLines, overflow: TextOverflow.ellipsis, textAlign: textAlign, style: st);
+    // The headline: no outline (Emad, 2026-11-16), only a soft shadow so the yellow lifts off the
+    // campaign colour.
+    if (display) {
+      return t(base().copyWith(color: c.accent, shadows: [
+        Shadow(color: c.fg.withValues(alpha: 0.38), blurRadius: 5, offset: const Offset(0, 2)),
+      ]));
+    }
     return Stack(children: [
       // Outline: the same text stroked in the dark text colour underneath.
       t(base().copyWith(
