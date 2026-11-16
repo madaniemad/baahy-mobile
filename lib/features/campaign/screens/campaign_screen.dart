@@ -620,8 +620,7 @@ class _StoresStrip extends ConsumerWidget {
                   child: Container(
                     color: campaign.bg,
                     alignment: Alignment.center,
-                    // Neon yellow (Emad, 2026-11-17).
-                    child: Icon(Icons.grid_view_rounded, size: 24, color: campaign.accent),
+                    child: Icon(Icons.grid_view_rounded, size: 24, color: campaign.fg),
                   ),
                 );
               }
