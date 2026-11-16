@@ -332,7 +332,7 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               }).toList()),
               const SizedBox(height: 16),
 
-              _TextField(context.tr('الاسم الكامل', 'Full name'), _nameCtrl,
+              _TextField(context.tr('الاسم', 'Name'), _nameCtrl,
                 hint: context.tr('محمد علي', 'Mohammed Ali'), autofocus: true),
 
               // ── Phone ──────────────────────────────────────────────────────
@@ -463,36 +463,11 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
               const SizedBox(height: 14),
 
               // The map seeds this with the district, so the label names it first.
-              _TextField(context.tr('المنطقة، الشارع، المبنى', 'Area, street, building'), _streetCtrl,
-                hint: context.tr('قرقارش - شارع 7 أبريل، مبنى 12، شقة 4',
-                    'Gargaresh - 7 April St, building 12, apt 4')),
+              _TextField(context.tr('المنطقة', 'Area'), _streetCtrl,
+                hint: context.tr('مثل: قرقارش', 'e.g. Gargaresh')),
 
-              _FieldLabel(context.tr('📍 ملاحظات معلم بارز (مستحسن)', '📍 Nearby landmark notes (recommended)')),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.col.bg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _notesFocus.hasFocus ? AppColors.primary : context.col.border,
-                    width: _notesFocus.hasFocus ? 1.5 : 1),
-                ),
-                child: TextField(
-                  controller: _notesCtrl,
-                  focusNode: _notesFocus,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: context.tr('مثل: "مقابل المسجد الأبيض، بجانب مخبز المدينة"',
-                        'e.g. "Opposite the White Mosque, next to the city bakery"'),
-                    hintStyle: TextStyle(color: context.col.ink3, fontSize: 12.5),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(14),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                context.tr('يساعد سائقينا في الوصول إليك بسرعة.', 'Helps our drivers reach you quickly.'),
-                style: TextStyle(fontSize: 11, color: context.col.ink3, height: 1.4)),
+              // The landmark notes field is gone (Emad, 2026-11-16); an address's existing notes are
+              // kept as they are when it is edited (still sent below).
               const SizedBox(height: 16),
 
               const SizedBox(height: 80),
