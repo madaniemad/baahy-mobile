@@ -64,6 +64,10 @@ class ApiClient {
   /// Set once the direct host proves unreachable and the proxy works.
   static bool _preferFallback = false;
 
+  /// The customer's city is known and is not Tripoli (set by CityNotifier). Catalogue reads then
+  /// carry ?outside_tripoli=1 and the server leaves out the Tripoli-only large items (2026-11-17).
+  static bool outsideTripoli = false;
+
   /// Where product images should be fetched from, given what we have learned about this
   /// network. Image widgets open their own connections and never touch the Dio interceptor,
   /// so without this a device that cannot resolve api.baahy.com gets a working app with
@@ -98,6 +102,9 @@ class ApiClient {
         await _tokenReady;
         if (_token != null) {
           options.headers['Authorization'] = 'Bearer $_token';
+        }
+        if (outsideTripoli && options.method.toUpperCase() == 'GET') {
+          options.queryParameters = {...options.queryParameters, 'outside_tripoli': '1'};
         }
         handler.next(options);
       },

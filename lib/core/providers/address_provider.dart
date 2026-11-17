@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
+import '../../features/map/map_location_picker.dart' show sameDeliveryCity;
 
 // Holds the user's primary/default delivery address (null = no address saved yet)
 final primaryAddressProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
@@ -13,6 +14,16 @@ class CityNotifier extends StateNotifier<String> {
   final Ref _ref;
   CityNotifier(this._ref) : super('ليبيا') {
     _init();
+  }
+
+  /// Every city change tells the API client whether the customer is outside Tripoli, so the
+  /// catalogue leaves out the Tripoli-only large items (2026-11-17). 'ليبيا' = not chosen yet.
+  @override
+  set state(String value) {
+    final c = value.trim();
+    ApiClient.outsideTripoli =
+        c.isNotEmpty && c != 'ليبيا' && c != 'كل ليبيا' && !sameDeliveryCity(c, 'طرابلس');
+    super.state = value;
   }
 
   Future<void> _init() async {

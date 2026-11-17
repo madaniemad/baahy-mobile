@@ -640,6 +640,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
 
+    // Large items go only to Tripoli (2026-11-17): name them; the server refuses them too.
+    final farNote = _tripoliOnlyNote(
+        isReorder ? reorderSession.items : ref.read(cartProvider).items);
+    if (farNote != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(farNote), backgroundColor: AppColors.danger));
+      return;
+    }
+
     if (!isReorder) {
       // Pre-flight: variable items without a chosen variation.
       final allItems = ref.read(cartProvider).items;
@@ -1747,6 +1756,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return alias == null ? null : _rateNamed(alias);
   }
 
+  /// Tripoli-only items (large appliances, 2026-11-17) in an order going to another city: the
+  /// message naming them, else null. Unknown city → null (the server still checks).
+  String? _tripoliOnlyNote(List<dynamic> items) {
+    final city = _addressCity;
+    if (city.isEmpty || sameDeliveryCity(city, 'طرابلس')) return null;
+    final far = items.where((i) => i.product.tripoliOnly == true).toList();
+    if (far.isEmpty) return null;
+    final names = far
+        .map((i) => (context.isAr ? i.product.nameAr : i.product.name) as String)
+        .join(context.isAr ? '، ' : ', ');
+    return context.tr('لا يمكن توصيل $names خارج طرابلس. احذفه من السلة أو اختر عنواناً داخل طرابلس.',
+        '$names cannot be delivered outside Tripoli. Remove it from the cart or choose an address in Tripoli.');
+  }
+
   /// The chosen address's city is one the server confirmed it does not deliver to.
   bool get _cityUnserviceable {
     final city = _addressCity;
@@ -2088,6 +2111,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                             style: TextStyle(
                                                 fontSize: 12.5,
                                                 color: context.col.ink2)),
+                                        if (_tripoliOnlyNote(effectiveItems) case final far?) ...[
+                                          const SizedBox(height: 4),
+                                          Text(far,
+                                              style: const TextStyle(
+                                                  fontSize: 11.5,
+                                                  color: AppColors.danger,
+                                                  fontWeight: FontWeight.w600)),
+                                        ],
                                         if (cityUnserviceable) ...[
                                           const SizedBox(height: 4),
                                           Text(context.s.cityNotServed,

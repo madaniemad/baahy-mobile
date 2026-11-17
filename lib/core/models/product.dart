@@ -47,6 +47,8 @@ class Product {
   /// The same item in other colours / capacities / models: separate products shown as options
   /// (product detail only). Not variations.
   final ProductFamily? family;
+  /// A large item delivered only inside Tripoli (2026-11-17): checkout refuses any other city.
+  final bool tripoliOnly;
 
   const Product({
     required this.id,
@@ -80,6 +82,7 @@ class Product {
     this.purchasable = true,
     this.campaign,
     this.family,
+    this.tripoliOnly = false,
   });
 
   /// True for products created within the last 14 days.
@@ -109,6 +112,7 @@ class Product {
     'id': id,
     'name': name,
     'name_ar': nameAr,
+    if (tripoliOnly) 'tripoli_only': true,
     'sku': sku,
     'price': price,
     'sale_price': salePrice,
@@ -188,6 +192,7 @@ class Product {
     purchasable: j['purchasable'] != false && j['purchasable'] != 0,
     campaign: ProductCampaign.tryParse(j['campaign']) ?? (kFakeCampaign ? fakeProductCampaign(j) : null),
     family: ProductFamily.tryParse(j['family']),
+    tripoliOnly: j['tripoli_only'] == true || j['tripoli_only'] == 1,
   );
 
   static DateTime? _parseDate(dynamic raw) {
