@@ -44,3 +44,20 @@ final cityShippingRateProvider = Provider<ShippingRate?>((ref) {
     return null;
   }
 });
+
+/// What each area of a city adds to delivery (Emad 2026-11-18): far Tripoli areas pay a little more.
+/// The server sends 0 while its switch is off, so the checkout total always equals what the order is
+/// charged (FarAreaFee). Keyed by area id.
+final areaExtraFeesProvider = FutureProvider.family<Map<int, double>, String>((ref, city) async {
+  try {
+    final res = await ApiClient.instance.dio.get('/areas', queryParameters: {'city': city});
+    final data = res.data is Map ? res.data['data'] : null;
+    final areas = (data is Map ? data['areas'] as List? : null) ?? const [];
+    return {
+      for (final a in areas)
+        if (a is Map && a['id'] is num) (a['id'] as num).toInt(): ((a['extra_delivery_fee'] ?? 0) as num).toDouble(),
+    };
+  } catch (_) {
+    return const {};
+  }
+});

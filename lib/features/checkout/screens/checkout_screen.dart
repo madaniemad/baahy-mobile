@@ -712,7 +712,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       // wallet" with the shipping fee silently unaccounted (mirrors effectiveTotal in build).
       final orderDeliveryFee = isReorder
           ? (_selectedRate != null
-              ? _selectedRate!.effectiveRate(orderSubtotal)
+              ? (_selectedRate!.effectiveRate(orderSubtotal) > 0 ? _selectedRate!.effectiveRate(orderSubtotal) + _farAreaFee(_selectedRate) : 0.0)
               : (cart.cityRate?.effectiveRate(orderSubtotal) ??
                   cart.fallbackShippingFee))
           : _cartDelivery(cart).fee;
@@ -1733,7 +1733,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (rate == null) return (fee: 0.0, known: false);
     final base = rate.effectiveRate(cart.subtotal);
     if (base == 0) return (fee: 0.0, known: true); // free shipping — waive collection fee too
-    return (fee: base + cart.collectionFeeFor(rate), known: true);
+    return (fee: base + cart.collectionFeeFor(rate) + _farAreaFee(rate), known: true);
+  }
+
+  /// A far Tripoli area adds a little to delivery (server FarAreaFee; 0 until switched on). Hub-city
+  /// delivery only, and the callers skip it when delivery is free, like the server.
+  double _farAreaFee(ShippingRate? rate) {
+    if (rate?.zoneType != 'hub_city' || !_hasAddressCity) return 0;
+    final areaId = _selectedAddress?['area_id'];
+    if (areaId is! num) return 0;
+    return ref.read(areaExtraFeesProvider(_addressCity)).valueOrNull?[areaId.toInt()] ?? 0;
   }
 
   String get _addressCity => (_selectedAddress?['city'] ?? '').toString();
@@ -1904,13 +1913,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final cityUnserviceable = _cityUnserviceable;
     // A reorder with no rate for its city yet must not fall back to the flat fee — that
     // invents a price. Treated as unknown, exactly like the cart does.
+    // Rebuild when the chosen city's area fees arrive (far areas).
+    if (_hasAddressCity) ref.watch(areaExtraFeesProvider(_addressCity));
     final cartDelivery = _cartDelivery(cart);
     final deliveryKnown = isReorder
         ? (selectedRate != null || cart.cityRate != null)
         : cartDelivery.known;
     final effectiveDeliveryFee = isReorder
         ? (selectedRate != null
-            ? selectedRate.effectiveRate(effectiveSubtotal)
+            ? (selectedRate.effectiveRate(effectiveSubtotal) > 0 ? selectedRate.effectiveRate(effectiveSubtotal) + _farAreaFee(selectedRate) : 0.0)
             : (cart.cityRate?.effectiveRate(effectiveSubtotal) ?? 0))
         : cartDelivery.fee;
     final effectiveTotal = isReorder
