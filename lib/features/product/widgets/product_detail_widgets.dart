@@ -1211,9 +1211,242 @@ class _FamilyOptions extends StatelessWidget {
   final void Function(int id, String? preview) onSelect;
   const _FamilyOptions({required this.family, required this.onSelect});
 
+  /// Long rows (Emad 2026-11-19: a polish in 120 shades "is long"): one scrolling row of the current
+  /// option and its nearest 11, then «كل الدرجات (120)», which opens every option in a sheet with a
+  /// search box above 24. Rows of 12 or fewer show as before. Same rule as the website.
+  static const _rowLimit = 12;
+  static const _searchFrom = 24;
+
   void _open(BuildContext context, ProductFamilyOption o) {
     if (o.selected) return;
     onSelect(o.productId, o.preview);
+  }
+
+  static List<ProductFamilyOption> _compact(List<ProductFamilyOption> all) {
+    if (all.length <= _rowLimit) return all;
+    final at = all.indexWhere((o) => o.selected).clamp(0, all.length - 1);
+    final out = <ProductFamilyOption>[all[at]];
+    for (var d = 1; out.length < _rowLimit && (at + d < all.length || at - d >= 0); d++) {
+      if (at + d < all.length) out.add(all[at + d]);
+      if (out.length < _rowLimit && at - d >= 0) out.add(all[at - d]);
+    }
+    return out;
+  }
+
+  static String _allLabel(String key, bool isAr, int total) {
+    const ar = {'shade': 'الدرجات', 'colour': 'الألوان', 'capacity': 'السعات', 'volume': 'الأحجام', 'size': 'المقاسات'};
+    const en = {'shade': 'shades', 'colour': 'colours', 'capacity': 'capacities', 'volume': 'sizes', 'size': 'sizes'};
+    return isAr ? 'كل ${ar[key] ?? 'الخيارات'} ($total)' : 'All ${en[key] ?? 'options'} ($total)';
+  }
+
+  Widget _swatch(BuildContext context, ProductFamilyOption o, bool isAr, {double size = 52, VoidCallback? onTap}) {
+    final soldOut = !o.inStock;
+    final label = o.value(isAr);
+    final url = Product.resolveImageUrl(o.image);
+    return Semantics(
+      button: true,
+      selected: o.selected,
+      label: soldOut ? '$label — ${context.s.outOfStock}' : label,
+      child: GestureDetector(
+        onTap: onTap ?? () => _open(context, o),
+        child: Tooltip(
+          message: label,
+          child: Opacity(
+            opacity: soldOut ? 0.45 : 1,
+            child: Container(
+              width: size,
+              height: size,
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: o.selected ? AppColors.primary : context.col.border,
+                    width: o.selected ? 2 : 1),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(9),
+                child: Stack(fit: StackFit.expand, children: [
+                  if (url != null)
+                    OptimizedNetworkImage(
+                        url: url,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 160,
+                        variantWidth: 400,
+                        error: Container(color: context.col.surfaceSoft))
+                  else
+                    Container(
+                      color: context.col.surfaceSoft,
+                      alignment: Alignment.center,
+                      child: Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 9)),
+                    ),
+                  if (soldOut) CustomPaint(painter: _OutOfStockPainter()),
+                ]),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(BuildContext context, ProductFamilyOption o, bool isAr, bool showPrice, {VoidCallback? onTap}) {
+    final soldOut = !o.inStock;
+    final label = o.value(isAr);
+    return Semantics(
+      button: true,
+      selected: o.selected,
+      label: soldOut ? '$label — ${context.s.outOfStock}' : label,
+      child: GestureDetector(
+        onTap: onTap ?? () => _open(context, o),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: o.selected
+                    ? AppColors.adaptive(context)
+                    : soldOut
+                        ? context.col.surfaceSoft
+                        : context.col.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: o.selected ? AppColors.adaptive(context) : context.col.border,
+                    width: o.selected ? 1.5 : 1),
+              ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text(label,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: o.selected
+                            ? Colors.white
+                            : soldOut
+                                ? context.col.ink3
+                                : context.col.ink0)),
+                if (showPrice)
+                  Text('${fmtPrice(o.currentPrice)} ${context.s.lydUnit}',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: o.selected ? Colors.white70 : context.col.ink2)),
+              ]),
+            ),
+            if (soldOut)
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CustomPaint(painter: _OutOfStockPainter()),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAll(BuildContext context, ProductFamilyAxis axis, bool showPrice) {
+    final isAr = context.isAr;
+    final title = _allLabel(axis.key, isAr, axis.options.length);
+    String norm(String v) => v
+        .toLowerCase()
+        .replaceAllMapped(RegExp('[٠-٩]'), (m) => '${'٠١٢٣٤٥٦٧٨٩'.indexOf(m[0]!)}')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: context.col.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (sheetCtx) {
+        var q = '';
+        return StatefulBuilder(builder: (ctx, setSheet) {
+          final n = norm(q);
+          final list = n.isEmpty
+              ? axis.options
+              : axis.options.where((o) => norm('${o.valueAr} ${o.valueEn}').contains(n)).toList();
+          void pick(ProductFamilyOption o) {
+            Navigator.of(sheetCtx).pop();
+            _open(context, o);
+          }
+          return SizedBox(
+            height: MediaQuery.of(ctx).size.height * 0.85,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+              child: Column(children: [
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 8, 6),
+                  child: Row(children: [
+                    Expanded(
+                        child: Text(title,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+                    IconButton(
+                        onPressed: () => Navigator.of(sheetCtx).pop(),
+                        icon: Icon(Icons.close, color: ctx.col.ink2),
+                        tooltip: isAr ? 'إغلاق' : 'Close'),
+                  ]),
+                ),
+                if (axis.options.length > _searchFrom)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: TextField(
+                      onChanged: (v) => setSheet(() => q = v),
+                      textInputAction: TextInputAction.search,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        hintText: isAr ? 'ابحث بالرقم أو الاسم' : 'Search by number or name',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: list.isEmpty
+                      ? Center(
+                          child: Text(isAr ? 'لا توجد نتيجة بهذا البحث.' : 'Nothing matches that search.',
+                              style: TextStyle(color: ctx.col.ink3)))
+                      : axis.isSwatch
+                          ? GridView.builder(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 4, mainAxisSpacing: 12, crossAxisSpacing: 10, childAspectRatio: 0.72),
+                              itemCount: list.length,
+                              itemBuilder: (_, i) {
+                                final o = list[i];
+                                return LayoutBuilder(builder: (_, c) {
+                                  return Column(children: [
+                                    _swatch(ctx, o, isAr, size: c.maxWidth, onTap: () => pick(o)),
+                                    const SizedBox(height: 4),
+                                    Text(o.value(isAr),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            height: 1.2,
+                                            fontWeight: o.selected ? FontWeight.w700 : FontWeight.w400,
+                                            color: o.selected ? ctx.col.ink0 : ctx.col.ink2)),
+                                  ]);
+                                });
+                              },
+                            )
+                          : SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: list
+                                    .map((o) => _chip(ctx, o, isAr, showPrice, onTap: () => pick(o)))
+                                    .toList(),
+                              ),
+                            ),
+                ),
+              ]),
+            ),
+          );
+        });
+      },
+    );
   }
 
   @override
@@ -1225,6 +1458,10 @@ class _FamilyOptions extends StatelessWidget {
         final chosen = axis.selected(isAr);
         final showPrice = !axis.isSwatch &&
             axis.options.map((o) => o.currentPrice).toSet().length > 1;
+        final shown = _compact(axis.options);
+        final long = shown.length < axis.options.length;
+        Widget tile(ProductFamilyOption o) =>
+            axis.isSwatch ? _swatch(context, o, isAr) : _chip(context, o, isAr, showPrice);
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Column(
@@ -1242,113 +1479,32 @@ class _FamilyOptions extends StatelessWidget {
                   ),
               ]),
               const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: axis.options.map((o) {
-                  final soldOut = !o.inStock;
-                  final label = o.value(isAr);
-                  if (axis.isSwatch) {
-                    final url = Product.resolveImageUrl(o.image);
-                    return Semantics(
-                      button: true,
-                      selected: o.selected,
-                      label: soldOut ? '$label — ${context.s.outOfStock}' : label,
-                      child: GestureDetector(
-                        onTap: () => _open(context, o),
-                        child: Tooltip(
-                          message: label,
-                          child: Opacity(
-                            opacity: soldOut ? 0.45 : 1,
-                            child: Container(
-                              width: 52,
-                              height: 52,
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: o.selected ? AppColors.primary : context.col.border,
-                                    width: o.selected ? 2 : 1),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(9),
-                                child: Stack(fit: StackFit.expand, children: [
-                                  if (url != null)
-                                    OptimizedNetworkImage(
-                                        url: url,
-                                        fit: BoxFit.cover,
-                                        memCacheWidth: 160,
-                                        variantWidth: 400,
-                                        error: Container(color: context.col.surfaceSoft))
-                                  else
-                                    Container(
-                                      color: context.col.surfaceSoft,
-                                      alignment: Alignment.center,
-                                      child: Text(label,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(fontSize: 9)),
-                                    ),
-                                  if (soldOut) CustomPaint(painter: _OutOfStockPainter()),
-                                ]),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  return Semantics(
-                    button: true,
-                    selected: o.selected,
-                    label: soldOut ? '$label — ${context.s.outOfStock}' : label,
-                    child: GestureDetector(
-                      onTap: () => _open(context, o),
-                      child: Stack(
+              if (long)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  child: Row(children: [
+                    for (final o in shown) ...[tile(o), const SizedBox(width: 8)],
+                    GestureDetector(
+                      onTap: () => _showAll(context, axis, showPrice),
+                      child: Container(
+                        height: axis.isSwatch ? 52 : null,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         alignment: Alignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: o.selected
-                                  ? AppColors.adaptive(context)
-                                  : soldOut
-                                      ? context.col.surfaceSoft
-                                      : context.col.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                  color: o.selected ? AppColors.adaptive(context) : context.col.border,
-                                  width: o.selected ? 1.5 : 1),
-                            ),
-                            child: Column(mainAxisSize: MainAxisSize.min, children: [
-                              Text(label,
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                      color: o.selected
-                                          ? Colors.white
-                                          : soldOut
-                                              ? context.col.ink3
-                                              : context.col.ink0)),
-                              if (showPrice)
-                                Text('${fmtPrice(o.currentPrice)} ${context.s.lydUnit}',
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: o.selected ? Colors.white70 : context.col.ink2)),
-                            ]),
-                          ),
-                          if (soldOut)
-                            Positioned.fill(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: CustomPaint(painter: _OutOfStockPainter()),
-                              ),
-                            ),
-                        ],
+                        decoration: BoxDecoration(
+                          color: context.col.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.col.border),
+                        ),
+                        child: Text(_allLabel(axis.key, isAr, axis.options.length),
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600, color: context.col.ink0)),
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
+                  ]),
+                )
+              else
+                Wrap(spacing: 8, runSpacing: 8, children: axis.options.map(tile).toList()),
             ],
           ),
         );
