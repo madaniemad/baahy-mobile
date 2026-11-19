@@ -210,7 +210,6 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
   void _applyPersonalRule() {
     if (!_personalSelected) return;
     if (_reasonKey != null && !_reasonAllowed(_reasonKey!)) _reasonKey = null;
-    if (_resolution == 'exchange') _resolution = 'refund';
   }
 
   @override
@@ -263,7 +262,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
   Future<void> _submit() async {
     if (_reasonKey == null) return;
     if (_isBlocked) return;
-    if (_personalSelected && (!_reasonAllowed(_reasonKey!) || _resolution == 'exchange')) return;
+    if (_personalSelected && !_reasonAllowed(_reasonKey!)) return;
     if (widget.returnDeadline != null && DateTime.now().isAfter(widget.returnDeadline!)) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
@@ -812,9 +811,9 @@ class _StepReason extends StatelessWidget {
                   ])
                     Expanded(
                       child: GestureDetector(
-                        onTap: (personalSelected && o[0] == 'exchange') ? null : () => onResolutionChanged(o[0]),
+                        onTap: () => onResolutionChanged(o[0]),
                         child: Opacity(
-                         opacity: (personalSelected && o[0] == 'exchange') ? 0.45 : 1,
+                         opacity: 1,
                          child: Container(
                           margin: EdgeInsetsDirectional.only(start: o[0] == 'refund' ? 8 : 0),
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -836,13 +835,6 @@ class _StepReason extends StatelessWidget {
                       ),
                     ),
                 ]),
-                if (personalSelected) ...[
-                  const SizedBox(height: 8),
-                  Text(context.s.personalNoExchange,
-                    textAlign: TextAlign.start,
-                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
-                      fontSize: 12, color: context.col.ink2, height: 1.4)),
-                ],
                 if (resolution == 'exchange') ...[
                   const SizedBox(height: 8),
                   Text(

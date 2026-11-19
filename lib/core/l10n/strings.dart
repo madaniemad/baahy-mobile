@@ -355,8 +355,8 @@ class AppStrings {
   String get trustedSellers    => isAr ? 'منتجات موثوقة من بائعين معتمدين • الدفع آمن ومضمون' : 'Trusted products from verified sellers • Safe & secure payment';
   // Personal items: no change-of-mind return or exchange (2026-11-19, backend ReturnPolicy).
   String get personalItemsCartNote => isAr
-      ? 'تحتوي سلتك على منتجات شخصية لا تُسترجع ولا تُستبدل إلا إذا وصلت تالفة أو منتهية الصلاحية أو مختلفة عن الطلب.'
-      : 'Your cart has personal items. They cannot be returned or exchanged unless they arrive damaged, expired, or different from what you ordered.';
+      ? 'تحتوي سلتك على منتجات شخصية لا يُقبل إرجاعها أو استبدالها إلا إذا وصلت تالفة أو بها عيب، أو غير مطابقة للوصف.'
+      : 'Your cart contains personal items that cannot be returned or exchanged unless they arrive damaged or defective, or not as described.';
   String get personalItemLabel     => isAr ? 'منتج شخصي' : 'Personal item';
   String get personalNoExchange    => isAr ? 'المنتجات الشخصية لا تُستبدل' : 'Personal items cannot be exchanged';
   String get soldByBaahy       => isAr ? 'يُباع ويُسلَّم عبر باهي'  : 'Sold & delivered by Baahy';
