@@ -1065,7 +1065,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             const SizedBox(height: 14),
                             Divider(height: 1, color: context.col.border),
                             const SizedBox(height: 12),
-                            const _TrustPills(),
+                            _TrustPills(personal: product.returnRule != null),
                           ]),
                         ),
 

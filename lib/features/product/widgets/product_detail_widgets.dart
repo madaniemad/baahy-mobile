@@ -842,7 +842,9 @@ class _QtyBtn extends StatelessWidget {
 // ── Trust strip (matches home screen style) ───────────────────────────────────
 
 class _TrustPills extends StatelessWidget {
-  const _TrustPills();
+  const _TrustPills({this.personal = false});
+  /// A personal item (return_rule): no «إرجاع واستبدال» chip, its own note says the rule (Emad 2026-11-19).
+  final bool personal;
 
   @override
   Widget build(BuildContext context) {
@@ -859,10 +861,12 @@ class _TrustPills extends StatelessWidget {
           _TrustChip(
               icon: Icons.local_shipping_outlined,
               label: isAr ? 'توصيل سريع' : 'Fast Delivery'),
-          Container(width: 1, height: 28, color: context.col.border),
-          _TrustChip(
-              icon: Icons.refresh_rounded,
-              label: isAr ? 'إرجاع واستبدال' : 'Returns & Exchanges'),
+          if (!personal) ...[
+            Container(width: 1, height: 28, color: context.col.border),
+            _TrustChip(
+                icon: Icons.refresh_rounded,
+                label: isAr ? 'إرجاع واستبدال' : 'Returns & Exchanges'),
+          ],
           Container(width: 1, height: 28, color: context.col.border),
           _TrustChip(
               icon: Icons.verified_outlined,
