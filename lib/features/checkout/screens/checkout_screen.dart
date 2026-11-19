@@ -20,7 +20,6 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/pending_checkout_service.dart';
 import '../../../shared/widgets/pending_payment_watcher.dart';
 import '../../../shared/widgets/account_restricted.dart';
-import '../../../shared/widgets/personal_items_note.dart';
 import '../../../core/utils/delivery.dart';
 import '../../map/map_location_picker.dart';
 import '../../../core/utils/format.dart';
@@ -2462,10 +2461,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     ),
                   ],
-                  // ── Personal items: no change-of-mind return (only when one is in the order) ──
-                  PersonalItemsNote(
-                      items: effectiveItems,
-                      margin: const EdgeInsets.only(top: 10)),
                   const SizedBox(height: 24),
 
                   // ── Price summary ─────────────────────────────────────
