@@ -152,6 +152,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       });
   }
 
+  // The router can hand this same screen a different product (a deep link or a link to another
+  // product while this page is open). Then the in-place family choice no longer applies: show the
+  // product we were given, not the shade picked on the previous one.
+  @override
+  void didUpdateWidget(covariant ProductDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.id != widget.id || oldWidget.preview != widget.preview) {
+      _shownId = null;
+      _shownPreview = null;
+    }
+  }
+
   @override
   void dispose() {
     _familyRefresh?.cancel();
