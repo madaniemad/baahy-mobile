@@ -49,6 +49,10 @@ class Product {
   final ProductFamily? family;
   /// A large item delivered only inside Tripoli (2026-11-17): checkout refuses any other city.
   final bool tripoliOnly;
+  /// Personal item (makeup, skincare, perfume, underwear…, 2026-11-19): returned only when damaged,
+  /// expired or wrong, never exchanged. Null = the normal rules (and always null while the server
+  /// switch is off or on an older API).
+  final ReturnRule? returnRule;
 
   const Product({
     required this.id,
@@ -83,6 +87,7 @@ class Product {
     this.campaign,
     this.family,
     this.tripoliOnly = false,
+    this.returnRule,
   });
 
   /// True for products created within the last 14 days.
@@ -113,6 +118,8 @@ class Product {
     'name': name,
     'name_ar': nameAr,
     if (tripoliOnly) 'tripoli_only': true,
+    // Kept so a saved cart still shows the personal-items note after a restart.
+    if (returnRule != null) 'return_rule': returnRule!.toJson(),
     'sku': sku,
     'price': price,
     'sale_price': salePrice,
@@ -193,6 +200,7 @@ class Product {
     campaign: ProductCampaign.tryParse(j['campaign']) ?? (kFakeCampaign ? fakeProductCampaign(j) : null),
     family: ProductFamily.tryParse(j['family']),
     tripoliOnly: j['tripoli_only'] == true || j['tripoli_only'] == 1,
+    returnRule: ReturnRule.tryParse(j['return_rule']),
   );
 
   static DateTime? _parseDate(dynamic raw) {
@@ -255,6 +263,46 @@ class Product {
     return paths.where((p) => p.isNotEmpty).map(_resolveImageUrl).toList();
   }
 }
+
+/// `return_rule` on a product (backend ReturnPolicy::forProduct): set only for a personal item while
+/// the server switch is on. Anything else (null, an old API, a malformed value) parses to null.
+class ReturnRule {
+  final String noteAr;
+  final String noteEn;
+  /// Reason keys a personal item may still be returned for.
+  final List<String> reasons;
+
+  const ReturnRule({required this.noteAr, required this.noteEn, this.reasons = const []});
+
+  String note(bool isAr) => isAr ? noteAr : noteEn;
+
+  static ReturnRule? tryParse(dynamic raw) {
+    if (raw is! Map || raw['personal'] != true) return null;
+    final ar = raw['note_ar'] is String ? (raw['note_ar'] as String).trim() : '';
+    final en = raw['note_en'] is String ? (raw['note_en'] as String).trim() : '';
+    final reasons = raw['reasons'] is List
+        ? (raw['reasons'] as List).map((e) => e.toString()).toList()
+        : const <String>[];
+    return ReturnRule(
+      noteAr: ar.isNotEmpty ? ar : kPersonalItemNoteAr,
+      noteEn: en.isNotEmpty ? en : kPersonalItemNoteEn,
+      reasons: reasons,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'personal': true,
+    'note_ar': noteAr,
+    'note_en': noteEn,
+    'reasons': reasons,
+  };
+}
+
+/// The server's wording (App\Support\ReturnPolicy::NOTE_AR / NOTE_EN), used when a note is missing.
+const kPersonalItemNoteAr =
+    'منتج شخصي: لا يُقبل إرجاعه إلا إذا وصل تالفاً أو به عيب، أو منتهي الصلاحية، أو مختلفاً عن الطلب.';
+const kPersonalItemNoteEn =
+    'Personal item: returnable only if it arrives damaged or defective, expired, or different from what you ordered.';
 
 class ProductAttributeValue {
   final int id;

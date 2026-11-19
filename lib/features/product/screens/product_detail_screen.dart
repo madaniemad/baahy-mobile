@@ -1042,6 +1042,26 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                                         height: 1.4)),
                               ),
                             ]),
+                            // Personal item (2026-11-19): returned only when damaged, expired or
+                            // wrong. Null while the server switch is off, so nothing shows then.
+                            if (product.returnRule case final rule?) ...[
+                              const SizedBox(height: 10),
+                              Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.lock_outline_rounded,
+                                        size: 15, color: AppColors.primary),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(rule.note(isAr),
+                                          textAlign: TextAlign.start,
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: context.col.ink2,
+                                              height: 1.4)),
+                                    ),
+                                  ]),
+                            ],
                             const SizedBox(height: 14),
                             Divider(height: 1, color: context.col.border),
                             const SizedBox(height: 12),

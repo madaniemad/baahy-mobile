@@ -16,6 +16,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/personal_items_note.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../core/providers/welcome_coupon_provider.dart';
 import '../../../core/providers/shipping_provider.dart';
@@ -527,6 +528,9 @@ class _CartBodyState extends ConsumerState<_CartBody> {
 
             // ── Cart items ────────────────────────────────────────────────
             ..._buildGroupedItems(context, cart.items),
+
+            // ── Personal items: no change-of-mind return (shows only when one is in the cart) ──
+            PersonalItemsNote(items: cart.items, margin: const EdgeInsets.only(top: 4)),
 
             const SizedBox(height: 16),
 

@@ -231,6 +231,13 @@ class OrderVendorGroup {
   );
 }
 
+/// `order_items.personal_item`: true / false / null. The server may send it as a bool or as 0/1.
+bool? parsePersonalItem(dynamic v) {
+  if (v == true || v == 1 || v == '1') return true;
+  if (v == false || v == 0 || v == '0') return false;
+  return null;
+}
+
 class OrderItem {
   final int id;
   final int productId;
@@ -242,6 +249,9 @@ class OrderItem {
   final int quantity;
   final double price;
   final double total;
+  /// Bought as a personal item (2026-11-19): no change-of-mind return, no exchange. Null on lines
+  /// bought before the rule, while it is switched off, and on older APIs.
+  final bool? personalItem;
 
   const OrderItem({
     required this.id,
@@ -254,6 +264,7 @@ class OrderItem {
     required this.quantity,
     required this.price,
     required this.total,
+    this.personalItem,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> j) {
@@ -284,6 +295,7 @@ class OrderItem {
       quantity: _i(j['quantity'], 1),
       price: _d(j['price']),
       total: _d(j['total'] ?? j['subtotal'] ?? (_d(j['price']) * (j['quantity'] ?? 1))),
+      personalItem: parsePersonalItem(j['personal_item']),
     );
   }
 }

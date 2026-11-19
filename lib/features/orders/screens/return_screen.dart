@@ -11,6 +11,9 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/personal_items_note.dart';
+import '../../../core/models/order.dart' show parsePersonalItem;
+import '../../../core/models/product.dart' show kPersonalItemNoteAr, kPersonalItemNoteEn;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 double _d(dynamic v) {
@@ -30,8 +33,21 @@ final _orderDataProvider = FutureProvider.autoDispose.family<Map<String, dynamic
       for (final g in groups) {
         items.addAll(((g['items'] as List?) ?? []).map((i) => Map<String, dynamic>.from(i)));
       }
+      // Personal items (order_items.personal_item, 2026-11-19): only then is the server's reason list
+      // read, for its personal_ok flags and the two fault reasons. Without one nothing changes.
+      List<_ReturnReason>? serverReasons;
+      if (items.any((i) => parsePersonalItem(i['personal_item']) == true)) {
+        try {
+          final r = await ApiClient.instance.dio.get('/returns/reasons');
+          serverReasons = _ReturnReason.parseList(r.data is Map ? r.data['data'] : null);
+        } catch (e, st) {
+          // The local list below carries the same flags; the server re-checks on submit anyway.
+          Sentry.captureException(e, stackTrace: st);
+        }
+      }
       return {
         'items':            items,
+        'reasons':          serverReasons,
         'shipping_cost':    _d(order?['shipping_cost']),
         // shipping_rates.exchange_allowed for the delivery city — on for Tripoli and Benghazi.
         // The server re-checks it, so this only decides what we offer.
@@ -53,22 +69,57 @@ final _orderDataProvider = FutureProvider.autoDispose.family<Map<String, dynamic
 // isFree only decides whether a fee is previewed — it is never rendered next to a reason. The
 // customer says why they are returning something; whether it costs them is the team's call
 // after review, and quoting it here would pre-empt an answer an admin can still change.
+//
+// personalOk mirrors ReturnPolicy::PERSONAL_REASONS: the only reasons a personal item (order line
+// personal_item == true, 2026-11-19) may be returned for. 'damaged' and 'expired' exist for those
+// items and are offered only on an order that has one, so every other order sees the same six.
 class _ReturnReason {
   final String key;
   final String labelAr;
   final String labelEn;
   final bool isFree;
-  const _ReturnReason(this.key, this.labelAr, this.labelEn, this.isFree);
+  final bool personalOk;
+  const _ReturnReason(this.key, this.labelAr, this.labelEn, this.isFree, {this.personalOk = false});
+
+  /// GET /returns/reasons → rows {key, label_ar, label_en, personal_ok}. The fee class is not public,
+  /// so it comes from the local list (unknown key = paid). Null when the answer is unusable.
+  static List<_ReturnReason>? parseList(dynamic raw) {
+    if (raw is! List) return null;
+    final out = <_ReturnReason>[];
+    for (final r in raw) {
+      if (r is! Map) continue;
+      final key = r['key']?.toString() ?? '';
+      if (key.isEmpty) continue;
+      final local = _kAllReasons.where((l) => l.key == key).firstOrNull;
+      final ar = r['label_ar']?.toString().trim() ?? '';
+      final en = r['label_en']?.toString().trim() ?? '';
+      out.add(_ReturnReason(
+        key,
+        ar.isNotEmpty ? ar : (local?.labelAr ?? key),
+        en.isNotEmpty ? en : (local?.labelEn ?? key),
+        local?.isFree ?? false,
+        personalOk: r['personal_ok'] == true || r['personal_ok'] == 1,
+      ));
+    }
+    return out.isEmpty ? null : out;
+  }
 }
 
-const _kReasons = [
-  _ReturnReason('wrong_item',       'استلمت منتجاً خاطئاً',        'Received the wrong item',        true),
-  _ReturnReason('not_as_described', 'المنتج لا يطابق الوصف',       'Does not match the description', true),
+const _kAllReasons = [
+  _ReturnReason('wrong_item',       'استلمت منتجاً خاطئاً',        'Received the wrong item',        true,  personalOk: true),
+  _ReturnReason('not_as_described', 'المنتج لا يطابق الوصف',       'Does not match the description', true,  personalOk: true),
   _ReturnReason('size_doesnt_fit',  'المقاس غير مناسب',            'Size does not fit',              false),
   _ReturnReason('changed_mind',     'غيّرت رأيي',                  'Changed my mind',                false),
-  _ReturnReason('quality_issue',    'مشكلة في الجودة',             'Quality issue',                  false),
+  _ReturnReason('quality_issue',    'مشكلة في الجودة',             'Quality issue',                  false, personalOk: true),
+  _ReturnReason('damaged',          'وصل تالفاً أو به عيب',         'Arrived damaged or defective',   true,  personalOk: true),
+  _ReturnReason('expired',          'منتهي الصلاحية',              'Expired',                        true,  personalOk: true),
   _ReturnReason('other',            'سبب آخر',                     'Other reason',                   false),
 ];
+
+/// Reasons that exist only for personal items: hidden on every other order.
+const _kPersonalOnlyKeys = {'damaged', 'expired'};
+
+final _kReasons = _kAllReasons.where((r) => !_kPersonalOnlyKeys.contains(r.key)).toList();
 
 class ReturnScreen extends ConsumerStatefulWidget {
   final int orderId;
@@ -139,6 +190,28 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
   // Populated from order data
   double _shippingCost = 0.0;
   List<Map<String, dynamic>> _items = [];
+  List<_ReturnReason>? _serverReasons;
+
+  bool _isPersonal(Map<String, dynamic> item) => parsePersonalItem(item['personal_item']) == true;
+
+  /// The order has a personal line: the full list (server's when it answered) with its flags.
+  bool get _orderHasPersonal => _items.any(_isPersonal);
+
+  /// A personal line is among the selected ones: only fault reasons, no exchange.
+  bool get _personalSelected => _items.any((i) => _isPersonal(i) && (_selected[i['id'] as int? ?? 0] ?? 0) > 0);
+
+  List<_ReturnReason> get _reasons =>
+      !_orderHasPersonal ? _kReasons : (_serverReasons ?? _kAllReasons);
+
+  bool _reasonAllowed(String key) =>
+      !_personalSelected || (_reasons.where((r) => r.key == key).firstOrNull?.personalOk ?? false);
+
+  /// Drop a reason or an exchange a personal line cannot have (the selection changed on step 1's way in).
+  void _applyPersonalRule() {
+    if (!_personalSelected) return;
+    if (_reasonKey != null && !_reasonAllowed(_reasonKey!)) _reasonKey = null;
+    if (_resolution == 'exchange') _resolution = 'refund';
+  }
 
   @override
   void dispose() {
@@ -162,7 +235,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
   }
 
   bool get _isFreeReturn =>
-      _reasonKey != null && _kReasons.firstWhere(
+      _reasonKey != null && _kAllReasons.firstWhere(
         (r) => r.key == _reasonKey,
         orElse: () => const _ReturnReason('_unknown', '', '', true),
       ).isFree;
@@ -190,6 +263,7 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
   Future<void> _submit() async {
     if (_reasonKey == null) return;
     if (_isBlocked) return;
+    if (_personalSelected && (!_reasonAllowed(_reasonKey!) || _resolution == 'exchange')) return;
     if (widget.returnDeadline != null && DateTime.now().isAfter(widget.returnDeadline!)) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
@@ -238,8 +312,14 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
       String msg = context.isAr ? 'حدث خطأ، حاول مجدداً' : 'Error, please try again';
       // Extract Arabic error message from API if available
       if (e is DioException) {
-        final apiMsg = e.response?.data?['message'] as String?;
-        if (apiMsg != null && apiMsg.isNotEmpty) msg = apiMsg;
+        final body = e.response?.data;
+        if (body is Map) {
+          // message is Arabic; the personal-item refusal (code personal_item) also sends message_en.
+          final ar = body['message'];
+          final en = body['message_en'];
+          final apiMsg = (!context.isAr && en is String && en.isNotEmpty) ? en : (ar is String ? ar : null);
+          if (apiMsg != null && apiMsg.isNotEmpty) msg = apiMsg;
+        }
       }
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -322,15 +402,16 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
           orderId: widget.orderId,
           selected: _selected,
           onToggle: (id, qty) => setState(() => _selected[id] = qty),
-          onLoaded: (items, shippingCost, exchangeAllowed) {
+          onLoaded: (items, shippingCost, exchangeAllowed, reasons) {
             _items           = items;
             _shippingCost    = shippingCost;
             _exchangeAllowed = exchangeAllowed;
+            _serverReasons   = reasons;
           },
           onSelectAll: _toggleSelectAll,
           onNext: () {
             if (_selected.values.any((v) => v > 0)) {
-              setState(() => _step = 1);
+              setState(() { _applyPersonalRule(); _step = 1; });
               _fetchQuote();
             }
           },
@@ -348,6 +429,8 @@ class _ReturnScreenState extends ConsumerState<ReturnScreen> {
           isBlocked:       _isBlocked,
           resolution:      _resolution,
           exchangeAllowed: _exchangeAllowed,
+          reasons:         _reasons,
+          personalSelected: _personalSelected,
           quote:           _quote,
           quoting:         _quoting,
           refundMethod:    _refundMethod,
@@ -424,7 +507,8 @@ class _StepItems extends ConsumerWidget {
   final int orderId;
   final Map<int, int> selected;
   final void Function(int id, int qty) onToggle;
-  final void Function(List<Map<String, dynamic>> items, double shippingCost, bool exchangeAllowed) onLoaded;
+  final void Function(List<Map<String, dynamic>> items, double shippingCost, bool exchangeAllowed,
+      List<_ReturnReason>? reasons) onLoaded;
   final VoidCallback onSelectAll;
   final VoidCallback onNext;
   const _StepItems({required this.orderId, required this.selected,
@@ -469,8 +553,9 @@ class _StepItems extends ConsumerWidget {
         final items        = (data['items'] as List).cast<Map<String, dynamic>>();
         final shippingCost = data['shipping_cost'] as double;
         final exchangeAllowed = data['exchange_allowed'] == true;
+        final reasons = data['reasons'] as List<_ReturnReason>?;
         // Notify parent once loaded
-        WidgetsBinding.instance.addPostFrameCallback((_) => onLoaded(items, shippingCost, exchangeAllowed));
+        WidgetsBinding.instance.addPostFrameCallback((_) => onLoaded(items, shippingCost, exchangeAllowed, reasons));
 
         final returnableCount = items.where((item) {
           final maxQty = math.max(0, (item['quantity'] as int? ?? 1) - (item['returned_qty'] as int? ?? 0));
@@ -574,6 +659,11 @@ class _StepItems extends ConsumerWidget {
                               ? item['product_name_ar'].toString()
                               : (item['product_name'] ?? item['name'] ?? ''),
                           style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w600)),
+                        if (parsePersonalItem(item['personal_item']) == true)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 3, bottom: 2),
+                            child: _PersonalTag(),
+                          ),
                         Text(
                           maxQty == 0
                             ? (context.isAr ? 'تم إرجاعه مسبقاً' : 'Already returned')
@@ -636,6 +726,28 @@ class _StepItems extends ConsumerWidget {
   }
 }
 
+// ── «منتج شخصي» tag on a personal order line ──────────────────────────────────
+
+class _PersonalTag extends StatelessWidget {
+  const _PersonalTag();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(9999),
+          border: Border.all(color: context.col.border),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.lock_outline_rounded, size: 11, color: AppColors.primary),
+          const SizedBox(width: 4),
+          Text(context.s.personalItemLabel,
+            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+              fontSize: 10.5, fontWeight: FontWeight.w600, color: context.col.ink2)),
+        ]),
+      );
+}
+
 // ── Step 2: Reason + fee preview + notes ──────────────────────────────────────
 
 class _StepReason extends StatelessWidget {
@@ -650,6 +762,9 @@ class _StepReason extends StatelessWidget {
   final bool isBlocked;
   final String resolution;
   final bool exchangeAllowed;
+  final List<_ReturnReason> reasons;
+  /// A personal line is selected: reasons without personalOk and the exchange are greyed out.
+  final bool personalSelected;
   final Map<String, dynamic>? quote;
   final bool quoting;
   final String refundMethod;
@@ -668,6 +783,7 @@ class _StepReason extends StatelessWidget {
     required this.loading, required this.itemsValue, required this.collectionFee,
     required this.netRefund, required this.isFree, required this.isBlocked,
     required this.resolution, required this.exchangeAllowed, required this.onResolutionChanged,
+    required this.reasons, required this.personalSelected,
     required this.quote, required this.quoting, required this.refundMethod, required this.onRefundMethodChanged,
     required this.bankNameCtrl, required this.accountNameCtrl,
     required this.accountNumberCtrl,
@@ -696,8 +812,10 @@ class _StepReason extends StatelessWidget {
                   ])
                     Expanded(
                       child: GestureDetector(
-                        onTap: () => onResolutionChanged(o[0]),
-                        child: Container(
+                        onTap: (personalSelected && o[0] == 'exchange') ? null : () => onResolutionChanged(o[0]),
+                        child: Opacity(
+                         opacity: (personalSelected && o[0] == 'exchange') ? 0.45 : 1,
+                         child: Container(
                           margin: EdgeInsetsDirectional.only(start: o[0] == 'refund' ? 8 : 0),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           alignment: Alignment.center,
@@ -714,9 +832,17 @@ class _StepReason extends StatelessWidget {
                             style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
                               fontWeight: FontWeight.w600, fontSize: 14)),
                         ),
+                        ),
                       ),
                     ),
                 ]),
+                if (personalSelected) ...[
+                  const SizedBox(height: 8),
+                  Text(context.s.personalNoExchange,
+                    textAlign: TextAlign.start,
+                    style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                      fontSize: 12, color: context.col.ink2, height: 1.4)),
+                ],
                 if (resolution == 'exchange') ...[
                   const SizedBox(height: 8),
                   Text(
@@ -731,11 +857,19 @@ class _StepReason extends StatelessWidget {
               Text(isAr ? 'سبب الإرجاع' : 'Return Reason',
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
               const SizedBox(height: 12),
-              ..._kReasons.map((r) {
+              // Personal item selected: the rule, then the reasons it cannot be returned for greyed out.
+              if (personalSelected)
+                ReturnRuleNote(
+                  text: isAr ? kPersonalItemNoteAr : kPersonalItemNoteEn,
+                  margin: const EdgeInsets.only(bottom: 10)),
+              ...reasons.map((r) {
                 final selected = reasonKey == r.key;
+                final disabled = personalSelected && !r.personalOk;
                 return GestureDetector(
-                  onTap: () => onReasonChanged(r.key),
-                  child: Container(
+                  onTap: disabled ? null : () => onReasonChanged(r.key),
+                  child: Opacity(
+                   opacity: disabled ? 0.45 : 1,
+                   child: Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
@@ -758,6 +892,7 @@ class _StepReason extends StatelessWidget {
                             fontWeight: FontWeight.w600, fontSize: 14)),
                       ),
                     ]),
+                  ),
                   ),
                 );
               }),

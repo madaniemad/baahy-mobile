@@ -353,6 +353,12 @@ class AppStrings {
       : 'Sorry, this product is not on sale at the moment. You can browse other products on Baahy.';
   String nSold(int n)          => isAr ? '$n مُباع'               : '$n sold';
   String get trustedSellers    => isAr ? 'منتجات موثوقة من بائعين معتمدين • الدفع آمن ومضمون' : 'Trusted products from verified sellers • Safe & secure payment';
+  // Personal items: no change-of-mind return or exchange (2026-11-19, backend ReturnPolicy).
+  String get personalItemsCartNote => isAr
+      ? 'تحتوي سلتك على منتجات شخصية لا تُسترجع ولا تُستبدل إلا إذا وصلت تالفة أو منتهية الصلاحية أو مختلفة عن الطلب.'
+      : 'Your cart has personal items. They cannot be returned or exchanged unless they arrive damaged, expired, or different from what you ordered.';
+  String get personalItemLabel     => isAr ? 'منتج شخصي' : 'Personal item';
+  String get personalNoExchange    => isAr ? 'المنتجات الشخصية لا تُستبدل' : 'Personal items cannot be exchanged';
   String get soldByBaahy       => isAr ? 'يُباع ويُسلَّم عبر باهي'  : 'Sold & delivered by Baahy';
   String get qualityChecked    => isAr ? 'مفحوص الجودة · مخزَّن في مستودعنا بطرابلس' : 'Quality checked · Stored in our Tripoli warehouse';
   String get deliveredDirect   => isAr ? 'يُوصَّل مباشرةً من مستودعات باهي' : 'Delivered from Baahy warehouses';
