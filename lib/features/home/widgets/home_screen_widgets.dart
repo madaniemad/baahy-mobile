@@ -1200,7 +1200,28 @@ class _CategoriesGridState extends State<_CategoriesGrid> {
     // fresh fetch populates them. Root count stays same (8) so must check deeper.
     final oldChildCount = oldWidget.categories.fold(0, (s, c) => s + c.children.length);
     final newChildCount = widget.categories.fold(0, (s, c) => s + c.children.length);
-    if (oldChildCount != newChildCount) _buildAndShuffle(widget.categories);
+    if (oldChildCount != newChildCount) {
+      _buildAndShuffle(widget.categories);
+      return;
+    }
+    // Same categories, fresher data (a new image or name from the server, 2026-11-21): keep the
+    // shuffled order but swap in the new objects, so a changed picture shows without a restart.
+    final fresh = <int, Category>{
+      for (final p in widget.categories)
+        for (final c in p.children) c.id: c,
+    };
+    var changed = false;
+    final next = [
+      for (final it in _items)
+        if (fresh[it.cat.id] case final c? when c.image != it.cat.image || c.name != it.cat.name) ...[
+          (cat: c, color: it.color, isParent: it.isParent),
+        ] else
+          it,
+    ];
+    for (var i = 0; i < next.length; i++) {
+      if (!identical(next[i].cat, _items[i].cat)) changed = true;
+    }
+    if (changed) setState(() => _items = next);
   }
 
   static IconData _iconFor(String name) {
