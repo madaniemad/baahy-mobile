@@ -333,8 +333,8 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
         onTap: () => safePush(context, c.route()),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: ColoredBox(
-            color: c.bg,
+          child: DecoratedBox(
+            decoration: campaignBgDecoration(c),
             child: Stack(children: [
               Positioned.fill(child: CampaignSalePattern(campaign: c)),
               Positioned.fill(child: IgnorePointer(child: _Shine(anim: _anim))),
@@ -512,10 +512,7 @@ class CampaignSearchChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: campaign.bg,
-          borderRadius: BorderRadius.circular(9999),
-        ),
+        decoration: campaignBgDecoration(campaign, radius: BorderRadius.circular(9999)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.local_offer_rounded, size: 14, color: campaign.fg),
           const SizedBox(width: 5),
@@ -551,10 +548,7 @@ class CampaignStoreStrip extends ConsumerWidget {
         onTap: () => safePush(context, c.route(vendorId: vendorId)),
         child: Container(
           padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-          decoration: BoxDecoration(
-            color: c.bg,
-            borderRadius: BorderRadius.circular(12),
-          ),
+          decoration: campaignBgDecoration(c, radius: BorderRadius.circular(12)),
           child: Row(children: [
             CampaignLogo(campaign: c, height: 34),
             const SizedBox(width: 10),
@@ -590,3 +584,14 @@ class CampaignStoreStrip extends ConsumerWidget {
     );
   }
 }
+
+
+/// The campaign's header paint: its gradient (tiffany → violet → magenta for Baahy Friday, Emad
+/// 2026-11-17, left → right on screen in both languages), else its flat colour.
+BoxDecoration campaignBgDecoration(Campaign c, {BorderRadius? radius}) => BoxDecoration(
+      color: c.gradient.isEmpty ? c.bg : null,
+      gradient: c.gradient.isEmpty
+          ? null
+          : LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: c.gradient),
+      borderRadius: radius,
+    );

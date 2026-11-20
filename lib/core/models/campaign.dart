@@ -13,6 +13,9 @@ class Campaign {
   final String headlineEn;
   final String? logo;
   final Color bg;
+  /// Header gradient, start → end (physical left → right), from `gradient` in the API (2026-11-21).
+  /// Empty = paint [bg] flat. [bg] stays the flat colour for anything too small for a gradient.
+  final List<Color> gradient;
   final Color fg;
   final Color accent;
   final DateTime? startsAt;
@@ -55,6 +58,7 @@ class Campaign {
     this.showBanners = false,
     this.bannerEveryRows = 4,
     this.banners = const [],
+    this.gradient = const [],
     this.maxDiscount = 0,
     this.productsCount = 0,
     this.storesCount = 0,
@@ -77,6 +81,13 @@ class Campaign {
   String route({int? vendorId, int? categoryId}) =>
       campaignRoute(slug, vendorId: vendorId, categoryId: categoryId);
 
+  /// Two or more colours, else none (a flat header).
+  static List<Color> _gradient(dynamic raw, Color fallback) {
+    if (raw is! List) return const [];
+    final l = raw.map((e) => parseHexColor(e, fallback)).toList();
+    return l.length >= 2 ? l : const [];
+  }
+
   /// Null when [j] is null or not a usable campaign (no slug).
   static Campaign? tryParse(dynamic j) {
     if (j is! Map) return null;
@@ -96,6 +107,7 @@ class Campaign {
         headlineEn: _s(m['headline_en']),
         logo: _s(m['logo']).isEmpty ? null : _s(m['logo']),
         bg: bg,
+        gradient: _gradient(m['gradient'], bg),
         fg: fg,
         accent: parseHexColor(colors['accent'], fg),
         startsAt: DateTime.tryParse(_s(m['starts_at']))?.toLocal(),

@@ -299,8 +299,8 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
               expandedHeight: _Header.height(c),
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.pin,
-                background: ColoredBox(
-                  color: c.bg,
+                background: DecoratedBox(
+                  decoration: campaignBgDecoration(c),
                   child: Stack(children: [
                     // The printed sale texture of the entry cards (Emad, 2026-11-16).
                     Positioned.fill(child: CampaignSalePattern(campaign: c)),
@@ -618,7 +618,7 @@ class _StoresStrip extends ConsumerWidget {
                   selected: selectedId == null,
                   onTap: () => onSelect(null),
                   child: Container(
-                    color: campaign.bg,
+                    decoration: campaignBgDecoration(campaign),
                     alignment: Alignment.center,
                     child: Icon(Icons.grid_view_rounded, size: 24, color: campaign.fg),
                   ),
@@ -811,7 +811,7 @@ class _CategoryCardsState extends State<_CategoryCards> {
                   selected: selectedId == null,
                   onTap: () => onSelect(null),
                   photo: Container(
-                    color: campaign.bg,
+                    decoration: campaignBgDecoration(campaign),
                     padding: const EdgeInsets.all(12),
                     alignment: Alignment.center,
                     child: CampaignLogo(campaign: campaign, height: 64),
