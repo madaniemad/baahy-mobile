@@ -712,7 +712,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       // wallet" with the shipping fee silently unaccounted (mirrors effectiveTotal in build).
       final orderDeliveryFee = isReorder
           ? (_selectedRate != null
-              ? (_selectedRate!.effectiveRate(orderSubtotal) > 0 ? _selectedRate!.effectiveRate(orderSubtotal) + _farAreaFee(_selectedRate) : 0.0)
+              ? (_selectedRate!.effectiveRate(orderSubtotal) > 0 ? (_distanceFee(_selectedRate, reorderSession.items.map((i) => i.productId), orderSubtotal) ?? _selectedRate!.effectiveRate(orderSubtotal) + _farAreaFee(_selectedRate)) : 0.0)
               : (cart.cityRate?.effectiveRate(orderSubtotal) ??
                   cart.fallbackShippingFee))
           : _cartDelivery(cart).fee;
@@ -763,6 +763,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         if (addr['latitude'] != null) 'shipping_lat': addr['latitude'],
         if (addr['longitude'] != null) 'shipping_lng': addr['longitude'],
         if (addr['area_id'] != null) 'shipping_area_id': addr['area_id'],
+        // Charged by distance only when the fee shown was the distance fee (server CustomerDeliveryFee).
+        if (_distanceFee(isReorder ? _selectedRate : (_hasAddressCity ? _selectedRate : cart.cityRate),
+                orderItems.map((i) => i.productId), orderSubtotal) != null)
+          'distance_fee': 1,
         if (couponCode != null) 'coupon_code': couponCode,
         if (_notesCtrl.text.trim().isNotEmpty) 'notes': _notesCtrl.text.trim(),
       };
@@ -1733,7 +1737,27 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (rate == null) return (fee: 0.0, known: false);
     final base = rate.effectiveRate(cart.subtotal);
     if (base == 0) return (fee: 0.0, known: true); // free shipping — waive collection fee too
+    // By distance inside Tripoli, at most 20: replaces the flat fee and everything folded into it.
+    final byDistance = _distanceFee(rate, cart.items.map((i) => i.productId), cart.subtotal);
+    if (byDistance != null) return (fee: byDistance, known: true);
     return (fee: base + cart.collectionFeeFor(rate) + _farAreaFee(rate), known: true);
+  }
+
+  /// The server's distance quote for the chosen address and these products (null = keep the flat fee).
+  /// Hub-city delivery with a pin only; build() watches the same query so the total updates when it arrives.
+  DistanceFeeQuery? _distanceQuery(ShippingRate? rate, Iterable<int> productIds, double subtotal) {
+    if (rate?.zoneType != 'hub_city' || !_hasAddressCity) return null;
+    final lat = double.tryParse('${_selectedAddress?['latitude'] ?? ''}');
+    final lng = double.tryParse('${_selectedAddress?['longitude'] ?? ''}');
+    if (lat == null || lng == null || lat == 0 || lng == 0) return null;
+    final ids = productIds.toSet().toList()..sort();
+    if (ids.isEmpty) return null;
+    return (city: _addressCity, lat: lat, lng: lng, productIds: ids.join(','), total: subtotal);
+  }
+
+  double? _distanceFee(ShippingRate? rate, Iterable<int> productIds, double subtotal) {
+    final q = _distanceQuery(rate, productIds, subtotal);
+    return q == null ? null : ref.read(distanceFeeProvider(q)).valueOrNull;
   }
 
   /// A far Tripoli area adds a little to delivery (server FarAreaFee; 0 until switched on). Hub-city
@@ -1915,13 +1939,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // invents a price. Treated as unknown, exactly like the cart does.
     // Rebuild when the chosen city's area fees arrive (far areas).
     if (_hasAddressCity) ref.watch(areaExtraFeesProvider(_addressCity));
+    // …and when the distance quote arrives (Tripoli by distance).
+    final distanceQuery = isReorder
+        ? _distanceQuery(selectedRate, effectiveItems.map((i) => i.productId), effectiveSubtotal)
+        : _distanceQuery(_hasAddressCity ? _selectedRate : cart.cityRate, cart.items.map((i) => i.productId), cart.subtotal);
+    if (distanceQuery != null) ref.watch(distanceFeeProvider(distanceQuery));
     final cartDelivery = _cartDelivery(cart);
     final deliveryKnown = isReorder
         ? (selectedRate != null || cart.cityRate != null)
         : cartDelivery.known;
     final effectiveDeliveryFee = isReorder
         ? (selectedRate != null
-            ? (selectedRate.effectiveRate(effectiveSubtotal) > 0 ? selectedRate.effectiveRate(effectiveSubtotal) + _farAreaFee(selectedRate) : 0.0)
+            ? (selectedRate.effectiveRate(effectiveSubtotal) > 0 ? (_distanceFee(selectedRate, effectiveItems.map((i) => i.productId), effectiveSubtotal) ?? selectedRate.effectiveRate(effectiveSubtotal) + _farAreaFee(selectedRate)) : 0.0)
             : (cart.cityRate?.effectiveRate(effectiveSubtotal) ?? 0))
         : cartDelivery.fee;
     final effectiveTotal = isReorder

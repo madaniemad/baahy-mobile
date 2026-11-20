@@ -61,3 +61,29 @@ final areaExtraFeesProvider = FutureProvider.family<Map<int, double>, String>((r
     return const {};
   }
 });
+
+/// What a checkout asks the server for the distance fee: the city, the delivery pin, the cart's products
+/// (sorted ids, comma-joined) and its subtotal. A record, so equal queries share one request.
+typedef DistanceFeeQuery = ({String city, double lat, double lng, String productIds, double total});
+
+/// Delivery by distance (Emad 2026-11-20): inside Tripoli the customer pays what the driver is paid for the
+/// trip (15 / 20 by the route from the nearest seller to the pin), never more than 20. The server works it out
+/// (CustomerDeliveryFee) and /shipping/calculate quotes it as `distance_fee`. null = not switched on, no route,
+/// or no answer: keep the flat fee. The order is charged it only when it sends `distance_fee: 1`, which the
+/// checkout does only when this gave a number — so the total shown is the total charged.
+final distanceFeeProvider = FutureProvider.family<double?, DistanceFeeQuery>((ref, q) async {
+  try {
+    final res = await ApiClient.instance.dio.post('/shipping/calculate', data: {
+      'city': q.city,
+      'total': q.total,
+      'lat': q.lat,
+      'lng': q.lng,
+      'product_ids': q.productIds.split(',').map(int.parse).toList(),
+    });
+    final d = res.data is Map ? res.data['data'] : null;
+    final fee = d is Map ? d['distance_fee'] : null;
+    return fee is num ? fee.toDouble() : (fee == null ? null : double.tryParse(fee.toString()));
+  } catch (_) {
+    return null;
+  }
+});
