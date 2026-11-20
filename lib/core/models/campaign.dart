@@ -16,6 +16,10 @@ class Campaign {
   /// Header gradient, start → end (physical left → right), from `gradient` in the API (2026-11-21).
   /// Empty = paint [bg] flat. [bg] stays the flat colour for anything too small for a gradient.
   final List<Color> gradient;
+  /// Full background images uploaded in admin (2026-11-21): the home card ([bgImage]) and the campaign
+  /// page header ([headerImage], falls back to [bgImage]). When set they replace the colour/gradient.
+  final String? bgImage;
+  final String? headerImage;
   final Color fg;
   final Color accent;
   final DateTime? startsAt;
@@ -59,6 +63,8 @@ class Campaign {
     this.bannerEveryRows = 4,
     this.banners = const [],
     this.gradient = const [],
+    this.bgImage,
+    this.headerImage,
     this.maxDiscount = 0,
     this.productsCount = 0,
     this.storesCount = 0,
@@ -108,6 +114,8 @@ class Campaign {
         logo: _s(m['logo']).isEmpty ? null : _s(m['logo']),
         bg: bg,
         gradient: _gradient(m['gradient'], bg),
+        bgImage: _s(m['bg_image']).startsWith('http') ? _s(m['bg_image']) : null,
+        headerImage: _s(m['header_image']).startsWith('http') ? _s(m['header_image']) : null,
         fg: fg,
         accent: parseHexColor(colors['accent'], fg),
         startsAt: DateTime.tryParse(_s(m['starts_at']))?.toLocal(),

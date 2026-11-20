@@ -297,16 +297,21 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
             SliverAppBar(
               pinned: true,
               expandedHeight: _Header.height(c),
-              flexibleSpace: FlexibleSpaceBar(
+              // The gradient/image also sits under the whole bar, so the collapsed bar keeps it
+              // (FlexibleSpaceBar fades its own background out as it collapses).
+              flexibleSpace: DecoratedBox(
+                decoration: campaignBgDecoration(c, image: c.headerImage ?? c.bgImage),
+                child: FlexibleSpaceBar(
                 collapseMode: CollapseMode.pin,
                 background: DecoratedBox(
-                  decoration: campaignBgDecoration(c),
+                  decoration: campaignBgDecoration(c, image: c.headerImage ?? c.bgImage),
                   child: Stack(children: [
-                    // The printed sale texture of the entry cards (Emad, 2026-11-16).
-                    Positioned.fill(child: CampaignSalePattern(campaign: c)),
+                    // The printed sale texture of the entry cards (Emad, 2026-11-16); none over an uploaded image.
+                    if ((c.headerImage ?? c.bgImage) == null) Positioned.fill(child: CampaignSalePattern(campaign: c)),
                     SafeArea(bottom: false, child: _Header(campaign: c)),
                   ]),
                 ),
+              ),
               ),
               backgroundColor: c.bg,
               foregroundColor: c.fg,

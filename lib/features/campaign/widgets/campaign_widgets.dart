@@ -334,9 +334,10 @@ class _CampaignPromoCardState extends State<CampaignPromoCard> with SingleTicker
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: DecoratedBox(
-            decoration: campaignBgDecoration(c),
+            decoration: campaignBgDecoration(c, image: c.bgImage),
             child: Stack(children: [
-              Positioned.fill(child: CampaignSalePattern(campaign: c)),
+              // An uploaded background is the whole design: no printed pattern on top of it.
+              if (c.bgImage == null) Positioned.fill(child: CampaignSalePattern(campaign: c)),
               Positioned.fill(child: IgnorePointer(child: _Shine(anim: _anim))),
               Padding(
                 padding: EdgeInsets.fromLTRB(12, compact ? 5 : 6, 12, compact ? 5 : 10),
@@ -588,10 +589,16 @@ class CampaignStoreStrip extends ConsumerWidget {
 
 /// The campaign's header paint: its gradient (tiffany → violet → magenta for Baahy Friday, Emad
 /// 2026-11-17, left → right on screen in both languages), else its flat colour.
-BoxDecoration campaignBgDecoration(Campaign c, {BorderRadius? radius}) => BoxDecoration(
+///
+/// [image] (the uploaded background, Emad 2026-11-21: "a full solid banner image from the backend") covers
+/// it when given; the colour/gradient shows while it loads or if it fails.
+BoxDecoration campaignBgDecoration(Campaign c, {BorderRadius? radius, String? image}) => BoxDecoration(
       color: c.gradient.isEmpty ? c.bg : null,
       gradient: c.gradient.isEmpty
           ? null
           : LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: c.gradient),
+      image: image == null
+          ? null
+          : DecorationImage(image: CachedNetworkImageProvider(image), fit: BoxFit.cover, onError: (_, __) {}),
       borderRadius: radius,
     );
