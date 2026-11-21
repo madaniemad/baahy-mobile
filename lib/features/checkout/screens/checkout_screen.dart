@@ -629,6 +629,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
 
+    // The area inside the city (Emad, 2026-11-21): an address pinned before areas were asked, or whose
+    // area belongs to another city, is asked for it now — the map's confirm step requires one.
+    if (deliveryPinRequired(_addressCity)) {
+      final areas = await ref.read(areaExtraFeesProvider(_addressCity).future);
+      if (!mounted) return;
+      final areaId = _selectedAddress!['area_id'];
+      if (areas.isNotEmpty && (areaId is! num || !areas.containsKey(areaId.toInt()))) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(context.tr('اختر منطقة التوصيل', 'Choose your delivery area'))));
+        await _setLocationForSelected();
+        return;
+      }
+    }
+
     final reorderSession = ref.read(reorderSessionProvider);
     final isReorder = reorderSession != null;
 
@@ -763,6 +777,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         if (addr['latitude'] != null) 'shipping_lat': addr['latitude'],
         if (addr['longitude'] != null) 'shipping_lng': addr['longitude'],
         if (addr['area_id'] != null) 'shipping_area_id': addr['area_id'],
+        // This build asks for the area, so the server holds the order to one (2026-11-21).
+        'area_picker': 1,
         // Charged by distance only when the fee shown was the distance fee (server CustomerDeliveryFee).
         if (_distanceFee(isReorder ? _selectedRate : (_hasAddressCity ? _selectedRate : cart.cityRate),
                 orderItems.map((i) => i.productId), orderSubtotal) != null)
@@ -875,7 +891,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             msg = data['message'].toString();
           // The server wants a map location this app did not ask for: open the map right away.
           needsPin = e.response?.statusCode == 422 && data is Map && data['errors'] is Map
-              && (data['errors'] as Map).containsKey('shipping_lat');
+              && ((data['errors'] as Map).containsKey('shipping_lat') || (data['errors'] as Map).containsKey('shipping_area_id'));
         }
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(msg), backgroundColor: AppColors.danger));
