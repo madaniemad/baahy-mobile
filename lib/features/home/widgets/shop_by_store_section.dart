@@ -70,7 +70,7 @@ class _StoreTile extends StatelessWidget {
     final isAr = context.isAr;
     final v = entry.vendor;
     final name = isAr && v.storeNameAr.isNotEmpty ? v.storeNameAr : v.storeName;
-    final logo = v.logo;
+    final logo = v.circleLogo;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -92,7 +92,7 @@ class _StoreTile extends StatelessWidget {
                 child: logo != null && logo.isNotEmpty
                     ? CachedNetworkImage(
                         imageUrl: logo,
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
                         memCacheWidth: 300,
                         errorWidget: (_, __, ___) => const StoreLogoPlaceholder(),
                       )

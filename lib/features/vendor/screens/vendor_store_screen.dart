@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -275,7 +276,7 @@ class _VendorStoreScreenState extends ConsumerState<VendorStoreScreen> {
                       end: 16,
                       top: _StoreHero.heightOf(context) -
                           _StoreHero.badgeSize / 2,
-                      child: _StoreLogoBadge(logo: _vendor!.logo),
+                      child: _StoreLogoBadge(logo: _vendor!.circleLogo),
                     ),
                 ],
               ),
@@ -556,9 +557,11 @@ class _StoreHero extends StatelessWidget {
 
   static const badgeSize = 60.0;
 
+  /// Status bar + the banner at its own 3:1 shape (the size sellers are asked for). It was width / 3.4 drawn
+  /// under the status bar, which cut every store's banner at the sides and hid its top (Emad, 2026-11-21).
   static double heightOf(BuildContext context) =>
       MediaQuery.paddingOf(context).top +
-      MediaQuery.sizeOf(context).width / 3.4;
+      MediaQuery.sizeOf(context).width / 3;
 
   /// A store with no banner already shows its logo centred; otherwise the logo is a badge
   /// (the default store mark when it has no logo).
@@ -570,16 +573,35 @@ class _StoreHero extends StatelessWidget {
     final top = MediaQuery.paddingOf(context).top;
     final height = heightOf(context);
     final banner = vendor?.banner;
-    final logo = vendor?.logo;
+    final logo = vendor?.circleLogo;
 
     Widget bg;
     if (banner != null && banner.isNotEmpty) {
-      bg = CachedNetworkImage(
-        imageUrl: banner,
-        fit: BoxFit.cover,
-        memCacheWidth: 1200,
-        errorWidget: (_, __, ___) => const ColoredBox(color: AppColors.primary),
-      );
+      // The whole banner sits below the status bar at 3:1; behind the status bar, a soft blurred copy of it.
+      bg = Stack(fit: StackFit.expand, children: [
+        ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 18, sigmaY: 18, tileMode: TileMode.clamp),
+          child: CachedNetworkImage(
+            imageUrl: banner,
+            fit: BoxFit.cover,
+            memCacheWidth: 1200,
+            errorWidget: (_, __, ___) => const ColoredBox(color: AppColors.primary),
+          ),
+        ),
+        Positioned(
+          top: top,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          // contain: a banner that is not exactly 3:1 is shown whole; the blurred copy fills the rest.
+          child: CachedNetworkImage(
+            imageUrl: banner,
+            fit: BoxFit.contain,
+            memCacheWidth: 1200,
+            errorWidget: (_, __, ___) => const ColoredBox(color: AppColors.primary),
+          ),
+        ),
+      ]);
     } else {
       bg = DecoratedBox(
         decoration: const BoxDecoration(
@@ -597,7 +619,7 @@ class _StoreHero extends StatelessWidget {
                     height: 84,
                     child: CachedNetworkImage(
                       imageUrl: logo,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
                       memCacheWidth: 200,
                       errorWidget: (_, __, ___) => Icon(
                           Icons.storefront_outlined,
@@ -768,7 +790,7 @@ class _StoreLogoBadge extends StatelessWidget {
               ? const StoreLogoPlaceholder()
               : CachedNetworkImage(
                   imageUrl: logo!,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   memCacheWidth: 200,
                   errorWidget: (_, __, ___) => const StoreLogoPlaceholder(),
                 ),

@@ -305,7 +305,7 @@ class _StoreCard extends ConsumerWidget {
     final deps = entry.departments;
     final shown = deps.take(_maxChips).toList();
     final more = deps.length - shown.length;
-    final hasLogo = v.logo != null && v.logo!.isNotEmpty;
+    final hasLogo = (v.circleLogo ?? '').isNotEmpty;
 
     // One card = banner (logo badge over its corner), then the name with stars, then the
     // departments the store sells in. Generous space below, no divider lines.
@@ -347,8 +347,9 @@ class _StoreCard extends ConsumerWidget {
                         child: ClipOval(
                           child: hasLogo
                               ? CachedNetworkImage(
-                                  imageUrl: v.logo!,
-                                  fit: BoxFit.cover,
+                                  imageUrl: v.circleLogo!,
+                                  // contain: a wide logo is never cut by the circle.
+                                  fit: BoxFit.contain,
                                   memCacheWidth: 120,
                                   errorWidget: (_, __, ___) =>
                                       const StoreLogoPlaceholder(),

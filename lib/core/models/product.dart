@@ -438,6 +438,8 @@ class Vendor {
   final String storeName;
   final String storeNameAr;
   final String? logo;
+  /// A square copy of the logo whose whole design fits a circle (server RoundLogo, 2026-11-21).
+  final String? logoRound;
   final String? banner;
   final String? city;
   final String? description;
@@ -454,6 +456,7 @@ class Vendor {
     required this.storeName,
     required this.storeNameAr,
     this.logo,
+    this.logoRound,
     this.banner,
     this.city,
     this.description,
@@ -466,11 +469,15 @@ class Vendor {
 
   bool get fulfilledByBaahy => fulfillmentType == 'baahy';
 
+  /// The logo for a circle or a small square tile: the circle-safe copy when the server has one.
+  String? get circleLogo => (logoRound ?? '').isNotEmpty ? logoRound : logo;
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'store_name': storeName,
     'store_name_ar': storeNameAr,
     'logo': logo,
+    if (logoRound != null) 'logo_round': logoRound,
     'banner': banner,
     'city': city,
     'average_rating': averageRating,
@@ -484,6 +491,7 @@ class Vendor {
     storeName: j['store_name'] ?? j['name'] ?? '',
     storeNameAr: j['store_name_ar'] ?? j['store_name'] ?? j['name'] ?? '',
     logo: j['logo'],
+    logoRound: j['logo_round'],
     banner: j['banner'],
     city: j['city'],
     description: j['description'],

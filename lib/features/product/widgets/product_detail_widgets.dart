@@ -1020,12 +1020,12 @@ class _VendorRow extends StatelessWidget {
             color: context.col.surfaceSoft,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: context.col.border)),
-        child: vendor.logo != null
+        child: vendor.circleLogo != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: CachedNetworkImage(
-                    imageUrl: vendor.logo!,
-                    fit: BoxFit.cover,
+                    imageUrl: vendor.circleLogo!,
+                    fit: BoxFit.contain,
                     memCacheWidth: 120,
                     errorWidget: (_, __, ___) => Icon(Icons.store_outlined,
                         size: 22, color: context.col.ink2)))
@@ -1486,7 +1486,8 @@ class _FamilyOptions extends StatelessWidget {
               if (long)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  clipBehavior: Clip.none,
+                  // Clipped to the card: Clip.none let the row run past the card's edge (Emad, 2026-11-21).
+                  clipBehavior: Clip.hardEdge,
                   child: Row(children: [
                     for (final o in shown) ...[tile(o), const SizedBox(width: 8)],
                     GestureDetector(
