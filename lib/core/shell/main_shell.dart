@@ -15,6 +15,7 @@ import '../../features/campaign/widgets/campaign_widgets.dart';
 import '../api/api_client.dart';
 import '../services/push_notification_service.dart';
 import '../services/version_gate.dart';
+import '../utils/router.dart';
 import '../../features/misc/force_update_screen.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../core/utils/l10n.dart';
@@ -30,7 +31,14 @@ class _AppLifecycleRefreshState extends ConsumerState<_AppLifecycleRefresh>
   @override
   void initState() { super.initState(); WidgetsBinding.instance.addObserver(this); }
   @override
-  void dispose() { WidgetsBinding.instance.removeObserver(this); super.dispose(); }
+  void dispose() {
+    final l = _waitListener;
+    if (l != null) {
+      try { ref.read(routerProvider).routerDelegate.removeListener(l); } catch (_) {}
+    }
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -53,6 +61,51 @@ class _AppLifecycleRefreshState extends ConsumerState<_AppLifecycleRefresh>
     final gate = await VersionGate.check();
     if (!gate.forceUpdate || !mounted) return;
     ref.read(pendingForceUpdateProvider.notifier).state = gate;
+    _showWhenFree(gate);
+  }
+
+  /// Never in the middle of buying (Emad, 2026-11-21: a customer locked out mid-checkout may never finish the
+  /// order). Coming back from a bank or payment app is a resume too. On these screens the update screen waits
+  /// and appears as soon as the customer leaves them.
+  static const _busyPaths = ['/checkout', '/order-confirmed', '/wallet'];
+  static bool _busy(String path) => _busyPaths.any((p) => path == p || path.startsWith('$p/'));
+  String _path() {
+    try {
+      // The top screen, pushed ones included (`uri` alone keeps the screen underneath a push).
+      final top = ref.read(routerProvider).routerDelegate.currentConfiguration.lastOrNull;
+      return top?.matchedLocation ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  VoidCallback? _waitListener;
+  void _showWhenFree(VersionGateResult gate) {
+    final delegate = ref.read(routerProvider).routerDelegate;
+    if (!_busy(_path())) {
+      // A wait left over from an earlier check is no longer needed: never leave the update hidden.
+      final old = _waitListener;
+      if (old != null) {
+        delegate.removeListener(old);
+        _waitListener = null;
+      }
+      _show(gate);
+      return;
+    }
+    if (_waitListener != null) return;
+    late final VoidCallback listener;
+    listener = () {
+      if (_busy(_path())) return;
+      delegate.removeListener(listener);
+      _waitListener = null;
+      if (mounted) _show(gate);
+    };
+    _waitListener = listener;
+    delegate.addListener(listener);
+  }
+
+  void _show(VersionGateResult gate) {
+    if (forceUpdateDialogOpen || !mounted) return;
     showForceUpdateDialog(context,
         isAr: ref.read(localeProvider).languageCode == 'ar',
         messageAr: gate.messageAr,
