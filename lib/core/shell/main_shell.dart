@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -29,47 +28,27 @@ class _AppLifecycleRefresh extends ConsumerStatefulWidget {
 class _AppLifecycleRefreshState extends ConsumerState<_AppLifecycleRefresh>
     with WidgetsBindingObserver {
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _startGateTimer();
-  }
+  void initState() { super.initState(); WidgetsBinding.instance.addObserver(this); }
   @override
-  void dispose() {
-    _gateTimer?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  /// While the app is on screen, ask again every 5 minutes (Emad 2026-11-21: "why can't it show while I'm
-  /// using the app?"): a raised min_version reaches someone who never leaves the app. Stopped in the background.
-  Timer? _gateTimer;
-  void _startGateTimer() {
-    _gateTimer?.cancel();
-    _gateTimer = Timer.periodic(const Duration(minutes: 5), (_) => _checkForceUpdate());
-  }
+  void dispose() { WidgetsBinding.instance.removeObserver(this); super.dispose(); }
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(appConfigProvider.notifier).refresh();
       PushNotificationService.instance.onResume();
       _checkForceUpdate();
-      _startGateTimer();
     }
-    if (state == AppLifecycleState.paused) {
-      _gateTimer?.cancel();
-      _syncCart();
-    }
+    if (state == AppLifecycleState.paused) _syncCart();
   }
 
   /// The launch check only ran at a cold start, so someone who keeps the app in the background
   /// never saw a raised min_version until they killed it (Emad, 2026-11-09). Re-ask on
-  /// resume and every 5 minutes on screen, at most once a minute; fail-open like the launch check.
+  /// resume, at most every 10 minutes; fail-open like the launch check.
   static DateTime? _lastGateCheck;
   Future<void> _checkForceUpdate() async {
     if (forceUpdateDialogOpen) return;
     final now = DateTime.now();
-    if (_lastGateCheck != null && now.difference(_lastGateCheck!) < const Duration(minutes: 1)) return;
+    if (_lastGateCheck != null && now.difference(_lastGateCheck!) < const Duration(minutes: 10)) return;
     _lastGateCheck = now;
     final gate = await VersionGate.check();
     if (!gate.forceUpdate || !mounted) return;
