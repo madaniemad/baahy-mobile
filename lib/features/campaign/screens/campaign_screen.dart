@@ -189,15 +189,24 @@ class _CampaignScreenState extends ConsumerState<CampaignScreen> {
     ]);
   }
 
+  // Stores and departments are either/or (Emad 2026-11-22): picking a store shows all of that store's offers,
+  // picking a department shows that department across every store. Combining them hid everything
+  // («لا توجد عروض») when the store had nothing in the department.
   void _selectVendor(int? id) {
     if (_vendorId == id) return;
-    setState(() => _vendorId = id);
+    setState(() {
+      _vendorId = id;
+      if (id != null) _categoryId = null;
+    });
     _fetch(reset: true);
   }
 
   void _selectCategory(int? id) {
     if (_categoryId == id) return;
-    setState(() => _categoryId = id);
+    setState(() {
+      _categoryId = id;
+      if (id != null) _vendorId = null;
+    });
     _fetch(reset: true);
   }
 
