@@ -35,6 +35,11 @@ class MapPickResult {
 
 const _tripoli = LatLng(32.9, 13.18);
 
+/// The map's own start point (above, shifted north by the sheet padding when saved): the server's
+/// App\Support\PinGuard reads the same window. A saved address sitting on it was never placed.
+bool _isStartPoint(LatLng p) =>
+    (p.longitude - 13.18).abs() < 0.0002 && p.latitude >= 32.899 && p.latitude <= 32.97;
+
 /// Height of the bottom sheet, excluding the device's bottom safe-area inset.
 /// The map is padded by this much AND the pin is drawn at the centre of what is
 /// left over, so the pin tip and the camera target are the same point. Both
@@ -250,6 +255,9 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   GoogleMapController? _ctrl;
 
   LatLng _center   = _tripoli;
+  // The customer put the pin somewhere: GPS, a search result, or by moving the map (2026-11-23: two
+  // orders went out on the untouched start point, in the sea, and were measured 23.9 km for a 4 km trip).
+  late bool _placed = widget.initial != null && !_isStartPoint(widget.initial!);
   bool   _locating = false;
   bool   _geocoding = false;
   String _city     = 'طرابلس';
@@ -365,6 +373,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
     if (lat == null || lng == null) return;
     final ll = LatLng(lat, lng);
     _ctrl?.animateCamera(CameraUpdate.newLatLngZoom(ll, _addressZoom));
+    // A search result is a neighbourhood's centre, not her door: she still moves the pin onto it.
     setState(() { _center = ll; _address = name.split(',').first; });
     _reverseGeocode(ll);
   }
@@ -400,6 +409,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         _gps           = ll;
         _gpsAccuracy   = pos.accuracy;
         _hasPermission = true;
+        _placed        = true;
       });
       _reverseGeocode(ll);
     } catch (_) {
@@ -552,6 +562,17 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   /// pin — so the driver sees where it is. «تعديل الموقع» goes back to the map.
   Future<void> _confirm() async {
     if (_city.isEmpty || _geocoding) return;
+    if (!_placed) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(context.tr(
+          'حرّك الخريطة حتى يكون الدبوس على مكان التوصيل، أو اضغط «استخدم موقعي الحالي».',
+          'Move the map so the pin sits on your delivery spot, or tap “Use my current location”.')),
+        backgroundColor: context.col.ink1,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ));
+      return;
+    }
     final lat = _center.latitude, lng = _center.longitude;
     final picked = await showModalBottomSheet<_AreaChoice>(
       context: context,
@@ -611,7 +632,11 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
       body: Stack(
         children: [
           // ── Google Map ─────────────────────────────────────────────────────
-          GoogleMap(
+          // A drag or pinch by the customer counts as placing the pin; the camera moving by itself
+          // (padding, GPS animation) does not.
+          Listener(
+            onPointerMove: (_) { if (!_placed) setState(() => _placed = true); },
+            child: GoogleMap(
             initialCameraPosition: CameraPosition(
               target: _center,
               zoom: widget.initial != null ? _addressZoom : 12,
@@ -629,6 +654,7 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
             mapToolbarEnabled: false,
             rotateGesturesEnabled: false,
             tiltGesturesEnabled: false,
+            ),
           ),
 
           // ── Center pin ────────────────────────────────────────────────────
@@ -1066,6 +1092,17 @@ class _ConfirmLocationSheetState extends State<_ConfirmLocationSheet> {
   List<Map<String, dynamic>> _areas = const [];
   int? _areaId;
   bool _loading = true;
+  // An area the customer picked that the pin is nowhere near (2026-11-23, Emad: the pin decides the
+  // area; a different area means the pin is in the wrong place, so she moves the pin, not the label).
+  String? _farFrom;
+  static const _farKm = 5.0;
+
+  /// km from the pin to an area's centre, or null when the server sent no centre (older backend).
+  double? _kmTo(Map<String, dynamic> a) {
+    final lat = (a['lat'] as num?)?.toDouble(), lng = (a['lng'] as num?)?.toDouble();
+    if (lat == null || lng == null) return null;
+    return Geolocator.distanceBetween(widget.lat, widget.lng, lat, lng) / 1000;
+  }
 
   @override
   void initState() {
@@ -1134,7 +1171,14 @@ class _ConfirmLocationSheetState extends State<_ConfirmLocationSheet> {
                 backgroundColor: Colors.transparent,
                 builder: (_) => _AreaListSheet(areas: _areas, current: _areaId),
               );
-              if (id != null && mounted) setState(() => _areaId = id);
+              if (id == null || !mounted) return;
+              final a = _areas.firstWhere((x) => x['id'] == id, orElse: () => const {});
+              final km = a.isEmpty ? null : _kmTo(a);
+              if (km != null && km > _farKm) {
+                setState(() => _farFrom = (a['name_ar'] ?? '').toString());
+              } else {
+                setState(() { _areaId = id; _farFrom = null; });
+              }
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
@@ -1149,6 +1193,18 @@ class _ConfirmLocationSheetState extends State<_ConfirmLocationSheet> {
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: _areaId != null ? context.col.ink0 : context.col.ink3))),
                 Text(context.tr('تغيير', 'Change'), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
               ]),
+            ),
+          ),
+        ],
+        if (_farFrom != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: const Color(0xFFFEF3F2), borderRadius: BorderRadius.circular(12)),
+            child: Text(
+              context.tr('الدبوس على الخريطة ليس في $_farFrom. اضغط «تعديل الموقع» وضع الدبوس على مكان التوصيل، وستظهر المنطقة الصحيحة.',
+                  'The pin on the map is not in $_farFrom. Tap “Adjust the location” and put the pin on your delivery spot; the right area will follow.'),
+              style: const TextStyle(fontSize: 13.5, color: Color(0xFFB42318), height: 1.5),
             ),
           ),
         ],
