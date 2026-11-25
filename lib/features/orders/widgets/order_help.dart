@@ -10,7 +10,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api/api_client.dart';
 import '../../map/map_location_picker.dart';
 import '../../../core/utils/l10n.dart';
-import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
 
 /// "Need help?" on an order (Emad, 2026-10-18): self-service first, the assistant second,
@@ -130,12 +129,8 @@ Future<void> showOrderHelpSheet(
                   Navigator.of(sheetCtx).pop();
                   e.onTap();
                 }, color: e.color),
-              Divider(height: 20, color: context.col.border),
-              row(Icons.auto_awesome_outlined, context.tr('اسأل المساعد', 'Ask the assistant'), () {
-                Navigator.of(sheetCtx).pop();
-                safePush(context, '/chat',
-                    extra: context.tr('أحتاج مساعدة بخصوص طلب رقم $orderNumber', 'I need help with order $orderNumber'));
-              }),
+              // No assistant on the order page (Emad, 2026-11-26): everything about an order is in the options above,
+              // ending with «أحتاج مساعدة من فريق الدعم».
             ]),
           ),
         ),
