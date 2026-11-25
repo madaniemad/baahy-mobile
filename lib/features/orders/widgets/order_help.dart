@@ -1,10 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:image_picker/image_picker.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../../core/api/api_client.dart';
+import '../../map/map_location_picker.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -23,6 +27,7 @@ IconData _reasonIcon(String key) => switch (key) {
       'change_date' => Icons.event_outlined,
       'change_address' => Icons.location_on_outlined,
       'change_phone' => Icons.phone_iphone_outlined,
+      'change_payment' => Icons.payments_outlined,
       'late' => Icons.schedule_outlined,
       'missing_item' => Icons.remove_shopping_cart_outlined,
       'damaged_item' => Icons.broken_image_outlined,
@@ -158,6 +163,14 @@ class _OrderHelpRequestScreenState extends State<OrderHelpRequestScreen> {
   DateTime? _date;
   List<Map<String, dynamic>>? _addresses;
   int? _addressId; // -1 = typed below
+  // «Another address» needs its pin on the map (Emad, 2026-11-26: «the most important is dropping the PIN»).
+  double? _pinLat;
+  double? _pinLng;
+  String? _pinPlace;
+  // «Change payment method» (2026-11-26): the methods this order may switch to.
+  List<Map<String, dynamic>>? _payOptions;
+  String? _payBlocked;
+  String? _payMethod;
   List<XFile> _photos = [];
   bool _sending = false;
   String? _error;
@@ -170,6 +183,37 @@ class _OrderHelpRequestScreenState extends State<OrderHelpRequestScreen> {
   void initState() {
     super.initState();
     if (_field == 'address') _loadAddresses();
+    if (_field == 'payment') _loadPayOptions();
+  }
+
+  Future<void> _loadPayOptions() async {
+    try {
+      final res = await ApiClient.instance.dio.get('/orders/${widget.orderId}/payment-options');
+      final d = Map<String, dynamic>.from(res.data['data'] as Map);
+      final list = (d['methods'] as List? ?? const []).map((m) => Map<String, dynamic>.from(m as Map)).toList();
+      if (mounted) {
+        setState(() {
+          _payOptions = list;
+          _payBlocked = d['can_change'] == false ? (d['reason'] ?? '').toString() : null;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _payOptions = const []);
+    }
+  }
+
+  Future<void> _pickPin() async {
+    final r = await Navigator.of(context).push<MapPickResult>(
+      MaterialPageRoute(builder: (_) => MapLocationPicker(initial: _pinLat != null ? LatLng(_pinLat!, _pinLng!) : null)),
+    );
+    if (r == null || !mounted) return;
+    setState(() {
+      _pinLat = r.lat;
+      _pinLng = r.lng;
+      _pinPlace = [r.district, r.city].where((v) => v.trim().isNotEmpty).join('، ');
+      if (_otherAddress.text.trim().isEmpty) _otherAddress.text = r.address;
+      _error = null;
+    });
   }
 
   @override
@@ -217,10 +261,16 @@ class _OrderHelpRequestScreenState extends State<OrderHelpRequestScreen> {
     if (_field == 'date' && _date == null) return setState(() => _error = context.tr('اختر الموعد الذي يناسبك.', 'Choose the date that suits you.'));
     if (_field == 'address') {
       if (_addressId == null) return setState(() => _error = context.tr('اختر العنوان الجديد أو اكتبه.', 'Choose or type the new address.'));
+      if (_addressId == -1 && _pinLat == null) {
+        return setState(() => _error = context.tr('حدّد الموقع الجديد على الخريطة.', 'Drop the new location on the map.'));
+      }
       address = _addressId == -1
-          ? _otherAddress.text.trim()
+          ? (_otherAddress.text.trim().isNotEmpty ? _otherAddress.text.trim() : (_pinPlace ?? ''))
           : _addressText(_addresses!.firstWhere((a) => a['id'] == _addressId));
       if (address.isEmpty) return setState(() => _error = context.tr('اكتب العنوان الجديد.', 'Type the new address.'));
+    }
+    if (_field == 'payment' && _payBlocked == null && _payMethod == null) {
+      return setState(() => _error = context.tr('اختر طريقة الدفع.', 'Choose a payment method.'));
     }
     if (_field == 'phone' && _phone.text.trim().isEmpty) {
       return setState(() => _error = context.tr('اكتب رقم الهاتف الجديد.', 'Type the new phone number.'));
@@ -238,6 +288,12 @@ class _OrderHelpRequestScreenState extends State<OrderHelpRequestScreen> {
             '${_date!.year}-${_date!.month.toString().padLeft(2, '0')}-${_date!.day.toString().padLeft(2, '0')}'));
       }
       if (address != null) form.fields.add(MapEntry('address', address));
+      if (_field == 'address' && _addressId != null && _addressId! > 0) form.fields.add(MapEntry('address_id', '$_addressId'));
+      if (_field == 'address' && _addressId == -1 && _pinLat != null) {
+        form.fields.add(MapEntry('lat', _pinLat!.toStringAsFixed(7)));
+        form.fields.add(MapEntry('lng', _pinLng!.toStringAsFixed(7)));
+      }
+      if (_field == 'payment' && _payMethod != null) form.fields.add(MapEntry('payment_method', _payMethod!));
       if (_field == 'phone') form.fields.add(MapEntry('phone', _phone.text.trim()));
       for (final p in _photos) {
         form.files.add(MapEntry('photos[]', await MultipartFile.fromFile(p.path, filename: p.name)));
@@ -317,10 +373,44 @@ class _OrderHelpRequestScreenState extends State<OrderHelpRequestScreen> {
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppColors.primary,
               ),
-              if (_addressId == -1)
+              if (_addressId == -1) ...[
+                OutlinedButton.icon(
+                  onPressed: _pickPin,
+                  icon: Icon(_pinLat == null ? Icons.add_location_alt_outlined : Icons.check_circle_outline,
+                      color: _pinLat == null ? AppColors.primary : AppColors.success),
+                  label: Text(_pinLat == null
+                      ? context.tr('حدّد الموقع على الخريطة', 'Drop the location on the map')
+                      : context.tr('تم تحديد الموقع${_pinPlace != null && _pinPlace!.isNotEmpty ? ' — $_pinPlace' : ''} (تعديل)',
+                          'Location set${_pinPlace != null && _pinPlace!.isNotEmpty ? ' — $_pinPlace' : ''} (change)')),
+                  style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                ),
+                const SizedBox(height: 10),
                 TextField(controller: _otherAddress, maxLines: 2, maxLength: 500,
-                    decoration: deco(context.tr('المدينة، المنطقة، الشارع، أقرب معلم', 'City, area, street, nearest landmark'))),
+                    decoration: deco(context.tr('وصف إضافي: الشارع، أقرب معلم (اختياري)', 'More detail: street, nearest landmark (optional)'))),
+              ],
             ],
+            const SizedBox(height: 12),
+          ],
+          if (_field == 'payment') ...[
+            title(context.tr('طريقة الدفع الجديدة', 'The new payment method')),
+            const SizedBox(height: 8),
+            if (_payOptions == null)
+              const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(color: AppColors.primary)))
+            else if (_payBlocked != null)
+              Text(_payBlocked!, style: TextStyle(fontSize: 13.5, color: context.col.ink2))
+            else
+              for (final m in _payOptions!)
+                RadioListTile<String>(
+                  value: m['id'].toString(),
+                  groupValue: _payMethod,
+                  onChanged: m['current'] == true ? null : (v) => setState(() { _payMethod = v; _error = null; }),
+                  title: Text('${context.isAr ? m['label_ar'] : m['label_en']}${m['current'] == true ? context.tr(' (الحالية)', ' (current)') : ''}',
+                      style: const TextStyle(fontSize: 13.5)),
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: AppColors.primary,
+                ),
             const SizedBox(height: 12),
           ],
           if (_field == 'phone') ...[
@@ -441,8 +531,19 @@ class HelpRequestsCard extends ConsumerWidget {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.07), borderRadius: BorderRadius.circular(10)),
-                    child: Text('${context.tr('ردّ باهي', 'Baahy')}: $body',
-                        style: TextStyle(fontSize: 12.5, height: 1.45, color: context.col.ink0)),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('${context.tr('ردّ باهي', 'Baahy')}: $body',
+                          style: TextStyle(fontSize: 12.5, height: 1.45, color: context.col.ink0)),
+                      for (final link in RegExp(r'https?://[^\s]+').allMatches(body).map((m) => m.group(0)!))
+                        TextButton.icon(
+                          onPressed: () => launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication),
+                          icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                          label: Text(link.contains('/pay/')
+                              ? context.tr('افتح صفحة الدفع', 'Open the payment page')
+                              : context.tr('افتح الرابط', 'Open the link')),
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero, foregroundColor: AppColors.primary),
+                        ),
+                    ]),
                   ),
                 ],
               ]);
