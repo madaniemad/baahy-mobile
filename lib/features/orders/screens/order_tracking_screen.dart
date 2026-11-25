@@ -62,13 +62,20 @@ final _orderDetailProvider = FutureProvider.autoDispose.family<Order, int>((ref,
   return Order.fromJson(res.data['data']);
 });
 
-class OrderTrackingScreen extends ConsumerWidget {
+class OrderTrackingScreen extends ConsumerStatefulWidget {
   final int id;
   const OrderTrackingScreen({required this.id, super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final orderAsync = ref.watch(_orderDetailProvider(id));
+  ConsumerState<OrderTrackingScreen> createState() => _OrderTrackingScreenState();
+}
+
+class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
+  final _body = GlobalKey<_OrderBodyState>();
+
+  @override
+  Widget build(BuildContext context) {
+    final orderAsync = ref.watch(_orderDetailProvider(widget.id));
 
     return Scaffold(
       backgroundColor: context.col.bg,
@@ -84,11 +91,31 @@ class OrderTrackingScreen extends ConsumerWidget {
           orElse: () => Text(context.s.orderDetails,
             style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         ),
+        actions: [
+          if (orderAsync.hasValue)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 12),
+              child: OutlinedButton.icon(
+                onPressed: () => _body.currentState?._openHelp(context),
+                icon: const Icon(Icons.support_agent_rounded, size: 17, color: AppColors.primary),
+                label: Text(context.tr('تحتاج مساعدة؟', 'Need help?'),
+                  style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 13)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.col.ink0,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  minimumSize: const Size(0, 36),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                  side: const BorderSide(color: AppColors.primary, width: 1.2),
+                ),
+              ),
+            ),
+        ],
       ),
       body: orderAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) => Center(child: Text(context.s.loadOrderFailed)),
-        data: (order) => _OrderBody(order: order),
+        data: (order) => _OrderBody(key: _body, order: order),
       ),
     );
   }
@@ -96,7 +123,7 @@ class OrderTrackingScreen extends ConsumerWidget {
 
 class _OrderBody extends ConsumerStatefulWidget {
   final Order order;
-  const _OrderBody({required this.order});
+  const _OrderBody({required this.order, super.key});
 
   @override
   ConsumerState<_OrderBody> createState() => _OrderBodyState();
@@ -402,22 +429,6 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => _openHelp(context),
-            icon: const Icon(Icons.support_agent_rounded, size: 18, color: AppColors.primary),
-            label: Text(context.tr('تحتاج مساعدة؟', 'Need help?'),
-              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: context.col.ink0,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              side: const BorderSide(color: AppColors.primary, width: 1.2),
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
         // Hero ETA card for active orders
         if (isActive) ...[
           _HeroCard(order: order),
