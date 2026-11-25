@@ -18,6 +18,7 @@ import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../core/utils/navigation.dart';
 import '../widgets/bank_transfer_card.dart';
+import '../widgets/change_payment_method.dart';
 import '../../notifications/widgets/notifications_reminder.dart';
 import '../widgets/order_help.dart';
 import '../widgets/return_request_card.dart';
@@ -560,6 +561,12 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: context.col.ink0,
                   fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'])),
             ]),
+            // She changes how she pays until delivery (Emad 2026-11-25); the server has the last word.
+            if (order.paymentStatus != 'paid' && !const {'delivered', 'cancelled', 'refunded', 'failed', 'returned_to_vendor'}.contains(order.status))
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: ChangePaymentMethodButton(orderId: order.id, onChanged: () => ref.invalidate(_orderDetailProvider(order.id))),
+              ),
             // Only the payment outcomes she would not otherwise see (money sent back, payment voided).
             if (const {'refunded', 'partial_refunded', 'void'}.contains(order.paymentStatus)) ...[
               const SizedBox(height: 8),
