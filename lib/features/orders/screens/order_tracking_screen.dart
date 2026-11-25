@@ -84,31 +84,6 @@ class OrderTrackingScreen extends ConsumerWidget {
           orElse: () => Text(context.s.orderDetails,
             style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         ),
-        actions: [
-          orderAsync.maybeWhen(
-            data: (o) => IconButton(
-              icon: const Icon(Icons.auto_awesome_outlined, size: 22),
-              tooltip: context.tr('اسأل عن طلبك', 'Ask about your order'),
-              onPressed: () => safePush(context, '/chat',
-                  extra: context.tr('أحتاج مساعدة بخصوص طلب رقم ${o.orderNumber}', 'I need help with order ${o.orderNumber}')),
-            ),
-            orElse: () => IconButton(
-              icon: const Icon(Icons.auto_awesome_outlined, size: 22),
-              tooltip: context.tr('اسأل عن طلبك', 'Ask about your order'),
-              onPressed: () => safePush(context, '/chat'),
-            ),
-          ),
-          orderAsync.maybeWhen(
-            data: (o) => Builder(
-              builder: (btnCtx) => IconButton(
-                icon: Icon(Icons.download_outlined, size: 22, color: context.col.ink0),
-                tooltip: context.s.downloadInvoice,
-                onPressed: () => _shareOrderPdf(btnCtx, o),
-              ),
-            ),
-            orElse: () => const SizedBox.shrink(),
-          ),
-        ],
       ),
       body: orderAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -130,6 +105,22 @@ class _OrderBody extends ConsumerStatefulWidget {
 class _OrderBodyState extends ConsumerState<_OrderBody> {
   bool _reordering = false;
   bool _cancelling = false;
+
+  /// «تحتاج مساعدة؟» (Emad, 2026-11-26: at the top of the page, where every customer sees it). Self-service first:
+  /// the sheet offers what fits this order's stage, then the assistant. Never WhatsApp from here.
+  void _openHelp(BuildContext context) {
+    final order = widget.order;
+    final openReturn = kOpenReturnStatuses.contains(ref.read(orderReturnProvider(order.id)).valueOrNull?['status']);
+    showOrderHelpSheet(context, ref, orderId: order.id, orderNumber: order.orderNumber, extra: [
+      if (order.status == 'delivered' && order.returnEligible && !openReturn)
+        (icon: Icons.assignment_return_outlined, label: context.s.returnItems, color: null, onTap: () async {
+          await safePush(context, '/orders/${order.id}/return', extra: order.returnDeadline);
+          ref.invalidate(orderReturnProvider(order.id));
+        }),
+      if (_cancellable.contains(order.status))
+        (icon: Icons.cancel_outlined, label: context.s.cancelOrder, color: AppColors.danger, onTap: () => _cancelOrder(context)),
+    ]);
+  }
 
   /// The statuses OrderController::cancel accepts from the customer.
   static const _cancellable = ['pending_confirmation', 'paid', 'confirmed'];
@@ -411,6 +402,22 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _openHelp(context),
+            icon: const Icon(Icons.support_agent_rounded, size: 18, color: AppColors.primary),
+            label: Text(context.tr('تحتاج مساعدة؟', 'Need help?'),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: context.col.ink0,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              side: const BorderSide(color: AppColors.primary, width: 1.2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
         // Hero ETA card for active orders
         if (isActive) ...[
           _HeroCard(order: order),
@@ -712,30 +719,15 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           ),
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            // Self-service first (Emad, 2026-10-18): the sheet offers what fits this order's stage,
-            // then the assistant. Never WhatsApp from here.
-            onPressed: () {
-              final openReturn = kOpenReturnStatuses.contains(ref.read(orderReturnProvider(order.id)).valueOrNull?['status']);
-              showOrderHelpSheet(context, ref, orderId: order.id, orderNumber: order.orderNumber, extra: [
-                if (order.status == 'delivered' && order.returnEligible && !openReturn)
-                  (icon: Icons.assignment_return_outlined, label: context.s.returnItems, color: null, onTap: () async {
-                    await safePush(context, '/orders/${order.id}/return', extra: order.returnDeadline);
-                    ref.invalidate(orderReturnProvider(order.id));
-                  }),
-                if (_cancellable.contains(order.status))
-                  (icon: Icons.cancel_outlined, label: context.s.cancelOrder, color: AppColors.danger, onTap: () => _cancelOrder(context)),
-              ]);
-            },
-            icon: const Icon(Icons.help_outline_rounded, size: 16),
-            label: Text(context.tr('تحتاج مساعدة؟', 'Need help?'),
-              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w700)),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              side: BorderSide(color: context.col.border),
+        // The invoice moved here from the header (Emad, 2026-11-26).
+        Builder(
+          builder: (btnCtx) => SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              onPressed: () => _shareOrderPdf(btnCtx, order),
+              icon: Icon(Icons.receipt_long_outlined, size: 18, color: context.col.ink2),
+              label: Text(context.s.downloadInvoice,
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], fontWeight: FontWeight.w600, color: context.col.ink2)),
             ),
           ),
         ),
