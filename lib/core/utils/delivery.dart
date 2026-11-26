@@ -130,18 +130,16 @@ String cartDeliveryLine(DateTime now, int deliveryDays, bool isAr) {
       ? (deliveryDays < 1 ? 1 : deliveryDays)
       : gap;
 
+  // Never «اليوم» (Emad 2026-11-26: «we can't promise same day delivery»): the soonest promise is 24 hours from
+  // confirmation, with no countdown to a same-day dispatch.
+  if (dayOf(arrival) == today || arrival.difference(now).inHours <= 24) {
+    return isAr ? 'يصلك خلال 24 ساعة من تأكيد الطلب' : 'Get it within 24 hours of the order being confirmed';
+  }
   if (dayOf(dispatch) == today) {
     final left = _fmtLeft(dispatch.difference(now));
-    if (dayOf(arrival) == today) {
-      return isAr ? 'اطلب خلال $left ليصلك اليوم' : 'Order within $left and get it today';
-    }
     return isAr
         ? 'اطلب خلال $left ليصلك في ${dayCountLabel(span, true)}'
         : 'Order within $left and get it in ${dayCountLabel(span, false)}';
-  }
-
-  if (arrival.difference(now).inHours <= 24) {
-    return isAr ? 'يصلك خلال 24 ساعة' : 'Get it within 24 hours';
   }
 
   return isAr ? 'يصلك خلال ${dayCountLabel(span, true)}' : 'Get it within ${dayCountLabel(span, false)}';
@@ -165,9 +163,8 @@ String deliveryArrivalPhrase(DateTime now, int deliveryDays, bool isAr) {
   final today   = DateTime(now.year, now.month, now.day);
   final aDay    = DateTime(arrival.year, arrival.month, arrival.day);
 
-  if (aDay == today) return isAr ? 'اليوم' : 'Today';
-  if (arrival.difference(now).inHours <= 24) {
-    return isAr ? 'خلال 24 ساعة' : 'Within 24 hours';
+  if (aDay == today || arrival.difference(now).inHours <= 24) {
+    return isAr ? 'خلال 24 ساعة من تأكيد الطلب' : 'Within 24 hours of the order being confirmed';
   }
   final gap  = aDay.difference(today).inDays;
   final base = deliveryDays < 1 ? 1 : deliveryDays;
