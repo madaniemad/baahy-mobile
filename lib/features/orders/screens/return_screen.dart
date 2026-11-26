@@ -896,79 +896,27 @@ class _StepReason extends StatelessWidget {
                 const SizedBox(height: 8),
               ],
 
+              // Every refund goes to the wallet (Emad, 2026-11-26): no bank choice on this screen.
               if (resolution == 'refund') ...[
                 const SizedBox(height: 16),
-                Text(isAr ? 'كيف تريد استرداد المبلغ؟' : 'How would you like your refund?',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 12),
-                Row(children: [
-                  for (final o in const [
-                    ['wallet',        'رصيد المحفظة', 'Wallet credit', 'فور إتمام الإرجاع', 'Once the return is completed'],
-                    ['bank_transfer', 'تحويل بنكي',   'Bank transfer', '2-5 أيام عمل',     '2-5 working days'],
-                  ])
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => onRefundMethodChanged(o[0]),
-                        child: Container(
-                          margin: EdgeInsetsDirectional.only(start: o[0] == 'wallet' ? 8 : 0),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: refundMethod == o[0]
-                                ? AppColors.primary.withValues(alpha: 0.08)
-                                : context.col.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: refundMethod == o[0] ? AppColors.primary : context.col.border,
-                              width: refundMethod == o[0] ? 2 : 1),
-                          ),
-                          child: Column(mainAxisSize: MainAxisSize.min, children: [
-                            Text(isAr ? o[1] : o[2],
-                              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                                fontWeight: FontWeight.w600, fontSize: 14)),
-                            Text(isAr ? o[3] : o[4],
-                              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                                fontSize: 11, color: context.col.ink2)),
-                          ]),
-                        ),
-                      ),
-                    ),
-                ]),
-                if (refundMethod == 'bank_transfer') ...[
-                  const SizedBox(height: 10),
-                  const SizedBox(height: 10),
-                  for (final f in [
-                    [bankNameCtrl, 'اسم المصرف', 'Bank name'],
-                    [accountNameCtrl, 'اسم صاحب الحساب', 'Account holder name'],
-                    [accountNumberCtrl, 'رقم الحساب أو IBAN', 'Account number or IBAN'],
-                  ])
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: TextField(
-                        controller: f[0] as TextEditingController,
-                        onChanged: (_) => onBankDetailsChanged(),
-                        decoration: InputDecoration(
-                          hintText: isAr ? f[1] as String : f[2] as String,
-                          filled: true,
-                          fillColor: context.col.surface,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: context.col.border)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        ),
-                        style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 14),
-                      ),
-                    ),
-                  if (bankNameCtrl.text.trim().isEmpty ||
-                      accountNameCtrl.text.trim().isEmpty ||
-                      accountNumberCtrl.text.trim().isEmpty)
-                    Text(
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.col.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.col.border),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.account_balance_wallet_outlined, size: 20, color: AppColors.primary),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(
                       isAr
-                          ? 'أكمل بيانات الحساب لإرسال الطلب.'
-                          : 'Fill in the account details to submit.',
-                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'],
-                        fontSize: 12, color: context.col.ink2)),
-                ],
+                          ? 'يُضاف المبلغ إلى محفظتك في باهي فور إتمام الإرجاع، ويمكنك استخدامه في أي طلب.'
+                          : 'The amount is added to your Baahy wallet once the return is completed, to use on any order.',
+                      style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 13))),
+                  ]),
+                ),
                 const SizedBox(height: 12),
               ],
               const SizedBox(height: 4),
