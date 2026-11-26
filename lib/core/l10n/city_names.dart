@@ -2,6 +2,14 @@ import '../models/shipping_rate.dart';
 import '../utils/arabic_text.dart';
 import 'strings.dart';
 
+/// A city the old WooCommerce import could not read («Unknown», «please_select_city»…). Such an
+/// address has no real city: the customer is asked to complete it, never told «no delivery»
+/// (Emad, 2026-11-26 — 4,203 imported addresses; 2,783 repaired from their text on the server).
+bool isPlaceholderCity(String city) {
+  final c = city.trim().toLowerCase();
+  return c.isEmpty || const {'unknown', 'please_select_city', 'please_select_street', 'المدينة', 'المدينه', 'city'}.contains(c);
+}
+
 /// The city name to DISPLAY for a stored city value (an address's city is saved
 /// as whatever the picker returned, normally the Arabic name).
 ///

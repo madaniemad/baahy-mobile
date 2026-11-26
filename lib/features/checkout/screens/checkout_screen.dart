@@ -22,6 +22,7 @@ import '../../../shared/widgets/pending_payment_watcher.dart';
 import '../../../shared/widgets/account_restricted.dart';
 import '../../../core/utils/delivery.dart';
 import '../../map/map_location_picker.dart';
+import '../../../core/l10n/city_names.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/utils/l10n.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -571,6 +572,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
+  /// The chosen address has no real city (an old import saved «Unknown»): it cannot be priced or
+  /// delivered, but it is the customer's address — open it to complete, never «choose another».
+  bool get _addressIncomplete => _cityUnserviceable && isPlaceholderCity(_addressCity);
+
+  Future<void> _completeSelectedAddress() async {
+    final addr = _selectedAddress;
+    if (addr == null || addr.isEmpty) return;
+    await safePush(context, '/addresses/edit', extra: addr);
+    if (!mounted) return;
+    await _loadAddresses();
+  }
+
   /// Opens the map for the chosen address and saves the confirmed pin and area on it.
   Future<void> _setLocationForSelected() async {
     final addr = _selectedAddress;
@@ -647,6 +660,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final isReorder = reorderSession != null;
 
     // The server refuses a city it does not deliver to; say so before anything is charged.
+    if (_addressIncomplete) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.s.cityMissing)));
+      await _completeSelectedAddress();
+      return;
+    }
     if (_cityUnserviceable) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(context.s.cityNotServed),
@@ -2149,10 +2167,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                         const SizedBox(height: 2),
                                         Text(
                                             [
-                                              context.s.translateCity(
-                                                  _selectedAddress!['city']
-                                                          ?.toString() ??
-                                                      ''),
+                                              // «Unknown» from the old import is not a city.
+                                              isPlaceholderCity(_addressCity)
+                                                  ? ''
+                                                  : context.s.translateCity(
+                                                      _addressCity),
                                               _selectedAddress!['address'],
                                               if ((_selectedAddress!['phone']
                                                           as String?)
@@ -2175,7 +2194,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                                   color: AppColors.danger,
                                                   fontWeight: FontWeight.w600)),
                                         ],
-                                        if (cityUnserviceable) ...[
+                                        if (cityUnserviceable && isPlaceholderCity(_addressCity)) ...[
+                                          const SizedBox(height: 4),
+                                          GestureDetector(
+                                            behavior: HitTestBehavior.opaque,
+                                            onTap: _completeSelectedAddress,
+                                            child: Text(context.s.cityMissing,
+                                                style: const TextStyle(
+                                                    fontSize: 11.5,
+                                                    color: AppColors.danger,
+                                                    fontWeight: FontWeight.w600,
+                                                    decoration: TextDecoration.underline,
+                                                    decorationColor: AppColors.danger)),
+                                          ),
+                                        ] else if (cityUnserviceable) ...[
                                           const SizedBox(height: 4),
                                           Text(context.s.cityNotServed,
                                               style: const TextStyle(

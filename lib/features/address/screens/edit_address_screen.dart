@@ -60,6 +60,9 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
     _label = existing != null && _labels.any((l) => l.$1 == existing)
         ? existing : _labels[0].$1;
     _city = widget.address?['city'] as String?;
+    // «Unknown» from the old import is no city: let the pin decide it (2026-11-26).
+    final incomplete = _city != null && isPlaceholderCity(_city!);
+    if (incomplete) _city = null;
     final rawLat = widget.address?['latitude'];
     final rawLng = widget.address?['longitude'];
     _lat = rawLat != null ? double.tryParse(rawLat.toString()) : null;
@@ -79,6 +82,12 @@ class _EditAddressScreenState extends ConsumerState<EditAddressScreen> {
       // The city starts as the account's city (shown, not asked); the pin confirms or questions it.
       _city ??= _accountCity();
       // Auto-open map picker so the customer sets their pin first
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openMapPicker();
+      });
+    } else if (incomplete) {
+      _city = _accountCity();
+      // Straight to the map, as for a new address: the pin gives the city and the area.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _openMapPicker();
       });

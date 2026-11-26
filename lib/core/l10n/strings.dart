@@ -729,6 +729,9 @@ Account Termination: We reserve the right to suspend any account that violates t
   String get cityNotServed        => isAr
       ? 'لا يوجد توصيل لهذه المدينة حالياً — اختر عنواناً آخر'
       : 'We do not deliver to this city yet — choose another address';
+  String get cityMissing          => isAr
+      ? 'مدينة هذا العنوان غير محددة — اضغط هنا وحدد موقعك على الخريطة'
+      : 'This address has no city — tap here and set your location on the map';
   String get codBlockedForAccount => isAr
       ? 'الدفع عند الاستلام غير متاح لحسابك حالياً. اختر طريقة دفع إلكترونية.'
       : 'Cash on delivery is not available for your account right now. Please choose an electronic payment method.';
