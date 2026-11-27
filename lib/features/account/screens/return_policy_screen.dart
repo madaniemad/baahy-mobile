@@ -87,8 +87,9 @@ class ReturnPolicyScreen extends ConsumerWidget {
               icon: Icons.account_balance_wallet_outlined,
               title: isAr ? 'طريقة الاسترداد' : 'Refund Method',
               body: isAr
-                  ? 'يتم رد المبلغ إلى محفظتك في التطبيق خلال 3–5 أيام عمل بعد استلام المنتج والتحقق منه.'
-                  : 'The amount is refunded to your in-app wallet within 3–5 business days after receiving and inspecting the product.',
+                  // Instant, never «3–5 أيام» (Emad 2026-11-28: «Wallet refund is instant»).
+                  ? 'يُعاد المبلغ إلى محفظتك في التطبيق فوراً بعد استلام المنتج والتحقق منه.'
+                  : 'The amount goes back to your in-app wallet straight away, once the product is received and checked.',
             ),
             const SizedBox(height: 12),
             _PolicyCard(
