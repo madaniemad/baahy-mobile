@@ -537,17 +537,17 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Hero ETA card for active orders
-        if (isActive) ...[
-          _HeroCard(order: order),
-          const SizedBox(height: 14),
-        ],
+        // The top card (studio board 2026-11-28): where the order is in words, the connected status line under it,
+        // and «عرض سجل الحالة» folding the dated history. On every order, delivered and ended ones too.
+        _HeroCard(
+          order: order,
+          historyOpen: _historyOpen,
+          onToggleHistory: () => setState(() => _historyOpen = !_historyOpen),
+        ),
+        const SizedBox(height: 14),
 
-        // Notifications off while the order is on its way: the updates promised above reach nobody.
-        if (isActive && order.status != 'pending_payment') const NotificationsReminder.order(),
-
-        // Where he is — only once Baahy's own driver has started her delivery (`live`, server-decided); the card
-        // asks GET orders/{id}/driver-live every 15 s while this page is on screen, and hides itself when it ends.
+        // Where he is — only once Baahy's own driver has started her delivery (`live`, server-decided; never Vanex);
+        // the card asks GET orders/{id}/driver-live every 15 s while this page is on screen, and hides when it ends.
         if (isActive && order.deliveryDriver?.live == true) ...[
           OrderLiveMapCard(
             key: ValueKey('live-${order.id}'),
@@ -565,6 +565,9 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           const SizedBox(height: 14),
         ],
 
+        // Notifications off while the order is on its way: the updates promised above reach nobody.
+        if (isActive && order.status != 'pending_payment') const NotificationsReminder.order(),
+
         // Bank transfer instructions — while the order awaits a manual transfer.
         if (order.paymentMethod == 'lypay' && order.status == 'pending_payment') ...[
           BankTransferCard(
@@ -575,56 +578,6 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           ),
           const SizedBox(height: 14),
         ],
-
-        // Timeline card
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.col.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.col.border),
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Expanded(child: Text(context.s.orderStatus,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
-              // The dated history (the old stacked list) stays one tap away.
-              InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => setState(() => _historyOpen = !_historyOpen),
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(6, 4, 2, 4),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(_historyOpen ? context.s.statusHistoryHide : context.s.statusHistoryShow,
-                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
-                        fontSize: 12.5, fontWeight: FontWeight.w600, color: context.col.ink2)),
-                    Icon(_historyOpen ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                      size: 18, color: context.col.ink2),
-                  ]),
-                ),
-              ),
-            ]),
-            const SizedBox(height: 16),
-            _StatusLine(status: order.status, history: order.statusHistory, orderCreatedAt: order.createdAt),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOut,
-              alignment: AlignmentDirectional.topStart,
-              child: _historyOpen
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Divider(height: 1, color: context.col.border),
-                        const SizedBox(height: 14),
-                        _Timeline(status: order.status, history: order.statusHistory, orderCreatedAt: order.createdAt),
-                      ]),
-                    )
-                  : const SizedBox(width: double.infinity),
-            ),
-          ]),
-        ),
-
-        const SizedBox(height: 14),
 
         // Items
         ...order.vendorGroups.map((group) => Column(
@@ -964,93 +917,145 @@ class _DoorstepRejectionsCard extends StatelessWidget {
   }
 }
 
+/// The top card (studio board 2026-11-28, draft): icon, badge, title and sub-line for where the order is, then the
+/// connected status line, then «عرض سجل الحالة» folding the dated history under it.
 class _HeroCard extends StatelessWidget {
   final Order order;
-  const _HeroCard({required this.order});
+  final bool historyOpen;
+  final VoidCallback onToggleHistory;
+  const _HeroCard({required this.order, required this.historyOpen, required this.onToggleHistory});
+
+  /// When the order reached [status], from its history (latest entry), else null.
+  DateTime? _reachedAt(String status) {
+    DateTime? at;
+    for (final e in order.statusHistory) {
+      if (e.toStatus == status && e.createdAt != null) at = e.createdAt;
+    }
+    return at;
+  }
 
   _HeroInfo _info(BuildContext context) {
     final s = order.status;
+    final str = context.s;
+    final driver = order.deliveryDriver;
     // Not paid yet — it is not on its way (it used to fall through to "On the way").
     if (s == 'pending_payment') {
-      return _HeroInfo(
-        icon: Icons.payments_outlined,
-        badge: context.s.statusLabel(s),
-        title: context.s.awaitingPaymentTitle,
-        subtitle: context.s.awaitingPaymentSub,
-      );
+      return _HeroInfo(icon: Icons.payments_outlined, badge: str.statusLabel(s),
+        title: str.awaitingPaymentTitle, subtitle: str.awaitingPaymentSub);
     }
     if (s == 'pending_vendor') {
-      return _HeroInfo(
-        icon: Icons.storefront_outlined,
-        badge: context.s.statusLabel(s),
-        title: context.s.isAr ? 'تم استلام طلبك' : 'Order Received',
-        subtitle: context.s.confirmingWithSellerSub,
-      );
+      return _HeroInfo(icon: Icons.storefront_outlined, badge: str.statusLabel(s),
+        title: str.isAr ? 'تم استلام طلبك' : 'Order Received', subtitle: str.confirmingWithSellerSub);
     }
     if (s == 'pending_confirmation' || s == 'paid') {
-      return _HeroInfo(
-        icon: Icons.hourglass_empty_rounded,
-        badge: context.s.statusLabel(s),
-        title: context.s.isAr ? 'تم استلام طلبك' : 'Order Received',
-        subtitle: context.s.isAr ? 'سيتم مراجعة طلبك قريباً' : 'We\'ll review your order soon',
-      );
+      return _HeroInfo(icon: Icons.hourglass_empty_rounded, badge: str.statusLabel(s),
+        title: str.isAr ? 'تم استلام طلبك' : 'Order Received',
+        subtitle: str.isAr ? 'سيتم مراجعة طلبك قريباً' : 'We\'ll review your order soon');
     }
     if (s == 'confirmed' || s == 'pending') {
-      return _HeroInfo(
-        icon: Icons.check_circle_outline_rounded,
-        badge: context.s.isAr ? 'مؤكد' : 'Confirmed',
-        title: context.s.isAr ? 'تم تأكيد طلبك' : 'Order Confirmed',
-        subtitle: context.s.isAr ? 'سيبدأ تجهيز طلبك قريباً' : 'Preparing soon',
-      );
+      return _HeroInfo(icon: Icons.check_circle_outline_rounded, badge: str.stepConfirmed,
+        title: str.isAr ? 'تم تأكيد طلبك' : 'Order Confirmed',
+        subtitle: str.isAr ? 'سيبدأ تجهيز طلبك قريباً' : 'Preparing soon');
     }
-    // Processing / fulfilled both read as "being prepared" for the customer.
+    if (s == 'delivered') {
+      final at = _reachedAt('delivered');
+      return _HeroInfo(icon: Icons.check_circle_outline_rounded, iconColor: AppColors.success,
+        badge: str.stepDelivered, title: str.heroDeliveredTitle,
+        subtitle: at != null ? str.dayDateTime(at.toLocal()) : '');
+    }
+    if (_Timeline._endedStatuses.contains(s)) {
+      final bad = _Timeline._endedBad.contains(s);
+      final at = _reachedAt(s);
+      return _HeroInfo(icon: bad ? Icons.cancel_outlined : Icons.undo_rounded,
+        iconColor: bad ? AppColors.danger : AppColors.info,
+        badge: '', title: str.statusLabel(s),
+        subtitle: at != null ? str.dayDateTime(at.toLocal()) : '');
+    }
+    // Baahy's driver has started her delivery: c.
+    if (driver != null && driver.live) {
+      return _HeroInfo(icon: Icons.local_shipping_outlined, badge: str.stepShipped,
+        title: str.heroOnWayTitle, subtitle: str.heroOnWaySub);
+    }
+    // He has collected it, not on his way to her yet: b.
+    if (driver != null) {
+      return _HeroInfo(icon: Icons.handshake_outlined, badge: str.stepProcessing,
+        title: str.heroCollectedTitle, subtitle: str.heroCollectedSub);
+    }
+    // Processing / fulfilled both read as "being prepared" for the customer: a.
     if (s == 'processing' || s == 'fulfilled') {
-      return _HeroInfo(
-        icon: Icons.inventory_2_outlined,
-        badge: context.s.isAr ? 'قيد التجهيز' : 'Processing',
-        title: context.s.isAr ? 'جارٍ تجهيز طلبك' : 'Preparing Your Order',
-        subtitle: context.s.isAr ? 'بدأنا بتجهيز طلبك' : 'We\'ve started preparing your order',
-      );
+      return _HeroInfo(icon: Icons.inventory_2_outlined, badge: str.stepProcessing,
+        title: str.isAr ? 'جارٍ تجهيز طلبك' : 'Preparing Your Order', subtitle: str.heroPreparingSub);
     }
-    // shipped / out_for_delivery
-    return _HeroInfo(
-      icon: Icons.local_shipping_outlined,
-      badge: context.s.onTheWay,
-      title: context.s.inDelivery,
-      subtitle: context.s.deliveryPromise,
-    );
+    // shipped / out_for_delivery without Baahy's driver (a courier): today's words.
+    return _HeroInfo(icon: Icons.local_shipping_outlined, badge: str.onTheWay,
+      title: str.inDelivery, subtitle: str.deliveryPromise);
   }
 
   @override
   Widget build(BuildContext context) {
     final info = _info(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.col.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.col.border),
       ),
-      child: Row(children: [
-        Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(10),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(info.icon, color: info.iconColor ?? AppColors.primary, size: 20),
           ),
-          child: Icon(info.icon, color: AppColors.primary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (info.badge.isNotEmpty)
+              Text(info.badge,
+                style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: AppColors.primary,
+                  fontSize: 12, fontWeight: FontWeight.w700)),
+            Text(info.title,
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], color: context.col.ink0,
+                fontSize: 16, fontWeight: FontWeight.w800)),
+            if (info.subtitle.isNotEmpty)
+              Text(info.subtitle,
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                  color: context.col.ink3, fontSize: 12.5)),
+          ])),
+        ]),
+        const SizedBox(height: 16),
+        _StatusLine(status: order.status, history: order.statusHistory, orderCreatedAt: order.createdAt),
+        const SizedBox(height: 12),
+        Divider(height: 1, thickness: 1, color: context.col.border),
+        // «عرض سجل الحالة»: the dated history (the old stacked list) stays one tap away.
+        InkWell(
+          onTap: onToggleHistory,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 2),
+            child: Row(children: [
+              Text(historyOpen ? context.s.statusHistoryHide : context.s.statusHistoryShow,
+                style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                  fontSize: 12.5, fontWeight: FontWeight.w500, color: context.col.ink2)),
+              const SizedBox(width: 4),
+              Icon(historyOpen ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                size: 16, color: context.col.ink2),
+            ]),
+          ),
         ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(info.badge,
-            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: AppColors.primary,
-              fontSize: 12, fontWeight: FontWeight.w700)),
-          Text(info.title,
-            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink0,
-              fontSize: 15, fontWeight: FontWeight.w800)),
-          Text(info.subtitle,
-            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], color: context.col.ink3, fontSize: 12)),
-        ])),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          alignment: AlignmentDirectional.topStart,
+          child: historyOpen
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 14),
+                  child: _Timeline(status: order.status, history: order.statusHistory, orderCreatedAt: order.createdAt),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
       ]),
     );
   }
@@ -1058,15 +1063,16 @@ class _HeroCard extends StatelessWidget {
 
 class _HeroInfo {
   final IconData icon;
+  final Color? iconColor;
   final String badge;
   final String title;
   final String subtitle;
-  const _HeroInfo({required this.icon, required this.badge, required this.title, required this.subtitle});
+  const _HeroInfo({required this.icon, this.iconColor, required this.badge, required this.title, required this.subtitle});
 }
 
 enum _Node { done, current, future, end }
 
-/// The connected progress line at the top of «حالة الطلب» (Emad 2026-11-28: «there should be like a line of
+/// The connected progress line inside the top card (Emad 2026-11-28: «there should be like a line of
 /// statuses, like where each one is at, like a connected line of statuses»). One dot per step of [_Timeline]'s own
 /// mapping: reached steps filled and joined, the current one highlighted, the rest grey. An order that ended early
 /// (cancelled, failed, returned…) shows the steps it reached and then one closing dot in its own colour.
@@ -1098,9 +1104,10 @@ class _StatusLine extends StatelessWidget {
             : (i == current ? _Node.current : _Node.future)));
       }
     }
-    // The step on screen now: the current dot, or the last one when the order is finished.
-    final focus = nodes.indexWhere((n) => n.$2 == _Node.current || n.$2 == _Node.end);
-    final focusIdx = focus >= 0 ? focus : nodes.length - 1;
+    // The step on screen now: the current dot (or the closing dot of an ended order). Delivered = all done,
+    // the last dot green (studio board).
+    final focusIdx = nodes.indexWhere((n) => n.$2 == _Node.current || n.$2 == _Node.end);
+    final delivered = status == 'delivered';
     bool reached(int i) => nodes[i].$2 != _Node.future;
     final note = ended ? context.s.orderEndedNote(status) : null;
 
@@ -1119,14 +1126,15 @@ class _StatusLine extends StatelessWidget {
           _Node.end => endColor,
           _Node.current => AppColors.primary,
           _Node.future => context.col.ink3,
-          _Node.done => isFocus ? AppColors.primary : context.col.ink1,
+          _Node.done => context.col.ink1,
         };
         return Expanded(child: Column(children: [
           SizedBox(
             height: 30,
             child: Row(children: [
               half(i == 0 ? null : seg(i)),
-              _StatusDot(kind: kind, endColor: endColor, endBad: _Timeline._endedBad.contains(status)),
+              _StatusDot(kind: kind, endColor: endColor, endBad: _Timeline._endedBad.contains(status),
+                doneColor: delivered && i == nodes.length - 1 ? AppColors.success : AppColors.primary),
               half(i == nodes.length - 1 ? null : seg(i + 1)),
             ]),
           ),
@@ -1138,7 +1146,7 @@ class _StatusLine extends StatelessWidget {
               maxLines: 2, overflow: TextOverflow.ellipsis,
               style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
                 fontSize: 11.5, height: 1.3,
-                fontWeight: isFocus ? FontWeight.w800 : FontWeight.w500,
+                fontWeight: isFocus ? FontWeight.w700 : FontWeight.w500,
                 color: labelColor)),
           ),
         ]));
@@ -1157,14 +1165,15 @@ class _StatusDot extends StatelessWidget {
   final _Node kind;
   final Color endColor;
   final bool endBad;
-  const _StatusDot({required this.kind, required this.endColor, required this.endBad});
+  final Color doneColor;
+  const _StatusDot({required this.kind, required this.endColor, required this.endBad, this.doneColor = AppColors.primary});
 
   @override
   Widget build(BuildContext context) {
     switch (kind) {
       case _Node.done:
       case _Node.end:
-        final c = kind == _Node.end ? endColor : AppColors.primary;
+        final c = kind == _Node.end ? endColor : doneColor;
         return Container(
           width: 22, height: 22,
           decoration: BoxDecoration(color: c, shape: BoxShape.circle),

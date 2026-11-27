@@ -37,10 +37,11 @@ const _path = <LatLng>[
 DriverLiveFetch orderDemoLive() {
   var i = 0;
   return () async {
-    final p = _path[i % _path.length];
-    final eta = (_path.length - (i % _path.length)) + 2;
+    final k = i % _path.length;
+    final eta = (_path.length - k) + 2;
     i++;
-    return DriverLive(onTheWay: true, driver: p, at: DateTime.now(), etaMin: eta, destination: _home);
+    return DriverLive(onTheWay: true, driver: _path[k], at: DateTime.now(), etaMin: eta,
+        path: [..._path.sublist(k), _home], destination: _home);
   };
 }
 
@@ -72,7 +73,7 @@ Map<String, dynamic> orderDemoJson(String s) {
     'created_at': ago(190),
     'status_history': history,
     'delivery_driver': (s == 'b' || s == 'c')
-        ? {'name': 'أحمد', 'photo_url': null, 'phone': '+218910000000', 'live': s == 'c'}
+        ? {'name': 'محمد', 'photo_url': null, 'phone': '+218910000000', 'vehicle': 'car', 'live': s == 'c'}
         : null,
     'vendor_groups': [
       {

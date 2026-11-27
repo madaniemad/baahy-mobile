@@ -150,9 +150,11 @@ class DeliveryDriver {
   final String? photoUrl;
   /// +2189XXXXXXXX, or null (older server, or not a Libyan mobile).
   final String? phone;
+  /// car | motorcycle from his profile, or null.
+  final String? vehicle;
   /// He has started her delivery (`out_for_delivery`): the live map is shown (GET orders/{id}/driver-live).
   final bool live;
-  const DeliveryDriver({required this.name, this.photoUrl, this.phone, this.live = false});
+  const DeliveryDriver({required this.name, this.photoUrl, this.phone, this.vehicle, this.live = false});
 
   static DeliveryDriver? tryParse(dynamic raw) {
     if (raw is! Map) return null;
@@ -164,6 +166,7 @@ class DeliveryDriver {
       name: name,
       photoUrl: photo != null && photo.startsWith('http') ? photo : null,
       phone: phone != null && RegExp(r'^\+?\d{9,15}$').hasMatch(phone) ? phone : null,
+      vehicle: raw['vehicle']?.toString(),
       live: raw['live'] == true,
     );
   }

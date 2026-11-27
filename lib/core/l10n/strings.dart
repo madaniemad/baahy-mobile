@@ -444,7 +444,7 @@ class AppStrings {
   String get orderHelp         => isAr ? 'مساعدة بخصوص هذا الطلب' : 'Help with this order';
   String get inDelivery        => isAr ? 'قيد التوصيل'            : 'Out for Delivery';
   String get stepPending       => isAr ? 'تم استلام الطلب'        : 'Order Received';
-  String get stepConfirmed     => isAr ? 'مؤكد'                   : 'Confirmed';
+  String get stepConfirmed     => isAr ? 'تم التأكيد'             : 'Confirmed';
   String get stepProcessing    => isAr ? 'قيد التجهيز'            : 'Processing';
   String get stepShipped       => isAr ? 'في الطريق'              : 'On the Way';
   String get stepDelivered     => isAr ? 'تم التسليم'             : 'Delivered';
@@ -452,20 +452,45 @@ class AppStrings {
   // Baahy's own driver while he has the order (GET /orders/{id} → delivery_driver).
   String driverOnTheWay(String name) => isAr ? 'مندوب التوصيل $name في الطريق إليك' : '$name is on the way';
   String get driverHasOrder    => isAr ? 'يحمل طلبك الآن'         : 'Your Baahy driver has your order';
-  // Order page: driver card buttons, live map, status line (Emad 2026-11-28).
-  String get driverRole        => isAr ? 'مندوب باهي'             : 'Your Baahy driver';
-  String get driverHeadingToYou => isAr ? 'في الطريق إليك الآن'    : 'Heading to you now';
+  // Order page: top card, status line, live map, driver card (Emad 2026-11-28; studio board copy table, draft).
+  String get statusHistoryShow => isAr ? 'عرض سجل الحالة'         : 'Show status history';
+  String get statusHistoryHide => isAr ? 'إخفاء سجل الحالة'       : 'Hide status history';
+  String get heroPreparingSub  => isAr ? 'بدأنا بتجهيز طلبك، ويصلك إشعار عند خروجه للتوصيل' : 'We\'ve started preparing your order; you\'ll be notified when it leaves for delivery';
+  String get heroCollectedTitle => isAr ? 'استلم المندوب طلبك'    : 'Your driver has your order';
+  String get heroCollectedSub  => isAr ? 'يبدأ توصيله إليك قريباً' : 'Delivery to you starts soon';
+  String get heroOnWayTitle    => isAr ? 'طلبك في الطريق إليك'    : 'Your order is on its way';
+  String get heroOnWaySub      => isAr ? 'المندوب متّجه إليك الآن' : 'Your driver is heading to you now';
+  String get heroDeliveredTitle => isAr ? 'تم تسليم طلبك'         : 'Your order was delivered';
+  /// «السبت 28 نوفمبر · 4:12 م» / «Sat 28 Nov · 4:12 PM» (Western digits, as across the app).
+  String dayDateTime(DateTime t) {
+    const daysAr = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+    const daysEn = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const monthsAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final h12 = t.hour % 12 == 0 ? 12 : t.hour % 12;
+    final mm = t.minute.toString().padLeft(2, '0');
+    return isAr
+        ? '${daysAr[t.weekday - 1]} ${t.day} ${monthsAr[t.month - 1]} · $h12:$mm ${t.hour < 12 ? 'ص' : 'م'}'
+        : '${daysEn[t.weekday - 1]} ${t.day} ${monthsEn[t.month - 1]} · $h12:$mm ${t.hour < 12 ? 'AM' : 'PM'}';
+  }
+  String liveEta(int n)        => isAr ? 'يصلك خلال ~$n دقيقة'     : 'Arrives in ~$n min';
+  String get liveOnTheWay      => isAr ? 'المندوب في الطريق إليك' : 'Your driver is on the way';
+  String get liveSub           => isAr ? 'المندوب في الطريق إليك · يتحدّث الموقع كل 15 ثانية' : 'Your driver is on the way · location updates every 15 s';
+  String get liveLocating      => isAr ? 'جارٍ تحديد موقع المندوب…' : 'Locating your driver…';
+  String km(String x)          => isAr ? '$x كم'                  : '$x km';
+  String get driverRole        => isAr ? 'مندوب التوصيل'          : 'Your driver';
+  String get driverCollected   => isAr ? 'استلم طلبك من المتجر'   : 'Collected your order from the store';
+  String get driverOnWayToYou  => isAr ? 'في الطريق إليك'         : 'On the way to you';
+  /// The driver profile's vehicle (car | motorcycle); null when unknown, and the card leaves it out.
+  String? vehicleLabel(String? v) => switch (v) {
+    'car' => isAr ? 'سيارة' : 'Car',
+    'motorcycle' => isAr ? 'دراجة نارية' : 'Motorcycle',
+    _ => null,
+  };
   String get callDriver        => isAr ? 'اتصال'                  : 'Call';
   String get messageDriver     => isAr ? 'رسالة'                  : 'Message';
-  String driverWaText(String n) => isAr ? 'مرحباً، بخصوص طلبي رقم $n' : 'Hello, about my order $n';
+  String driverWaText(String n) => isAr ? 'السلام عليكم، بخصوص طلبي رقم $n' : 'Hello, about my order $n';
   String get couldNotOpenApp   => isAr ? 'تعذر فتح التطبيق'       : 'Could not open the app';
-  String get liveBadge         => isAr ? 'مباشر'                  : 'Live';
-  String liveEta(int n)        => isAr ? 'يصلك خلال ~$n دقيقة'     : 'Arrives in ~$n min';
-  String get liveOnTheWay      => isAr ? 'مندوبك في الطريق إليك'  : 'Your driver is on the way';
-  String get liveLocating      => isAr ? 'جارٍ تحديد موقع المندوب…' : 'Locating your driver…';
-  String get liveEtaNote       => isAr ? 'حسب الطريق وحركة المرور الآن' : 'By road, with current traffic';
-  String get statusHistoryShow => isAr ? 'عرض التفاصيل'           : 'Show details';
-  String get statusHistoryHide => isAr ? 'إخفاء التفاصيل'         : 'Hide details';
   String get cartUpdateTitle   => isAr ? 'تحديث السلة'            : 'Cart Update';
   String get itemsUnavailable  => isAr ? 'المنتجات التالية نفدت من المخزون:' : 'The following items are sold out:';
   String get priceChangedItems => isAr ? 'تغير سعر المنتجات التالية:' : 'Prices changed for the following items:';
