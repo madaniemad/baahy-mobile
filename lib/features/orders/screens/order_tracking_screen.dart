@@ -144,13 +144,20 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
           await safePush(context, '/orders/${order.id}/return', extra: order.returnDeadline);
           ref.invalidate(orderReturnProvider(order.id));
         }),
-      if (_cancellable.contains(order.status))
+      if (_isCancellable(order))
         (icon: Icons.cancel_outlined, label: context.s.cancelOrder, color: AppColors.danger, onTap: () => _cancelOrder(context)),
     ]);
   }
 
-  /// The statuses OrderController::cancel accepts from the customer.
-  static const _cancellable = ['pending_confirmation', 'paid', 'confirmed'];
+  /// The statuses OrderController::cancel accepts from the customer (2026-11-27: widened to match
+  /// the server; 113542673 sat in pending_payment with no way to cancel).
+  static const _cancellableStatuses = {
+    'pending', 'pending_payment', 'pending_confirmation', 'pending_vendor', 'paid', 'confirmed', 'processing',
+  };
+
+  /// Processing only until a driver collects: `delivery_driver` is sent once he has picked it up.
+  static bool _isCancellable(Order o) =>
+      _cancellableStatuses.contains(o.status) && !(o.status == 'processing' && o.deliveryDriver != null);
 
   Future<void> _cancelOrder(BuildContext context) async {
     if (_cancelling) return;
@@ -233,6 +240,80 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
     } finally {
       if (mounted) setState(() => _cancelling = false);
     }
+  }
+
+  bool _removeSheetOpen = false;
+  /// The amount row glows in `col.hilite` for about 2 s after a removal, then fades.
+  bool _hiliteTotal = false;
+
+  /// «حذف» on one line (Emad 2026-11-27, option A: a link per removable line, no multi-select).
+  /// The sheet previews the change with the server's dry_run before anything is removed; the server
+  /// decides what is removable, the new total, the wallet refund and whether the order is cancelled.
+  Future<void> _removeItem(BuildContext context, OrderItem item) async {
+    if (_removeSheetOpen) return;
+    _removeSheetOpen = true;
+    final order = widget.order;
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: context.col.surface,
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        builder: (_) => _RemoveItemSheet(
+          order: order,
+          item: item,
+          onDone: _afterRemove,
+          onReload: () { if (mounted) ref.invalidate(_orderDetailProvider(order.id)); },
+          onHelp: () { if (mounted) _openHelp(this.context); },
+        ),
+      );
+    } finally {
+      _removeSheetOpen = false;
+    }
+  }
+
+  /// After a removal: reload the order from the server, confirm in a toast, and briefly mark the new amount.
+  Future<void> _afterRemove(_RemoveOutcome r) async {
+    if (!mounted) return;
+    final id = widget.order.id;
+    ref.invalidate(_orderDetailProvider(id));
+    final s = context.s;
+    String text;
+    if (r.cancelled) {
+      text = s.removeOrderCancelled;
+    } else {
+      text = (r.message != null && r.message!.trim().isNotEmpty) ? r.message!.trim() : s.removeDone;
+      if (r.newTotal != null) {
+        final total = '${fmtPrice(r.newTotal!)} ${s.lydUnit}';
+        text += '\n${r.refund > 0
+            ? s.removeNewTotalRefund(total, '${fmtPrice(r.refund)} ${s.lydUnit}')
+            : s.removeNewTotal(total)}';
+      }
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      backgroundColor: context.col.ink0,
+      content: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 1),
+          child: Icon(Icons.check_circle_rounded, size: 18, color: AppColors.primary)),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text,
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+            fontSize: 13.5, height: 1.5, color: context.col.surface))),
+      ]),
+    ));
+    if (r.cancelled) return;
+    // Mark the amount once the reloaded figures are on screen, not the old ones.
+    try {
+      await ref.read(_orderDetailProvider(id).future);
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _hiliteTotal = true);
+    await Future<void>.delayed(const Duration(seconds: 2));
+    if (mounted) setState(() => _hiliteTotal = false);
   }
 
   /// "Rate this product" on a delivered order — POST /reviews (the endpoint baahy.com uses).
@@ -425,6 +506,21 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
     final amountDue = order.amountDue ??
         (order.paymentStatus == 'paid' ? 0.0 : (order.total - order.walletAmount).clamp(0.0, double.infinity));
     final showAmountDue = order.walletAmount > 0 || order.doorstepDeduction > 0 || order.doorstepRejections.isNotEmpty;
+    // Lines she may still «حذف» (server-decided). A store with none gets one quiet footer, but only
+    // while something else in the order is removable — on a normal order it would just be noise.
+    final removable = isActive ? order.removableItemIds : const <int>{};
+    final anyRemovable = order.allItems.any((i) => removable.contains(i.id));
+    // After a removal the amount she will pay (or has paid) glows briefly; it is the total row when
+    // the amount-due row is not shown.
+    Widget glow(Widget row) => Stack(clipBehavior: Clip.none, children: [
+      Positioned(left: -6, right: -6, top: 0, bottom: 0,
+        child: AnimatedOpacity(
+          opacity: _hiliteTotal ? 1 : 0,
+          duration: Duration(milliseconds: _hiliteTotal ? 200 : 700),
+          child: DecoratedBox(decoration: BoxDecoration(
+            color: context.col.hilite, borderRadius: BorderRadius.circular(8))))),
+      row,
+    ]);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -494,15 +590,22 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 border: Border.all(color: context.col.border),
               ),
               child: Column(
-                children: group.items.asMap().entries.map((e) =>
-                  _OrderItemRow(
-                    item: e.value,
-                    hasBorder: e.key < group.items.length - 1,
-                    onRate: order.status == 'delivered'
-                        ? () => _rateItem(context, e.value)
-                        : null,
+                children: [
+                  ...group.items.asMap().entries.map((e) =>
+                    _OrderItemRow(
+                      item: e.value,
+                      hasBorder: e.key < group.items.length - 1,
+                      onRate: order.status == 'delivered'
+                          ? () => _rateItem(context, e.value)
+                          : null,
+                      onRemove: removable.contains(e.value.id)
+                          ? () => _removeItem(context, e.value)
+                          : null,
+                    ),
                   ),
-                ).toList(),
+                  if (anyRemovable && !group.items.any((i) => removable.contains(i.id)))
+                    _LockedStoreFooter(onHelp: () => _openHelp(context)),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -546,7 +649,10 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 '-${fmtPrice(order.couponDiscount)} ${context.s.lydUnit}',
                 color: AppColors.success, ctx: context),
             Divider(height: 20, color: context.col.border),
-            _SumRow(context.s.totalLabel, '${fmtPrice(order.total)} ${context.s.lydUnit}', bold: true, ctx: context),
+            if (showAmountDue)
+              _SumRow(context.s.totalLabel, '${fmtPrice(order.total)} ${context.s.lydUnit}', bold: true, ctx: context)
+            else
+              glow(_SumRow(context.s.totalLabel, '${fmtPrice(order.total)} ${context.s.lydUnit}', bold: true, ctx: context)),
             // Part (or all) of the order already paid from wallet balance, or items refused at the
             // door — the customer needs to know what is still owed.
             if (showAmountDue) ...[
@@ -558,12 +664,12 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
                 _SumRow(context.s.doorstepDeductionLabel,
                   '-${fmtPrice(order.doorstepDeduction)} ${context.s.lydUnit}',
                   color: AppColors.success, ctx: context),
-              _SumRow(
+              glow(_SumRow(
                 order.paymentStatus == 'paid'
                     ? context.tr('مدفوع بالكامل', 'Already paid')
                     : context.tr('المبلغ المستحق', 'Amount due'),
                 '${fmtPrice(amountDue)} ${context.s.lydUnit}',
-                bold: true, ctx: context),
+                bold: true, ctx: context)),
             ],
             const SizedBox(height: 10),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -687,7 +793,7 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
         ],
         const SizedBox(height: 8),
         // Cancel — only while the backend still accepts it (OrderController::cancel).
-        if (_cancellable.contains(order.status)) ...[
+        if (_isCancellable(order)) ...[
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -1178,12 +1284,17 @@ class _OrderItemRow extends StatelessWidget {
   final bool hasBorder;
   /// Set on a delivered order: shows "Rate this product".
   final VoidCallback? onRate;
-  const _OrderItemRow({required this.item, required this.hasBorder, this.onRate});
+  /// Set when the server lists this line in `removable_item_ids`: shows «حذف».
+  final VoidCallback? onRemove;
+  /// The copy of the line inside the «حذف» sheet: no link, no chevron, not tappable.
+  final bool inSheet;
+  const _OrderItemRow({required this.item, required this.hasBorder, this.onRate, this.onRemove, this.inSheet = false});
 
   @override
   Widget build(BuildContext context) {
+    final red = _removeRed(context);
     return GestureDetector(
-      onTap: () => _navigateToProduct(context),
+      onTap: inSheet ? null : () => _navigateToProduct(context),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -1236,13 +1347,30 @@ class _OrderItemRow extends StatelessWidget {
                     ]),
                   ),
                 ),
+              if (onRemove != null && !inSheet)
+                GestureDetector(
+                  onTap: onRemove,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 6, bottom: 2),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.remove_circle_outline, size: 15, color: red),
+                      const SizedBox(width: 4),
+                      Text(context.s.removeItem,
+                        style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                          fontSize: 12, fontWeight: FontWeight.w700, color: red)),
+                    ]),
+                  ),
+                ),
             ]),
           ),
           Text('${fmtPrice(item.total)} ${context.s.lydUnit}',
             style: const TextStyle(fontFamily: 'PlusJakartaSans',
               fontWeight: FontWeight.w700, fontSize: 13)),
-          const SizedBox(width: 4),
-          Icon(Icons.chevron_right, size: 16, color: context.col.ink4),
+          if (!inSheet) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, size: 16, color: context.col.ink4),
+          ],
         ]),
       ),
     );
@@ -1250,5 +1378,383 @@ class _OrderItemRow extends StatelessWidget {
 
   void _navigateToProduct(BuildContext context) {
     safePush(context, '/product/${item.productId}');
+  }
+}
+
+// ── «حذف» an item (Emad 2026-11-27, option A) ─────────────────────────────────────────────────
+
+/// The destructive red of the «حذف» link and the error box: #B42318, lifted in dark mode so it stays readable.
+Color _removeRed(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark ? const Color(0xFFF97066) : const Color(0xFFB42318);
+
+/// Footer of a store whose lines the store has already confirmed: one quiet line pointing to help.
+/// The store is never named or offered as a contact.
+class _LockedStoreFooter extends StatelessWidget {
+  final VoidCallback onHelp;
+  const _LockedStoreFooter({required this.onHelp});
+
+  @override
+  Widget build(BuildContext context) {
+    const font = TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontSize: 12, height: 1.5);
+    // A one-sided border cannot carry a radius, so the rounding comes from the clip.
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: context.col.surfaceSoft,
+          border: Border(top: BorderSide(color: context.col.border)),
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(Icons.lock_outline_rounded, size: 15, color: context.col.ink3)),
+          const SizedBox(width: 8),
+          Expanded(child: Text.rich(
+            TextSpan(text: context.s.removeLockedNote, children: [
+              // A widget span keeps «تحتاج مساعدة؟» on one line.
+              WidgetSpan(
+                alignment: PlaceholderAlignment.baseline,
+                baseline: TextBaseline.alphabetic,
+                child: GestureDetector(
+                  onTap: onHelp,
+                  behavior: HitTestBehavior.opaque,
+                  child: Text(context.s.needHelpQ,
+                    style: font.copyWith(fontWeight: FontWeight.w700, color: AppColors.teal700)),
+                ),
+              ),
+            ]),
+            style: font.copyWith(color: context.col.ink2),
+          )),
+        ]),
+      ),
+    );
+  }
+}
+
+/// What a finished removal tells the order page.
+class _RemoveOutcome {
+  final String? message;
+  final bool cancelled;
+  final double? newTotal;
+  final double refund;
+  const _RemoveOutcome({this.message, this.cancelled = false, this.newTotal, this.refund = 0});
+}
+
+double? _numOrNull(dynamic v) => v is num ? v.toDouble() : (v is String ? double.tryParse(v) : null);
+
+/// The confirm sheet for «حذف»: the cancel sheet's shell. It asks the server for a dry_run first and
+/// shows its figures; `cancels:true` turns it into the cancel variant; a 422 is shown inside the sheet.
+class _RemoveItemSheet extends StatefulWidget {
+  final Order order;
+  final OrderItem item;
+  final void Function(_RemoveOutcome) onDone;
+  final VoidCallback onReload;
+  final VoidCallback onHelp;
+  const _RemoveItemSheet({
+    required this.order, required this.item,
+    required this.onDone, required this.onReload, required this.onHelp,
+  });
+
+  @override
+  State<_RemoveItemSheet> createState() => _RemoveItemSheetState();
+}
+
+class _RemoveItemSheetState extends State<_RemoveItemSheet> {
+  /// The dry_run answer: {current_total, new_total, reduction, refund_to_wallet, cancels}.
+  Map<String, dynamic>? _preview;
+  /// The server's message (422) or a generic failure, shown in place of the totals.
+  String? _error;
+  bool _sending = false;
+
+  bool get _loading => _preview == null && _error == null;
+  bool get _cancels => _error == null && _preview?['cancels'] == true;
+  String get _path => '/orders/${widget.order.id}/remove-items';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreview();
+  }
+
+  String _messageOf(Object e, String fallback) {
+    if (e is DioException) {
+      final d = e.response?.data;
+      if (d is Map && d['message'] != null && d['message'].toString().trim().isNotEmpty) {
+        return d['message'].toString();
+      }
+    }
+    return fallback;
+  }
+
+  void _report(Object e, StackTrace st) {
+    // A 422 is the server saying no in words she reads; anything else is worth knowing about.
+    if (e is DioException && e.response?.statusCode == 422) return;
+    Sentry.captureException(e, stackTrace: st);
+  }
+
+  // Runs from initState: nothing here may read the context (context.s, Theme…) before the first await.
+  Future<void> _loadPreview() async {
+    try {
+      final res = await ApiClient.instance.dio.post(_path, data: {'item_ids': [widget.item.id], 'dry_run': 1});
+      if (!mounted) return;
+      final d = res.data;
+      if (d is Map && d['success'] != false) {
+        setState(() => _preview = Map<String, dynamic>.from(d));
+      } else {
+        setState(() => _error = (d is Map ? d['message']?.toString() : null) ?? context.s.orderError);
+      }
+    } catch (e, st) {
+      _report(e, st);
+      if (!mounted) return;
+      setState(() => _error = _messageOf(e, context.s.orderError));
+    }
+  }
+
+  Future<void> _confirm() async {
+    if (_sending || _preview == null) return;
+    final preview = _preview!;
+    final fallback = context.s.orderError;
+    setState(() => _sending = true);
+    try {
+      final res = await ApiClient.instance.dio.post(_path, data: {'item_ids': [widget.item.id]});
+      final d = res.data is Map ? res.data as Map : const {};
+      if (d['success'] == false) {
+        if (!mounted) { widget.onReload(); return; }
+        setState(() { _sending = false; _error = d['message']?.toString() ?? fallback; });
+        return;
+      }
+      final outcome = _RemoveOutcome(
+        message: d['message']?.toString(),
+        cancelled: d['cancelled'] == true,
+        newTotal: _numOrNull(preview['new_total']),
+        refund: _numOrNull(preview['refund_to_wallet']) ?? 0,
+      );
+      if (mounted) Navigator.of(context).pop();
+      // Even if the sheet was swiped away meanwhile, the page still reloads and confirms.
+      widget.onDone(outcome);
+    } catch (e, st) {
+      _report(e, st);
+      if (!mounted) { widget.onReload(); return; }
+      setState(() { _sending = false; _error = _messageOf(e, fallback); });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.s;
+    final col = context.col;
+    final order = widget.order;
+    final cancels = _cancels;
+    const font = TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']);
+    final paidSomething = order.paymentStatus == 'paid' || order.walletAmount > 0;
+
+    return PopScope(
+      canPop: !_sending,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Container(width: 36, height: 4,
+              decoration: BoxDecoration(color: col.border, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 16),
+            Text(cancels ? s.removeLastTitle : s.removeItemQ,
+              style: font.copyWith(fontSize: 16, fontWeight: FontWeight.w800, height: 1.4)),
+            const SizedBox(height: 6),
+            Text(cancels ? s.removeLastSub : s.removeOrderRef(order.orderNumber),
+              style: font.copyWith(fontSize: 13, height: 1.55, color: col.ink2)),
+            const SizedBox(height: 14),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: col.border),
+              ),
+              child: _OrderItemRow(item: widget.item, hasBorder: false, inSheet: true),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 14),
+              _RemoveErrorBox(message: _error!),
+            ] else if (_loading) ...[
+              const SizedBox(height: 12),
+              const _RemoveTotalsSkeleton(),
+            ] else if (cancels) ...[
+              if (paidSomething) ...[
+                const SizedBox(height: 10),
+                Text(s.cancelOrderPaidNote,
+                  style: font.copyWith(fontSize: 12.5, height: 1.5, color: col.ink2)),
+              ],
+            ] else
+              ..._totals(context),
+            const SizedBox(height: 18),
+            if (_error != null) ...[
+              SizedBox(
+                width: double.infinity, height: 48,
+                child: OutlinedButton(
+                  onPressed: () { Navigator.of(context).pop(); widget.onReload(); },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: col.border),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: Text(s.okGotIt,
+                    style: font.copyWith(fontWeight: FontWeight.w700, color: col.ink0)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity, height: 48,
+                child: OutlinedButton(
+                  onPressed: () { Navigator.of(context).pop(); widget.onHelp(); },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.primary, width: 1.2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: Text(s.needHelpQ,
+                    style: font.copyWith(fontWeight: FontWeight.w700, color: col.ink0)),
+                ),
+              ),
+            ] else ...[
+              SizedBox(
+                width: double.infinity, height: 48,
+                child: ElevatedButton(
+                  onPressed: (_loading || _sending) ? null : _confirm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.danger, foregroundColor: Colors.white, elevation: 0,
+                    // Sending: stays red under the spinner. Still loading the preview: faded.
+                    disabledBackgroundColor: _sending ? AppColors.danger : AppColors.danger.withValues(alpha: 0.45),
+                    disabledForegroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: _sending
+                      ? const SizedBox(width: 20, height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Text(cancels ? s.yesCancelOrder : s.yesRemoveItem,
+                          style: font.copyWith(fontWeight: FontWeight.w700)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity, height: 48,
+                child: OutlinedButton(
+                  onPressed: _sending ? null : () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: col.border),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: Text(cancels ? s.keepOrder : s.keepItem,
+                    style: font.copyWith(fontWeight: FontWeight.w700, color: col.ink0)),
+                ),
+              ),
+            ],
+          ]),
+        ),
+      ),
+    );
+  }
+
+  /// The current → new figures from the dry_run, the wallet line when money goes back, and the note.
+  List<Widget> _totals(BuildContext context) {
+    final s = context.s;
+    final col = context.col;
+    final order = widget.order;
+    final p = _preview!;
+    final current = _numOrNull(p['current_total']) ?? order.total;
+    final next = _numOrNull(p['new_total']) ?? current;
+    final refund = _numOrNull(p['refund_to_wallet']) ?? 0;
+    final paid = order.paymentStatus == 'paid';
+    final cod = !paid && const {'cash', 'cash_on_delivery'}.contains(order.paymentMethod);
+    String money(double v) => '${fmtPrice(v)} ${s.lydUnit}';
+    const font = TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal']);
+
+    Widget row(String label, String value, TextStyle labelStyle, TextStyle valueStyle, {Widget? icon}) =>
+        Row(children: [
+          if (icon != null) ...[icon, const SizedBox(width: 6)],
+          Expanded(child: Text(label, style: labelStyle)),
+          const SizedBox(width: 10),
+          Text(value, style: valueStyle),
+        ]);
+
+    final note = refund > 0 ? s.removeRefundNote : (cod ? s.removeCodNote : null);
+    return [
+      const SizedBox(height: 12),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(color: col.surfaceSoft, borderRadius: BorderRadius.circular(12)),
+        child: Column(children: [
+          row(paid ? s.removeAmountPaid : s.removeCurrentTotal, money(current),
+            font.copyWith(fontSize: 13, color: col.ink2),
+            font.copyWith(fontSize: 13, fontWeight: FontWeight.w700, color: col.ink0)),
+          const SizedBox(height: 7),
+          row(s.removeAfter, money(next),
+            font.copyWith(fontSize: 14, fontWeight: FontWeight.w800, color: col.ink0),
+            font.copyWith(fontSize: 14, fontWeight: FontWeight.w800, color: col.ink0)),
+          if (refund > 0) ...[
+            const SizedBox(height: 7),
+            row(s.removeRefundWallet, money(refund),
+              font.copyWith(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.teal700),
+              font.copyWith(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.teal700),
+              icon: const Icon(Icons.account_balance_wallet_outlined, size: 16, color: AppColors.teal700)),
+          ],
+        ]),
+      ),
+      if (note != null) ...[
+        const SizedBox(height: 10),
+        Text(note, style: font.copyWith(fontSize: 12.5, height: 1.55, color: col.ink2)),
+      ],
+    ];
+  }
+}
+
+/// Three grey lines in place of the totals while the dry_run loads.
+class _RemoveTotalsSkeleton extends StatelessWidget {
+  const _RemoveTotalsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final col = context.col;
+    Widget bar(double w) => Container(width: w, height: 11,
+        decoration: BoxDecoration(color: col.border, borderRadius: BorderRadius.circular(6)));
+    Widget line(double label, double value) => SizedBox(
+        height: 18,
+        child: Row(children: [bar(label), const Spacer(), bar(value)]));
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(color: col.surfaceSoft, borderRadius: BorderRadius.circular(12)),
+      child: Column(children: [
+        line(120, 56),
+        const SizedBox(height: 7),
+        line(80, 64),
+        const SizedBox(height: 7),
+        line(140, 48),
+      ]),
+    );
+  }
+}
+
+/// The server's refusal (422), in its own words, inside the sheet.
+class _RemoveErrorBox extends StatelessWidget {
+  final String message;
+  const _RemoveErrorBox({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final red = _removeRed(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF3A1A18) : const Color(0xFFFEECEB),
+        border: Border.all(color: dark ? const Color(0xFF7A2E28) : const Color(0xFFF5B5AE), width: 0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(Icons.error_outline_rounded, size: 18, color: red)),
+        const SizedBox(width: 10),
+        Expanded(child: Text(message,
+          style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+            fontSize: 13.5, height: 1.55, fontWeight: FontWeight.w500, color: red))),
+      ]),
+    );
   }
 }

@@ -61,6 +61,11 @@ class Order {
   /// Baahy's own driver, only while he has picked the order up or is out delivering it
   /// (`GET orders/{id}` only; null for courier deliveries and before the trip starts).
   final DeliveryDriver? deliveryDriver;
+  /// Lines the customer may still «حذف» herself (`GET orders/{id}` only): the server lists the
+  /// ids of lines whose store has not confirmed them yet. Empty on the list endpoint and older servers.
+  final Set<int> removableItemIds;
+  /// Every line of the order is removable (removing the last one cancels the order).
+  final bool removableAll;
 
   const Order({
     required this.id,
@@ -88,6 +93,8 @@ class Order {
     this.doorstepDeduction = 0,
     this.doorstepRejections = const [],
     this.deliveryDriver,
+    this.removableItemIds = const {},
+    this.removableAll = false,
   });
 
   List<OrderItem> get allItems =>
@@ -128,6 +135,10 @@ class Order {
     doorstepDeduction: _d(j['doorstep_deduction'] ?? 0),
     doorstepRejections: DoorstepRejectionLine.parseAll(j['doorstep_rejections'], j['items'], vendorGroups),
     deliveryDriver: DeliveryDriver.tryParse(j['delivery_driver']),
+    removableItemIds: (j['removable_item_ids'] is List)
+        ? (j['removable_item_ids'] as List).map((v) => _i(v, -1)).where((v) => v > 0).toSet()
+        : const {},
+    removableAll: j['removable_all'] == true,
   );
 }
 

@@ -756,6 +756,37 @@ Account Termination: We reserve the right to suspend any account that violates t
   String get chooseStars          => isAr ? 'اختر عدد النجوم'              : 'Choose a star rating';
   String get reviewThanks         => isAr ? 'شكراً لتقييمك.' : 'Thank you for your review.';
 
+  // ── «حذف» an item from an order (Emad 2026-11-27, option A). «حذف», never «إزالة»; «منتج», never «صنف».
+  String get removeItem           => isAr ? 'حذف'                          : 'Remove';
+  /// «طلب #N» under the sheet title.
+  String removeOrderRef(String n) { final r = n.startsWith('#') ? n : '#$n'; return isAr ? 'طلب $r' : 'Order $r'; }
+  String get removeItemQ          => isAr ? 'حذف هذا المنتج من طلبك؟'      : 'Remove this item from your order?';
+  String get removeCurrentTotal   => isAr ? 'مجموع الطلب الحالي'           : 'Current order total';
+  String get removeAmountPaid     => isAr ? 'المبلغ المدفوع'               : 'Amount paid';
+  String get removeAfter          => isAr ? 'بعد الحذف'                    : 'After removal';
+  String get removeRefundWallet   => isAr ? 'يُعاد الفرق إلى محفظتك'       : 'The difference goes back to your wallet';
+  String get removeRefundNote     => isAr
+      ? 'يُضاف المبلغ إلى محفظتك فور الحذف، ويمكنك استخدامه في طلبك القادم.'
+      : 'The amount is added to your wallet as soon as the item is removed, and you can use it on your next order.';
+  String get removeCodNote        => isAr ? 'تدفع المبلغ الجديد عند الاستلام.' : 'You pay the new amount on delivery.';
+  String get yesRemoveItem        => isAr ? 'نعم، احذف المنتج'             : 'Yes, remove it';
+  String get keepItem             => isAr ? 'لا، أبقِ المنتج'              : 'No, keep it';
+  String get removeLastTitle      => isAr ? 'سيُلغى طلبك بالكامل'          : 'Your whole order will be cancelled';
+  String get removeLastSub        => isAr
+      ? 'هذا هو المنتج الوحيد في طلبك، وحذفه يعني إلغاء الطلب.'
+      : 'This is the only item in your order, so removing it cancels the order.';
+  /// Footer of a store whose lines are confirmed; followed by the «تحتاج مساعدة؟» link.
+  String get removeLockedNote     => isAr
+      ? 'أكّد المتجر هذه المنتجات، لذلك لا يمكن حذفها من هنا. لتعديلها: '
+      : 'The store has confirmed these items, so they cannot be removed here. To change them: ';
+  String get needHelpQ            => isAr ? 'تحتاج مساعدة؟'                : 'Need help?';
+  String get removeDone           => isAr ? 'تم حذف المنتج من طلبك'        : 'The item was removed from your order';
+  String removeNewTotal(String amount) => isAr ? 'المجموع الجديد $amount' : 'New total $amount';
+  String removeNewTotalRefund(String amount, String refund) => isAr
+      ? 'المجموع الجديد $amount، وأُعيد $refund إلى محفظتك'
+      : 'New total $amount, and $refund went back to your wallet';
+  String get removeOrderCancelled => isAr ? 'تم إلغاء طلبك'                : 'Your order was cancelled';
+
   // ── Account restricted from ordering (2026-10-19) ───────────────────────────
   String get orderingBlockedTitle => isAr
       ? 'لا يمكن إتمام الطلب من حسابك حالياً'
