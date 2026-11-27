@@ -223,6 +223,8 @@ const _libyanCityCoords = <String, LatLng>{
 const _cityNamesWithoutCoords = <String>{'جخرة'};
 
 
+/// The same dark map look elsewhere (the order page's live driver map).
+const kDarkMapStyle = _darkStyle;
 const _darkStyle = '[{"elementType":"geometry","stylers":[{"color":"#212121"}]},'
     '{"elementType":"labels.icon","stylers":[{"visibility":"off"}]},'
     '{"elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},'

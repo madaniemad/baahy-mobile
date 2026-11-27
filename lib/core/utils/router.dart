@@ -52,6 +52,7 @@ import '../../features/friends/screens/qr_profile_screen.dart';
 import '../../features/friends/screens/privacy_settings_screen.dart';
 import '../../features/friends/screens/username_setup_screen.dart';
 import '../shell/main_shell.dart';
+import '../../features/orders/demo/order_demo.dart' show orderDemoOn;
 
 final _rootNavKey     = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _homeNavKey     = GlobalKey<NavigatorState>(debugLabel: 'home');
@@ -64,7 +65,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     navigatorKey: _rootNavKey,
     observers: [Analytics.observer()],
-    initialLocation: '/splash',
+    // Debug-only order-page preview (--dart-define=ORDER_DEMO=a|b|c|d): open straight on the made-up order.
+    initialLocation: orderDemoOn ? '/orders/0' : '/splash',
     // Handle deep links from baahy:// scheme and https://baahy.ly/
     redirect: (context, state) {
       final uri = state.uri;

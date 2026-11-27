@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +20,8 @@ import '../widgets/bank_transfer_card.dart';
 import '../widgets/change_payment_method.dart';
 import '../../notifications/widgets/notifications_reminder.dart';
 import '../widgets/order_help.dart';
+import '../widgets/order_driver_live.dart';
+import '../demo/order_demo.dart';
 import '../widgets/return_request_card.dart';
 import '../../../shared/theme/app_theme.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -72,10 +73,14 @@ class OrderTrackingScreen extends ConsumerStatefulWidget {
 
 class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
   final _body = GlobalKey<_OrderBodyState>();
+  /// Debug-only preview (--dart-define=ORDER_DEMO=a|b|c|d, see order_demo.dart): tap the title for the next state.
+  String _demo = kOrderDemo;
 
   @override
   Widget build(BuildContext context) {
-    final orderAsync = ref.watch(_orderDetailProvider(widget.id));
+    final orderAsync = orderDemoOn
+        ? AsyncValue<Order>.data(Order.fromJson(orderDemoJson(_demo)))
+        : ref.watch(_orderDetailProvider(widget.id));
 
     return Scaffold(
       backgroundColor: context.col.bg,
@@ -86,8 +91,11 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
           icon: Icon(Icons.arrow_back, color: context.col.ink0)),
         titleSpacing: 0,
         title: orderAsync.maybeWhen(
-          data: (o) => Text(context.s.orderNumber(o.orderNumber),
-            style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
+          data: (o) => GestureDetector(
+            onTap: orderDemoOn ? () => setState(() => _demo = orderDemoNext(_demo)) : null,
+            child: Text(context.s.orderNumber(o.orderNumber),
+              style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
+          ),
           orElse: () => Text(context.s.orderDetails,
             style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
         ),
@@ -132,6 +140,10 @@ class _OrderBody extends ConsumerStatefulWidget {
 class _OrderBodyState extends ConsumerState<_OrderBody> {
   bool _reordering = false;
   bool _cancelling = false;
+  /// The full dated history under the status line, folded by default.
+  bool _historyOpen = false;
+  /// The live map's source: the server, or the moving demo path in a debug preview.
+  late final DriverLiveFetch _liveFetch = orderDemoOn ? orderDemoLive() : driverLiveFromServer(widget.order.id);
 
   /// «تحتاج مساعدة؟» (Emad, 2026-11-26: at the top of the page, where every customer sees it). Self-service first:
   /// the sheet offers what fits this order's stage, then the assistant. Never WhatsApp from here.
@@ -534,10 +546,22 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
         // Notifications off while the order is on its way: the updates promised above reach nobody.
         if (isActive && order.status != 'pending_payment') const NotificationsReminder.order(),
 
-        // Who is bringing it — only while Baahy's own driver has the order (server decides), and
-        // never on a delivered/cancelled order shown from a stale copy.
+        // Where he is — only once Baahy's own driver has started her delivery (`live`, server-decided); the card
+        // asks GET orders/{id}/driver-live every 15 s while this page is on screen, and hides itself when it ends.
+        if (isActive && order.deliveryDriver?.live == true) ...[
+          OrderLiveMapCard(
+            key: ValueKey('live-${order.id}'),
+            fetch: _liveFetch,
+            interval: orderDemoOn ? const Duration(seconds: 2) : const Duration(seconds: 15),
+            onEnded: () { if (mounted && !orderDemoOn) ref.invalidate(_orderDetailProvider(order.id)); },
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        // Who is bringing it, with «اتصال» / «رسالة» — only while Baahy's own driver has the order (server
+        // decides), and never on a delivered/cancelled order shown from a stale copy.
         if (isActive && order.deliveryDriver != null) ...[
-          _DriverCard(driver: order.deliveryDriver!),
+          OrderDriverCard(driver: order.deliveryDriver!, orderNumber: order.orderNumber),
           const SizedBox(height: 14),
         ],
 
@@ -561,10 +585,42 @@ class _OrderBodyState extends ConsumerState<_OrderBody> {
             border: Border.all(color: context.col.border),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(context.s.orderStatus,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 12),
-            _Timeline(status: order.status, history: order.statusHistory, orderCreatedAt: order.createdAt),
+            Row(children: [
+              Expanded(child: Text(context.s.orderStatus,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+              // The dated history (the old stacked list) stays one tap away.
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => setState(() => _historyOpen = !_historyOpen),
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(6, 4, 2, 4),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(_historyOpen ? context.s.statusHistoryHide : context.s.statusHistoryShow,
+                      style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                        fontSize: 12.5, fontWeight: FontWeight.w600, color: context.col.ink2)),
+                    Icon(_historyOpen ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                      size: 18, color: context.col.ink2),
+                  ]),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 16),
+            _StatusLine(status: order.status, history: order.statusHistory, orderCreatedAt: order.createdAt),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              alignment: AlignmentDirectional.topStart,
+              child: _historyOpen
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Divider(height: 1, color: context.col.border),
+                        const SizedBox(height: 14),
+                        _Timeline(status: order.status, history: order.statusHistory, orderCreatedAt: order.createdAt),
+                      ]),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
           ]),
         ),
 
@@ -1000,70 +1056,144 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-class _DriverCard extends StatelessWidget {
-  final DeliveryDriver driver;
-  const _DriverCard({required this.driver});
-
-  @override
-  Widget build(BuildContext context) {
-    const size = 48.0;
-    final fallback = Container(
-      width: size, height: size,
-      decoration: BoxDecoration(color: context.col.surfaceSoft, shape: BoxShape.circle),
-      child: Icon(Icons.person_outline_rounded, size: 26, color: context.col.ink3),
-    );
-    final photo = driver.photoUrl;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: context.col.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.col.border),
-      ),
-      child: Row(children: [
-        Container(
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.6), width: 1.5),
-          ),
-          child: ClipOval(
-            child: photo == null
-                ? fallback
-                : CachedNetworkImage(
-                    imageUrl: photo,
-                    width: size, height: size,
-                    fit: BoxFit.cover,
-                    memCacheWidth: 160,
-                    placeholder: (_, __) => fallback,
-                    errorWidget: (_, __, ___) => fallback,
-                  ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(context.s.driverOnTheWay(driver.name),
-            textAlign: TextAlign.start,
-            maxLines: 2, overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], color: context.col.ink0,
-              fontSize: 14.5, fontWeight: FontWeight.w700, height: 1.35)),
-          const SizedBox(height: 2),
-          Text(context.s.driverHasOrder,
-            textAlign: TextAlign.start,
-            style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], color: context.col.ink3,
-              fontSize: 12)),
-        ])),
-      ]),
-    );
-  }
-}
-
 class _HeroInfo {
   final IconData icon;
   final String badge;
   final String title;
   final String subtitle;
   const _HeroInfo({required this.icon, required this.badge, required this.title, required this.subtitle});
+}
+
+enum _Node { done, current, future, end }
+
+/// The connected progress line at the top of «حالة الطلب» (Emad 2026-11-28: «there should be like a line of
+/// statuses, like where each one is at, like a connected line of statuses»). One dot per step of [_Timeline]'s own
+/// mapping: reached steps filled and joined, the current one highlighted, the rest grey. An order that ended early
+/// (cancelled, failed, returned…) shows the steps it reached and then one closing dot in its own colour.
+class _StatusLine extends StatelessWidget {
+  final String status;
+  final List<OrderStatusEntry> history;
+  final DateTime orderCreatedAt;
+  const _StatusLine({required this.status, required this.history, required this.orderCreatedAt});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _Timeline(status: status, history: history, orderCreatedAt: orderCreatedAt);
+    final steps = t._steps(context);
+    final current = t._currentIdx(steps);
+    final ended = _Timeline._endedStatuses.contains(status);
+    final endColor = _Timeline._endedBad.contains(status) ? AppColors.danger : AppColors.info;
+
+    final nodes = <(String, _Node)>[];
+    if (ended) {
+      for (var i = 0; i <= current; i++) {
+        nodes.add((steps[i].$2, _Node.done));
+      }
+      nodes.add((context.s.statusLabel(status), _Node.end));
+    } else {
+      for (var i = 0; i < steps.length; i++) {
+        final last = i == steps.length - 1;
+        nodes.add((steps[i].$2, i < current || (last && i == current)
+            ? _Node.done
+            : (i == current ? _Node.current : _Node.future)));
+      }
+    }
+    // The step on screen now: the current dot, or the last one when the order is finished.
+    final focus = nodes.indexWhere((n) => n.$2 == _Node.current || n.$2 == _Node.end);
+    final focusIdx = focus >= 0 ? focus : nodes.length - 1;
+    bool reached(int i) => nodes[i].$2 != _Node.future;
+    final note = ended ? context.s.orderEndedNote(status) : null;
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: List.generate(nodes.length, (i) {
+        final kind = nodes[i].$2;
+        // The joining line on each side of a dot: coloured once the later of its two steps is reached.
+        Color seg(int later) => later < nodes.length && reached(later)
+            ? (nodes[later].$2 == _Node.end ? endColor : AppColors.primary)
+            : context.col.border;
+        Widget half(Color? c) => Expanded(child: c == null
+            ? const SizedBox.shrink()
+            : Container(height: 3, color: c));
+        final isFocus = i == focusIdx;
+        final labelColor = switch (kind) {
+          _Node.end => endColor,
+          _Node.current => AppColors.primary,
+          _Node.future => context.col.ink3,
+          _Node.done => isFocus ? AppColors.primary : context.col.ink1,
+        };
+        return Expanded(child: Column(children: [
+          SizedBox(
+            height: 30,
+            child: Row(children: [
+              half(i == 0 ? null : seg(i)),
+              _StatusDot(kind: kind, endColor: endColor, endBad: _Timeline._endedBad.contains(status)),
+              half(i == nodes.length - 1 ? null : seg(i + 1)),
+            ]),
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Text(nodes[i].$1,
+              textAlign: TextAlign.center,
+              maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'],
+                fontSize: 11.5, height: 1.3,
+                fontWeight: isFocus ? FontWeight.w800 : FontWeight.w500,
+                color: labelColor)),
+          ),
+        ]));
+      })),
+      if (note != null) ...[
+        const SizedBox(height: 12),
+        Text(note,
+          textAlign: TextAlign.start,
+          style: TextStyle(fontSize: 12, height: 1.4, color: context.col.ink2)),
+      ],
+    ]);
+  }
+}
+
+class _StatusDot extends StatelessWidget {
+  final _Node kind;
+  final Color endColor;
+  final bool endBad;
+  const _StatusDot({required this.kind, required this.endColor, required this.endBad});
+
+  @override
+  Widget build(BuildContext context) {
+    switch (kind) {
+      case _Node.done:
+      case _Node.end:
+        final c = kind == _Node.end ? endColor : AppColors.primary;
+        return Container(
+          width: 22, height: 22,
+          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+          child: Icon(
+            kind == _Node.end ? (endBad ? Icons.close_rounded : Icons.undo_rounded) : Icons.check_rounded,
+            size: 14, color: Colors.white),
+        );
+      case _Node.current:
+        // Where it is now: a filled dot in a soft tiffany halo.
+        return Container(
+          width: 30, height: 30,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.18), shape: BoxShape.circle),
+          child: Container(
+            width: 18, height: 18,
+            decoration: BoxDecoration(
+              color: AppColors.primary, shape: BoxShape.circle,
+              border: Border.all(color: context.col.surface, width: 3)),
+          ),
+        );
+      case _Node.future:
+        return Container(
+          width: 14, height: 14,
+          decoration: BoxDecoration(
+            color: context.col.surface, shape: BoxShape.circle,
+            border: Border.all(color: context.col.borderStrong, width: 2)),
+        );
+    }
+  }
 }
 
 class _Timeline extends StatelessWidget {
@@ -1136,9 +1266,7 @@ class _Timeline extends StatelessWidget {
     return null;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final steps = [
+  List<(String, String)> _steps(BuildContext context) => [
       // Waiting for payment is not "received" yet — say what it is waiting for.
       ('pending',     status == 'pending_payment' ? context.s.statusLabel(status) : context.s.stepPending),
       ('confirmed',   context.s.stepConfirmed),
@@ -1146,6 +1274,10 @@ class _Timeline extends StatelessWidget {
       ('shipped',     context.s.stepShipped),
       ('delivered',   context.s.stepDelivered),
     ];
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = _steps(context);
     final current = _currentIdx(steps);
     final ended = _endedStatuses.contains(status);
     // An ended order shows only the steps it reached, then the closing row.

@@ -142,20 +142,29 @@ class Order {
   );
 }
 
-/// The driver bringing the order: first name and photo only. The phone is deliberately not sent.
+/// The driver bringing the order: first name and photo, and (from 2026-11-28) his phone for «اتصال» / «رسالة».
+/// The server sends it only to the order's own customer, only while Baahy's driver has the order
+/// (collected → out for delivery); never after delivery and never for Vanex.
 class DeliveryDriver {
   final String name;
   final String? photoUrl;
-  const DeliveryDriver({required this.name, this.photoUrl});
+  /// +2189XXXXXXXX, or null (older server, or not a Libyan mobile).
+  final String? phone;
+  /// He has started her delivery (`out_for_delivery`): the live map is shown (GET orders/{id}/driver-live).
+  final bool live;
+  const DeliveryDriver({required this.name, this.photoUrl, this.phone, this.live = false});
 
   static DeliveryDriver? tryParse(dynamic raw) {
     if (raw is! Map) return null;
     final name = (raw['name'] ?? '').toString().trim();
     if (name.isEmpty) return null;
     final photo = raw['photo_url']?.toString().trim();
+    final phone = raw['phone']?.toString().trim();
     return DeliveryDriver(
       name: name,
       photoUrl: photo != null && photo.startsWith('http') ? photo : null,
+      phone: phone != null && RegExp(r'^\+?\d{9,15}$').hasMatch(phone) ? phone : null,
+      live: raw['live'] == true,
     );
   }
 }

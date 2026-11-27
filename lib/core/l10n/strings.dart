@@ -452,6 +452,20 @@ class AppStrings {
   // Baahy's own driver while he has the order (GET /orders/{id} → delivery_driver).
   String driverOnTheWay(String name) => isAr ? 'مندوب التوصيل $name في الطريق إليك' : '$name is on the way';
   String get driverHasOrder    => isAr ? 'يحمل طلبك الآن'         : 'Your Baahy driver has your order';
+  // Order page: driver card buttons, live map, status line (Emad 2026-11-28).
+  String get driverRole        => isAr ? 'مندوب باهي'             : 'Your Baahy driver';
+  String get driverHeadingToYou => isAr ? 'في الطريق إليك الآن'    : 'Heading to you now';
+  String get callDriver        => isAr ? 'اتصال'                  : 'Call';
+  String get messageDriver     => isAr ? 'رسالة'                  : 'Message';
+  String driverWaText(String n) => isAr ? 'مرحباً، بخصوص طلبي رقم $n' : 'Hello, about my order $n';
+  String get couldNotOpenApp   => isAr ? 'تعذر فتح التطبيق'       : 'Could not open the app';
+  String get liveBadge         => isAr ? 'مباشر'                  : 'Live';
+  String liveEta(int n)        => isAr ? 'يصلك خلال ~$n دقيقة'     : 'Arrives in ~$n min';
+  String get liveOnTheWay      => isAr ? 'مندوبك في الطريق إليك'  : 'Your driver is on the way';
+  String get liveLocating      => isAr ? 'جارٍ تحديد موقع المندوب…' : 'Locating your driver…';
+  String get liveEtaNote       => isAr ? 'حسب الطريق وحركة المرور الآن' : 'By road, with current traffic';
+  String get statusHistoryShow => isAr ? 'عرض التفاصيل'           : 'Show details';
+  String get statusHistoryHide => isAr ? 'إخفاء التفاصيل'         : 'Hide details';
   String get cartUpdateTitle   => isAr ? 'تحديث السلة'            : 'Cart Update';
   String get itemsUnavailable  => isAr ? 'المنتجات التالية نفدت من المخزون:' : 'The following items are sold out:';
   String get priceChangedItems => isAr ? 'تغير سعر المنتجات التالية:' : 'Prices changed for the following items:';
