@@ -758,8 +758,6 @@ Account Termination: We reserve the right to suspend any account that violates t
 
   // ── «حذف» an item from an order (Emad 2026-11-27, option A). «حذف», never «إزالة»; «منتج», never «صنف».
   String get removeItem           => isAr ? 'حذف'                          : 'Remove';
-  /// «طلب #N» under the sheet title.
-  String removeOrderRef(String n) { final r = n.startsWith('#') ? n : '#$n'; return isAr ? 'طلب $r' : 'Order $r'; }
   String get removeItemQ          => isAr ? 'حذف هذا المنتج من طلبك؟'      : 'Remove this item from your order?';
   String get removeCurrentTotal   => isAr ? 'مجموع الطلب الحالي'           : 'Current order total';
   String get removeAmountPaid     => isAr ? 'المبلغ المدفوع'               : 'Amount paid';

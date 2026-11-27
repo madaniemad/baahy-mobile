@@ -1562,7 +1562,7 @@ class _RemoveItemSheetState extends State<_RemoveItemSheet> {
             Text(cancels ? s.removeLastTitle : s.removeItemQ,
               style: font.copyWith(fontSize: 16, fontWeight: FontWeight.w800, height: 1.4)),
             const SizedBox(height: 6),
-            Text(cancels ? s.removeLastSub : s.removeOrderRef(order.orderNumber),
+            Text(cancels ? s.removeLastSub : s.orderNumber(order.orderNumber),
               style: font.copyWith(fontSize: 13, height: 1.55, color: col.ink2)),
             const SizedBox(height: 14),
             Container(
