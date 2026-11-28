@@ -487,7 +487,7 @@ class _OrderLiveMapCardState extends State<OrderLiveMapCard>
       return;
     }
     map.animateCamera(CameraUpdate.newLatLngBounds(
-        LatLngBounds(southwest: LatLng(s, w), northeast: LatLng(n, e)), 48));
+        LatLngBounds(southwest: LatLng(s, w), northeast: LatLng(n, e)), 64)); // marker + pulse never reach the edge (studio QA)
   }
 
   /// Index of the road point nearest his marker: the road is drawn (and measured) from there on, so the part he has
@@ -660,11 +660,13 @@ class _OrderLiveMapCardState extends State<OrderLiveMapCard>
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         AspectRatio(
           aspectRatio: 360 / 230,
-          child: GoogleMap(
+          child: Stack(children: [
+           Positioned.fill(child: GoogleMap(
             initialCameraPosition: CameraPosition(target: dest ?? _tripoli, zoom: dest != null ? 14 : 11),
             markers: markers,
             polylines: polylines,
-            style: isDark ? kDarkMapStyle : null,
+            // No shops, malls or mosques on it (studio QA 2026-11-28): only the two markers and the road names.
+            style: isDark ? _noPoi(kDarkMapStyle) : _noPoi(null),
             onMapCreated: (ctrl) {
               _map = ctrl;
               _fit(_shown);
@@ -679,7 +681,27 @@ class _OrderLiveMapCardState extends State<OrderLiveMapCard>
             mapToolbarEnabled: false,
             compassEnabled: false,
             buildingsEnabled: false,
-          ),
+          )),
+           // «● مباشر» at the top, away from the Google logo (bottom left).
+           Positioned(
+             top: 10,
+             right: 10,
+             child: Container(
+               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+               decoration: BoxDecoration(
+                 color: context.col.surface,
+                 borderRadius: BorderRadius.circular(999),
+                 boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 6, offset: Offset(0, 2))],
+               ),
+               child: Row(mainAxisSize: MainAxisSize.min, children: [
+                 Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
+                 const SizedBox(width: 6),
+                 Text(context.tr('مباشر', 'Live'),
+                     style: TextStyle(fontFamily: 'Manrope', fontFamilyFallback: const ['Tajawal'], fontWeight: FontWeight.w700, fontSize: 12.5, color: context.col.ink0)),
+               ]),
+             ),
+           ),
+          ]),
         ),
         Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12),
@@ -704,4 +726,14 @@ class _OrderLiveMapCardState extends State<OrderLiveMapCard>
       ]),
     );
   }
+}
+
+
+/// The map style without points of interest (businesses, malls, mosques, transit), road names kept. [base]: a style JSON
+/// array (the dark style) or null for Google's default.
+String _noPoi(String? base) {
+  const off = '{"featureType":"poi","stylers":[{"visibility":"off"}]},{"featureType":"transit","stylers":[{"visibility":"off"}]}';
+  final b = (base ?? '[]').trim();
+  if (b == '[]' || !b.endsWith(']')) return '[$off]';
+  return '${b.substring(0, b.length - 1).trimRight()},$off]';
 }

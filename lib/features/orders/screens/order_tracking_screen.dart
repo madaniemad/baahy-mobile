@@ -93,7 +93,8 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
         title: orderAsync.maybeWhen(
           data: (o) => GestureDetector(
             onTap: orderDemoOn ? () => setState(() => _demo = orderDemoNext(_demo)) : null,
-            child: Text(context.s.orderNumber(o.orderNumber),
+            // Shrinks first, so the help pill never touches it (studio QA 2026-11-28).
+            child: Text(context.s.orderNumber(o.orderNumber), maxLines: 1, overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontFamily: 'Manrope', fontFamilyFallback: ['Tajawal'], fontWeight: FontWeight.w800)),
           ),
           orElse: () => Text(context.s.orderDetails,
@@ -102,7 +103,7 @@ class _OrderTrackingScreenState extends ConsumerState<OrderTrackingScreen> {
         actions: [
           if (orderAsync.hasValue)
             Padding(
-              padding: const EdgeInsetsDirectional.only(end: 12),
+              padding: const EdgeInsetsDirectional.only(start: 12, end: 12),
               child: OutlinedButton.icon(
                 onPressed: () => _body.currentState?._openHelp(context),
                 icon: const Icon(Icons.support_agent_rounded, size: 17, color: AppColors.primary),
